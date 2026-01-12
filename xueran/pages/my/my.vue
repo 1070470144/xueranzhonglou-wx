@@ -6,36 +6,24 @@
 
 		<view class="content">
 			<view class="item" @click="openSubmission">
-				<text class="item-text">投稿要求</text>
+				<text class="item-text">投稿展示</text>
 			</view>
 		</view>
-
-		<info-panel
-			:visible="panelVisible"
-			title="投稿要求"
-			:content="submissionText"
-			@close="panelVisible = false"
-		/>
 	</view>
 </template>
 
 <script>
-import InfoPanel from '../../components/InfoPanel.vue'
 import submissionContent, { submissionContent as txt } from '../../common/submissionContent.js'
 
 export default {
-	components: {
-		InfoPanel
-	},
 	data() {
 		return {
-			panelVisible: false,
 			submissionText: submissionContent || txt
 		}
 	},
 	methods: {
 		openSubmission() {
-			this.panelVisible = true
+			uni.navigateTo({ url: '/pages/submission/submission' })
 		}
 	}
 }
