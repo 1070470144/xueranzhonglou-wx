@@ -4,14 +4,14 @@
 			"path": "pages/exhibition/exhibition",
 			"style": {
 				"navigationBarTitleText": "剧本展览",
-				"navigationStyle": "custom"
+				"navigationStyle": "default"
 			}
 		},
 		{
 			"path": "pages/rankings/rankings",
 			"style": {
 				"navigationBarTitleText": "剧本排行榜",
-				"navigationStyle": "custom"
+				"navigationStyle": "default"
 			}
 		},
 		{
