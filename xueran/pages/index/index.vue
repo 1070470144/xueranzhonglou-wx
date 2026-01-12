@@ -1,52 +1,39 @@
 <template>
-	<view class="content">
-		<image class="logo" src="/static/logo.png"></image>
-		<view class="text-area">
-			<text class="title">{{title}}</text>
+	<view class="redirect-container">
+		<view class="loading">
+			<text class="loading-text">正在加载...</text>
 		</view>
 	</view>
 </template>
 
 <script>
 	export default {
-		data() {
-			return {
-				title: 'Hello'
-			}
-		},
 		onLoad() {
-
-		},
-		methods: {
-
+			// 自动跳转到剧本展览页面
+			setTimeout(() => {
+				uni.reLaunch({
+					url: '/pages/exhibition/exhibition'
+				})
+			}, 500)
 		}
 	}
 </script>
 
-<style>
-	.content {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-	}
+<style scoped>
+.redirect-container {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	height: 100vh;
+	background-color: #f8f8f8;
+}
 
-	.logo {
-		height: 200rpx;
-		width: 200rpx;
-		margin-top: 200rpx;
-		margin-left: auto;
-		margin-right: auto;
-		margin-bottom: 50rpx;
-	}
+.loading {
+	text-align: center;
+}
 
-	.text-area {
-		display: flex;
-		justify-content: center;
-	}
-
-	.title {
-		font-size: 36rpx;
-		color: #8f8f94;
-	}
+.loading-text {
+	color: #666;
+	font-size: 14px;
+}
 </style>

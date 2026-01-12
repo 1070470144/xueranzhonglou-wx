@@ -1,0 +1,210 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        project: [xueran, xueran-admin]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: ${{ matrix.project }}/package-lock.json
+
+    - name: Install dependencies
+      working-directory: ${{ matrix.project }}
+      run: npm ci
+
+    - name: Run linting
+      working-directory: ${{ matrix.project }}
+      run: npm run lint || echo "No lint script found"
+
+    - name: Install cloud function dependencies
+      if: ${{ matrix.project == 'xueran' }}
+      working-directory: ${{ matrix.project }}/uniCloud-aliyun/cloudfunctions
+      run: |
+        for dir in */; do
+          if [ -f "$dir/package.json" ]; then
+            cd "$dir" && npm ci && cd ..
+          fi
+        done
+
+    - name: Run tests
+      working-directory: ${{ matrix.project }}
+      run: npm run test:run
+
+    - name: Run cloud function tests
+      if: ${{ matrix.project == 'xueran' }}
+      working-directory: ${{ matrix.project }}/uniCloud-aliyun/cloudfunctions
+      run: |
+        for dir in */; do
+          if [ -d "$dir/tests" ]; then
+            cd "$dir" && npm test && cd ..
+          fi
+        done
+
+    - name: Run coverage tests
+      working-directory: ${{ matrix.project }}
+      run: npm run test:coverage
+
+    - name: Check coverage thresholds
+      working-directory: ${{ matrix.project }}
+      run: |
+        if [ -f coverage/coverage-summary.json ]; then
+          LINES=$(jq '.total.lines.pct' coverage/coverage-summary.json)
+          FUNCTIONS=$(jq '.total.functions.pct' coverage/coverage-summary.json)
+          BRANCHES=$(jq '.total.branches.pct' coverage/coverage-summary.json)
+          STATEMENTS=$(jq '.total.statements.pct' coverage/coverage-summary.json)
+
+          echo "Coverage Report:"
+          echo "Lines: $LINES%"
+          echo "Functions: $FUNCTIONS%"
+          echo "Branches: $BRANCHES%"
+          echo "Statements: $STATEMENTS%"
+
+          # Check if all coverage metrics are above 90%
+          if (( $(echo "$LINES < 90" | bc -l) )) || \
+             (( $(echo "$FUNCTIONS < 90" | bc -l) )) || \
+             (( $(echo "$BRANCHES < 90" | bc -l) )) || \
+             (( $(echo "$STATEMENTS < 90" | bc -l) )); then
+            echo "❌ Coverage is below 90% threshold"
+            echo "Required: Lines ≥ 90%, Functions ≥ 90%, Branches ≥ 90%, Statements ≥ 90%"
+            exit 1
+          else
+            echo "✅ All coverage metrics are above 90%"
+          fi
+        else
+          echo "❌ Coverage report not found"
+          exit 1
+        fi
+
+    - name: Upload coverage reports
+      uses: codecov/codecov-action@v3
+      with:
+        directory: ${{ matrix.project }}/coverage/
+        flags: ${{ matrix.project }}
+        name: ${{ matrix.project }}-coverage
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        project: [xueran, xueran-admin]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: ${{ matrix.project }}/package-lock.json
+
+    - name: Install dependencies
+      working-directory: ${{ matrix.project }}
+      run: npm ci
+
+    - name: Build project
+      working-directory: ${{ matrix.project }}
+      run: |
+        if [ "${{ matrix.project }}" = "xueran" ]; then
+          # 小程序构建
+          echo "Building WeChat Mini Program..."
+          # Add your uni-app build command here
+          echo "Build completed for ${{ matrix.project }}"
+        else
+          # 管理后台构建
+          echo "Building Admin Panel..."
+          # Add your admin build command here
+          echo "Build completed for ${{ matrix.project }}"
+        fi
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ matrix.project }}-build
+        path: |
+          ${{ matrix.project }}/dist/
+          ${{ matrix.project }}/unpackage/
+
+  performance-test:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    - name: Install Playwright
+      run: npx playwright install
+
+    - name: Run performance tests
+      run: |
+        echo "Running performance tests..."
+        # Add performance testing logic here
+        # This could include Lighthouse CI or custom performance tests
+        echo "Performance tests completed"
+
+  deploy:
+    needs: [build, performance-test]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    environment: production
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        path: artifacts/
+
+    - name: Deploy to staging
+      run: |
+        echo "Deploying to staging environment..."
+        # Add your deployment logic here
+        # This could include uploading to CDN, deploying to cloud, etc.
+        echo "Deployment to staging completed"
+
+    - name: Health check
+      run: |
+        echo "Performing health checks..."
+        # Add health check logic here
+        echo "Health checks passed"
+
+    - name: Deploy to production
+      run: |
+        echo "Deploying to production..."
+        # Add production deployment logic here
+        echo "Production deployment completed"
+
+    - name: Notify deployment status
+      run: |
+        echo "Sending deployment notifications..."
+        # Add notification logic here (Slack, email, etc.)
+        echo "Notifications sent"

@@ -20,14 +20,14 @@ describe('Rankings Page', () => {
     const wrapper = mount(RankingsPage)
     const tabs = wrapper.findAll('.tab-item')
     expect(tabs.length).toBe(2)
-    expect(wrapper.text()).toContain('下载榜')
+    expect(wrapper.text()).toContain('使用榜')
     expect(wrapper.text()).toContain('点赞榜')
   })
 
   it('should show downloads tab as active by default', () => {
     const wrapper = mount(RankingsPage)
     const activeTab = wrapper.find('.tab-item.active')
-    expect(activeTab.text()).toContain('下载榜')
+    expect(activeTab.text()).toContain('使用榜')
   })
 
   it('should switch tabs when clicked', async () => {
@@ -98,7 +98,7 @@ describe('Rankings Page', () => {
   it('should show different data for different tabs', async () => {
     const wrapper = mount(RankingsPage)
 
-    // 默认是下载榜
+    // 默认是使用榜
     expect(wrapper.vm.currentRankingList).toBe(wrapper.vm.downloadsList)
 
     // 切换到点赞榜

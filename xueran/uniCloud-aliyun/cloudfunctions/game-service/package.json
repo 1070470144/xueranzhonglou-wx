@@ -1,0 +1,9 @@
+{
+  "name": "game-service",
+  "version": "1.0.0",
+  "description": "血染钟楼游戏服务云对象",
+  "main": "index.js",
+  "dependencies": {
+    "uni-cloud-router": "^2.0.0"
+  }
+}

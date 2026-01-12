@@ -6,7 +6,10 @@
   "description": "基于uni-app & uniCloud的后台管理项目模板（管理后台开发必备神器）",
   "main": "main.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui"
   },
   "repository": "https://github.com/dcloudio/uni-admin.git",
   "keywords": [
@@ -27,6 +30,15 @@
     "url": "https://github.com/dcloudio/uni-admin/issues"
   },
   "homepage": "https://github.com/dcloudio/uni-admin#readme",
+  "devDependencies": {
+    "@vue/test-utils": "^2.4.3",
+    "jsdom": "^23.0.1",
+    "vitest": "^1.0.4",
+    "@vitest/coverage-v8": "^1.0.4",
+    "@vitest/ui": "^1.0.4",
+    "happy-dom": "^12.10.3",
+    "vue": "^3.3.8"
+  },
   "dcloudext": {
     "sale": {
       "regular": {
