@@ -34,6 +34,20 @@
 				"navigationBarTitleText": "我的",
 				"navigationStyle": "default"
 			}
+		},
+		{
+			"path": "pages/guidelines/guidelines",
+			"style": {
+				"navigationBarTitleText": "投稿须知",
+				"navigationStyle": "default"
+			}
+		},
+		{
+			"path": "pages/submission/submission",
+			"style": {
+				"navigationBarTitleText": "投稿展示",
+				"navigationStyle": "default"
+			}
 		}
 	],
 	"globalStyle": {
