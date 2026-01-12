@@ -101,39 +101,51 @@ export default {
 			copying: false,
 			downloading: false,
 			animationsEnabled: true,
-			scriptDetail: {
-				id: '',
-				title: '经典版血染钟楼',
-				version: '1.0.0',
-				author: '官方团队',
-				downloads: 15420,
-				favorites: 1234,
-				likes: 1250,
-				images: [
-					'/static/script1-1.jpg',
-					'/static/script1-2.jpg',
-					'/static/script1-3.jpg'
-				],
-				tags: ['经典', '入门', '5-8人', '推理'],
-				description: '经典版血染钟楼是一款经典的狼人杀剧本，适合5-8名玩家。游戏中包含狼人、预言家、女巫、猎人等经典角色，通过层层推理和投票找出隐藏的狼人玩家。游戏节奏紧凑，规则简单易懂，非常适合狼人杀游戏的入门玩家。'
-			}
+			loading: false,
+			scriptDetail: {}
 		}
 	},
-	onLoad(options) {
+	async onLoad(options) {
 		console.log('剧本详情页面加载', options)
 		if (options.id) {
-			this.scriptDetail.id = options.id
-			// 这里可以根据ID加载具体的剧本详情
-			this.loadScriptDetail(options.id)
+			await this.loadScriptDetail(options.id)
 		}
 	},
 	methods: {
 		goBack() {
 			uni.navigateBack()
 		},
-		loadScriptDetail(scriptId) {
-			// 这里实现加载剧本详情的逻辑
-			console.log('加载剧本详情:', scriptId)
+		async loadScriptDetail(scriptId) {
+			this.loading = true
+			try {
+				const result = await uniCloud.callFunction({
+					name: 'script-service',
+					data: {
+						method: 'getScriptDetail',
+						params: [{
+							scriptId: scriptId
+						}]
+					}
+				})
+
+				if (result.result.success) {
+					this.scriptDetail = result.result.data.script
+				} else {
+					console.error('加载剧本详情失败:', result.result.message)
+					uni.showToast({
+						title: '加载失败',
+						icon: 'none'
+					})
+				}
+			} catch (error) {
+				console.error('加载剧本详情失败:', error)
+				uni.showToast({
+					title: '网络错误',
+					icon: 'none'
+				})
+			} finally {
+				this.loading = false
+			}
 		},
 		onImageError() {
 			console.log('图片加载失败')

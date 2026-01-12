@@ -105,63 +105,16 @@ export default {
 		return {
 			searchText: '',
 			loading: false,
-			scriptList: [
-				{
-					id: '1',
-					title: '经典版血染钟楼',
-					version: '1.0.0',
-					author: '官方团队',
-					likes: 1250,
-					images: [
-						'/static/script1-1.jpg',
-						'/static/script1-2.jpg'
-					],
-					tags: ['经典', '入门', '5-8人']
-				},
-				{
-					id: '2',
-					title: '诡秘小镇',
-					version: '2.1.5',
-					author: '剧本工坊',
-					likes: 890,
-					images: [
-						'/static/script2-1.jpg'
-					],
-					tags: ['悬疑', '进阶', '8-12人']
-				},
-				{
-					id: '3',
-					title: '时空裂隙',
-					version: '1.3.2',
-					author: '时光旅人',
-					likes: 654,
-					images: [
-						'/static/script3-1.jpg',
-						'/static/script3-2.jpg',
-						'/static/script3-3.jpg'
-					],
-					tags: ['科幻', '复杂', '10-15人']
-				}
-			]
+			scriptList: [],
+			animationsEnabled: true
 		}
 	},
-	methods: {
-		goToDetail(script) {
-			uni.navigateTo({
-				url: `/pages/detail/detail?id=${script.id}`
-			})
-		},
-		goToRankings() {
-			uni.navigateTo({
-				url: '/pages/rankings/rankings'
-			})
-		},
-		onImageError() {
-			// 处理图片加载失败
-			console.log('图片加载失败')
-		}
+	async onLoad() {
+		// 页面加载时的初始化
+		console.log('剧本展览页面加载')
+		await this.loadScripts()
 	},
-	mounted() {
+	async mounted() {
 		// read animations setting from storage (default true)
 		try {
 			const stored = uni.getStorageSync && uni.getStorageSync('animationsEnabled')
@@ -172,9 +125,97 @@ export default {
 			// ignore
 		}
 	},
-	onLoad() {
-		// 页面加载时的初始化
-		console.log('剧本展览页面加载')
+	methods: {
+		async loadScripts() {
+			this.loading = true
+			try {
+				const result = await uniCloud.callFunction({
+					name: 'script-service',
+					data: {
+						method: 'getScriptList',
+						params: [{
+							page: 1,
+							pageSize: 20
+						}]
+					}
+				})
+
+				if (result.result.success) {
+					this.scriptList = result.result.data.list
+				} else {
+					console.error('加载剧本失败:', result.result.message)
+					uni.showToast({
+						title: '加载失败',
+						icon: 'none'
+					})
+				}
+			} catch (error) {
+				console.error('加载剧本失败:', error)
+				uni.showToast({
+					title: '网络错误',
+					icon: 'none'
+				})
+			} finally {
+				this.loading = false
+			}
+		},
+
+		async searchScripts() {
+			if (!this.searchText.trim()) {
+				await this.loadScripts()
+				return
+			}
+
+			this.loading = true
+			try {
+				const result = await uniCloud.callFunction({
+					name: 'script-service',
+					data: {
+						method: 'searchScripts',
+						params: [{
+							keyword: this.searchText.trim(),
+							page: 1,
+							pageSize: 20
+						}]
+					}
+				})
+
+				if (result.result.success) {
+					this.scriptList = result.result.data.list
+				} else {
+					console.error('搜索失败:', result.result.message)
+					uni.showToast({
+						title: '搜索失败',
+						icon: 'none'
+					})
+				}
+			} catch (error) {
+				console.error('搜索失败:', error)
+				uni.showToast({
+					title: '网络错误',
+					icon: 'none'
+				})
+			} finally {
+				this.loading = false
+			}
+		},
+
+		goToDetail(script) {
+			uni.navigateTo({
+				url: `/pages/detail/detail?id=${script._id || script.id}`
+			})
+		},
+
+		goToRankings() {
+			uni.navigateTo({
+				url: '/pages/rankings/rankings'
+			})
+		},
+
+		onImageError() {
+			// 处理图片加载失败
+			console.log('图片加载失败')
+		}
 	}
 }
 </script>

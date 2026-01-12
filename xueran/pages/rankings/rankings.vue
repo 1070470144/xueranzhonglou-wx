@@ -120,83 +120,24 @@ export default {
 			currentTab: 0,
 			loading: false,
 			tabs: [
-				{ key: 'downloads', name: '使用榜' },
-				{ key: 'likes', name: '点赞榜' }
+				{ key: 'likes', name: '点赞榜' },
+				{ key: 'views', name: '浏览榜' },
+				{ key: 'recent', name: '最新发布' }
 			],
-			downloadsList: [
-				{
-					id: '1',
-					title: '经典版血染钟楼',
-					author: '官方团队',
-					version: '1.0.0',
-					downloads: 15420,
-					favorites: 1234,
-					likes: 1250,
-					thumbnail: '/static/script1-thumb.jpg',
-					tags: ['经典', '入门']
-				},
-				{
-					id: '2',
-					title: '诡秘小镇',
-					author: '剧本工坊',
-					version: '2.1.5',
-					downloads: 12890,
-					favorites: 987,
-					likes: 890,
-					thumbnail: '/static/script2-thumb.jpg',
-					tags: ['悬疑', '进阶']
-				},
-				{
-					id: '3',
-					title: '时空裂隙',
-					author: '时光旅人',
-					version: '1.3.2',
-					downloads: 9876,
-					favorites: 756,
-					likes: 654,
-					thumbnail: '/static/script3-thumb.jpg',
-					tags: ['科幻', '复杂']
-				}
-			],
-			// favoritesList removed from UI; favorites data retained in downloads/likes if needed
-			likesList: [
-				{
-					id: '1',
-					title: '经典版血染钟楼',
-					author: '官方团队',
-					version: '1.0.0',
-					downloads: 15420,
-					favorites: 1234,
-					likes: 1890,
-					thumbnail: '/static/script1-thumb.jpg',
-					tags: ['经典', '入门']
-				},
-				{
-					id: '2',
-					title: '诡秘小镇',
-					author: '剧本工坊',
-					version: '2.1.5',
-					downloads: 12890,
-					favorites: 1543,
-					likes: 1234,
-					thumbnail: '/static/script2-thumb.jpg',
-					tags: ['悬疑', '进阶']
-				},
-				{
-					id: '3',
-					title: '时空裂隙',
-					author: '时光旅人',
-					version: '1.3.2',
-					downloads: 9876,
-					favorites: 756,
-					likes: 987,
-					thumbnail: '/static/script3-thumb.jpg',
-					tags: ['科幻', '复杂']
-				}
-			]
+			rankingData: {
+				likes: [],
+				views: [],
+				recent: []
+			}
 		}
 	},
 	computed: {
+		currentRankingList() {
+			const tabKey = this.tabs[this.currentTab].key
+			return this.rankingData[tabKey] || []
+		}
+	},
+	methods: {
 		currentRankingList() {
 			switch (this.currentTab) {
 				case 0: return this.downloadsList
@@ -205,38 +146,101 @@ export default {
 			}
 		}
 	},
+	async onLoad() {
+		console.log('剧本排行榜页面加载')
+		await this.loadRankings()
+	},
 	methods: {
-		switchTab(index) {
+		async switchTab(index) {
 			this.currentTab = index
+			const tabKey = this.tabs[index].key
+			if (!this.rankingData[tabKey] || this.rankingData[tabKey].length === 0) {
+				await this.loadRankingData(tabKey)
+			}
+		},
+
+		async loadRankings() {
+			await this.loadRankingData('likes') // 默认加载点赞榜
+		},
+
+		async loadRankingData(type) {
+			this.loading = true
+			try {
+				const result = await uniCloud.callFunction({
+					name: 'ranking-service',
+					data: {
+						method: 'getRankingList',
+						params: [{
+							type: type,
+							limit: 50
+						}]
+					}
+				})
+
+				if (result.result.success) {
+					this.rankingData[type] = result.result.data.list
+				} else {
+					console.error('加载排行榜失败:', result.result.message)
+					uni.showToast({
+						title: '加载失败',
+						icon: 'none'
+					})
+				}
+			} catch (error) {
+				console.error('加载排行榜失败:', error)
+				uni.showToast({
+					title: '网络错误',
+					icon: 'none'
+				})
+			} finally {
+				this.loading = false
+			}
 		},
 		goBack() {
 			uni.navigateBack()
 		},
 		goToDetail(item) {
 			uni.navigateTo({
-				url: `/pages/detail/detail?id=${item.id}`
+				url: `/pages/detail/detail?id=${item._id || item.id}`
 			})
 		},
 		getStatIcon(tabIndex) {
 			switch (tabIndex) {
-				case 0: return 'download'
-				case 1: return 'heart-filled'
+				case 0: return 'heart-filled' // 点赞榜
+				case 1: return 'eye' // 浏览榜
+				case 2: return 'calendar' // 最新发布
 				default: return 'bars'
 			}
 		},
 		getStatColor(tabIndex) {
 			switch (tabIndex) {
-				case 0: return '#007AFF'
-				case 1: return '#FF4757'
+				case 0: return '#FF4757' // 点赞榜
+				case 1: return '#007AFF' // 浏览榜
+				case 2: return '#28A745' // 最新发布
 				default: return '#666'
 			}
 		},
 		getStatValue(item, tabIndex) {
 			switch (tabIndex) {
-				case 0: return this.formatNumber(item.downloads)
-				case 1: return this.formatNumber(item.likes)
+				case 0: return this.formatNumber(item.likes || 0)
+				case 1: return this.formatNumber(item.views || 0)
+				case 2: return this.formatDate(item.createTime)
 				default: return '0'
 			}
+		},
+
+		formatDate(timestamp) {
+			if (!timestamp) return ''
+			const date = new Date(timestamp)
+			const now = new Date()
+			const diff = now - date
+			const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+
+			if (days === 0) return '今天'
+			if (days === 1) return '昨天'
+			if (days < 7) return `${days}天前`
+			if (days < 30) return `${Math.floor(days / 7)}周前`
+			return `${Math.floor(days / 30)}月前`
 		},
 		formatNumber(num) {
 			if (num >= 10000) {
@@ -250,10 +254,6 @@ export default {
 			console.log('缩略图加载失败')
 		}
 	},
-	onLoad() {
-		console.log('剧本排行榜页面加载')
-	}
-	,
 	mounted() {
 		try {
 			const stored = uni.getStorageSync && uni.getStorageSync('animationsEnabled')
