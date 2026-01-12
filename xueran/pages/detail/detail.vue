@@ -1,24 +1,6 @@
 <template>
 	<view class="container">
-		<!-- 顶部导航 -->
-		<view class="header">
-			<view class="nav-bar">
-				<!-- Back button using uni-app built-in icons for cross-platform compatibility -->
-				<!-- Implements User Story 1 & 2: Enhanced navigation with built-in icons and visual consistency -->
-				<view
-					class="back-btn"
-					@click="goBack"
-					role="button"
-					:aria-label="'返回'"
-					title="返回"
-				>
-				<!-- 使用内置 uni-icons，首选 Material 风格 chevron，如不可用则退回到 "left" -->
-				<uni-icons type="left" :size="24" color="#333"></uni-icons>
-				</view>
-				<text class="title">剧本详情</text>
-				<view class="placeholder"></view>
-			</view>
-		</view>
+		<!-- 使用系统导航栏（navigationStyle: default），页面内容直接从顶部下方开始 -->
 
 		<!-- 图片轮播 -->
 		<view class="image-carousel">
