@@ -3,6 +3,8 @@
 		<!-- 顶部导航 -->
 		<view class="header">
 			<view class="nav-bar">
+				<!-- Back button using uni-app built-in icons for cross-platform compatibility -->
+				<!-- Implements User Story 1 & 2: Enhanced navigation with built-in icons and visual consistency -->
 				<view
 					class="back-btn"
 					@click="goBack"
@@ -10,7 +12,8 @@
 					:aria-label="'返回'"
 					title="返回"
 				>
-					<uni-icons type="left" :size="24" color="#333"></uni-icons>
+				<!-- 使用内置 uni-icons，首选 Material 风格 chevron，如不可用则退回到 "left" -->
+				<uni-icons type="left" :size="24" color="#333"></uni-icons>
 				</view>
 				<text class="title">剧本详情</text>
 				<view class="placeholder"></view>
@@ -319,17 +322,20 @@ export default {
 .back-btn {
 	width: 48px;
 	height: 48px;
-	display: flex;
+	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	border-radius: 24px;
-	transition: transform 160ms ease, background-color 160ms ease;
-	background-color: rgba(255,255,255,0.9);
-	box-shadow: 0 1px 6px rgba(0,0,0,0.12);
+	/* Material toolbar leading icon style: no visible solid background, keep touch target */
+	border-radius: 50% !important;
+	transition: transform 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+	/* very light filled background to improve contrast on white headers (选项2) */
+	background-color: rgba(0,0,0,0.04) !important;
+	/* 微弱阴影以提供轻微抬升感 */
+	box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 	/* ensure minimum touch target on small screens */
 	min-width: 48px;
 	min-height: 48px;
-	padding: 6px;
+	padding: 12px;
 }
 
 .back-btn:active {

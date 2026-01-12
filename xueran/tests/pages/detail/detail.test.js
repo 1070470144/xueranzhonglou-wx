@@ -16,6 +16,27 @@ describe('Detail Page', () => {
     expect(wrapper.text()).toContain('剧本详情')
   })
 
+  describe('BackButton Icon Usage', () => {
+    it('uses built-in uni-icons component', () => {
+      const wrapper = mount(DetailPage)
+      const icon = wrapper.find('uni-icons')
+      expect(icon.exists()).toBe(true)
+      const iconType = icon.attributes('type')
+      // 允许多种内置类型作为兼容（'left' 为常见兼容类型）
+      expect(['left', 'arrow-left', 'back', 'chevron-left'].includes(iconType)).toBe(true)
+    })
+
+    it('maintains icon system consistency', () => {
+      const wrapper = mount(DetailPage)
+      const icon = wrapper.find('uni-icons')
+      // Verify icon uses built-in type, not custom images
+      expect(icon.attributes('type')).toBeDefined()
+      expect(icon.attributes('type')).not.toBe('')
+      // Verify size is reasonable for built-in icons
+      expect(icon.attributes('size')).toBe('24')
+    })
+  })
+
   it('should display image carousel', () => {
     const wrapper = mount(DetailPage)
     const carousel = wrapper.find('.image-carousel')
