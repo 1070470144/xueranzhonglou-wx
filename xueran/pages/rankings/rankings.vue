@@ -129,7 +129,7 @@ export default {
 			currentTab: 0,
 			loading: false,
 			tabs: [
-				{ key: 'downloads', name: '下载榜' },
+				{ key: 'downloads', name: '使用榜' },
 				{ key: 'likes', name: '点赞榜' }
 			],
 			downloadsList: [
