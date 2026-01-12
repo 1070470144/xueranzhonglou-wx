@@ -1,6 +1,27 @@
 {
 	"pages": [ //pages数组中第一项表示应用启动页，参考：https://uniapp.dcloud.io/collocation/pages
 		{
+			"path": "pages/exhibition/exhibition",
+			"style": {
+				"navigationBarTitleText": "剧本展览",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/rankings/rankings",
+			"style": {
+				"navigationBarTitleText": "剧本排行榜",
+				"navigationStyle": "custom"
+			}
+		},
+		{
+			"path": "pages/detail/detail",
+			"style": {
+				"navigationBarTitleText": "剧本详情",
+				"navigationStyle": "custom"
+			}
+		},
+		{
 			"path": "pages/index/index",
 			"style": {
 				"navigationBarTitleText": "uni-app"
@@ -9,9 +30,25 @@
 	],
 	"globalStyle": {
 		"navigationBarTextStyle": "black",
-		"navigationBarTitleText": "uni-app",
-		"navigationBarBackgroundColor": "#F8F8F8",
+		"navigationBarTitleText": "血染钟楼",
+		"navigationBarBackgroundColor": "#FFFFFF",
 		"backgroundColor": "#F8F8F8"
 	},
-	"uniIdRouter": {}
+	"uniIdRouter": {},
+	"tabBar": {
+		"color": "#666666",
+		"selectedColor": "#007AFF",
+		"borderStyle": "black",
+		"backgroundColor": "#FFFFFF",
+		"list": [
+			{
+				"pagePath": "pages/exhibition/exhibition",
+				"text": "展览"
+			},
+			{
+				"pagePath": "pages/rankings/rankings",
+				"text": "排行"
+			}
+		]
+	}
 }
