@@ -53,14 +53,14 @@ describe('Detail Page', () => {
     expect(authorName.text()).toBe('官方团队')
   })
 
-  it('should display statistics', () => {
+    it('should display statistics', () => {
     const wrapper = mount(DetailPage)
     const statValues = wrapper.findAll('.stat-value')
-    expect(statValues.length).toBe(3) // 下载、收藏、点赞
+    expect(statValues.length).toBe(2) // 使用、点赞
 
     // 检查数值格式化
-    expect(wrapper.text()).toContain('1.5w') // 下载数
-    expect(wrapper.text()).toContain('1.2k') // 收藏数
+    expect(wrapper.text()).toContain('1.5w') // 使用数（原下载数）
+    expect(wrapper.text()).toContain('1.3k') // 点赞数
   })
 
   it('should show tags', () => {

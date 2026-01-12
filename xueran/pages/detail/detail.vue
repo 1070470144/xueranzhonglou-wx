@@ -50,13 +50,8 @@
 			<view class="stats-section">
 				<view class="stat-item">
 					<uni-icons type="download" size="16" color="#007AFF"></uni-icons>
-					<text class="stat-label">下载</text>
+					<text class="stat-label">使用</text>
 					<text class="stat-value">{{ formatNumber(scriptDetail.downloads) }}</text>
-				</view>
-				<view class="stat-item">
-					<uni-icons type="star-filled" size="16" color="#FF9500"></uni-icons>
-					<text class="stat-label">收藏</text>
-					<text class="stat-value">{{ formatNumber(scriptDetail.favorites) }}</text>
 				</view>
 				<view class="stat-item">
 					<uni-icons type="heart-filled" size="16" color="#FF4757"></uni-icons>
