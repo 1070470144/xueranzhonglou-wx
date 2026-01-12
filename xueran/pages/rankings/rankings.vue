@@ -1,5 +1,5 @@
 <template>
-	<view class="container">
+	<view :class="['container', animationsEnabled ? 'animations-enabled' : '']">
 		<!-- 顶部导航 -->
 		<view class="header">
 			<view class="nav-bar">
@@ -125,6 +125,7 @@
 export default {
 	data() {
 		return {
+			animationsEnabled: true,
 			currentTab: 0,
 			loading: false,
 			tabs: [
@@ -261,6 +262,17 @@ export default {
 	onLoad() {
 		console.log('剧本排行榜页面加载')
 	}
+	,
+	mounted() {
+		try {
+			const stored = uni.getStorageSync && uni.getStorageSync('animationsEnabled')
+			if (typeof stored !== 'undefined' && stored !== null) {
+				this.animationsEnabled = !!stored
+			}
+		} catch (e) {
+			// ignore
+		}
+	}
 }
 </script>
 
@@ -346,6 +358,7 @@ export default {
 	height: 3px;
 	background-color: #007AFF;
 	border-radius: 2px;
+	transition: left 220ms ease, transform 220ms ease;
 }
 
 .ranking-list {
@@ -488,6 +501,22 @@ export default {
 .thumbnail-image {
 	width: 100%;
 	height: 100%;
+}
+
+/* animations */
+.animations-enabled .ranking-item {
+	animation: rankingCardIn 360ms ease both;
+}
+
+@keyframes rankingCardIn {
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
 }
 
 .loading {

@@ -14,7 +14,7 @@
 		</view>
 
 		<!-- 剧本列表 -->
-		<scroll-view class="script-list" scroll-y="true">
+		<view :class="['script-list', animationsEnabled ? 'animations-enabled' : '']">
 			<view
 				v-for="(script, index) in scriptList"
 				:key="script.id"
@@ -83,7 +83,7 @@
 			<view v-if="!loading && scriptList.length === 0" class="empty-state">
 				<text class="empty-text">暂无剧本</text>
 			</view>
-		</scroll-view>
+		</view>
 
 		<!-- 底部导航 -->
 		<view class="bottom-nav">
@@ -159,6 +159,17 @@ export default {
 		onImageError() {
 			// 处理图片加载失败
 			console.log('图片加载失败')
+		}
+	},
+	mounted() {
+		// read animations setting from storage (default true)
+		try {
+			const stored = uni.getStorageSync && uni.getStorageSync('animationsEnabled')
+			if (typeof stored !== 'undefined' && stored !== null) {
+				this.animationsEnabled = !!stored
+			}
+		} catch (e) {
+			// ignore
 		}
 	},
 	onLoad() {
@@ -253,6 +264,22 @@ export default {
 
 .script-info {
 	padding: 16px;
+}
+
+/* animations */
+.animations-enabled .script-card {
+	animation: cardIn 360ms ease both;
+}
+
+@keyframes cardIn {
+	from {
+		opacity: 0;
+		transform: translateY(6px) scale(0.995);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0) scale(1);
+	}
 }
 
 .script-header {
