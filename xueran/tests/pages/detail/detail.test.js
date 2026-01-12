@@ -80,12 +80,9 @@ describe('Detail Page', () => {
   it('should have copy and download buttons', () => {
     const wrapper = mount(DetailPage)
     const copyBtn = wrapper.find('.copy-btn')
-    const downloadBtn = wrapper.find('.download-btn')
 
     expect(copyBtn.exists()).toBe(true)
-    expect(downloadBtn.exists()).toBe(true)
     expect(copyBtn.text()).toContain('复制JSON')
-    expect(downloadBtn.text()).toContain('下载JSON')
   })
 
   it('should navigate back when back button is clicked', async () => {
@@ -115,19 +112,6 @@ describe('Detail Page', () => {
     })
   })
 
-  it('should download JSON when download button is clicked', async () => {
-    const wrapper = mount(DetailPage)
-    const downloadBtn = wrapper.find('.download-btn')
-
-    await downloadBtn.trigger('click')
-
-    expect(uni.showToast).toHaveBeenCalledWith({
-      title: 'JSON文件已准备下载',
-      icon: 'success',
-      duration: 2000
-    })
-  })
-
   it('should show loading state during copy', async () => {
     const wrapper = mount(DetailPage)
     const copyBtn = wrapper.find('.copy-btn')
@@ -143,16 +127,6 @@ describe('Detail Page', () => {
 
     // 检查加载状态
     expect(wrapper.vm.copying).toBe(true)
-  })
-
-  it('should show loading state during download', async () => {
-    const wrapper = mount(DetailPage)
-    const downloadBtn = wrapper.find('.download-btn')
-
-    downloadBtn.trigger('click')
-
-    // 检查加载状态
-    expect(wrapper.vm.downloading).toBe(true)
   })
 
   it('should format numbers correctly', () => {

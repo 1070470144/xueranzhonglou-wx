@@ -85,15 +85,6 @@
 					<uni-icons type="redo" size="16" color="#fff"></uni-icons>
 					<text class="btn-text">{{ copying ? '复制中...' : '复制JSON' }}</text>
 				</button>
-
-				<button
-					class="action-btn download-btn"
-					@click="downloadJson"
-					:loading="downloading"
-				>
-					<uni-icons type="download" size="16" color="#fff"></uni-icons>
-					<text class="btn-text">{{ downloading ? '下载中...' : '下载JSON' }}</text>
-				</button>
 			</view>
 		</view>
 
