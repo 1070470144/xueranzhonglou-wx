@@ -1,15 +1,6 @@
 <template>
 	<view :class="['container', animationsEnabled ? 'animations-enabled' : '']">
-		<!-- 顶部导航 -->
-		<view class="header">
-			<view class="nav-bar">
-				<view class="back-btn" @click="goBack">
-					<uni-icons type="left" size="20" color="#333"></uni-icons>
-				</view>
-				<text class="title">剧本排行榜</text>
-				<view class="placeholder"></view>
-			</view>
-		</view>
+		<!-- 使用系统导航栏（navigationStyle: default），页面内容直接从顶部下方开始 -->
 
 		<!-- 榜单切换 -->
 		<view class="tab-bar">
