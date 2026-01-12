@@ -3,7 +3,9 @@
 		<view class="panel">
 			<view class="panel-header">
 				<text class="title">{{ title }}</text>
-				<button class="close-btn" @click="close">关闭</button>
+				<view class="close-btn" @click="close" role="button" aria-label="关闭">
+					<uni-icons type="close" :size="18" color="#333"></uni-icons>
+				</view>
 			</view>
 			<scroll-view class="panel-body" scroll-y>
 				<text class="content">{{ content }}</text>
@@ -63,10 +65,16 @@ export default {
 	font-weight: 600;
 }
 .close-btn {
-	background: none;
-	border: none;
-	color: #007AFF;
-	font-weight: 600;
+	width: 36px;
+	height: 36px;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 18px;
+	background-color: rgba(0,0,0,0.04);
+	box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+	color: #333;
+	cursor: pointer;
 }
 .panel-body {
 	padding: 16px;
