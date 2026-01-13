@@ -3,7 +3,7 @@ const db = uniCloud.database();
 const collectionName = 'scripts';
 
 async function createScript(event) {
-  const { payload = {}, jsonFileId = null, imageFileIds = [], thumbnails = [] } = event;
+  const { payload = {}, jsonFileId = null, jsonContent = null, imageFileIds = [], thumbnails = [] } = event;
   const now = Date.now();
   const doc = {
     title: payload.title || '',
@@ -17,6 +17,7 @@ async function createScript(event) {
     tag: payload.tag || '',
     likes: payload.likes || 0,
     jsonFile: jsonFileId ? { fileId: jsonFileId } : null,
+    jsonContent: jsonContent || null,
     images: Array.isArray(imageFileIds) ? imageFileIds.map(id => ({ fileId: id })) : [],
     thumbnails: Array.isArray(thumbnails) ? thumbnails.map(id => ({ fileId: id })) : [],
     createdAt: now,
@@ -29,7 +30,7 @@ async function createScript(event) {
 }
 
 async function updateScript(event) {
-  const { id, payload = {}, jsonFileId, imageFileIds, thumbnails, removeFileIds = [] } = event;
+  const { id, payload = {}, jsonFileId, jsonContent, imageFileIds, thumbnails, removeFileIds = [] } = event;
   if (!id) return { code: -1, errMsg: 'id required' };
   const coll = db.collection(collectionName);
   const updateDoc = {
@@ -37,6 +38,7 @@ async function updateScript(event) {
     updatedAt: Date.now()
   };
   if (typeof jsonFileId !== 'undefined') updateDoc.jsonFile = jsonFileId ? { fileId: jsonFileId } : null;
+  if (typeof jsonContent !== 'undefined') updateDoc.jsonContent = jsonContent ? jsonContent : null;
   if (Array.isArray(imageFileIds)) updateDoc.images = imageFileIds.map(fid => ({ fileId: fid }));
   if (Array.isArray(thumbnails)) updateDoc.thumbnails = thumbnails.map(fid => ({ fileId: fid }));
   const res = await coll.doc(id).update(updateDoc);

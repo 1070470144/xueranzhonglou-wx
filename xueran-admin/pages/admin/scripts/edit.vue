@@ -48,24 +48,35 @@
 
       <uni-forms-item name="jsonFile" label="JSON 源文件">
         <view class="upload-section">
-          <uni-file-picker
-            v-model="formData.jsonFile"
-            return-type="object"
-            file-mediatype="all"
-            :file-extname="['json']"
-            limit="1"
-            mode="list"
-            @success="onJsonUploadSuccess"
-            @fail="onUploadFail"
-          >
-            <view class="upload-box">
+          <!-- 如果已有 json，显示文件信息和预览/删除，否则显示上传区域 -->
+          <view v-if="formData.jsonFile && (formData.jsonFile.url || formData.jsonFile.name || formData.jsonFile.fileId)" class="json-preview">
+            <view class="file-meta">
               <view class="upload-icon">📄</view>
-              <view class="upload-text">选择 JSON 文件（最大1MB）</view>
-              <view v-if="formData.jsonFile && formData.jsonFile.url" class="file-info">
-                已选：{{ formData.jsonFile.name || formData.jsonFile.url }}
-              </view>
+              <view class="file-name">{{ formData.jsonFile.name || formData.jsonFile.url || formData.jsonFile.fileId }}</view>
             </view>
-          </uni-file-picker>
+            <view class="file-actions">
+              <button class="uni-button" size="mini" type="primary" @click="previewJson">预览</button>
+              <button class="uni-button" size="mini" @click="removeJson">移除</button>
+            </view>
+          </view>
+          <view v-else>
+            <uni-file-picker
+              v-model="formData.jsonFile"
+              return-type="object"
+              file-mediatype="all"
+              :file-extname="['json']"
+              limit="1"
+              mode="list"
+                @select="onJsonSelect"
+                @success="onJsonUploadSuccess"
+              @fail="onUploadFail"
+            >
+              <view class="upload-box">
+                <view class="upload-icon">📄</view>
+                <view class="upload-text">选择 JSON 文件（最大1MB）</view>
+              </view>
+            </uni-file-picker>
+          </view>
         </view>
       </uni-forms-item>
 
@@ -104,10 +115,10 @@ export default {
 			formData: {
 				title: '',
 				author: '',
-				version: '',
+				version: '1.0',
 				description: '',
-				playerCount: '',
-				difficulty: '',
+				playerCount: '8-12',
+				difficulty: '中等',
 				usageCount: 0,
 				tag: '娱乐',
 				jsonFile: null,
@@ -143,35 +154,28 @@ export default {
 			]
 		}
 	},
+	computed: {
+		pageTitle() {
+			return (this.id && String(this.id).trim()) ? '编辑剧本' : '新增剧本';
+		}
+	},
 	methods: {
-		/**
-		 * 触发表单提交
-		 */
+		// 触发表单提交
 		submitForm() {
 			this.$refs.form.submit();
 		},
 
-		/**
-		 * 表单提交
-		 */
+		// 表单提交
 		submit(event) {
 			const { value, errors } = event.detail;
-
-			// 表单校验失败页面会提示报错，要停止表单提交逻辑
-			if (errors) {
-				return;
-			}
-
+			if (errors) return;
 			this.saveScript(value);
 		},
 
-		/**
-		 * 保存剧本数据
-		 */
+		// 保存剧本数据
 		async saveScript(formValue) {
 			try {
 				uni.showLoading({ title: '保存中...', mask: true });
-
 				const payload = {
 					title: formValue.title,
 					author: formValue.author,
@@ -184,7 +188,6 @@ export default {
 					tag: formValue.tag || '娱乐',
 					likes: formValue.likes || 0
 				};
-
 				const imageFileIds = (formValue.images || []).map(i => i.fileId).filter(Boolean);
 				const thumbnails = (formValue.images || []).map(i => i.thumbFileId).filter(Boolean);
 				const jsonFileId = (formValue.jsonFile && formValue.jsonFile.fileId) ? formValue.jsonFile.fileId : null;
@@ -193,25 +196,12 @@ export default {
 				if (this.id) {
 					res = await uniCloud.callFunction({
 						name: 'adminScript',
-						data: {
-							action: 'update',
-							id: this.id,
-							payload,
-							jsonFileId,
-							imageFileIds,
-							thumbnails
-						}
+						data: { action: 'update', id: this.id, payload, jsonFileId, jsonContent: this.formData.jsonContent, imageFileIds, thumbnails }
 					});
 				} else {
 					res = await uniCloud.callFunction({
 						name: 'adminScript',
-						data: {
-							action: 'create',
-							payload,
-							jsonFileId,
-							imageFileIds,
-							thumbnails
-						}
+						data: { action: 'create', payload, jsonFileId, jsonContent: this.formData.jsonContent, imageFileIds, thumbnails }
 					});
 				}
 
@@ -231,81 +221,195 @@ export default {
 			}
 		},
 
-		/**
-		 * JSON上传成功处理
-		 */
+		// JSON上传成功处理
 		onJsonUploadSuccess(res) {
 			console.log('JSON upload success:', res);
-			if (res && res.tempFilePath) {
-				uni.showToast({ title: 'JSON 上传成功', icon: 'success' });
-			}
+			if (res && res.tempFilePath) uni.showToast({ title: 'JSON 上传成功', icon: 'success' });
 		},
 
-		/**
-		 * 图片上传成功处理
-		 */
+		// 图片上传成功处理
 		onImageUploadSuccess(res) {
 			console.log('Image upload success:', res);
-			if (res && res.tempFilePaths && res.tempFilePaths.length > 0) {
-				uni.showToast({ title: '图片上传成功', icon: 'success' });
-			}
+			if (res && res.tempFilePaths && res.tempFilePaths.length > 0) uni.showToast({ title: '图片上传成功', icon: 'success' });
 		},
 
-		/**
-		 * 图片删除处理
-		 */
+		// 图片删除处理
 		onImageDelete(res) {
 			console.log('Image delete:', res);
 		},
 
-		/**
-		 * 上传失败处理
-		 */
+		// 上传失败处理
 		onUploadFail(err) {
 			console.error('Upload fail:', err);
 			uni.showToast({ title: '上传失败', icon: 'none' });
-		}
+		},
+
+		// 加载单条剧本数据并填充表单
+		async loadScriptData(id) {
+			try {
+				uni.showLoading({ title: '加载中...' });
+				const res = await uniCloud.callFunction({ name: 'getScript', data: { id } });
+				uni.hideLoading();
+				console.log('getScript raw response:', res);
+				const payload = (res && res.result) ? res.result : res;
+				console.log('getScript payload:', payload);
+				if (res && res.result && res.result.code === 0 && res.result.data && res.result.data.length > 0) {
+					const script = res.result.data[0];
+					console.log('fetched script:', script);
+					// 规范化 images 为 {url,...} 格式，jsonFile 也尽量统一为 object
+					const normalizedImages = (script.images || []).map(img => {
+						if (!img) return null;
+						if (typeof img === 'string') return { url: img };
+						if (typeof img === 'object') {
+							// keep url or construct from thumbnail/fileId if present
+							if (img.url) return img;
+							if (img.fileId) return { url: img.fileId, fileId: img.fileId };
+							return img;
+						}
+						return null;
+					}).filter(Boolean);
+
+					let normalizedJson = null;
+					if (script.jsonFile) {
+						if (typeof script.jsonFile === 'string') {
+							normalizedJson = { url: script.jsonFile };
+						} else if (typeof script.jsonFile === 'object') {
+							normalizedJson = script.jsonFile;
+						}
+					}
+
+					this.formData = {
+						title: script.title || '',
+						author: script.author || '',
+						version: script.version || '1.0',
+						description: script.description || '',
+						playerCount: script.playerCount || '8-12',
+						difficulty: script.difficulty || '中等',
+						usageCount: script.usageCount || 0,
+						tag: script.tag || '娱乐',
+						jsonFile: normalizedJson,
+						images: normalizedImages
+					};
+				} else {
+					uni.showToast({ title: '加载数据失败', icon: 'none' });
+				}
+			} catch (err) {
+				uni.hideLoading();
+				console.error('loadScriptData error', err);
+				uni.showToast({ title: '加载数据失败', icon: 'none' });
+			}
+		},
+
+		previewJson() {
+			const jf = this.formData.jsonFile;
+			if (!jf) return;
+			// 如果有可直接访问的 url，打开新窗口
+			if (jf.url && typeof jf.url === 'string') {
+				try {
+					window.open(jf.url, '_blank');
+				} catch (e) {
+					uni.showToast({ title: '打开失败', icon: 'none' });
+				}
+				return;
+			}
+			// 如果存在 fileId，尝试下载并打开
+			if (jf.fileId) {
+				uni.showLoading({ title: '加载中...' });
+				uniCloud.downloadFile({ fileID: jf.fileId }).then(res => {
+					uni.hideLoading();
+					if (res && res.tempFilePath) {
+						uni.openDocument({ filePath: res.tempFilePath });
+					} else {
+						uni.showToast({ title: '无法打开文件', icon: 'none' });
+					}
+				}).catch(err => {
+					uni.hideLoading();
+					console.error('previewJson download error', err);
+					uni.showToast({ title: '下载失败', icon: 'none' });
+				});
+				return;
+			}
+			uni.showToast({ title: '无可预览文件', icon: 'none' });
+		},
+
+		removeJson() {
+			this.formData.jsonFile = null;
+		},
+		
+		// JSON 选择事件（尝试读取并保留原始内容）
+		async onJsonSelect(files) {
+			if (!files || !files.length) return;
+			const file = files[0];
+			// try fetch by url (H5)
+			try {
+				if (file.url && typeof fetch === 'function') {
+					const resp = await fetch(file.url);
+					if (resp.ok) {
+						const text = await resp.text();
+						try {
+							this.formData.jsonContent = JSON.parse(text);
+						} catch (e) {
+							// keep raw text if not json
+							this.formData.jsonContent = text;
+						}
+						console.log('jsonContent loaded from url', this.formData.jsonContent);
+						this._applyJsonToForm(this.formData.jsonContent);
+						return;
+					}
+				}
+			} catch (e) {
+				console.warn('onJsonSelect fetch failed', e);
+			}
+			// Try read via local FS for native
+			try {
+				const fs = uni.getFileSystemManager && uni.getFileSystemManager();
+				if (fs && file.tempFilePath) {
+					const content = fs.readFileSync ? fs.readFileSync(file.tempFilePath, 'utf8') : null;
+					if (content) {
+						try {
+							this.formData.jsonContent = JSON.parse(content);
+						} catch (e) {
+							this.formData.jsonContent = content;
+						}
+						this._applyJsonToForm(this.formData.jsonContent);
+					}
+				}
+			} catch (e) {
+				console.warn('onJsonSelect readFile failed', e);
+			}
+		},
+
+		// 将 json 内容中的字段应用到表单（只在对应表单项为空时填充）
+		_applyJsonToForm(json) {
+			if (!json || typeof json !== 'object') return;
+			const title = json.title || json.name || json.scriptName || json.titleName;
+			const author = json.author || json.authorName || json.creator;
+			const description = json.description || json.intro || json.summary;
+			if (title && !this.formData.title) this.formData.title = title;
+			if (author && !this.formData.author) this.formData.author = author;
+			if (description && !this.formData.description) this.formData.description = description;
+		},
+
 	},
 	async onLoad(options) {
 		if (options && options.id) {
 			this.id = options.id;
 			await this.loadScriptData(this.id);
 		}
-	},
-	async loadScriptData(id) {
+		// set navigation bar / document title to match pageTitle
 		try {
-			uni.showLoading({ title: '加载中...' });
-			const res = await uniCloud.callFunction({
-				name: 'getScript',
-				data: { id }
-			});
-			uni.hideLoading();
-
-			if (res && res.result && res.result.code === 0 && res.result.data && res.result.data.length > 0) {
-				const script = res.result.data[0];
-				// 填充表单数据
-				this.formData = {
-					title: script.title || '',
-					author: script.author || '',
-					version: script.version || '',
-					description: script.description || '',
-					playerCount: script.playerCount || '',
-					difficulty: script.difficulty || '',
-					usageCount: script.usageCount || 0,
-					tag: script.tag || '娱乐',
-					jsonFile: script.jsonFile || null,
-					images: script.images || []
-				};
-			} else {
-				uni.showToast({ title: '加载数据失败', icon: 'none' });
+			const title = this.pageTitle;
+			if (typeof uni !== 'undefined' && uni.setNavigationBarTitle) {
+				uni.setNavigationBarTitle({ title });
 			}
-		} catch (err) {
-			uni.hideLoading();
-			console.error('loadScriptData error', err);
-			uni.showToast({ title: '加载数据失败', icon: 'none' });
+			if (typeof document !== 'undefined' && document.title !== undefined) {
+				document.title = title;
+			}
+		} catch (e) {
+			console.warn('set title failed', e);
 		}
 	}
-}
+};
 </script>
 
 <style lang="scss" scoped>

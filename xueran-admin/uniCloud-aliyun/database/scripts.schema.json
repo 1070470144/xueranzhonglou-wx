@@ -69,6 +69,10 @@
       "bsonType": "string",
       "description": "JSON 源文件 id"
     },
+    "jsonContent": {
+      "bsonType": "object",
+      "description": "原始 JSON 内容（解析后的对象）"
+    },
     "createdAt": {
       "bsonType": "timestamp",
       "description": "创建时间",

@@ -19,12 +19,22 @@ exports.main = async (event, context) => {
       images: true,
       thumbnails: true,
       thumbnail: true,
+      jsonFile: true,
+      updateTime: true,
       createdAt: true,
       _id: true
     }).get();
     if (res && res.data && res.data.length) {
       const item = res.data[0];
       item.id = item._id || item.id;
+      // ensure jsonFile field exists for older records
+      item.jsonFile = item.jsonFile || null;
+      // normalize images: keep as array of strings or empty array
+      if (Array.isArray(item.images)) {
+        item.images = item.images.map(img => (typeof img === 'object' && img.url) ? img.url : (typeof img === 'string' ? img : null)).filter(Boolean);
+      } else {
+        item.images = [];
+      }
       delete item._id;
       return { code: 0, data: [item] };
     }
@@ -34,5 +44,4 @@ exports.main = async (event, context) => {
     return { code: -1, errMsg: err.message || err };
   }
 };
-'
 
