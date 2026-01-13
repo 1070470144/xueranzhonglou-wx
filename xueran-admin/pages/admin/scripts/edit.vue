@@ -188,8 +188,22 @@ export default {
 					tag: formValue.tag || '娱乐',
 					likes: formValue.likes || 0
 				};
-				const imageFileIds = (formValue.images || []).map(i => i.fileId).filter(Boolean);
-				const thumbnails = (formValue.images || []).map(i => i.thumbFileId).filter(Boolean);
+				// normalize image entries to support various uploader return shapes (fileId, fileID, url, path, string)
+				const normalizedImages = (formValue.images || []).map(img => {
+					if (!img) return null;
+					if (typeof img === 'string') return { url: img };
+					return {
+						fileId: img.fileId || img.fileID || img.id || null,
+						url: img.url || img.path || img.tempFilePath || (img.tempFilePaths && img.tempFilePaths[0]) || null,
+						name: img.name || null,
+						thumbFileId: img.thumbFileId || img.thumbFileID || img.thumb || null
+					};
+				}).filter(Boolean);
+				// prefer fileId, fall back to url (CDN URL is acceptable as fileId for storage reference)
+				const imageFileIds = normalizedImages.map(i => i.fileId || i.url).filter(Boolean);
+				const thumbnails = normalizedImages.map(i => i.thumbFileId || i.thumb || i.url).filter(Boolean);
+				// debug log to ensure uploader returned expected ids
+				console.log('saving images array (normalized):', normalizedImages, 'imageFileIds =>', imageFileIds, 'thumbnails =>', thumbnails);
 				let jsonFileId = null;
 				if (formValue.jsonFile) {
 					jsonFileId = formValue.jsonFile.fileId || formValue.jsonFile.fileID || formValue.jsonFile.url || null;
@@ -338,8 +352,52 @@ export default {
 
 		// 图片上传成功处理
 		onImageUploadSuccess(res) {
-			console.log('Image upload success:', res);
-			if (res && res.tempFilePaths && res.tempFilePaths.length > 0) uni.showToast({ title: '图片上传成功', icon: 'success' });
+			console.log('Image upload success raw:', res);
+			try {
+				// Normalize the current formData.images array to consistent objects
+				const normalizeEntry = (img) => {
+					if (!img) return null;
+					if (typeof img === 'string') return { url: img };
+					return {
+						fileId: img.fileId || img.fileID || img.id || null,
+						url: img.url || img.path || img.tempFilePath || (img.tempFilePaths && img.tempFilePaths[0]) || null,
+						name: img.name || null,
+						thumbFileId: img.thumbFileId || img.thumbFileID || img.thumb || null
+					};
+				};
+
+				// If uni-file-picker auto-updated v-model, use that; otherwise try to extract from callback
+				let current = Array.isArray(this.formData.images) ? this.formData.images.slice() : [];
+
+				// If callback provided explicit file info, merge/append it
+				if (res) {
+					const candidates = Array.isArray(res) ? res : (res.tempFiles || res.tempFilePaths || res.tempFilePath || res.fileID ? [res] : []);
+					if (candidates && candidates.length) {
+						candidates.forEach(c => {
+							const e = normalizeEntry(c);
+							if (e) current.push(e);
+						});
+					}
+				}
+
+				// normalize any existing entries
+				current = current.map(normalizeEntry).filter(Boolean);
+				// dedupe by fileId or url
+				const seen = new Set();
+				const deduped = [];
+				for (const it of current) {
+					const key = it.fileId || it.url || JSON.stringify(it);
+					if (!seen.has(key)) {
+						seen.add(key);
+						deduped.push(it);
+					}
+				}
+				this.formData.images = deduped.slice(0, 3);
+				if (deduped.length) uni.showToast({ title: '图片上传成功', icon: 'success' });
+			} catch (e) {
+				console.warn('onImageUploadSuccess normalize failed', e, res);
+				uni.showToast({ title: '图片上传处理异常', icon: 'none' });
+			}
 		},
 
 		// 图片删除处理
