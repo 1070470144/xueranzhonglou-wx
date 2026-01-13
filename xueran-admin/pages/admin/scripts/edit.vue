@@ -190,23 +190,38 @@ export default {
 				};
 				const imageFileIds = (formValue.images || []).map(i => i.fileId).filter(Boolean);
 				const thumbnails = (formValue.images || []).map(i => i.thumbFileId).filter(Boolean);
-				const jsonFileId = (formValue.jsonFile && formValue.jsonFile.fileId) ? formValue.jsonFile.fileId : null;
+				let jsonFileId = null;
+				if (formValue.jsonFile) {
+					jsonFileId = formValue.jsonFile.fileId || formValue.jsonFile.fileID || formValue.jsonFile.url || null;
+				}
 
 				let res;
+				// ensure jsonContent is a plain object (not a Vue Proxy) for transmission
+				let jsonContentForSend = null;
+				try {
+					if (this.formData.jsonContent !== undefined && this.formData.jsonContent !== null) {
+						jsonContentForSend = JSON.parse(JSON.stringify(this.formData.jsonContent));
+					}
+				} catch (e) {
+					console.warn('jsonContent stringify failed', e);
+					jsonContentForSend = this.formData.jsonContent;
+				}
+				console.log('saveScript payload debug', { payload, jsonFileId, jsonContent: jsonContentForSend, imageFileIds, thumbnails });
 				if (this.id) {
 					res = await uniCloud.callFunction({
 						name: 'adminScript',
-						data: { action: 'update', id: this.id, payload, jsonFileId, jsonContent: this.formData.jsonContent, imageFileIds, thumbnails }
+						data: { action: 'update', id: this.id, payload, jsonFileId, jsonContent: jsonContentForSend, imageFileIds, thumbnails }
 					});
 				} else {
 					res = await uniCloud.callFunction({
 						name: 'adminScript',
-						data: { action: 'create', payload, jsonFileId, jsonContent: this.formData.jsonContent, imageFileIds, thumbnails }
+						data: { action: 'create', payload, jsonFileId, jsonContent: jsonContentForSend, imageFileIds, thumbnails }
 					});
 				}
 
 				uni.hideLoading();
 				const result = (res && res.result) ? res.result : res;
+				console.log('saveScript result:', result);
 				if (result && result.code === 0) {
 					uni.showToast({ title: '保存成功', icon: 'success' });
 					this.getOpenerEventChannel().emit('refreshData');
