@@ -53,12 +53,12 @@
             <view class="file-meta">
               <view class="upload-icon">📄</view>
               <view class="file-name">{{ formData.jsonFile.name || formData.jsonFile.url || formData.jsonFile.fileId }}</view>
-            </view>
+          </view>
             <view class="file-actions">
               <button class="uni-button" size="mini" type="primary" @click="previewJson">预览</button>
               <button class="uni-button" size="mini" @click="removeJson">移除</button>
+              </view>
             </view>
-          </view>
           <view v-else>
             <uni-file-picker
               v-model="formData.jsonFile"
@@ -74,7 +74,7 @@
               <view class="upload-box">
                 <view class="upload-icon">📄</view>
                 <view class="upload-text">选择 JSON 文件（最大1MB）</view>
-              </view>
+            </view>
             </uni-file-picker>
           </view>
         </view>
@@ -102,7 +102,7 @@
         <navigator open-type="navigateBack" style="margin-left: 15px;">
           <button class="uni-button">取消</button>
         </navigator>
-      </view>
+    </view>
     </uni-forms>
   </view>
 </template>

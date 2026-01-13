@@ -31,7 +31,24 @@ exports.main = async (event, context) => {
       item.jsonFile = item.jsonFile || null;
       // normalize images: keep as array of strings or empty array
       if (Array.isArray(item.images)) {
-        item.images = item.images.map(img => (typeof img === 'object' && img.url) ? img.url : (typeof img === 'string' ? img : null)).filter(Boolean);
+        item.images = item.images.map(img => {
+          if (!img) return null;
+          let url = null;
+          if (typeof img === 'string') url = img;
+          if (typeof img === 'object') {
+            url = img.url || img.fileId || img.fileID || img.id || null;
+          }
+          if (typeof url === 'string') {
+            // clean trailing dots/spaces
+            url = url.trim().replace(/[.\\s]+$/g, '');
+            // ensure protocol present
+            if (!/^https?:\\/\\//i.test(url)) {
+              url = 'https://' + url.replace(/^\\/\\//, '');
+            }
+            return url;
+          }
+          return null;
+        }).filter(Boolean);
       } else {
         item.images = [];
       }

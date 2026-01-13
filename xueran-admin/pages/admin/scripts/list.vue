@@ -230,23 +230,36 @@ export default {
 		delTable() {
 			const ids = this.selectedItems()
 			if (!ids.length) return
-
 			uni.showModal({
 				title: '确认批量删除',
 				content: `确定要删除选中的 ${ids.length} 个剧本吗？`,
-				success: (res) => {
-					if (res.confirm && this.$refs.udb) {
-						this.$refs.udb.remove(ids, {
-							success: () => {
-								if (this.$refs.table) {
-									this.$refs.table.clearSelection()
-								}
-								uni.showToast({
-									title: '批量删除成功',
-									duration: 2000
-								})
-							}
-						})
+				success: async (res) => {
+					if (!res.confirm) return;
+					uni.showLoading({ title: '删除中...', mask: true });
+					console.log('delTable removing ids', ids);
+					try {
+						const deletePromises = ids.map(id => uniCloud.callFunction({
+							name: 'adminScript',
+							data: { action: 'delete', id }
+						}));
+						const results = await Promise.all(deletePromises);
+						uni.hideLoading();
+						const failed = results.filter(r => {
+							const rr = (r && r.result) ? r.result : r;
+							return !(rr && rr.code === 0);
+						});
+						if (failed.length === 0) {
+							if (this.$refs.table) this.$refs.table.clearSelection();
+							this.selectedIndexs = [];
+							uni.showToast({ title: '批量删除成功', icon: 'success' });
+						} else {
+							uni.showToast({ title: `部分删除失败 (${failed.length})`, icon: 'none' });
+						}
+						this.loadData();
+					} catch (err) {
+						uni.hideLoading();
+						console.error('Batch delete error:', err);
+						uni.showToast({ title: '批量删除失败', icon: 'none' });
 					}
 				}
 			})
@@ -260,16 +273,30 @@ export default {
 				title: '确认删除',
 				content: '确定要删除这个剧本吗？',
 				success: (res) => {
-					if (res.confirm && this.$refs.udb) {
-						this.$refs.udb.remove(id, {
-							success: () => {
-								uni.showToast({
-									title: '删除成功',
-									duration: 2000
-								})
+					if (!res.confirm) return;
+					// Call cloud function directly as fallback when udb.remove doesn't invoke success
+					(async () => {
+						try {
+							uni.showLoading({ title: '删除中...' });
+							const r = await uniCloud.callFunction({
+								name: 'adminScript',
+								data: { action: 'delete', id }
+							});
+							uni.hideLoading();
+							const rr = (r && r.result) ? r.result : r;
+							console.log('adminScript delete result', rr);
+							if (rr && rr.code === 0) {
+								uni.showToast({ title: '删除成功' });
+								this.loadData();
+							} else {
+								uni.showToast({ title: rr.errMsg || '删除失败', icon: 'none' });
 							}
-						})
-					}
+						} catch (err) {
+							uni.hideLoading();
+							console.error('direct delete error', err);
+							uni.showToast({ title: '删除失败', icon: 'none' });
+						}
+					})()
 				}
 			})
 		},
