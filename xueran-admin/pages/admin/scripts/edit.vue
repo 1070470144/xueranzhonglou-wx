@@ -400,12 +400,12 @@ export default {
 						images: normalizedImages
 					};
 				} else {
-					uni.showToast({ title: '加载数据失败', icon: 'none' });
+					uni.showToast({ title: '加载数据失败1', icon: 'none' });
 				}
 			} catch (err) {
 				uni.hideLoading();
 				console.error('loadScriptData error', err);
-				uni.showToast({ title: '加载数据失败', icon: 'none' });
+				uni.showToast({ title: '加载数据失败2', icon: 'none' });
 			}
 		},
 
