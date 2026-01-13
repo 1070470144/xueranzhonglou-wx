@@ -402,6 +402,19 @@
 					}
 				},
 				{
+					"path": "../../pages/admin/scripts/list",
+					"style": {
+						"navigationBarTitleText": "剧本管理"
+					}
+				},
+				{
+					"path": "../../pages/admin/scripts/edit",
+					"style": {
+						"navigationBarTitleText": "编辑剧本",
+						"navigationStyle": "default"
+					}
+				},
+				{
 					"path": "user/overview/overview",
 					"style": {
 						"navigationBarTitleText": "今日概况",
