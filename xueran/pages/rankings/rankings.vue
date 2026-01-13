@@ -1,11 +1,11 @@
 <template>
-	<view class="container">
+	<view class="container fade-in">
 		<!-- 标签页切换 -->
-		<view class="tab-bar">
+		<view class="tab-bar slide-down">
 			<view
 				v-for="tab in tabs"
 				:key="tab.key"
-				class="tab-item"
+				class="tab-item slide-in"
 				:class="{ active: activeTab === tab.key }"
 				@click="switchTab(tab.key)"
 			>
@@ -19,7 +19,8 @@
 				<view
 					v-for="(item, index) in currentRankings"
 					:key="item.id"
-					class="ranking-item"
+					class="ranking-item slide-up"
+					:style="{ animationDelay: index * 0.08 + 's' }"
 					@click="goToScriptDetail(item)"
 				>
 					<!-- 排名 -->
@@ -157,15 +158,83 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+// 关键帧动画定义
+@keyframes fadeIn {
+	0% {
+		opacity: 0;
+		transform: translateY(20rpx);
+	}
+	100% {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes slideDown {
+	0% {
+		opacity: 0;
+		transform: translateY(-30rpx);
+	}
+	100% {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes slideUp {
+	0% {
+		opacity: 0;
+		transform: translateY(40rpx);
+	}
+	100% {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes slideIn {
+	0% {
+		opacity: 0;
+		transform: translateX(-20rpx);
+	}
+	100% {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+@keyframes bounceIn {
+	0% {
+		opacity: 0;
+		transform: scale(0.3);
+	}
+	50% {
+		opacity: 1;
+		transform: scale(1.05);
+	}
+	70% {
+		transform: scale(0.9);
+	}
+	100% {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
 .container {
 	height: 100vh;
 	background-color: #f8f8f8;
+	opacity: 0;
+	animation: fadeIn 0.6s ease-out forwards;
 }
 
 .tab-bar {
 	display: flex;
 	background-color: #fff;
 	border-bottom: 1rpx solid #e5e5e5;
+	transform: translateY(-20rpx);
+	opacity: 0;
+	animation: slideDown 0.5s ease-out 0.2s forwards;
 }
 
 .tab-item {
@@ -175,6 +244,13 @@ export default {
 	font-size: 28rpx;
 	color: #666;
 	position: relative;
+	transition: all 0.3s ease;
+	cursor: pointer;
+
+	&:hover {
+		color: #007AFF;
+		background-color: rgba(0, 122, 255, 0.05);
+	}
 
 	&.active {
 		color: #007AFF;
@@ -190,7 +266,13 @@ export default {
 			height: 4rpx;
 			background-color: #007AFF;
 			border-radius: 2rpx;
+			animation: bounceIn 0.4s ease-out;
 		}
+	}
+
+	&:not(.active) {
+		opacity: 0;
+		animation: slideIn 0.4s ease-out forwards;
 	}
 }
 
@@ -206,14 +288,23 @@ export default {
 	display: flex;
 	align-items: center;
 	background-color: #fff;
-	border-radius: 12rpx;
+	border-radius: 16rpx;
 	padding: 24rpx;
 	margin-bottom: 16rpx;
-	box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
-	transition: transform 0.2s;
+	box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	transform: translateY(30rpx);
+	opacity: 0;
+	animation: slideUp 0.6s ease-out forwards;
+
+	&:hover {
+		transform: translateY(-4rpx);
+		box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.12);
+	}
 
 	&:active {
-		transform: scale(0.98);
+		transform: scale(0.96) translateY(-2rpx);
+		transition-duration: 0.1s;
 	}
 }
 

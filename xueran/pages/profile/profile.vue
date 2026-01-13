@@ -1,18 +1,18 @@
 <template>
-	<view class="container">
+	<view class="container fade-in">
 		<!-- 用户信息区域 -->
-		<view class="user-info">
-			<view class="avatar">
+		<view class="user-info slide-down">
+			<view class="avatar bounce-in">
 				<image src="/static/default-avatar.png" class="avatar-image" />
 			</view>
-			<view class="user-details">
+			<view class="user-details slide-right">
 				<view class="username">游客用户</view>
 				<view class="user-desc">登录后可享受更多功能</view>
 			</view>
 		</view>
 
 		<!-- 菜单列表 -->
-		<view class="menu-list">
+		<view class="menu-list slide-up">
 			<view class="menu-item" @click="showSubmissionGuide">
 				<view class="menu-icon">
 					<text class="icon-text">📋</text>
@@ -20,28 +20,6 @@
 				<view class="menu-content">
 					<view class="menu-title">投稿须知</view>
 					<view class="menu-desc">了解投稿规则和要求</view>
-				</view>
-				<view class="menu-arrow">></view>
-			</view>
-
-			<view class="menu-item">
-				<view class="menu-icon">
-					<text class="icon-text">⭐</text>
-				</view>
-				<view class="menu-content">
-					<view class="menu-title">我的收藏</view>
-					<view class="menu-desc">查看收藏的剧本</view>
-				</view>
-				<view class="menu-arrow">></view>
-			</view>
-
-			<view class="menu-item">
-				<view class="menu-icon">
-					<text class="icon-text">📊</text>
-				</view>
-				<view class="menu-content">
-					<view class="menu-title">使用统计</view>
-					<view class="menu-desc">查看游戏数据</view>
 				</view>
 				<view class="menu-arrow">></view>
 			</view>
@@ -134,20 +112,103 @@ export default {
 </script>
 
 <style lang="scss" scoped>
+// 关键帧动画定义
+@keyframes fadeIn {
+	0% {
+		opacity: 0;
+		transform: translateY(20rpx);
+	}
+	100% {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes slideDown {
+	0% {
+		opacity: 0;
+		transform: translateY(-30rpx);
+	}
+	100% {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes slideUp {
+	0% {
+		opacity: 0;
+		transform: translateY(40rpx);
+	}
+	100% {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes slideRight {
+	0% {
+		opacity: 0;
+		transform: translateX(-30rpx);
+	}
+	100% {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+@keyframes bounceIn {
+	0% {
+		opacity: 0;
+		transform: scale(0.3);
+	}
+	50% {
+		opacity: 1;
+		transform: scale(1.05);
+	}
+	70% {
+		transform: scale(0.9);
+	}
+	100% {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+@keyframes float {
+	0%, 100% {
+		transform: translateY(0rpx);
+	}
+	50% {
+		transform: translateY(-6rpx);
+	}
+}
+
 .container {
 	min-height: 100vh;
 	background-color: #f8f8f8;
 	padding: 20rpx;
+	opacity: 0;
+	animation: fadeIn 0.6s ease-out forwards;
 }
 
 .user-info {
 	background-color: #fff;
-	border-radius: 12rpx;
+	border-radius: 16rpx;
 	padding: 30rpx;
 	display: flex;
 	align-items: center;
 	margin-bottom: 20rpx;
-	box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+	box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+	transition: all 0.3s ease;
+	transform: translateY(-20rpx);
+	opacity: 0;
+	animation: slideDown 0.5s ease-out 0.2s forwards;
+
+	&:hover {
+		transform: translateY(-24rpx);
+		box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.12);
+	}
 }
 
 .avatar {
@@ -179,9 +240,12 @@ export default {
 
 .menu-list {
 	background-color: #fff;
-	border-radius: 12rpx;
+	border-radius: 16rpx;
 	overflow: hidden;
-	box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+	box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+	transform: translateY(30rpx);
+	opacity: 0;
+	animation: slideUp 0.6s ease-out 0.4s forwards;
 }
 
 .menu-item {
@@ -189,14 +253,22 @@ export default {
 	align-items: center;
 	padding: 30rpx;
 	border-bottom: 1rpx solid #f0f0f0;
-	transition: background-color 0.2s;
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	cursor: pointer;
 
 	&:last-child {
 		border-bottom: none;
 	}
 
+	&:hover {
+		background: linear-gradient(90deg, rgba(0, 122, 255, 0.02) 0%, rgba(0, 122, 255, 0.05) 100%);
+		transform: translateX(8rpx);
+	}
+
 	&:active {
-		background-color: #f8f8f8;
+		transform: scale(0.98) translateX(4rpx);
+		transition-duration: 0.1s;
+		background: linear-gradient(90deg, rgba(0, 122, 255, 0.05) 0%, rgba(0, 122, 255, 0.08) 100%);
 	}
 }
 
@@ -241,16 +313,19 @@ export default {
 	align-items: center;
 	justify-content: center;
 	z-index: 1000;
+	animation: fadeIn 0.3s ease-out;
 }
 
 .modal-content {
 	background-color: #fff;
-	border-radius: 12rpx;
+	border-radius: 16rpx;
 	width: 90%;
 	max-width: 600rpx;
 	max-height: 80vh;
 	display: flex;
 	flex-direction: column;
+	animation: bounceIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+	box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.3);
 }
 
 .modal-header {
