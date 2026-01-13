@@ -1,70 +1,99 @@
 <template>
-	<view class="container">
-		<view class="header">
-			<view class="title">{{ id ? '编辑剧本' : '新增剧本' }}</view>
-		</view>
+  <view class="uni-container">
+    <uni-forms ref="form" v-model="formData" :rules="rules" validateTrigger="bind" @submit="submit">
+      <uni-forms-item name="title" label="剧本名" required>
+        <uni-easyinput v-model="formData.title" placeholder="请输入剧本名" />
+      </uni-forms-item>
 
-	<form @submit.prevent="onSubmit" class="card">
-			<view class="field">
-				<label>剧本名</label>
-				<input class="input" v-model="form.title" placeholder="剧本名" />
-			</view>
-			<view class="field">
-				<label>作者</label>
-				<input class="input" v-model="form.author" placeholder="作者名" />
-			</view>
-			<view class="field">
-				<label>版本</label>
-				<input class="input" v-model="form.version" placeholder="版本号" />
-			</view>
-			<view class="field">
-				<label>简介</label>
-				<textarea class="textarea" v-model="form.description" placeholder="剧本简介"></textarea>
-			</view>
-			<view class="field">
-				<label>玩家人数</label>
-				<input class="input" v-model="form.playerCount" placeholder="如 8-12人" />
-			</view>
-			<view class="field">
-				<label>难度</label>
-				<input class="input" v-model="form.difficulty" placeholder="简单/中等/困难" />
-			</view>
-			<view class="field">
-				<label>使用次数</label>
-				<input class="input" v-model.number="form.usageCount" type="number" />
-			</view>
-			<view class="field">
-				<label>标签</label>
-				<select class="input" v-model="form.tag">
-					<option value="娱乐">娱乐</option>
-					<option value="推理">推理</option>
-				</select>
-			</view>
+      <uni-forms-item name="author" label="作者" required>
+        <uni-easyinput v-model="formData.author" placeholder="请输入作者名" />
+      </uni-forms-item>
 
-			<!-- JSON upload -->
-			<view class="field">
-				<label>上传 JSON 源文件</label>
-				<button class="btn primary" @click.prevent="pickJson">选择文件并上传</button>
-				<text v-if="form.jsonFile && form.jsonFile.url" class="muted">已选：{{ form.jsonFile.url }}</text>
-			</view>
-			<!-- images upload -->
-			<view class="field">
-				<label>图片（0-3）</label>
-				<view class="images">
-					<view v-for="(img, idx) in form.images" :key="idx" class="img-wrap">
-						<image :src="img.url" class="img-preview" mode="aspectFill"/>
-						<button class="btn danger" @click.prevent="removeImage(idx)">删除</button>
-					</view>
-					<button v-if="form.images.length<3" class="btn" @click.prevent="pickImage">添加图片</button>
-				</view>
-			</view>
+      <uni-forms-item name="version" label="版本">
+        <uni-easyinput v-model="formData.version" placeholder="请输入版本号" />
+      </uni-forms-item>
 
-			<view class="actions">
-				<button class="btn primary" type="submit">{{ id ? '保存' : '创建' }}</button>
-				<button class="btn" @click.prevent="onCancel">取消</button>
-			</view>
-		</form>
-	</view>
+      <uni-forms-item name="tag" label="标签">
+        <uni-data-picker
+          v-model="formData.tag"
+          :localdata="tagOptions"
+          placeholder="请选择标签"
+        />
+      </uni-forms-item>
+
+      <uni-forms-item name="description" label="简介">
+        <uni-easyinput
+          type="textarea"
+          v-model="formData.description"
+          placeholder="请输入剧本简介"
+          :inputBorder="false"
+        />
+      </uni-forms-item>
+
+      <uni-forms-item name="playerCount" label="玩家人数">
+        <uni-easyinput v-model="formData.playerCount" placeholder="如 8-12人" />
+      </uni-forms-item>
+
+      <uni-forms-item name="difficulty" label="难度">
+        <uni-easyinput v-model="formData.difficulty" placeholder="简单/中等/困难" />
+      </uni-forms-item>
+
+      <uni-forms-item name="usageCount" label="使用次数">
+        <uni-easyinput
+          type="number"
+          v-model.number="formData.usageCount"
+          placeholder="请输入使用次数"
+        />
+      </uni-forms-item>
+
+      <uni-forms-item name="jsonFile" label="JSON 源文件">
+        <view class="upload-section">
+          <uni-file-picker
+            v-model="formData.jsonFile"
+            return-type="object"
+            file-mediatype="all"
+            :file-extname="['json']"
+            limit="1"
+            mode="list"
+            @success="onJsonUploadSuccess"
+            @fail="onUploadFail"
+          >
+            <view class="upload-box">
+              <view class="upload-icon">📄</view>
+              <view class="upload-text">选择 JSON 文件（最大1MB）</view>
+              <view v-if="formData.jsonFile && formData.jsonFile.url" class="file-info">
+                已选：{{ formData.jsonFile.name || formData.jsonFile.url }}
+              </view>
+            </view>
+          </uni-file-picker>
+        </view>
+      </uni-forms-item>
+
+      <uni-forms-item name="images" label="剧本图片（0-3张）">
+        <view class="images-section">
+          <uni-file-picker
+            v-model="formData.images"
+            file-mediatype="image"
+            mode="grid"
+            :image-styles="{ width: 120, height: 80 }"
+            limit="3"
+            @success="onImageUploadSuccess"
+            @fail="onUploadFail"
+            @delete="onImageDelete"
+          />
+        </view>
+      </uni-forms-item>
+
+      <view class="uni-button-group">
+        <button type="primary" class="uni-button" @click="submitForm">
+          {{ id ? '保存' : '创建' }}
+        </button>
+        <navigator open-type="navigateBack" style="margin-left: 15px;">
+          <button class="uni-button">取消</button>
+        </navigator>
+      </view>
+    </uni-forms>
+  </view>
 </template>
 
 <script>
@@ -72,7 +101,7 @@ export default {
 	data() {
 		return {
 			id: null,
-			form: {
+			formData: {
 				title: '',
 				author: '',
 				version: '',
@@ -83,97 +112,83 @@ export default {
 				tag: '娱乐',
 				jsonFile: null,
 				images: []
-			}
+			},
+			rules: {
+				title: {
+					rules: [{
+						required: true,
+						errorMessage: '请输入剧本名'
+					}]
+				},
+				author: {
+					rules: [{
+						required: true,
+						errorMessage: '请输入作者名'
+					}]
+				},
+				usageCount: {
+					rules: [{
+						min: 0,
+						type: 'number',
+						errorMessage: '使用次数必须大于等于0'
+					}]
+				}
+			},
+			tagOptions: [
+				{ value: '娱乐', text: '娱乐' },
+				{ value: '推理', text: '推理' },
+				{ value: '恐怖', text: '恐怖' },
+				{ value: '情感', text: '情感' },
+				{ value: '其他', text: '其他' }
+			]
 		}
 	},
 	methods: {
-		async pickJson() {
-			try {
-				const chooseRes = await uni.chooseFile({ count: 1 });
-				const tempPath = (chooseRes && chooseRes.tempFiles && chooseRes.tempFiles[0]) ? chooseRes.tempFiles[0].path : null;
-				if (!tempPath) {
-					uni.showToast({ title: '未选择文件', icon: 'none' });
-					return;
-				}
-				uni.showLoading({ title: '上传中...' });
-				const upRes = await uniCloud.uploadFile({ filePath: tempPath });
-				uni.hideLoading();
-				if (upRes && upRes.fileID) {
-					this.form.jsonFile = { fileId: upRes.fileID, url: tempPath };
-					uni.showToast({ title: 'JSON 上传成功', icon: 'success' });
-				} else {
-					uni.showToast({ title: '上传失败', icon: 'none' });
-				}
-			} catch (err) {
-				uni.hideLoading();
-				console.error('pickJson error', err);
-				uni.showToast({ title: '上传失败', icon: 'none' });
-			}
+		/**
+		 * 触发表单提交
+		 */
+		submitForm() {
+			this.$refs.form.submit();
 		},
-		async pickImage() {
-			try {
-				const chooseRes = await uni.chooseImage({ count: 1 });
-				const tempFilePaths = chooseRes && chooseRes.tempFilePaths ? chooseRes.tempFilePaths : [];
-				if (!tempFilePaths.length) return;
-				const src = tempFilePaths[0];
-				// upload original
-				uni.showLoading({ title: '上传图片...' });
-				const upOrig = await uniCloud.uploadFile({ filePath: src });
-				// create thumbnail (client-side compress)
-				let thumbPath = src;
-				try {
-					const comp = await uni.compressImage({ src, quality: 80 });
-					thumbPath = comp.tempFilePath || src;
-				} catch (e) {
-					// fallback to original if compress not available
-					thumbPath = src;
-				}
-				const upThumb = await uniCloud.uploadFile({ filePath: thumbPath });
-				uni.hideLoading();
-				const origId = upOrig && upOrig.fileID ? upOrig.fileID : null;
-				const thumbId = upThumb && upThumb.fileID ? upThumb.fileID : null;
-				this.form.images.push({
-					url: src,
-					fileId: origId,
-					thumbUrl: thumbPath,
-					thumbFileId: thumbId
-				});
-				uni.showToast({ title: '图片上传成功', icon: 'success' });
-			} catch (err) {
-				uni.hideLoading();
-				console.error('pickImage error', err);
-				uni.showToast({ title: '上传失败', icon: 'none' });
-			}
-		},
-		removeImage(idx) {
-			this.form.images.splice(idx, 1);
-		},
-		onCancel() {
-			uni.navigateBack();
-		},
-		async onSubmit() {
-			// basic validation
-			if (!this.form.title || !this.form.author) {
-				uni.showToast({ title: '请填写标题和作者', icon: 'none' });
+
+		/**
+		 * 表单提交
+		 */
+		submit(event) {
+			const { value, errors } = event.detail;
+
+			// 表单校验失败页面会提示报错，要停止表单提交逻辑
+			if (errors) {
 				return;
 			}
+
+			this.saveScript(value);
+		},
+
+		/**
+		 * 保存剧本数据
+		 */
+		async saveScript(formValue) {
 			try {
-				uni.showLoading({ title: '保存中...' });
+				uni.showLoading({ title: '保存中...', mask: true });
+
 				const payload = {
-					title: this.form.title,
-					author: this.form.author,
-					version: this.form.version,
+					title: formValue.title,
+					author: formValue.author,
+					version: formValue.version,
 					updateTime: Date.now(),
-					description: this.form.description,
-					playerCount: this.form.playerCount,
-					difficulty: this.form.difficulty,
-					usageCount: this.form.usageCount || 0,
-					tag: this.form.tag || '',
-					likes: this.form.likes || 0
+					description: formValue.description,
+					playerCount: formValue.playerCount,
+					difficulty: formValue.difficulty,
+					usageCount: formValue.usageCount || 0,
+					tag: formValue.tag || '娱乐',
+					likes: formValue.likes || 0
 				};
-				const imageFileIds = (this.form.images || []).map(i => i.fileId).filter(Boolean);
-				const thumbnails = (this.form.images || []).map(i => i.thumbFileId).filter(Boolean);
-				const jsonFileId = (this.form.jsonFile && this.form.jsonFile.fileId) ? this.form.jsonFile.fileId : null;
+
+				const imageFileIds = (formValue.images || []).map(i => i.fileId).filter(Boolean);
+				const thumbnails = (formValue.images || []).map(i => i.thumbFileId).filter(Boolean);
+				const jsonFileId = (formValue.jsonFile && formValue.jsonFile.fileId) ? formValue.jsonFile.fileId : null;
+
 				let res;
 				if (this.id) {
 					res = await uniCloud.callFunction({
@@ -199,46 +214,170 @@ export default {
 						}
 					});
 				}
+
 				uni.hideLoading();
 				const result = (res && res.result) ? res.result : res;
 				if (result && result.code === 0) {
 					uni.showToast({ title: '保存成功', icon: 'success' });
-					uni.navigateBack();
+					this.getOpenerEventChannel().emit('refreshData');
+					setTimeout(() => uni.navigateBack(), 500);
 				} else {
 					uni.showToast({ title: result.errMsg || '保存失败', icon: 'none' });
 				}
 			} catch (err) {
 				uni.hideLoading();
-				console.error('onSubmit error', err);
+				console.error('saveScript error', err);
 				uni.showToast({ title: '保存失败', icon: 'none' });
 			}
+		},
+
+		/**
+		 * JSON上传成功处理
+		 */
+		onJsonUploadSuccess(res) {
+			console.log('JSON upload success:', res);
+			if (res && res.tempFilePath) {
+				uni.showToast({ title: 'JSON 上传成功', icon: 'success' });
+			}
+		},
+
+		/**
+		 * 图片上传成功处理
+		 */
+		onImageUploadSuccess(res) {
+			console.log('Image upload success:', res);
+			if (res && res.tempFilePaths && res.tempFilePaths.length > 0) {
+				uni.showToast({ title: '图片上传成功', icon: 'success' });
+			}
+		},
+
+		/**
+		 * 图片删除处理
+		 */
+		onImageDelete(res) {
+			console.log('Image delete:', res);
+		},
+
+		/**
+		 * 上传失败处理
+		 */
+		onUploadFail(err) {
+			console.error('Upload fail:', err);
+			uni.showToast({ title: '上传失败', icon: 'none' });
 		}
 	},
-	onLoad(options) {
+	async onLoad(options) {
 		if (options && options.id) {
 			this.id = options.id;
-			// load item via adminGetScript (to be implemented)
+			await this.loadScriptData(this.id);
+		}
+	},
+	async loadScriptData(id) {
+		try {
+			uni.showLoading({ title: '加载中...' });
+			const res = await uniCloud.callFunction({
+				name: 'getScript',
+				data: { id }
+			});
+			uni.hideLoading();
+
+			if (res && res.result && res.result.code === 0 && res.result.data && res.result.data.length > 0) {
+				const script = res.result.data[0];
+				// 填充表单数据
+				this.formData = {
+					title: script.title || '',
+					author: script.author || '',
+					version: script.version || '',
+					description: script.description || '',
+					playerCount: script.playerCount || '',
+					difficulty: script.difficulty || '',
+					usageCount: script.usageCount || 0,
+					tag: script.tag || '娱乐',
+					jsonFile: script.jsonFile || null,
+					images: script.images || []
+				};
+			} else {
+				uni.showToast({ title: '加载数据失败', icon: 'none' });
+			}
+		} catch (err) {
+			uni.hideLoading();
+			console.error('loadScriptData error', err);
+			uni.showToast({ title: '加载数据失败', icon: 'none' });
 		}
 	}
 }
 </script>
 
-<style scoped>
-.container { padding: 24rpx; background:#f7f8fb; min-height:100vh; }
-.card { background:#fff; padding:20rpx; border-radius:12rpx; box-shadow:0 6rpx 20rpx rgba(0,0,0,0.04); }
-.header { margin-bottom: 16rpx; display:flex; align-items:center; justify-content:space-between; }
-.title { font-size: 28rpx; font-weight:700; color:#222; }
-.field { margin-bottom: 14rpx; display:flex; flex-direction:column; }
-.input, .textarea, select { padding:10rpx 12rpx; border:1rpx solid #e6e9ef; border-radius:8rpx; font-size:26rpx; background:#fcfdff; }
-.textarea { min-height:140rpx; resize:none; }
-.images { display:flex; gap:12rpx; align-items:center; }
-.img-preview { width:160rpx; height:100rpx; border-radius:8rpx; object-fit:cover; box-shadow:0 6rpx 16rpx rgba(0,0,0,0.06); }
-.actions { margin-top:20rpx; display:flex; gap:10rpx; }
-.muted { color:#888; margin-left:12rpx; }
-.btn { padding:6rpx 10rpx; border-radius:6rpx; border:1rpx solid #dcdcdc; background:transparent; font-size:24rpx; }
-.btn.primary { background:#2a6cff; color:#fff; border-color:transparent; padding:6rpx 10rpx; }
-.btn.danger { background:#ff6b6b; color:#fff; border-color:transparent; padding:6rpx 10rpx; }
-</style>
+<style lang="scss" scoped>
+.upload-section {
+  .upload-box {
+    border: 1px dashed #d9d9d9;
+    padding: 20px;
+    border-radius: 6px;
+    text-align: center;
+    cursor: pointer;
+    background-color: #fafafa;
+    transition: all 0.3s;
+
+    &:hover {
+      border-color: #1890ff;
+      background-color: #f0f8ff;
+    }
+
+    .upload-icon {
+      font-size: 32px;
+      color: #1890ff;
+      margin-bottom: 8px;
+    }
+
+    .upload-text {
+      color: #666;
+      font-size: 14px;
+    }
+
+    .file-info {
+      margin-top: 8px;
+      color: #52c41a;
+      font-size: 12px;
+    }
+  }
+}
+
+// 表单项标签宽度调整
+::v-deep .uni-forms-item__label {
+  width: 100px !important;
+}
+
+// 文件上传区域样式
+.upload-section {
+  ::v-deep .uni-file-picker__files-list {
+    margin-top: 10px;
+  }
+}
+
+// 图片上传区域样式
+.images-section {
+  ::v-deep .uni-file-picker__files-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  ::v-deep .uni-file-picker__file {
+    width: 120px;
+    height: 80px;
+  }
+}
+
+// 适应不同屏幕尺寸
+@media (min-width: 768px) {
+  .images-section {
+    ::v-deep .uni-file-picker__file {
+      width: 140px;
+      height: 94px;
+    }
+  }
+}
 </style>
 
 

@@ -45,10 +45,10 @@
 
 				<!-- 剧本信息 -->
 				<view class="script-info">
-					<view class="script-title">{{ script.title }}</view>
+					<view class="script-title">{{ script.title || '无标题' }}</view>
 					<view class="script-meta">
-						<text class="author">{{ script.author }}</text>
-						<text class="version">{{ script.version }}</text>
+						<text class="author">{{ script.author || '未知作者' }}</text>
+						<text class="version">{{ script.version || 'v1.0' }}</text>
 					</view>
 					<view class="script-stats">
 						<view class="like-section" @click.stop="toggleLike(script)">
@@ -95,10 +95,12 @@ export default {
 			if (!this.searchKeyword) {
 				return this.scripts;
 			}
-			return this.scripts.filter(script =>
-				script.title.toLowerCase().includes(this.searchKeyword.toLowerCase()) ||
-				script.author.toLowerCase().includes(this.searchKeyword.toLowerCase())
-			);
+			const keyword = this.searchKeyword.toLowerCase();
+			return this.scripts.filter(script => {
+				const title = script.title ? String(script.title).toLowerCase() : '';
+				const author = script.author ? String(script.author).toLowerCase() : '';
+				return title.includes(keyword) || author.includes(keyword);
+			});
 		}
 	},
 	methods: {
@@ -157,7 +159,20 @@ export default {
 				const result = (res && res.result) ? res.result : res;
 				const list = (result && result.data) ? result.data : [];
 				list.forEach(item => {
-					if (Array.isArray(item.images)) item.images = item.images.slice(0, 3);
+					// 确保images是数组且包含有效的URL
+					if (Array.isArray(item.images)) {
+						item.images = item.images.slice(0, 3).map(img => {
+							// 如果是对象，尝试获取url属性；如果是字符串，直接使用
+							if (typeof img === 'object' && img.url) {
+								return img.url;
+							} else if (typeof img === 'string') {
+								return img;
+							}
+							return null;
+						}).filter(url => url && typeof url === 'string');
+					} else {
+						item.images = [];
+					}
 				});
 				if (append) {
 					this.scripts = this.scripts.concat(list);

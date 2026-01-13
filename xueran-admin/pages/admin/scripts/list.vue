@@ -1,173 +1,385 @@
 <template>
-	<view class="container">
-	<view class="header card">
-			<view class="title">剧本管理</view>
-			<view class="actions">
-				<button class="btn primary" @click="onCreate">新增剧本</button>
+	<view class="fix-top-window">
+		<view class="uni-header">
+			<uni-stat-breadcrumb />
+			<view class="uni-group">
+				<input class="uni-search" type="text" v-model="query" @confirm="search" placeholder="按标题或作者搜索" />
+				<button class="uni-button hide-on-phone" type="default" size="mini" @click="search">搜索</button>
+				<button class="uni-button" type="primary" size="mini" @click="navigateTo('./edit')">新增剧本</button>
+				<button class="uni-button" type="warn" size="mini" :disabled="!selectedIndexs.length" @click="delTable">批量删除</button>
 			</view>
 		</view>
-
-		<view class="search-row card">
-			<input class="search-input" v-model="q" placeholder="按标题或作者搜索" @confirm="onSearch" />
-			<button class="btn" @click="onSearch">搜索</button>
-		</view>
-
-		<view class="table">
-			<view class="tr header">
-				<view class="td thumb">封面</view>
-				<view class="td">标题 / 作者</view>
-				<view class="td">版本</view>
-				<view class="td">标签</view>
-				<view class="td">使用 / 点赞</view>
-				<view class="td">更新时间</view>
-				<view class="td">操作</view>
-			</view>
-			<view v-for="item in list" :key="item.id" class="tr row-card">
-				<view class="td thumb">
-					<image v-if="item.images && item.images[0]" :src="item.images[0]" class="thumb-img" mode="aspectFill"/>
-					<view v-else class="thumb-empty">暂无图片</view>
+		<view class="uni-container">
+			<unicloud-db ref="udb" collection="scripts" :where="where" page-data="replace"
+				:orderby="orderby" :getcount="true" :page-size="options.pageSize" :page-current="options.pageCurrent"
+				v-slot:default="{ data, pagination, loading, error, options }" :options="options" loadtime="manual"
+				@load="onqueryload">
+				<uni-table ref="table" :loading="loading" :emptyText="error.message || '暂无数据'" border stripe
+					type="selection" @selection-change="selectionChange">
+					<uni-tr>
+						<uni-th align="center" filter-type="search" @filter-change="filterChange($event, 'title')"
+							sortable @sort-change="sortChange($event, 'title')">剧本标题</uni-th>
+						<uni-th align="center" filter-type="search" @filter-change="filterChange($event, 'author')"
+							sortable @sort-change="sortChange($event, 'author')">作者</uni-th>
+						<uni-th align="center">版本</uni-th>
+						<uni-th align="center" filter-type="select" :filter-data="tagOptions"
+							@filter-change="filterChange($event, 'tag')">标签</uni-th>
+						<uni-th align="center">封面</uni-th>
+						<uni-th align="center" filter-type="search" @filter-change="filterChange($event, 'usageCount')"
+							sortable @sort-change="sortChange($event, 'usageCount')">使用次数</uni-th>
+						<uni-th align="center" filter-type="search" @filter-change="filterChange($event, 'likes')"
+							sortable @sort-change="sortChange($event, 'likes')">点赞数</uni-th>
+						<uni-th align="center" filter-type="timestamp" @filter-change="filterChange($event, 'updateTime')"
+							sortable @sort-change="sortChange($event, 'updateTime')">更新时间</uni-th>
+						<uni-th align="center">操作</uni-th>
+					</uni-tr>
+					<uni-tr v-for="(item,index) in data" :key="index">
+						<uni-td align="center">{{item.title}}</uni-td>
+						<uni-td align="center">{{item.author}}</uni-td>
+						<uni-td align="center">{{item.version}}</uni-td>
+						<uni-td align="center">
+							<uni-tag type="primary" inverted size="small" :text="item.tag || '未分类'"></uni-tag>
+						</uni-td>
+						<uni-td align="center">
+							<image v-if="item.images && item.images[0]" :src="item.images[0].url || item.images[0]"
+								class="cover-image" mode="aspectFill" @click="previewImage(item.images[0].url || item.images[0])" />
+							<view v-else class="no-image">暂无封面</view>
+						</uni-td>
+						<uni-td align="center">{{item.usageCount || 0}}</uni-td>
+						<uni-td align="center">{{item.likes || 0}}</uni-td>
+						<uni-td align="center">
+							<uni-dateformat :threshold="[0, 0]" :date="item.updateTime || item.createdAt"></uni-dateformat>
+						</uni-td>
+						<uni-td align="center">
+							<view class="uni-group">
+								<button @click="navigateTo('./edit?id=' + item._id, false)" class="uni-button" size="mini"
+									type="primary">编辑</button>
+								<button @click="confirmDelete(item._id)" class="uni-button" size="mini"
+									type="warn">删除</button>
+							</view>
+						</uni-td>
+					</uni-tr>
+				</uni-table>
+				<view class="uni-pagination-box">
+					<uni-pagination show-icon show-page-size :page-size="pagination.size" v-model="pagination.current"
+						:total="pagination.count" @change="onPageChanged" @pageSizeChange="changeSize" />
 				</view>
-				<view class="td">
-					<view class="item-title">{{ item.title }}</view>
-					<view class="item-sub">{{ item.author }}</view>
-				</view>
-				<view class="td">{{ item.version }}</view>
-				<view class="td"><text class="tag-pill">{{ item.tag }}</text></view>
-				<view class="td">{{ item.usageCount }} / {{ item.likes }}</view>
-				<view class="td">{{ item.createdAt ? (item.createdAt | date) : '' }}</view>
-				<view class="td">
-					<view class="action-row">
-						<button class="btn" @click="onEdit(item)">编辑</button>
-						<button class="btn danger" @click="onDelete(item)">删除</button>
-					</view>
-				</view>
-			</view>
+			</unicloud-db>
 		</view>
-
-		<!-- pagination -->
-		<view class="pager">
-			<button :disabled="page<=1" @click="goPage(1)">首页</button>
-			<button :disabled="page<=1" @click="goPage(page-1)">上一页</button>
-			<text>第 {{ page }} / {{ totalPages }} 页</text>
-			<button :disabled="page>=totalPages" @click="goPage(page+1)">下一页</button>
-			<button :disabled="page>=totalPages" @click="goPage(totalPages)">尾页</button>
-			<input v-model.number="jump" placeholder="跳转页" style="width:120rpx;margin-left:10rpx"/>
-			<button @click="goJump">跳转</button>
-		</view>
+		<!-- #ifndef H5 -->
+		<fix-window />
+		<!-- #endif -->
 	</view>
 </template>
 
 <script>
+const db = uniCloud.database()
+const dbOrderBy = 'updateTime desc'
+const dbSearchFields = ['title', 'author']
+const pageSize = 20
+const pageCurrent = 1
+
+const orderByMapping = {
+	"ascending": "asc",
+	"descending": "desc"
+}
+
 export default {
 	data() {
 		return {
-			list: [],
-			page: 1,
-			pageSize: 12,
-			total: 0,
-			q: '',
-			loading: false,
-			jump: ''
+			// use literal collection name for unicloud-db component
+			query: '',
+			where: '',
+			orderby: dbOrderBy,
+			orderByFieldName: "",
+			selectedIndexs: [],
+			pageSizeIndex: 0,
+			pageSizeOption: [20, 50, 100, 500],
+			options: {
+				pageSize,
+				pageCurrent,
+				filterData: {
+					"tag_localdata": [
+						{ "text": "娱乐", "value": "娱乐" },
+						{ "text": "推理", "value": "推理" },
+						{ "text": "恐怖", "value": "恐怖" },
+						{ "text": "情感", "value": "情感" },
+						{ "text": "其他", "value": "其他" }
+					]
+				}
+			},
+			tagOptions: [
+				{ "text": "娱乐", "value": "娱乐" },
+				{ "text": "推理", "value": "推理" },
+				{ "text": "恐怖", "value": "恐怖" },
+				{ "text": "情感", "value": "情感" },
+				{ "text": "其他", "value": "其他" }
+			]
 		}
 	},
 	computed: {
-		totalPages() {
-			return Math.max(1, Math.ceil(this.total / this.pageSize));
-		}
-	},
-	filters: {
-		date(val) {
-			if (!val) return '';
-			const d = new Date(val);
-			return `${d.getFullYear()}-${d.getMonth()+1}-${d.getDate()}`;
+		tagOptionsForFilter() {
+			return this.tagOptions
 		}
 	},
 	methods: {
-		async fetchList(page = 1) {
-			if (this.loading) return;
-			this.loading = true;
-			try {
-				const res = await uniCloud.callFunction({
-					name: 'listScripts',
-					data: { page, pageSize: this.pageSize, q: this.q }
-				});
-				const result = (res && res.result) ? res.result : res;
-				this.list = result.data || [];
-				this.total = result.total || (this.list.length);
-				this.page = page;
-			} catch (err) {
-				uni.showToast({ title: '加载失败', icon: 'none' });
-				console.error(err);
-			} finally {
-				this.loading = false;
+		onqueryload(data) {
+			// 数据预处理
+			for (let i = 0; i < data.length; i++) {
+				let item = data[i]
+				// 处理图片数据
+				if (Array.isArray(item.images)) {
+					item.images = item.images.map(img => {
+						if (typeof img === 'string') {
+							return { url: img }
+						}
+						return img
+					})
+				}
+				// 确保时间字段存在
+				if (!item.updateTime && item.createdAt) {
+					item.updateTime = item.createdAt
+				}
 			}
 		},
-		onSearch() {
-			this.fetchList(1);
+		changeSize(pageSize) {
+			this.options.pageSize = pageSize
+			this.options.pageCurrent = 1
+			this.$nextTick(() => {
+				this.loadData()
+			})
 		},
-		onCreate() {
-			uni.navigateTo({ url: '/pages/admin/scripts/edit' });
+		getWhere() {
+			const query = this.query.trim()
+			if (!query) {
+				return ''
+			}
+			const queryRe = new RegExp(query, 'i')
+			return db.command.or(
+				dbSearchFields.map(name => ({
+					[name]: queryRe
+				}))
+			)
 		},
-		onEdit(item) {
-			uni.navigateTo({ url: `/pages/admin/scripts/edit?id=${item.id}` });
+		search() {
+			const newWhere = this.getWhere()
+			this.where = newWhere
+			this.$nextTick(() => {
+				this.loadData()
+			})
 		},
-		async onDelete(item) {
-			const ok = await new Promise(resolve => {
-				uni.showModal({ title: '确认', content: `删除《${item.title}》？`, success: res => resolve(res.confirm) });
-			});
-			if (!ok) return;
+		loadData(clear = true) {
+			// defensive: inspect refs and where before calling loadData on the unicloud-db component
 			try {
-				const res = await uniCloud.callFunction({ name: 'adminScript', data: { action: 'delete', id: item.id }});
-				const r = (res && res.result) ? res.result : res;
-				if (r && r.code === 0) {
-					uni.showToast({ title: '删除成功' });
-					this.fetchList(this.page);
+				console.log('loadData called, where type:', typeof this.where, this.where);
+				try {
+					console.log('where keys:', this.where && typeof this.where === 'object' ? Object.keys(this.where) : 'n/a');
+					if (this.where && typeof this.where === 'object') {
+						for (const k in this.where) {
+							const v = this.where[k];
+							console.log(`where[${k}] -> type: ${typeof v}, toString: ${Object.prototype.toString.call(v)}`);
+						}
+					}
+				} catch (inner) {
+					console.warn('failed to inspect where:', inner);
+				}
+				console.log('collectionList type:', Object.prototype.toString.call(this.collectionList), this.collectionList);
+				if (this.$refs && this.$refs.udb && typeof this.$refs.udb.loadData === 'function') {
+					try {
+						this.$refs.udb.loadData({ clear });
+					} catch (errLoad) {
+						console.error('unicloud-db.loadData threw:', errLoad);
+						throw errLoad;
+					}
 				} else {
-					uni.showToast({ title: r.errMsg || '删除失败', icon: 'none' });
+					console.warn('unicloud-db ref not ready or loadData not a function');
 				}
 			} catch (err) {
-				console.error(err);
-				uni.showToast({ title: '删除失败', icon: 'none' });
+				console.error('loadData error:', err);
 			}
 		},
-		goPage(p) {
-			p = Math.max(1, Math.min(this.totalPages, p));
-			this.fetchList(p);
+		onPageChanged(e) {
+			this.selectedIndexs.length = 0
+			if (this.$refs.table) {
+				this.$refs.table.clearSelection()
+			}
+			if (this.$refs.udb) {
+				this.$refs.udb.loadData({
+					current: e.current
+				})
+			}
 		},
-		goJump() {
-			const p = parseInt(this.jump, 10);
-			if (isNaN(p)) return;
-			this.goPage(p);
+		navigateTo(url, clear) {
+			// clear 表示刷新列表时是否清除页码，true 表示刷新并回到列表第 1 页，默认为 true
+			uni.navigateTo({
+				url,
+				events: {
+					refreshData: () => {
+						this.loadData(clear)
+					}
+				}
+			})
+		},
+		// 多选处理
+		selectedItems() {
+			if (!this.$refs.udb || !this.$refs.udb.dataList) return []
+			let dataList = this.$refs.udb.dataList
+			return this.selectedIndexs.map(i => dataList[i]._id)
+		},
+		// 批量删除
+		delTable() {
+			const ids = this.selectedItems()
+			if (!ids.length) return
+
+			uni.showModal({
+				title: '确认批量删除',
+				content: `确定要删除选中的 ${ids.length} 个剧本吗？`,
+				success: (res) => {
+					if (res.confirm && this.$refs.udb) {
+						this.$refs.udb.remove(ids, {
+							success: () => {
+								if (this.$refs.table) {
+									this.$refs.table.clearSelection()
+								}
+								uni.showToast({
+									title: '批量删除成功',
+									duration: 2000
+								})
+							}
+						})
+					}
+				}
+			})
+		},
+		// 多选
+		selectionChange(e) {
+			this.selectedIndexs = e.detail.index
+		},
+		confirmDelete(id) {
+			uni.showModal({
+				title: '确认删除',
+				content: '确定要删除这个剧本吗？',
+				success: (res) => {
+					if (res.confirm && this.$refs.udb) {
+						this.$refs.udb.remove(id, {
+							success: () => {
+								uni.showToast({
+									title: '删除成功',
+									duration: 2000
+								})
+							}
+						})
+					}
+				}
+			})
+		},
+		sortChange(e, name) {
+			this.orderByFieldName = name;
+			if (e.order) {
+				this.orderby = name + ' ' + orderByMapping[e.order]
+			} else {
+				this.orderby = ''
+			}
+			if (this.$refs.table) {
+				this.$refs.table.clearSelection()
+			}
+			this.$nextTick(() => {
+				this.loadData()
+			})
+		},
+		filterChange(e, name) {
+			this._filter = this._filter || {}
+			this._filter[name] = {
+				type: e.filterType,
+				value: e.filter
+			}
+			let newWhere = this.filterToWhere(this._filter, db.command)
+			if (Object.keys(newWhere).length) {
+				this.where = newWhere
+			} else {
+				this.where = ''
+			}
+			this.$nextTick(() => {
+				this.loadData()
+			})
+		},
+		filterToWhere(filters, command) {
+			let where = {}
+			Object.keys(filters).forEach(key => {
+				let filter = filters[key]
+				if (filter.type === 'search') {
+					if (filter.value) {
+						where[key] = new RegExp(filter.value, 'i')
+					}
+				} else if (filter.type === 'select') {
+					if (filter.value && filter.value.length) {
+						where[key] = command.in(filter.value)
+					}
+				} else if (filter.type === 'timestamp') {
+					if (filter.value && filter.value.length === 2) {
+						where[key] = command.and([
+							command.gte(filter.value[0]),
+							command.lte(filter.value[1])
+						])
+					}
+				}
+			})
+			return where
+		},
+		previewImage(url) {
+			if (url) {
+				uni.previewImage({
+					urls: [url],
+					current: url
+				})
+			}
 		}
 	},
 	onLoad() {
-		this.fetchList(1);
+		this._filter = {}
+	},
+	onReady() {
+		this.loadData()
 	}
 }
 </script>
 
-<style scoped>
-.container { padding: 20rpx; }
-.header { display:flex; justify-content:space-between; align-items:center; margin-bottom:20rpx; }
-.title { font-size:32rpx; font-weight:600; }
-.search-row { display:flex; gap:10rpx; margin-bottom:10rpx; }
-.table { border-top:1rpx solid #eee; }
-.tr { display:flex; padding:12rpx 0; border-bottom:1rpx solid #f5f5f5; align-items:center; }
-.tr.header { background:#fafafa; font-weight:600; color:#333; }
-.td { flex:1; padding:0 8rpx; }
-.td.thumb { width:140rpx; flex:0 0 140rpx; }
-.thumb-img { width:120rpx; height:80rpx; border-radius:8rpx; box-shadow: 0 6rpx 16rpx rgba(0,0,0,0.12); }
-.thumb-empty { width:120rpx; height:80rpx; background:linear-gradient(135deg,#f0f0f0,#e9e9e9); display:flex; align-items:center; justify-content:center; color:#999; border-radius:8rpx; }
-.row-card { background:#fff; border-radius:10rpx; padding:12rpx; margin-bottom:12rpx; box-shadow: 0 4rpx 12rpx rgba(0,0,0,0.04); }
-.item-title { font-size:28rpx; font-weight:600; color:#222; margin-bottom:6rpx; }
-.item-sub { font-size:22rpx; color:#777; }
-.tag-pill { display:inline-block; padding:6rpx 12rpx; background:#f0f6ff; color:#2a6cff; border-radius:16rpx; font-size:22rpx; }
-.btn { padding:6rpx 10rpx; border-radius:6rpx; background:transparent; border:1rpx solid #dcdcdc; color:#333; margin-right:8rpx; font-size:24rpx; }
-.btn.primary { background:#2a6cff; color:#fff; border-color:transparent; padding:6rpx 10rpx; font-size:24rpx; }
-.btn.danger { background:#ff6b6b; color:#fff; border-color:transparent; padding:6rpx 10rpx; font-size:24rpx; }
-.pager { display:flex; align-items:center; gap:10rpx; margin-top:16rpx; }
-.action-row { display:flex; gap:12rpx; align-items:center; justify-content:center; }
-.action-row .btn { min-width:120rpx; padding:8rpx 12rpx; }
+<style lang="scss" scoped>
+// 封面图片样式
+.cover-image {
+	width: 60px;
+	height: 40px;
+	border-radius: 4px;
+	object-fit: cover;
+	cursor: pointer;
+	border: 1px solid #d9d9d9;
+
+	&:hover {
+		border-color: #1890ff;
+	}
+}
+
+.no-image {
+	width: 60px;
+	height: 40px;
+	background: linear-gradient(135deg, #f5f5f5, #e9e9e9);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #999;
+	border-radius: 4px;
+	font-size: 12px;
+	border: 1px solid #d9d9d9;
+}
+
+// 表格中图片的响应式设计
+@media (min-width: 768px) {
+	.cover-image,
+	.no-image {
+		width: 80px;
+		height: 60px;
+	}
+}
 </style>
 
 

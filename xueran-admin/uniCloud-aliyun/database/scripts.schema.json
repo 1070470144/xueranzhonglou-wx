@@ -1,0 +1,89 @@
+{
+  "bsonType": "object",
+  "required": ["title", "author"],
+  "properties": {
+    "_id": {
+      "description": "ID，系统自动生成"
+    },
+    "title": {
+      "bsonType": "string",
+      "description": "剧本标题",
+      "label": "标题"
+    },
+    "author": {
+      "bsonType": "string",
+      "description": "作者",
+      "label": "作者"
+    },
+    "version": {
+      "bsonType": "string",
+      "description": "版本号",
+      "label": "版本"
+    },
+    "description": {
+      "bsonType": "string",
+      "description": "剧本简介",
+      "label": "简介"
+    },
+    "playerCount": {
+      "bsonType": "string",
+      "description": "玩家人数描述"
+    },
+    "difficulty": {
+      "bsonType": "string",
+      "description": "难度"
+    },
+    "usageCount": {
+      "bsonType": "int",
+      "description": "使用次数",
+      "defaultValue": 0
+    },
+    "likes": {
+      "bsonType": "int",
+      "description": "点赞数",
+      "defaultValue": 0
+    },
+    "tag": {
+      "bsonType": "string",
+      "description": "标签"
+    },
+    "images": {
+      "bsonType": "array",
+      "description": "图片列表（字符串url或对象）",
+      "items": {
+        "bsonType": ["string", "object"]
+      }
+    },
+    "thumbnails": {
+      "bsonType": "array",
+      "description": "缩略图文件ID列表或url",
+      "items": {
+        "bsonType": ["string", "object"]
+      }
+    },
+    "thumbnail": {
+      "bsonType": "string",
+      "description": "单张缩略图url"
+    },
+    "jsonFileId": {
+      "bsonType": "string",
+      "description": "JSON 源文件 id"
+    },
+    "createdAt": {
+      "bsonType": "timestamp",
+      "description": "创建时间",
+      "forceDefaultValue": {
+        "$env": "now"
+      }
+    },
+    "updateTime": {
+      "bsonType": "timestamp",
+      "description": "更新时间",
+      "forceDefaultValue": {
+        "$env": "now"
+      }
+    }
+  },
+  "version": "0.0.1"
+}
+
