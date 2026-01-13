@@ -12,8 +12,17 @@
 			/>
 		</view>
 
-		<!-- 剧本网格 -->
-		<view class="script-grid">
+		<!-- 剧本网格 / 骨架占位 -->
+		<view v-if="loading && scripts.length === 0" class="script-grid">
+			<view v-for="n in pageSize" :key="'skeleton-'+n" class="script-item skeleton">
+				<view class="script-cover skeleton-cover"></view>
+				<view class="script-info">
+					<view class="skeleton-line title"></view>
+					<view class="skeleton-line meta"></view>
+				</view>
+			</view>
+		</view>
+		<view v-else class="script-grid">
 			<view
 				v-for="(script, index) in filteredScripts"
 				:key="script.id"
@@ -50,6 +59,18 @@
 				</view>
 			</view>
 		</view>
+
+		<!-- 列表底部状态 -->
+		<view class="list-footer" v-if="loading && scripts.length > 0">
+			<text>加载中...</text>
+		</view>
+		<view class="list-footer" v-else-if="noMore && scripts.length > 0">
+			<text>没有更多了</text>
+		</view>
+		<view class="list-footer" v-else-if="error">
+			<text>{{ error }}</text>
+			<button @click="fetchScripts({ page: 1, append: false, q: searchKeyword })">重试</button>
+		</view>
 	</view>
 </template>
 
@@ -59,33 +80,14 @@ export default {
 		return {
 			searchKeyword: '',
 			searchFocused: false,
-			scripts: [
-				{
-					id: 1,
-					title: '经典剧本：狼人杀',
-					author: '血染钟楼官方',
-					version: '1.0.0',
-					jsonUrl: 'https://example.com/script1.json',
-					likes: 156,
-					isLiked: false,
-					images: [
-						'/static/script1.jpg',
-						'/static/script2.jpg'
-					]
-				},
-				{
-					id: 2,
-					title: '扩展包：恶魔的觉醒',
-					author: '社区贡献者',
-					version: '2.1.0',
-					jsonUrl: 'https://example.com/script2.json',
-					likes: 134,
-					isLiked: false,
-					images: [
-						'/static/script3.jpg'
-					]
-				}
-			]
+			scripts: [],
+			// pagination
+			page: 1,
+			pageSize: 12,
+			loading: false,
+			noMore: false,
+			refreshing: false,
+			error: null
 		}
 	},
 	computed: {
@@ -137,11 +139,71 @@ export default {
 			} else {
 				script.likes--;
 			}
+		},
+		// fetch paginated scripts from cloud
+		async fetchScripts({ page = 1, append = false, q = '' } = {}) {
+			if (this.loading) return;
+			this.loading = true;
+			this.error = null;
+			try {
+				const res = await uniCloud.callFunction({
+					name: 'listScripts',
+					data: {
+						page,
+						pageSize: this.pageSize,
+						q
+					}
+				});
+				const result = (res && res.result) ? res.result : res;
+				const list = (result && result.data) ? result.data : [];
+				list.forEach(item => {
+					if (Array.isArray(item.images)) item.images = item.images.slice(0, 3);
+				});
+				if (append) {
+					this.scripts = this.scripts.concat(list);
+				} else {
+					this.scripts = list;
+				}
+				if (!result.total) {
+					this.noMore = list.length < this.pageSize;
+				} else {
+					this.noMore = (page * this.pageSize) >= result.total;
+				}
+				this.page = page;
+			} catch (err) {
+				console.error('fetchScripts error', err);
+				this.error = err.message || '加载失败';
+			} finally {
+				this.loading = false;
+				if (this.refreshing) {
+					uni.stopPullDownRefresh && uni.stopPullDownRefresh();
+					this.refreshing = false;
+				}
+			}
+		},
+		// pull down refresh
+		async handlePullDownRefresh() {
+			this.refreshing = true;
+			this.noMore = false;
+			await this.fetchScripts({ page: 1, append: false, q: this.searchKeyword });
+		},
+		// reach bottom load more
+		async handleReachBottom() {
+			if (this.loading || this.noMore) return;
+			const next = this.page + 1;
+			await this.fetchScripts({ page: next, append: true, q: this.searchKeyword });
 		}
 	},
 	onLoad() {
-		// 页面加载动画
-		this.pageLoaded = true;
+		// 页面加载，先加载第一页
+		this.fetchScripts({ page: 1, append: false });
+	}
+	// uni-app page hooks
+	,onPullDownRefresh() {
+		this.handlePullDownRefresh();
+	}
+	,onReachBottom() {
+		this.handleReachBottom();
 	}
 }
 </script>
@@ -368,5 +430,37 @@ export default {
 	font-size: 22rpx;
 	color: #666;
 	font-weight: 500;
+}
+
+/* skeleton styles */
+.skeleton {
+	background: linear-gradient(180deg, #ffffff 0%, #fafafa 100%);
+	box-shadow: none;
+}
+.skeleton-cover {
+	height: 200rpx;
+	background: linear-gradient(90deg, #eee 0%, #f5f5f5 50%, #eee 100%);
+	border-radius: 12rpx 12rpx 0 0;
+}
+.skeleton-line {
+	height: 28rpx;
+	background: linear-gradient(90deg, #eee 0%, #f5f5f5 50%, #eee 100%);
+	border-radius: 6rpx;
+	margin-bottom: 12rpx;
+}
+.skeleton-line.title {
+	width: 80%;
+	height: 32rpx;
+}
+.skeleton-line.meta {
+	width: 50%;
+	height: 24rpx;
+}
+
+.list-footer {
+	text-align: center;
+	padding: 24rpx 0;
+	color: #999;
+	font-size: 26rpx;
 }
 </style>

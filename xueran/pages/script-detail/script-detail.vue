@@ -29,9 +29,12 @@
 					<view class="viewer-close" @click.stop="closeImageViewer">
 						<text class="close-icon">✕</text>
 					</view>
-					<view class="viewer-indicator">
-						<text class="indicator-text">{{ currentImageIndex + 1 }} / {{ script.images.length }}</text>
-					</view>
+				<view class="viewer-indicator">
+					<text class="indicator-text">{{ currentImageIndex + 1 }} / {{ viewerImages.length }}</text>
+				</view>
+				<view class="viewer-original-btn" @click.stop="toggleOriginal">
+					<text class="original-text">{{ showingOriginals ? '缩略' : '原图' }}</text>
+				</view>
 				</view>
 
 				<swiper
@@ -41,7 +44,7 @@
 					@change="onViewerChange"
 				>
 					<swiper-item
-						v-for="(image, index) in script.images"
+						v-for="(image, index) in viewerImages"
 						:key="index"
 					>
 						<image :src="image" class="viewer-image" mode="aspectFit" @click.stop />
@@ -135,6 +138,8 @@ export default {
 			isLiked: false,
 			showImageViewer: false,
 			currentImageIndex: 0,
+			viewerImages: [],
+			showingOriginals: false,
 			script: {
 				id: 1,
 				title: '经典剧本：狼人杀',
@@ -166,7 +171,44 @@ export default {
 			// 在实际项目中，这里应该调用API获取数据
 			console.log('加载剧本详情:', this.scriptId);
 		},
+		// fetch full-size images for viewer
+		async fetchFullImages() {
+			if (!this.scriptId) return;
+			try {
+				const res = await uniCloud.callFunction({
+					name: 'getScript',
+					data: { id: this.scriptId }
+				});
+				const result = (res && res.result) ? res.result : res;
+				if (result && result.code === 0 && Array.isArray(result.data) && result.data.length) {
+					const item = result.data[0];
+					// use original images if present
+					if (Array.isArray(item.images) && item.images.length) {
+						this.viewerImages = item.images.slice();
+						this.showingOriginals = true;
+						return;
+					}
+				}
+			} catch (err) {
+				console.error('fetchFullImages error', err);
+			}
+			// fallback: keep current viewerImages
+		},
+		// toggle between thumbnails and originals
+		async toggleOriginal() {
+			if (this.showingOriginals) {
+				// switch back to thumbnails
+				this.viewerImages = (this.script.images || []).slice(0, 3);
+				this.showingOriginals = false;
+			} else {
+				// fetch originals then show
+				await this.fetchFullImages();
+			}
+		},
 		openImageViewer() {
+			// open with thumbnails first
+			this.viewerImages = (this.script.images || []).slice(0, 3);
+			this.showingOriginals = false;
 			this.showImageViewer = true;
 		},
 		closeImageViewer() {
