@@ -222,9 +222,103 @@ export default {
 		},
 
 		// JSON上传成功处理
-		onJsonUploadSuccess(res) {
+		async onJsonUploadSuccess(res) {
 			console.log('JSON upload success:', res);
-			if (res && res.tempFilePath) uni.showToast({ title: 'JSON 上传成功', icon: 'success' });
+			uni.showToast({ title: 'JSON 上传成功', icon: 'success' });
+			// Normalize possible locations of uploaded file URL / fileID
+			let url = null;
+			let fileId = null;
+			if (!res) return;
+			// uni.uploadFile-like response may include fileID or tempFilePath/tempFilePaths
+			if (res.tempFilePath) url = res.tempFilePath;
+			if (!url && res.tempFilePaths && res.tempFilePaths.length) url = res.tempFilePaths[0];
+			if (!url && res.tempFiles && res.tempFiles.length && res.tempFiles[0].path) url = res.tempFiles[0].path;
+			if (res.fileID) fileId = res.fileID;
+			// set json file meta
+			this.formData.jsonFile = { url, fileId, name: (res && res.name) || null };
+			// try to load content from url or by downloading via fileId
+			// First try fetch()
+			if (url) {
+				try {
+					console.log('attempt fetch url:', url);
+					if (typeof fetch === 'function') {
+						const r = await fetch(url);
+						if (r && r.ok) {
+							const text = await r.text();
+							try {
+								this.formData.jsonContent = JSON.parse(text);
+							} catch (e) {
+								this.formData.jsonContent = text;
+							}
+							console.log('jsonContent loaded via fetch');
+							this._applyJsonToForm(this.formData.jsonContent);
+							return;
+						} else {
+							console.warn('fetch returned not ok', r && r.status);
+						}
+					}
+				} catch (e) {
+					console.warn('fetch json upload url failed', e);
+				}
+				// try uni.request as fallback (better CORS handling in uni-app)
+				try {
+					console.log('attempt uni.request url:', url);
+					const uniReq = await new Promise((resolve, reject) => {
+						uni.request({
+							url,
+							method: 'GET',
+							success: resReq => resolve(resReq),
+							fail: errReq => reject(errReq)
+						});
+					});
+					if (uniReq && (uniReq.statusCode === 200 || uniReq.statusCode === 0)) {
+						const text = uniReq.data;
+						try {
+							this.formData.jsonContent = typeof text === 'string' ? JSON.parse(text) : text;
+						} catch (e) {
+							this.formData.jsonContent = text;
+						}
+						console.log('jsonContent loaded via uni.request');
+						this._applyJsonToForm(this.formData.jsonContent);
+						return;
+					} else {
+						console.warn('uni.request failed status', uniReq && uniReq.statusCode);
+					}
+				} catch (e) {
+					console.warn('uni.request failed', e);
+				}
+			}
+			// fallback: if have fileId, try uniCloud.downloadFile
+			if (fileId) {
+				try {
+					console.log('attempt downloadFile fileID:', fileId);
+					uni.showLoading({ title: '读取 JSON...' });
+					const dl = await uniCloud.downloadFile({ fileID: fileId });
+					uni.hideLoading();
+					if (dl && dl.tempFilePath) {
+						try {
+							const fs = uni.getFileSystemManager && uni.getFileSystemManager();
+							if (fs && fs.readFileSync) {
+								const content = fs.readFileSync(dl.tempFilePath, 'utf8');
+								try {
+									this.formData.jsonContent = JSON.parse(content);
+								} catch (e) {
+									this.formData.jsonContent = content;
+								}
+								console.log('jsonContent loaded via downloadFile');
+								this._applyJsonToForm(this.formData.jsonContent);
+								return;
+							}
+						} catch (e) {
+							console.warn('read downloaded json failed', e);
+						}
+					}
+				} catch (e) {
+					uni.hideLoading();
+					console.warn('downloadFile failed', e);
+				}
+			}
+			console.warn('could not load json content for uploaded file');
 		},
 
 		// 图片上传成功处理
@@ -381,13 +475,19 @@ export default {
 
 		// 将 json 内容中的字段应用到表单（只在对应表单项为空时填充）
 		_applyJsonToForm(json) {
-			if (!json || typeof json !== 'object') return;
-			const title = json.title || json.name || json.scriptName || json.titleName;
-			const author = json.author || json.authorName || json.creator;
-			const description = json.description || json.intro || json.summary;
-			if (title && !this.formData.title) this.formData.title = title;
-			if (author && !this.formData.author) this.formData.author = author;
-			if (description && !this.formData.description) this.formData.description = description;
+			if (!json) return;
+			let meta = json;
+			// if json is an array, try to find _meta or use first element
+			if (Array.isArray(json)) {
+				meta = json.find(item => item && item.id === '_meta') || json[0] || {};
+			}
+			if (!meta || typeof meta !== 'object') return;
+			const title = meta.title || meta.name || meta.scriptName || meta.titleName;
+			const author = meta.author || meta.authorName || meta.creator;
+			const description = meta.description || meta.intro || meta.summary;
+			if (title) this.formData.title = title;
+			if (author) this.formData.author = author;
+			if (description) this.formData.description = description;
 		},
 
 	},
