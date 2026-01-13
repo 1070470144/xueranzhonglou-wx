@@ -12,41 +12,36 @@
 			/>
 		</view>
 
-		<!-- 剧本列表 -->
-		<view class="script-list">
+		<!-- 剧本网格 -->
+		<view class="script-grid">
 			<view
 				v-for="(script, index) in filteredScripts"
 				:key="script.id"
 				class="script-item slide-up"
-				:style="{ animationDelay: index * 0.1 + 's' }"
+				:style="{ animationDelay: index * 0.05 + 's' }"
 				@click="goToDetail(script)"
 			>
-				<!-- 图片轮播 -->
-				<view class="image-carousel" v-if="script.images && script.images.length > 0">
-					<swiper
-						:indicator-dots="script.images.length > 1"
-						:autoplay="script.images.length > 1"
-						:interval="3000"
-						:duration="500"
-						class="swiper"
-					>
-						<swiper-item
-							v-for="(image, index) in script.images"
-							:key="index"
-						>
-							<image :src="image" class="script-image" mode="aspectFill" />
-						</swiper-item>
-					</swiper>
+				<!-- 剧本封面 -->
+				<view class="script-cover">
+					<image
+						v-if="script.images && script.images.length > 0"
+						:src="script.images[0]"
+						class="cover-image"
+						mode="aspectFill"
+					/>
+					<view v-else class="no-image">
+						<text class="no-image-text">暂无图片</text>
+					</view>
 				</view>
 
 				<!-- 剧本信息 -->
 				<view class="script-info">
 					<view class="script-title">{{ script.title }}</view>
 					<view class="script-meta">
-						<text class="author">作者：{{ script.author }}</text>
-						<text class="version">版本：{{ script.version }}</text>
+						<text class="author">{{ script.author }}</text>
+						<text class="version">{{ script.version }}</text>
 					</view>
-					<view class="script-actions">
+					<view class="script-stats">
 						<view class="like-section" @click.stop="toggleLike(script)">
 							<text class="like-icon">{{ script.isLiked ? '❤️' : '🤍' }}</text>
 							<text class="like-count">{{ script.likes }}</text>
@@ -243,10 +238,11 @@ export default {
 	}
 }
 
-.script-list {
-	display: flex;
-	flex-direction: column;
+.script-grid {
+	display: grid;
+	grid-template-columns: repeat(2, 1fr);
 	gap: 20rpx;
+	padding: 20rpx;
 }
 
 .script-item {
@@ -257,7 +253,8 @@ export default {
 	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 	transform: translateY(30rpx);
 	opacity: 0;
-	animation: slideUp 0.6s ease-out forwards;
+	animation: slideUp 0.5s ease-out forwards;
+	cursor: pointer;
 
 	&:hover {
 		transform: translateY(-4rpx);
@@ -270,44 +267,77 @@ export default {
 	}
 }
 
-.image-carousel {
-	height: 300rpx;
+.script-cover {
 	position: relative;
+	height: 200rpx;
+	background-color: #f8f8f8;
 }
 
-.swiper {
-	height: 100%;
-}
-
-.script-image {
+.cover-image {
 	width: 100%;
 	height: 100%;
+	border-radius: 12rpx 12rpx 0 0;
+}
+
+.no-image {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	border-radius: 12rpx 12rpx 0 0;
+}
+
+.no-image-text {
+	color: rgba(255, 255, 255, 0.8);
+	font-size: 24rpx;
 }
 
 .script-info {
-	padding: 20rpx;
+	padding: 16rpx;
+	height: 140rpx;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
 }
 
 .script-title {
-	font-size: 32rpx;
+	font-size: 28rpx;
 	font-weight: bold;
 	color: #333;
-	margin-bottom: 12rpx;
-	line-height: 1.4;
+	line-height: 1.3;
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	line-clamp: 2;
+	overflow: hidden;
+	margin-bottom: 8rpx;
 }
 
 .script-meta {
 	display: flex;
 	justify-content: space-between;
-	margin-bottom: 16rpx;
+	align-items: center;
+	margin-bottom: 12rpx;
 }
 
 .author, .version {
-	font-size: 24rpx;
+	font-size: 22rpx;
 	color: #666;
 }
 
-.script-actions {
+.author {
+	flex: 1;
+}
+
+.version {
+	font-size: 20rpx;
+	background-color: #f0f0f0;
+	padding: 2rpx 8rpx;
+	border-radius: 8rpx;
+}
+
+.script-stats {
 	display: flex;
 	justify-content: flex-end;
 }
@@ -316,35 +346,27 @@ export default {
 	display: flex;
 	align-items: center;
 	cursor: pointer;
-	padding: 10rpx 16rpx;
-	border-radius: 20rpx;
-	background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
-	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-	box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
-
-	&:hover {
-		background: linear-gradient(135deg, #f0f4ff 0%, #e8f2ff 100%);
-		transform: translateY(-2rpx);
-		box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.1);
-	}
+	padding: 6rpx 12rpx;
+	border-radius: 16rpx;
+	background-color: #f8f8f8;
+	transition: all 0.3s ease;
+	border: 1rpx solid #e8e8e8;
 
 	&:active {
-		transform: scale(0.95) translateY(0rpx);
+		transform: scale(0.9);
 		transition-duration: 0.1s;
 	}
 }
 
 .like-icon {
-	font-size: 32rpx;
-	margin-right: 6rpx;
-	transition: all 0.3s ease;
+	font-size: 24rpx;
+	margin-right: 4rpx;
 	display: inline-block;
 }
 
 .like-count {
-	font-size: 26rpx;
+	font-size: 22rpx;
 	color: #666;
-	font-weight: 600;
-	transition: all 0.3s ease;
+	font-weight: 500;
 }
 </style>

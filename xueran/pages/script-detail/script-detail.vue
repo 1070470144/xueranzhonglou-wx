@@ -2,13 +2,14 @@
 	<view class="container">
 		<scroll-view scroll-y="true" class="scroll-container">
 			<!-- 图片轮播 -->
-			<view class="image-carousel" v-if="script.images && script.images.length > 0">
+			<view class="image-carousel" v-if="script.images && script.images.length > 0" @click="openImageViewer">
 				<swiper
 					:indicator-dots="script.images.length > 1"
 					:autoplay="script.images.length > 1"
 					:interval="3000"
 					:duration="500"
 					class="swiper"
+					@change="onSwiperChange"
 				>
 					<swiper-item
 						v-for="(image, index) in script.images"
@@ -17,6 +18,44 @@
 						<image :src="image" class="script-image" mode="aspectFill" />
 					</swiper-item>
 				</swiper>
+				<view class="zoom-hint" v-if="script.images && script.images.length > 0">
+					<text class="zoom-icon">🔍</text>
+				</view>
+			</view>
+
+			<!-- 全屏图片查看器 -->
+			<view class="image-viewer" v-if="showImageViewer" @click="closeImageViewer">
+				<view class="viewer-header">
+					<view class="viewer-close" @click.stop="closeImageViewer">
+						<text class="close-icon">✕</text>
+					</view>
+					<view class="viewer-indicator">
+						<text class="indicator-text">{{ currentImageIndex + 1 }} / {{ script.images.length }}</text>
+					</view>
+				</view>
+
+				<swiper
+					:current="currentImageIndex"
+					:indicator-dots="false"
+					class="viewer-swiper"
+					@change="onViewerChange"
+				>
+					<swiper-item
+						v-for="(image, index) in script.images"
+						:key="index"
+					>
+						<image :src="image" class="viewer-image" mode="aspectFit" @click.stop />
+					</swiper-item>
+				</swiper>
+
+				<view class="viewer-nav" v-if="script.images.length > 1">
+					<view class="nav-btn prev-btn" @click.stop="prevImage" v-if="currentImageIndex > 0">
+						<text class="nav-icon">‹</text>
+					</view>
+					<view class="nav-btn next-btn" @click.stop="nextImage" v-if="currentImageIndex < script.images.length - 1">
+						<text class="nav-icon">›</text>
+					</view>
+				</view>
 			</view>
 
 			<!-- 剧本详情信息 -->
@@ -39,22 +78,6 @@
 					</view>
 				</view>
 
-				<!-- 操作按钮 -->
-				<view class="action-buttons">
-					<button
-						class="action-btn primary"
-						@click="copyJsonUrl"
-					>
-						复制JSON地址
-					</button>
-					<button
-						class="action-btn secondary"
-						@click="toggleLike"
-					>
-						{{ isLiked ? '已点赞' : '点赞' }} ({{ script.likes }})
-					</button>
-				</view>
-
 				<!-- 剧本描述 -->
 				<view class="script-description">
 					<view class="section-title">剧本简介</view>
@@ -70,10 +93,6 @@
 							<text class="value">{{ script.playerCount }}</text>
 						</view>
 						<view class="info-item">
-							<text class="label">游戏时长：</text>
-							<text class="value">{{ script.duration }}</text>
-						</view>
-						<view class="info-item">
 							<text class="label">难度等级：</text>
 							<text class="value">{{ script.difficulty }}</text>
 						</view>
@@ -81,25 +100,27 @@
 							<text class="label">使用次数：</text>
 							<text class="value">{{ script.usageCount }}</text>
 						</view>
+						<view class="info-item">
+							<text class="label">标签：</text>
+							<text class="value">{{ script.tag }}</text>
+						</view>
 					</view>
 				</view>
 
-				<!-- 角色列表 -->
-				<view class="roles-section">
-					<view class="section-title">角色列表</view>
-					<view class="roles-list">
-						<view
-							v-for="role in script.roles"
-							:key="role.id"
-							class="role-item"
-						>
-							<view class="role-header">
-								<text class="role-name">{{ role.name }}</text>
-								<text class="role-team" :class="role.team">{{ role.team }}</text>
-							</view>
-							<view class="role-description">{{ role.description }}</view>
-						</view>
-					</view>
+				<!-- 底部操作按钮 -->
+				<view class="bottom-actions">
+					<button
+						class="action-btn primary"
+						@click="copyJsonUrl"
+					>
+						复制JSON地址
+					</button>
+					<button
+						class="action-btn secondary"
+						@click="toggleLike"
+					>
+						{{ isLiked ? '已点赞' : '点赞' }} ({{ script.likes }})
+					</button>
 				</view>
 			</view>
 		</scroll-view>
@@ -112,6 +133,8 @@ export default {
 		return {
 			scriptId: null,
 			isLiked: false,
+			showImageViewer: false,
+			currentImageIndex: 0,
 			script: {
 				id: 1,
 				title: '经典剧本：狼人杀',
@@ -121,33 +144,13 @@ export default {
 				jsonUrl: 'https://example.com/script1.json',
 				description: '经典的狼人杀剧本，适合新手入门。游戏中狼人会在夜晚行动，村民需要在白天找出并处决狼人。',
 				playerCount: '8-12人',
-				duration: '30-45分钟',
 				difficulty: '简单',
 				usageCount: 1250,
+				tag: '推理',
 				likes: 156,
 				images: [
 					'/static/script1.jpg',
 					'/static/script2.jpg'
-				],
-				roles: [
-					{
-						id: 1,
-						name: '狼人',
-						team: '狼人',
-						description: '夜晚可以杀死一名玩家'
-					},
-					{
-						id: 2,
-						name: '预言家',
-						team: '村民',
-						description: '夜晚可以查验一名玩家的身份'
-					},
-					{
-						id: 3,
-						name: '村民',
-						team: '村民',
-						description: '普通村民，没有特殊能力'
-					}
 				]
 			}
 		}
@@ -162,6 +165,28 @@ export default {
 			// 模拟加载剧本详情
 			// 在实际项目中，这里应该调用API获取数据
 			console.log('加载剧本详情:', this.scriptId);
+		},
+		openImageViewer() {
+			this.showImageViewer = true;
+		},
+		closeImageViewer() {
+			this.showImageViewer = false;
+		},
+		onSwiperChange(e) {
+			this.currentImageIndex = e.detail.current;
+		},
+		onViewerChange(e) {
+			this.currentImageIndex = e.detail.current;
+		},
+		prevImage() {
+			if (this.currentImageIndex > 0) {
+				this.currentImageIndex--;
+			}
+		},
+		nextImage() {
+			if (this.currentImageIndex < this.script.images.length - 1) {
+				this.currentImageIndex++;
+			}
 		},
 		copyJsonUrl() {
 			uni.setClipboardData({
@@ -204,6 +229,11 @@ export default {
 	height: 400rpx;
 	position: relative;
 	margin-bottom: 20rpx;
+	cursor: pointer;
+
+	&:active {
+		opacity: 0.9;
+	}
 }
 
 .swiper {
@@ -264,6 +294,14 @@ export default {
 	margin: 24rpx 0;
 }
 
+.bottom-actions {
+	display: flex;
+	gap: 20rpx;
+	margin: 40rpx 0 20rpx 0;
+	padding-top: 20rpx;
+	border-top: 1rpx solid #e8e8e8;
+}
+
 .action-btn {
 	flex: 1;
 	border-radius: 8rpx;
@@ -316,55 +354,183 @@ export default {
 	font-size: 24rpx;
 }
 
-.roles-section {
-	margin-top: 32rpx;
+.zoom-hint {
+	position: absolute;
+	top: 20rpx;
+	right: 20rpx;
+	background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+	border: 1rpx solid rgba(255, 255, 255, 0.3);
+	border-radius: 20rpx;
+	padding: 10rpx 16rpx;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	backdrop-filter: blur(10rpx);
+	box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.2);
+	transition: all 0.3s ease;
+
+	&:hover {
+		background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%);
+		transform: scale(1.05);
+	}
 }
 
-.roles-list {
+.zoom-icon {
+	font-size: 24rpx;
+	color: white;
+	font-weight: 300;
+	text-shadow: 0 1rpx 2rpx rgba(0, 0, 0, 0.3);
+}
+
+// 图片查看器样式
+.image-viewer {
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100vh;
+	background: linear-gradient(135deg, rgba(0, 0, 0, 0.95) 0%, rgba(20, 20, 30, 0.98) 100%);
+	z-index: 2000;
 	display: flex;
 	flex-direction: column;
-	gap: 16rpx;
+	animation: fadeIn 0.3s ease-out;
+	backdrop-filter: blur(2rpx);
 }
 
-.role-item {
-	background-color: #f8f8f8;
-	border-radius: 8rpx;
-	padding: 20rpx;
-}
-
-.role-header {
+.viewer-header {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	margin-bottom: 8rpx;
+	padding: 50rpx 30rpx 30rpx;
+	color: white;
+	position: relative;
 }
 
-.role-name {
-	font-size: 30rpx;
-	font-weight: bold;
-	color: #333;
+.viewer-header::after {
+	content: '';
+	position: absolute;
+	bottom: 0;
+	left: 30rpx;
+	right: 30rpx;
+	height: 1rpx;
+	background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%);
 }
 
-.role-team {
-	font-size: 24rpx;
-	padding: 4rpx 12rpx;
-	border-radius: 12rpx;
-	font-weight: bold;
+.viewer-close {
+	width: 56rpx;
+	height: 56rpx;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 50%;
+	background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+	border: 2rpx solid rgba(255, 255, 255, 0.2);
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.3);
 
-	&.狼人 {
-		background-color: #ff4757;
-		color: white;
+	&:active {
+		transform: scale(0.92);
+		background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.2) 100%);
+		box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.4);
 	}
 
-	&.村民 {
-		background-color: #3742fa;
-		color: white;
+	&:hover {
+		background: linear-gradient(135deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 100%);
 	}
 }
 
-.role-description {
+.close-icon {
+	font-size: 28rpx;
+	color: white;
+	font-weight: 300;
+	line-height: 1;
+}
+
+.viewer-indicator {
+	background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%);
+	border: 1rpx solid rgba(255, 255, 255, 0.2);
+	border-radius: 20rpx;
+	padding: 12rpx 20rpx;
 	font-size: 26rpx;
-	color: #666;
-	line-height: 1.5;
+	color: white;
+	font-weight: 500;
+	backdrop-filter: blur(10rpx);
+	box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.2);
+}
+
+.viewer-swiper {
+	flex: 1;
+	height: calc(100vh - 120rpx);
+}
+
+.viewer-image {
+	width: 100%;
+	height: 100%;
+}
+
+.viewer-nav {
+	position: absolute;
+	bottom: 80rpx;
+	left: 0;
+	right: 0;
+	display: flex;
+	justify-content: space-between;
+	padding: 0 50rpx;
+	pointer-events: none;
+}
+
+.nav-btn {
+	width: 72rpx;
+	height: 72rpx;
+	border-radius: 50%;
+	background: linear-gradient(135deg, rgba(255, 255, 255, 0.30) 0%, rgba(255, 255, 255, 0.18) 100%);
+	border: 2rpx solid rgba(255, 255, 255, 0.36);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+	pointer-events: auto;
+	box-shadow: 0 12rpx 36rpx rgba(0, 0, 0, 0.36);
+	position: relative;
+	overflow: hidden;
+
+	&::before {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0%, transparent 50%);
+		border-radius: 50%;
+		opacity: 0;
+		transition: opacity 0.24s;
+	}
+
+	&:active {
+		transform: scale(0.9);
+		box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.44);
+
+		&::before {
+			opacity: 1;
+		}
+	}
+
+	&:hover {
+		background: linear-gradient(135deg, rgba(255, 255, 255, 0.34) 0%, rgba(255, 255, 255, 0.22) 100%);
+		transform: translateY(-3rpx);
+		box-shadow: 0 16rpx 40rpx rgba(0, 0, 0, 0.44);
+	}
+}
+
+.nav-icon {
+	font-size: 52rpx;
+	color: white;
+	font-weight: 300;
+	line-height: 1;
+	position: relative;
+	z-index: 1;
+	text-shadow: 0 6rpx 12rpx rgba(0, 0, 0, 0.45);
+	letter-spacing: 2rpx;
 }
 </style>
