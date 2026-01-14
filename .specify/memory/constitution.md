@@ -1,18 +1,20 @@
 # xueran-admin 项目宪章
 <!--
 Sync Impact Report
-- Version change: 1.3.0 → 1.4.0
+- Version change: 1.4.0 → 1.5.0
 - Modified principles:
-  - 新增: 回复与沟通规范（强制）
-- Added sections: none
+  - 新增: UI 设计规范（强制） -> 明确要求 UI 设计严格参考 Ant Design (阿里巴巴)
+- Added sections:
+  - UI 设计规范（强制）
 - Removed sections: none
-- Templates updated:
-  - ⚠ .specify/templates/plan-template.md (无需更新)
-  - ⚠ .specify/templates/spec-template.md (无需更新)
-  - ⚠ .specify/templates/tasks-template.md (无需更新)
-  - ⚠ 其它命令/模板：无需更新
+- Templates requiring review/update:
+  - ⚠ .specify/templates/plan-template.md (需检查 UI/设计 检查项并更新示例)
+  - ⚠ .specify/templates/spec-template.md (需在 UI 要求处标注 Ant Design 约束)
+  - ⚠ .specify/templates/tasks-template.md (需在任务说明处加入 UI 审核/设计输出项)
+  - ⚠ 其它命令/模板：请检查是否引用旧 UI 指南或外部工具名称
 - Follow-up TODOs:
   - TODO(RATIFICATION_DATE): 填写宪章首次通过日期（若已知）
+  - TODO(update_templates): 更新上列模板以反映 UI 设计规范（负责人：前端架构）
 -->
 
 ## 核心原则
@@ -28,6 +30,14 @@ Sync Impact Report
 ### 文档与沟通一律中文（必需）
 项目内的计划、规范、任务、快速上手文档、代码注释（非第三方接口说明除外）应使用中文编写。若需对外发布英文文档，应在中文文档准备完毕后单独维护译本并标注来源。
 理由：团队协作效率与长期可维护性依赖一致的语言标准，中文为首选以减少歧义。
+
+### UI 设计规范（强制）
+所有用户界面（管理端、前端组件、对外展示页等）的视觉与交互设计必须**严格参考 Ant Design（阿里巴巴）** 的规范与组件行为。具体要求：
+- 视觉风格（色彩、间距、字体、图标、按钮样式）应遵循 Ant Design 的指导原则，优先使用现成 Ant Design 组件或在 uni-app 中实现与之行为一致的组件；
+- 交互行为（模态、表单校验提示、分页、加载占位、表格操作、下拉/选择器行为）必须与 Ant Design 的交互预期一致，避免视觉/行为差异导致的使用歧义；
+- 设计稿与实现要一一对应：设计输出须包含使用的 Ant Design 组件名称、状态说明（禁用/hover/active）、以及响应式断点说明；实现时需在 PR 中引用设计稿并指出偏离处及其理由；
+- 可接受的变体须在团队设计系统中登记并获得两位维护者批准；禁止随意调整全局配色、基线网格或组件基础交互行为；
+理由：统一的设计规范能显著减少开发-设计沟通成本，提高组件复用率和用户体验一致性，Ant Design 为成熟的企业级设计系统，适合本项目管理端的稳定性与一致性需求。
 
 ### 回复与沟通规范（强制）
 所有文档、评论、回复、评审意见和团队沟通必须使用中文。包括但不限于：代码评审意见、问题讨论、Pull Request 描述、提交信息、会议记录等。
@@ -66,7 +76,7 @@ Sync Impact Report
 - 提交记录必须使用中文编写，清晰描述变更内容和目的。
 - 代码变更通过团队内部评审流程进行；评审描述必须包含：变更目的、如何验证、是否影响运行时选择（云对象 vs 云函数）、回退计划。
 - 任何将云函数引入项目的变更必须提供书面不可行性说明并至少获得两位维护者批准。
-- 文档、计划、任务和快速上手均以中文撰写；任务模板应列明哪些步骤必须包含上传/文件验证。
+- 文档、计划、任务和快速上手均以中文撰写；任务模板应列明哪些步骤必须包含上传/文件验证。  
 - 代码风格、Lint、格式化工具在项目初期明确并统一配置；CI 在合并前必须通过 lint 与关键测试。
 
 ## Governance
@@ -76,4 +86,4 @@ Sync Impact Report
 3. 修订须包含迁移计划（如影响接口或运行时约束）；  
 4. 修订通过后，更新 `.specify/memory/constitution.md` 的 `Last Amended` 与 `Version` 字段，并在 Sync Impact Report 中列出受影响的模板与后续 TODO。
 
-**Version**: 1.4.0 | **Ratified**: TODO(RATIFICATION_DATE): 填写宪章首次通过日期 | **Last Amended**: 2026-01-14
+**Version**: 1.5.0 | **Ratified**: TODO(RATIFICATION_DATE): 填写宪章首次通过日期 | **Last Amended**: 2026-01-14

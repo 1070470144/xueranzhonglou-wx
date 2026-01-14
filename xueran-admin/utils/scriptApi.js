@@ -207,7 +207,7 @@ export async function deleteScript(scriptId) {
  * @param {Array<string>} uploadData.tags - 标签数组
  * @returns {Promise<Object>} API响应
  */
-export async function uploadScriptFile(uploadData) {
+export async function uploadScript(uploadData) {
   if (!uploadData.filePath || !uploadData.title || !uploadData.author) {
     return {
       success: false,
@@ -231,6 +231,14 @@ export async function uploadScriptFile(uploadData) {
   }
 }
 
+/**
+ * 上传剧本文件 (兼容旧命名)
+ * @deprecated 请使用 uploadScript
+ */
+export async function uploadScriptFile(uploadData) {
+  return uploadScript(uploadData)
+}
+
 // 默认导出所有API函数
 export default {
   getScriptList,
@@ -238,5 +246,6 @@ export default {
   createScript,
   updateScript,
   deleteScript,
+  uploadScript,
   uploadScriptFile
 }

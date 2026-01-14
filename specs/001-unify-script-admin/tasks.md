@@ -76,19 +76,19 @@ description: "Task list template for feature implementation"
 
 ### 用户故事 2 的手动测试流程 (必需)
 
-- [ ] T018 [US2] 在 docs/test-procedures/us2-file-validation.md 中定义文件选择和验证的手动测试流程
-- [ ] T019 [US2] 在 docs/test-procedures/us2-upload-progress.md 中定义上传进度和完成的手动测试流程
-- [ ] T020 [US2] 在 docs/test-procedures/us2-upload-errors.md 中定义错误处理的手动测试流程
+- [x] T018 [US2] 在 docs/test-procedures/us2-file-validation.md 中定义文件选择和验证的手动测试流程
+- [x] T019 [US2] 在 docs/test-procedures/us2-upload-progress.md 中定义上传进度和完成的手动测试流程
+- [x] T020 [US2] 在 docs/test-procedures/us2-upload-errors.md 中定义错误处理的手动测试流程
 
 ### 用户故事 2 的实现
 
-- [ ] T021 [P] [US2] 在云对象 scriptManager/index.js 中实现上传API端点 (action: 'upload')
-- [ ] T022 [P] [US2] 为支持的格式和大小限制添加文件验证逻辑
-- [ ] T023 [P] [US2] 实现带有进度跟踪的文件上传到云存储
-- [ ] T024 [US2] 在 xueran-admin/components/ScriptUpload.vue 中创建统一上传组件
-- [ ] T025 [P] [US2] 添加上传进度显示和状态反馈
-- [ ] T026 [P] [US2] 将上传组件集成到剧本管理页面中
-- [ ] T027 [US2] 实现无兜底逻辑的上传失败错误处理
+- [x] T021 [P] [US2] 在云对象 scriptManager/index.js 中实现上传API端点 (action: 'upload')
+- [x] T022 [P] [US2] 为支持的格式和大小限制添加文件验证逻辑
+- [x] T023 [P] [US2] 实现带有进度跟踪的文件上传到云存储
+- [x] T024 [US2] 在 xueran-admin/components/ScriptUpload.vue 中创建统一上传组件
+- [x] T025 [P] [US2] 添加上传进度显示和状态反馈
+- [x] T026 [P] [US2] 将上传组件集成到剧本管理页面中
+- [x] T027 [US2] 实现无兜底逻辑的上传失败错误处理
 
 **检查点**: 此时，用户故事 1 和 2 都应该可以独立工作
 
@@ -100,19 +100,19 @@ description: "Task list template for feature implementation"
 
 ### 用户故事 3 的手动测试流程 (必需)
 
-- [ ] T028 [US3] 在 docs/test-procedures/us3-script-editing.md 中定义剧本编辑的手动测试流程
-- [ ] T029 [US3] 在 docs/test-procedures/us3-update-validation.md 中定义更新验证的手动测试流程
-- [ ] T030 [US3] 在 docs/test-procedures/us3-update-confirmation.md 中定义更新确认的手动测试流程
+- [x] T028 [US3] 在 docs/test-procedures/us3-script-editing.md 中定义剧本编辑的手动测试流程
+- [x] T029 [US3] 在 docs/test-procedures/us3-update-validation.md 中定义更新验证的手动测试流程
+- [x] T030 [US3] 在 docs/test-procedures/us3-update-confirmation.md 中定义更新确认的手动测试流程
 
 ### 用户故事 3 的实现
 
-- [ ] T031 [P] [US3] 在 scriptManager/index.js 中实现获取单个剧本API端点 (action: 'get')
-- [ ] T032 [P] [US3] 在 scriptManager/index.js 中实现更新剧本API端点 (action: 'update')
-- [ ] T033 [US3] 更新剧本编辑页面 xueran-admin/pages/admin/scripts/edit.vue 以使用统一APIs
-- [ ] T034 [P] [US3] 为剧本编辑实现表单验证和数据绑定
-- [ ] T035 [P] [US3] 添加保存/更新确认对话框和状态反馈
-- [ ] T036 [US3] 为更新操作集成无兜底逻辑的错误处理
-- [ ] T037 [P] [US3] 添加列表和编辑视图之间的导航和状态管理
+- [x] T031 [P] [US3] 在 scriptManager/index.js 中实现获取单个剧本API端点 (action: 'get')
+- [x] T032 [P] [US3] 在 scriptManager/index.js 中实现更新剧本API端点 (action: 'update')
+- [x] T033 [US3] 更新剧本编辑页面 xueran-admin/pages/admin/scripts/edit.vue 以使用统一APIs
+- [x] T034 [P] [US3] 为剧本编辑实现表单验证和数据绑定
+- [x] T035 [P] [US3] 添加保存/更新确认对话框和状态反馈
+- [x] T036 [US3] 为更新操作集成无兜底逻辑的错误处理
+- [x] T037 [P] [US3] 添加列表和编辑视图之间的导航和状态管理
 
 **检查点**: 现在所有用户故事都应该可以独立运行
 

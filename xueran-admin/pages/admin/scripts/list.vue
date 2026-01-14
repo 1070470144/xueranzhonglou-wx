@@ -11,7 +11,7 @@
 				<option value="inactive">未激活</option>
 				</select>
 				<button class="uni-button" type="primary" size="mini" @click="navigateTo('./edit')">新增剧本</button>
-				<button class="uni-button" type="warn" size="mini" :disabled="!selectedScripts.length" @click="handleBatchDelete">批量删除</button>
+				<button class="uni-button" type="warn" size="mini" @click="handleBatchDelete">批量删除</button>
 			</view>
 		</view>
 
@@ -27,9 +27,10 @@
 				<button class="uni-button" @click="loadScripts">重试</button>
 			</view>
 
+
 			<!-- 数据列表 -->
 			<view v-else>
-				<uni-table ref="table" border stripe type="selection" @selection-change="handleSelectionChange">
+				<uni-table ref="table" border stripe type="selection" row-key="_id" @selection-change="handleSelectionChange">
 					<uni-tr>
 						<uni-th align="center">剧本标题</uni-th>
 						<uni-th align="center">作者</uni-th>
@@ -127,7 +128,7 @@ export default {
 			searchKeyword: '',
 			statusFilter: '',
 			selectedScripts: [],
-			
+
 			loading: false,
 			error: null
 		}
@@ -141,6 +142,17 @@ export default {
 
 	async onLoad() {
 		await this.loadScripts()
+	},
+
+	// 页面显示时检查是否需要刷新数据
+	async onShow() {
+		// 检查是否有刷新标记
+		const needRefresh = uni.getStorageSync('scriptListNeedRefresh')
+		if (needRefresh) {
+			console.log('Detected need to refresh script list')
+			uni.removeStorageSync('scriptListNeedRefresh')
+			await this.loadScripts()
+		}
 	},
 
 	methods: {
@@ -194,7 +206,45 @@ export default {
 		},
 
 		handleSelectionChange(selection) {
-			this.selectedScripts = selection.map(item => item._id)
+			// Support multiple payload shapes from uni-table across platforms:
+			// - { detail: { value: [...] } } (row objects)
+			// - { detail: { index: [...] } } (indexes relative to data)
+			// - { selectedRows: [...] } | { rows: [...] } | plain array
+			let rows = []
+			let ids = []
+
+			if (selection && selection.detail) {
+				// Prefer detail.value when present
+				if (Array.isArray(selection.detail.value) && selection.detail.value.length) {
+					rows = selection.detail.value
+				}
+				// If value is empty but index exists, map indexes back to scriptList
+				if ((!rows || rows.length === 0) && Array.isArray(selection.detail.index) && selection.detail.index.length) {
+					const indexList = selection.detail.index
+					for (const idx of indexList) {
+						const row = this.scriptList && this.scriptList[idx]
+						if (row) ids.push(row._id || row.id)
+					}
+				}
+			}
+
+			// other shapes
+			if ((!rows || rows.length === 0) && selection && Array.isArray(selection.selectedRows)) {
+				rows = selection.selectedRows
+			}
+			if ((!rows || rows.length === 0) && selection && Array.isArray(selection.rows)) {
+				rows = selection.rows
+			}
+			if ((!rows || rows.length === 0) && Array.isArray(selection)) {
+				rows = selection
+			}
+
+			// If we have row objects, extract ids
+			if (rows && rows.length) {
+				ids = rows.map(item => (item && (item._id || item.id || item[this.rowKey]))).filter(Boolean)
+			}
+
+			this.selectedScripts = ids
 		},
 
 		async handleDelete(scriptId) {
@@ -231,56 +281,79 @@ export default {
 		},
 
 		async handleBatchDelete() {
-			if (this.selectedScripts.length === 0) return
+			// Ensure we have current selection; some table implementations may not
+			// emit selection-change for "select all", so fallback to reading ref.
+			if (!this.selectedScripts || this.selectedScripts.length === 0) {
+				try {
+					const tableRef = this.$refs.table
+					let rows = []
+					if (tableRef) {
+						// Try common APIs in order
+						if (typeof tableRef.getSelection === 'function') {
+							rows = await tableRef.getSelection()
+						} else if (typeof tableRef.getSelectedRows === 'function') {
+							rows = await tableRef.getSelectedRows()
+						} else if (Array.isArray(tableRef.selection)) {
+							rows = tableRef.selection
+						} else if (Array.isArray(tableRef.selectedRows)) {
+							rows = tableRef.selectedRows
+						} else if (tableRef.getCheckedItems && typeof tableRef.getCheckedItems === 'function') {
+							rows = await tableRef.getCheckedItems()
+						}
+					}
+					if (Array.isArray(rows) && rows.length) {
+						this.selectedScripts = rows.map(r => r && r._id).filter(Boolean)
+					}
+				} catch (err) {
+					console.warn('fallback read selection failed', err)
+				}
+			}
+
+			if (!this.selectedScripts || this.selectedScripts.length === 0) {
+				// No selection - give user feedback
+				uni.showToast({ title: '请先选择要删除的剧本', icon: 'none' })
+				return
+			}
 
 			try {
-				await uni.showModal({
+				const count = this.selectedScripts.length
+				const modalRes = await uni.showModal({
 					title: '确认批量删除',
-					content: `确定要删除选中的 ${this.selectedScripts.length} 个剧本吗？此操作不可恢复。`,
+					content: `确定要删除选中的 ${count} 个剧本吗？此操作不可恢复。`,
 					showCancel: true,
 					confirmText: '删除',
 					confirmColor: '#ff0000'
-				}).then(async (res) => {
-					if (res.confirm) {
-						let successCount = 0
-						let failCount = 0
+				})
+				if (!modalRes.confirm) return
 
-						for (const scriptId of this.selectedScripts) {
-							try {
-								const response = await deleteScript(scriptId)
-								if (response.success) {
-									successCount++
-								} else {
-									failCount++
-								}
-							} catch (error) {
-								failCount++
-							}
-						}
-
-						if (failCount === 0) {
-							uni.showToast({
-								title: `成功删除 ${successCount} 个剧本`,
-								icon: 'success'
-							})
+				let successCount = 0
+				let failCount = 0
+				for (const scriptId of this.selectedScripts) {
+					try {
+						const response = await deleteScript(scriptId)
+						if (response && response.success) {
+							successCount++
 						} else {
-							uni.showToast({
-								title: `删除完成：${successCount} 成功，${failCount} 失败`,
-								icon: 'none'
-							})
+							failCount++
 						}
-
-						this.selectedScripts = []
-						await this.loadScripts() // 刷新列表
+					} catch (error) {
+						failCount++
 					}
-				})
+				}
+
+				if (failCount === 0) {
+					uni.showToast({ title: `成功删除 ${successCount} 个剧本`, icon: 'success' })
+				} else {
+					uni.showToast({ title: `删除完成：${successCount} 成功，${failCount} 失败`, icon: 'none' })
+				}
+
+				this.selectedScripts = []
+				await this.loadScripts() // 刷新列表
 			} catch (error) {
-				uni.showToast({
-					title: '批量删除失败',
-					icon: 'none'
-				})
-		}
-	},
+				console.error('handleBatchDelete error', error)
+				uni.showToast({ title: '批量删除失败', icon: 'none' })
+			}
+		},
 
 		getStatusType(status) {
 			const s = status || 'active'
@@ -388,7 +461,9 @@ export default {
 			} else {
 				uni.navigateTo({ url })
 			}
-		}
+		},
+
+		// 切换上传区域显示
 	}
 }
 </script>
@@ -435,6 +510,7 @@ export default {
 }
 
 .upload-controls { display: none; }
+
 
 .cover-image {
 	width: 60px;

@@ -46,6 +46,9 @@ const validateScriptData = (data, isUpdate = false) => {
     if (data.author !== undefined && (typeof data.author !== 'string' || data.author.length < 1 || data.author.length > 100)) {
       errors.push('作者必须是1-100字符的字符串')
     }
+    if (data.content !== undefined && (typeof data.content !== 'string' || data.content.length < 1)) {
+      errors.push('内容不能为空')
+    }
   }
 
   // 可选字段验证
@@ -264,54 +267,125 @@ async function handleDelete(params) {
 
 // 上传剧本文件
 async function handleUpload(params) {
-  const { filePath, title, author, description, tags, category } = params
+  const { filePath, title, author, description, tags, category, content, imageFileIds = [], thumbnails = [] } = params
 
+  // 基础参数验证
   if (!filePath) {
     return createErrorResponse('文件路径不能为空')
   }
 
+  if (!title || typeof title !== 'string' || title.length < 1 || title.length > 200) {
+    return createErrorResponse('标题必须是1-200字符的字符串')
+  }
+
+  if (!author || typeof author !== 'string' || author.length < 1 || author.length > 100) {
+    return createErrorResponse('作者必须是1-100字符的字符串')
+  }
+
+  // 验证标签
+  if (tags && (!Array.isArray(tags) || tags.length > 2 || tags.some(tag => typeof tag !== 'string' || !['推理', '娱乐'].includes(tag)))) {
+    return createErrorResponse('标签必须是数组，最多2个，只能包含"推理"或"娱乐"')
+  }
+
   try {
+    // 验证文件路径格式
+    if (typeof filePath !== 'string' || !filePath) {
+      return createErrorResponse('文件路径必须是有效的字符串')
+    }
+
     // 上传文件到云存储
     const uploadResult = await uploadToCloudStorage(filePath)
 
-    // 读取文件内容（如果是文本文件）
-    let content = ''
-    try {
-      // 这里需要根据文件类型处理内容读取
-      // 暂时使用占位符，实际实现需要根据文件类型处理
-      content = '文件已上传，内容待解析'
-    } catch (readError) {
-      console.warn('无法读取文件内容:', readError)
-      content = '文件已上传，内容读取失败'
+    // 验证上传结果
+    if (!uploadResult || !uploadResult.fileID) {
+      return createErrorResponse('文件上传到云存储失败')
     }
 
-    // 创建剧本记录
+    // 检查文件大小 (10MB限制)
+    const maxSize = 10 * 1024 * 1024 // 10MB
+    if (uploadResult.size && uploadResult.size > maxSize) {
+      // 清理已上传的文件
+      try {
+        await uniCloud.deleteFile({ fileList: [uploadResult.fileID] })
+      } catch (cleanupError) {
+        console.warn('清理失败的上传文件时出错:', cleanupError)
+      }
+      return createErrorResponse('文件大小超过10MB限制')
+    }
+
+    // 设置内容：优先使用传递的内容，如果没有则尝试从文件读取
+    let fileContent = content || ''
+    if (!fileContent) {
+      try {
+        // 对于支持的文件类型，尝试读取内容
+        const supportedTypes = ['text/plain', 'application/json', 'text/markdown', 'text/x-markdown']
+        if (uploadResult.mimeType && supportedTypes.includes(uploadResult.mimeType)) {
+          // 这里可以根据实际需求实现文件内容读取
+          // 暂时设置为空，实际项目中需要根据文件类型处理
+          fileContent = '文件已上传，内容待解析'
+        } else {
+          fileContent = '不支持的文件类型，已上传但无法解析内容'
+        }
+      } catch (readError) {
+        console.warn('无法读取文件内容:', readError)
+        fileContent = '文件已上传，内容读取失败'
+      }
+    }
+
+    // 准备剧本数据
     const scriptData = {
-      title: title || '未命名剧本',
-      content,
-      author,
+      title: title.trim(),
+      content: fileContent,
+      author: author.trim(),
       fileId: uploadResult.fileID,
       fileUrl: uploadResult.fileURL || uploadResult.tempFileURL,
       fileSize: uploadResult.size || 0,
       mimeType: uploadResult.mimeType || 'application/octet-stream',
-    status: 'active',
+      status: 'active',
       tags: tags || [],
-      category,
-      description,
+      category: category ? category.trim() : undefined,
+      description: description ? description.trim() : undefined,
+      images: Array.isArray(imageFileIds) ? imageFileIds.map((fileId, index) => ({
+        fileId: fileId,
+        url: Array.isArray(thumbnails) && thumbnails[index] ? thumbnails[index] : fileId
+      })) : [],
       createTime: new Date(),
       updateTime: new Date()
     }
 
+    // 创建剧本记录
     const createResult = await scriptsCollection.add(scriptData)
+
+    if (!createResult || !createResult.id) {
+      // 如果数据库创建失败，清理已上传的文件
+      try {
+        await uniCloud.deleteFile({ fileList: [uploadResult.fileID] })
+      } catch (cleanupError) {
+        console.warn('清理失败的上传文件时出错:', cleanupError)
+      }
+      return createErrorResponse('剧本记录创建失败')
+    }
 
     return createResponse(0, '上传成功', {
       id: createResult.id,
       fileId: uploadResult.fileID,
-      fileUrl: uploadResult.fileURL || uploadResult.tempFileURL
+      fileUrl: uploadResult.fileURL || uploadResult.tempFileURL,
+      title: scriptData.title,
+      author: scriptData.author
     })
 
   } catch (uploadError) {
     console.error('文件上传失败:', uploadError)
-    return createErrorResponse('文件上传失败：' + uploadError.message)
+
+    // 根据错误类型提供不同的错误消息
+    if (uploadError.message && uploadError.message.includes('size')) {
+      return createErrorResponse('文件大小超过限制')
+    } else if (uploadError.message && uploadError.message.includes('type')) {
+      return createErrorResponse('不支持的文件格式')
+    } else if (uploadError.message && uploadError.message.includes('network')) {
+      return createErrorResponse('网络连接失败，请检查网络后重试')
+    } else {
+      return createErrorResponse('文件上传失败：' + uploadError.message)
+    }
   }
 }

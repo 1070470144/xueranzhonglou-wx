@@ -14,18 +14,12 @@
       </uni-forms-item>
 
       <uni-forms-item name="tag" label="标签">
-        <picker
-          mode="selector"
-          :range="tagOptions"
-          range-key="text"
-          :value="tagOptions.findIndex(item => item.value === formData.tag)"
-          @change="onTagChange"
+        <uni-data-picker
+          v-model="formData.tag"
+          :localdata="tagOptions"
           placeholder="请选择标签"
-        >
-          <view class="picker-display">
-            {{ formData.tag ? tagOptions.find(item => item.value === formData.tag)?.text : '请选择标签' }}
-          </view>
-        </picker>
+          clearIcon="true"
+        />
       </uni-forms-item>
 
       <uni-forms-item name="description" label="简介">
@@ -53,7 +47,7 @@
         />
       </uni-forms-item>
 
-      <uni-forms-item name="jsonFile" label="JSON 源文件">
+      <uni-forms-item name="jsonFile" label="JSON 源文件" v-if="!id">
         <view class="upload-section">
           <!-- 如果已有 json，显示文件信息和预览/删除，否则显示上传区域 -->
           <view v-if="formData.jsonFile && (formData.jsonFile.url || formData.jsonFile.name || formData.jsonFile.fileId)" class="json-preview">
@@ -102,6 +96,28 @@
         </view>
       </uni-forms-item>
 
+      <!-- JSON内容预览（Ant Design 风格） -->
+      <uni-forms-item name="jsonContent" label="JSON内容预览" v-if="formData.jsonContent">
+        <view class="ant-card" role="region" aria-label="JSON 预览">
+          <view class="ant-card-head">
+            <view class="ant-card-head-title">JSON 内容预览</view>
+            <view class="ant-card-head-extra">
+              <button class="ant-btn ant-btn-text" @click="showJsonDetail = !showJsonDetail" title="展开/收起">
+                {{ showJsonDetail ? '收起' : '展开' }}
+              </button>
+            </view>
+          </view>
+          <view class="ant-card-body" v-if="showJsonDetail">
+            <textarea
+              v-model="jsonContentText"
+              readonly
+              class="json-textarea"
+              placeholder="JSON内容将在这里显示"
+            />
+          </view>
+        </view>
+      </uni-forms-item>
+
       <view class="uni-button-group">
         <button type="primary" class="uni-button" @click="submitForm">
           {{ id ? '保存' : '创建' }}
@@ -119,6 +135,7 @@ export default {
 	data() {
 		return {
 			id: null,
+			showJsonDetail: false,
 			formData: {
 				title: '',
 				author: '',
@@ -175,15 +192,17 @@ export default {
 	computed: {
 		pageTitle() {
 			return (this.id && String(this.id).trim()) ? '编辑剧本' : '新增剧本';
+		},
+		jsonContentText() {
+			if (!this.formData.jsonContent) return '';
+			try {
+				return JSON.stringify(this.formData.jsonContent, null, 2);
+			} catch (e) {
+				return String(this.formData.jsonContent);
+			}
 		}
 	},
 	methods: {
-		// 标签选择变化
-		onTagChange(e) {
-			const index = e.detail.value;
-			this.formData.tag = this.tagOptions[index].value;
-		},
-
 		// 触发表单提交
 		submitForm() {
 			this.$refs.form.submit();
@@ -238,23 +257,69 @@ export default {
 				let jsonContentForSend = null;
 				try {
 					if (this.formData.jsonContent !== undefined && this.formData.jsonContent !== null) {
-						jsonContentForSend = JSON.parse(JSON.stringify(this.formData.jsonContent));
+						const parsed = JSON.parse(JSON.stringify(this.formData.jsonContent));
+						// 如果是对象或数组，转换为JSON字符串；如果是字符串，直接使用
+						jsonContentForSend = typeof parsed === 'string' ? parsed : JSON.stringify(parsed);
 					}
 				} catch (e) {
 					console.warn('jsonContent stringify failed', e);
 					jsonContentForSend = this.formData.jsonContent;
 				}
 				console.log('saveScript payload debug', { payload, jsonFileId, jsonContent: jsonContentForSend, imageFileIds, thumbnails });
+				console.log('saveScript mode check - this.id:', this.id, 'jsonFileId:', jsonFileId);
 				if (this.id) {
+					console.log('Using scriptManager.update for existing script');
 					res = await uniCloud.callFunction({
-						name: 'adminScript',
-						data: { action: 'update', id: this.id, payload, jsonFileId, jsonContent: jsonContentForSend, imageFileIds, thumbnails }
+						name: 'scriptManager',
+						data: {
+							action: 'update',
+							id: this.id,
+							title: payload.title,
+							author: payload.author,
+							description: payload.description,
+							content: jsonContentForSend || '',
+							tag: payload.tag,
+							images: normalizedImages.map(img => ({
+								fileId: img.fileId || img.fileID,
+								url: img.url || img.fileId || img.fileID
+							}))
+						}
 					});
 				} else {
-					res = await uniCloud.callFunction({
-						name: 'adminScript',
-						data: { action: 'create', payload, jsonFileId, jsonContent: jsonContentForSend, imageFileIds, thumbnails }
-					});
+					// 新增模式
+					if (this.formData.jsonFile && (this.formData.jsonFile.tempFilePath || this.formData.jsonFile.path)) {
+						// 如果有JSON文件，使用upload API
+						res = await uniCloud.callFunction({
+							name: 'scriptManager',
+							data: {
+								action: 'upload',
+								filePath: this.formData.jsonFile.tempFilePath || this.formData.jsonFile.path,
+								title: payload.title,
+								content: jsonContentForSend || '',
+								author: payload.author,
+								description: payload.description,
+								tags: payload.tag ? [payload.tag] : []
+							}
+						});
+					} else {
+						// 如果没有文件，使用create API
+						res = await uniCloud.callFunction({
+							name: 'scriptManager',
+							data: {
+								action: 'create',
+								title: payload.title,
+								content: jsonContentForSend || '',
+								author: payload.author,
+								status: 'active',
+								description: payload.description,
+								tags: payload.tag ? [payload.tag] : [],
+								images: normalizedImages.map(img => ({
+									fileId: img.fileId || img.fileID,
+									url: img.url || img.fileId || img.fileID
+								}))
+							}
+						});
+					}
 				}
 
 				uni.hideLoading();
@@ -262,7 +327,8 @@ export default {
 				console.log('saveScript result:', result);
 				if (result && result.code === 0) {
 					uni.showToast({ title: '保存成功', icon: 'success' });
-					this.getOpenerEventChannel().emit('refreshData');
+					// 设置列表页面的刷新标记
+					uni.setStorageSync('scriptListNeedRefresh', true);
 					setTimeout(() => uni.navigateBack(), 500);
 				} else {
 					uni.showToast({ title: result.errMsg || '保存失败', icon: 'none' });
@@ -439,13 +505,13 @@ export default {
 		async loadScriptData(id) {
 			try {
 				uni.showLoading({ title: '加载中...' });
-				const res = await uniCloud.callFunction({ name: 'getScript', data: { id } });
+				const res = await uniCloud.callFunction({ name: 'scriptManager', data: { action: 'get', id } });
 				uni.hideLoading();
-				console.log('getScript raw response:', res);
+				console.log('scriptManager raw response:', res);
 				const payload = (res && res.result) ? res.result : res;
-				console.log('getScript payload:', payload);
-				if (res && res.result && res.result.code === 0 && res.result.data && res.result.data.length > 0) {
-					const script = res.result.data[0];
+				console.log('scriptManager payload:', payload);
+				if (res && res.result && res.result.code === 0 && res.result.data) {
+					const script = res.result.data;
 					console.log('fetched script:', script);
 					// 规范化 images 为 {url,...} 格式，jsonFile 也尽量统一为 object
 					const normalizedImages = (script.images || []).map(img => {
@@ -469,6 +535,17 @@ export default {
 						}
 					}
 
+					// 解析content字段为jsonContent
+					let parsedJsonContent = null;
+					if (script.content) {
+						try {
+							parsedJsonContent = typeof script.content === 'string' ? JSON.parse(script.content) : script.content;
+						} catch (e) {
+							console.warn('Failed to parse content as JSON:', e);
+							parsedJsonContent = script.content;
+						}
+					}
+
 					this.formData = {
 						title: script.title || '',
 						author: script.author || '',
@@ -479,8 +556,14 @@ export default {
 						usageCount: script.usageCount || 0,
 						tag: script.tag || '娱乐',
 						jsonFile: normalizedJson,
-						images: normalizedImages
+						images: normalizedImages,
+						jsonContent: parsedJsonContent
 					};
+
+					// 如果有jsonContent，应用到表单
+					if (parsedJsonContent) {
+						this._applyJsonToForm(parsedJsonContent);
+					}
 				} else {
 					uni.showToast({ title: '加载数据失败1', icon: 'none' });
 				}
@@ -570,6 +653,8 @@ export default {
 			}
 		},
 
+		// 复制/下载功能已删除，应按规范不提供该操作
+
 		// 将 json 内容中的字段应用到表单（只在对应表单项为空时填充）
 		_applyJsonToForm(json) {
 			if (!json) return;
@@ -644,19 +729,110 @@ export default {
   }
 }
 
+// JSON预览样式
+.ant-card {
+  background: #fff;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+  border: 1px solid #f0f0f0;
+  padding: 10px;
+}
+.ant-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #f5f5f5;
+}
+.ant-card-head-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+.ant-card-head-extra {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.ant-card-body {
+  padding-top: 8px;
+  overflow: hidden; /* prevent outer horizontal scroll */
+  box-sizing: border-box;
+}
+
+.json-preview-container {
+  width: 100%;
+}
+
+.json-toggle-bar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.json-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: 1px solid #d9d9d9;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 14px;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.json-toggle-btn:hover {
+  background-color: #f5f5f5;
+  border-color: #1890ff;
+  color: #1890ff;
+}
+
+.toggle-text {
+  font-size: 14px;
+}
+
+.toggle-icon {
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.json-content {
+  margin-top: 8px;
+}
+
+.json-textarea {
+  box-sizing: border-box;
+  width: 100%;
+  height: 200px;
+  padding: 12px;
+  border: 1px solid #d9d9d9;
+  border-radius: 6px;
+  background-color: #fafafa;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #333;
+  /* wrap long lines to avoid horizontal scrollbar */
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  overflow-y: auto;
+  overflow-x: hidden;
+  resize: none;
+}
+
+.json-textarea:focus {
+  outline: none;
+  border-color: #1890ff;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
 // 表单项标签宽度调整
 ::v-deep .uni-forms-item__label {
   width: 100px !important;
-}
-
-.picker-display {
-  padding: 8px 12px;
-  border: 1px solid #e5e5e5;
-  border-radius: 4px;
-  min-height: 36px;
-  display: flex;
-  align-items: center;
-  color: #333;
 }
 
 // 文件上传区域样式

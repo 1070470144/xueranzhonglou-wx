@@ -51,6 +51,7 @@ description: "Task list template for feature implementation"
 - [ ] T001 Create project structure per implementation plan
 - [ ] T002 Initialize [language] project with [framework] dependencies
 - [ ] T003 [P] Configure linting and formatting tools
+- [ ] T00X [P] Add design system / UI guidelines setup: register Ant Design mapping, add design tokens and component mapping doc (required if feature contains UI)
 
 ---
 
