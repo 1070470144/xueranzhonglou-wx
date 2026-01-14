@@ -13,7 +13,34 @@
 
       <view class="manifest-preview" v-if="manifest.length">
         <view v-for="(item, idx) in manifest" :key="idx" class="manifest-item">
-          <text>{{ idx + 1 }}. {{ item.fileName }} - {{ item.extractedMeta && item.extractedMeta.title ? item.extractedMeta.title : '（无 title）' }}</text>
+          <view class="manifest-row">
+            <text>{{ idx + 1 }}. </text>
+            <text class="file-name">{{ item.fileName }}</text>
+            <text class="file-title"> - {{ item.extractedMeta && item.extractedMeta.title ? item.extractedMeta.title : '（无 title）' }}</text>
+            <button class="uni-button" type="default" size="mini" @click="openPreview(idx)">编辑</button>
+          </view>
+        </view>
+      </view>
+      <!-- Preview modal -->
+      <view v-if="previewVisible" class="preview-overlay">
+        <view class="preview-modal">
+          <text class="modal-title">编辑元数据</text>
+          <view class="form-row">
+            <text>标题</text>
+            <input type="text" v-model="previewModel.title" />
+          </view>
+          <view class="form-row">
+            <text>作者</text>
+            <input type="text" v-model="previewModel.author" />
+          </view>
+          <view class="form-row">
+            <text>描述</text>
+            <textarea v-model="previewModel.description"></textarea>
+          </view>
+          <view class="modal-actions">
+            <button class="uni-button" @click="savePreview">保存</button>
+            <button class="uni-button" type="default" @click="cancelPreview">取消</button>
+          </view>
         </view>
       </view>
       <view class="progress" v-if="jobId">
@@ -36,7 +63,21 @@ export default {
       failCount: 0,
       pollTimer: null,
       hasErrors: false,
-      conflictStrategy: 'skip' // default
+      conflictStrategy: 'skip', // default
+      // UI enhancement state
+      concurrency: 5,
+      previewVisible: false,
+      previewIndex: -1,
+      previewModel: {
+        title: '',
+        author: '',
+        description: ''
+      }
+    }
+  },
+  computed: {
+    manifestCount() {
+      return this.manifest ? this.manifest.length : 0
     }
   },
   methods: {
@@ -320,6 +361,36 @@ export default {
         uni.showToast({ title: '获取失败详情失败', icon: 'none' })
       }
     }
+    ,
+    // UI: open preview modal for item index
+    openPreview(index) {
+      if (index === undefined || index === null) return
+      const item = this.manifest[index]
+      if (!item) return
+      this.previewIndex = index
+      this.previewModel = {
+        title: (item.extractedMeta && item.extractedMeta.title) || '',
+        author: (item.extractedMeta && item.extractedMeta.author) || '',
+        description: (item.extractedMeta && item.extractedMeta.description) || ''
+      }
+      this.previewVisible = true
+    },
+    savePreview() {
+      if (this.previewIndex < 0) return
+      const item = this.manifest[this.previewIndex]
+      if (!item) return
+      item.extractedMeta = item.extractedMeta || {}
+      item.extractedMeta.title = this.previewModel.title
+      item.extractedMeta.author = this.previewModel.author
+      item.extractedMeta.description = this.previewModel.description
+      this.manifest.splice(this.previewIndex, 1, item)
+      this.previewVisible = false
+      this.previewIndex = -1
+    },
+    cancelPreview() {
+      this.previewVisible = false
+      this.previewIndex = -1
+    }
   }
 }
 </script>
@@ -328,6 +399,14 @@ export default {
 .bulk-upload-panel { padding: 8px; background: #fff; border-radius: 6px; }
 .panel-header .title { font-weight: bold; margin-bottom: 8px; display: block; }
 .panel-body { padding: 8px 0; }
+.manifest-row { display:flex; align-items:center; gap:8px; margin:4px 0; }
+.file-name { font-weight:600; }
+.file-title { color:#666; margin-left:6px; }
+.preview-overlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.4); z-index:1000; }
+.preview-modal { background:#fff; padding:16px; border-radius:8px; width:90%; max-width:520px; }
+.modal-title { font-weight:700; margin-bottom:8px; display:block; }
+.form-row { margin-bottom:8px; display:flex; flex-direction:column; gap:4px; }
+.modal-actions { display:flex; gap:8px; justify-content:flex-end; margin-top:12px; }
 </style>
 
 

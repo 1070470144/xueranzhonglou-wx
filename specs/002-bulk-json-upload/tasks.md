@@ -57,6 +57,9 @@ description: "Task list for feature 002-bulk-json-upload — 批量 JSON 上传�
  - [X] T014 [US1] PR D: Frontend batching & UX — add configurable concurrency and batch controls to `BulkUploadPanel.vue` and expose basic advanced settings in UI (partially: implemented showDirectoryPicker recursive handling)
  - [ ] T015 [US1] Integrate enhanced `utils/bulkUploadApi.js` usage in `BulkUploadPanel.vue` to handle new response format and error handling
  - [ ] T016 [US1] Verify job polling and failure export using `xueran-admin/utils/bulkUploadApi.js` and `BulkUploadPanel.vue`
+ - [X] T014 [US1] PR D: Frontend batching & UX — add configurable concurrency and batch controls to `BulkUploadPanel.vue` and expose basic advanced settings in UI (partially: implemented showDirectoryPicker recursive handling and preview modal)
+ - [X] T015 [US1] Integrate enhanced `utils/bulkUploadApi.js` usage in `BulkUploadPanel.vue` to handle new response format and error handling
+ - [ ] T016 [US1] Verify job polling and failure export using `xueran-admin/utils/bulkUploadApi.js` and `BulkUploadPanel.vue`
 
 ---
 
