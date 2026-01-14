@@ -1,0 +1,8 @@
+{
+  "maxFilesPerJob": 500,
+  "concurrency": 5,
+  "retryCount": 3,
+  "manifestStore": true
+}
+
+

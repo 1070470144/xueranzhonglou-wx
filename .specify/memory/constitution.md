@@ -1,20 +1,20 @@
 # xueran-admin 项目宪章
 <!--
 Sync Impact Report
-- Version change: 1.4.0 → 1.5.0
+- Version change: 1.5.0 → 1.6.0
 - Modified principles:
-  - 新增: UI 设计规范（强制） -> 明确要求 UI 设计严格参考 Ant Design (阿里巴巴)
+  - 新增: 管理端目标平台（强制） -> 管理端开发目标平台限定为 浏览器(H5)，不再考虑原生 App/小程序等兼容实现
 - Added sections:
-  - UI 设计规范（强制）
+  - 管理端目标平台（强制）
 - Removed sections: none
 - Templates requiring review/update:
-  - ⚠ .specify/templates/plan-template.md (需检查 UI/设计 检查项并更新示例)
-  - ⚠ .specify/templates/spec-template.md (需在 UI 要求处标注 Ant Design 约束)
-  - ⚠ .specify/templates/tasks-template.md (需在任务说明处加入 UI 审核/设计输出项)
-  - ⚠ 其它命令/模板：请检查是否引用旧 UI 指南或外部工具名称
+  - ✅ .specify/templates/plan-template.md (已更新以反映 H5-only 管理端要求)
+  - ✅ .specify/templates/spec-template.md (已更新以指明管理端仅为浏览器目标)
+  - ✅ .specify/templates/tasks-template.md (已更新以在路径/任务约定中优先 Web 结构)
+  - ⚠ .specify/templates/commands/*.md (请检查命令文档是否暗含多平台假设并修正)
 - Follow-up TODOs:
   - TODO(RATIFICATION_DATE): 填写宪章首次通过日期（若已知）
-  - TODO(update_templates): 更新上列模板以反映 UI 设计规范（负责人：前端架构）
+  - TODO(update_docs): 校验并必要时更新 README 与 quickstart 中关于平台/部署的说明
 -->
 
 ## 核心原则
@@ -38,6 +38,10 @@ Sync Impact Report
 - 设计稿与实现要一一对应：设计输出须包含使用的 Ant Design 组件名称、状态说明（禁用/hover/active）、以及响应式断点说明；实现时需在 PR 中引用设计稿并指出偏离处及其理由；
 - 可接受的变体须在团队设计系统中登记并获得两位维护者批准；禁止随意调整全局配色、基线网格或组件基础交互行为；
 理由：统一的设计规范能显著减少开发-设计沟通成本，提高组件复用率和用户体验一致性，Ant Design 为成熟的企业级设计系统，适合本项目管理端的稳定性与一致性需求。
+
+### 管理端目标平台（强制）
+管理端（admin / 管理控制台）的开发目标平台限定为**浏览器（H5）**，所有管理端相关的设计、实现、测试与部署只需考虑在 H5/浏览器环境下运行，不再为原生 App、桌面客户端或小程序做兼容实现或额外适配工作。若确有必要支持其它平台，必须作为独立项目提出变更申请并经过 Governance 批准。
+理由：缩窄目标平台可以显著降低实现复杂度、减少平台兼容性 bug，并让 UI/交互、文件处理、权限边界等能针对浏览器环境优化。
 
 ### 回复与沟通规范（强制）
 所有文档、评论、回复、评审意见和团队沟通必须使用中文。包括但不限于：代码评审意见、问题讨论、Pull Request 描述、提交信息、会议记录等。
@@ -86,4 +90,4 @@ Sync Impact Report
 3. 修订须包含迁移计划（如影响接口或运行时约束）；  
 4. 修订通过后，更新 `.specify/memory/constitution.md` 的 `Last Amended` 与 `Version` 字段，并在 Sync Impact Report 中列出受影响的模板与后续 TODO。
 
-**Version**: 1.5.0 | **Ratified**: TODO(RATIFICATION_DATE): 填写宪章首次通过日期 | **Last Amended**: 2026-01-14
+**Version**: 1.6.0 | **Ratified**: TODO(RATIFICATION_DATE): 填写宪章首次通过日期 | **Last Amended**: 2026-01-14

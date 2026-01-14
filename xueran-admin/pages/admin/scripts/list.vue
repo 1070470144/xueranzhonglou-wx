@@ -10,6 +10,7 @@
 				<option value="active">激活</option>
 				<option value="inactive">未激活</option>
 				</select>
+				<button class="uni-button" type="primary" size="mini" @click="navigateTo('./bulk-upload')">批量上传</button>
 				<button class="uni-button" type="primary" size="mini" @click="navigateTo('./edit')">新增剧本</button>
 				<button class="uni-button" type="warn" size="mini" @click="handleBatchDelete">批量删除</button>
 			</view>

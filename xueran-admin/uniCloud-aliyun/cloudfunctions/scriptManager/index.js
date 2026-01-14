@@ -78,6 +78,17 @@ const validateScriptData = (data, isUpdate = false) => {
       errors.push('点赞数必须为非负数字')
     }
   }
+  // 来源追溯字段验证（可选）
+  if (data.sourceJobId !== undefined) {
+    if (typeof data.sourceJobId !== 'string') {
+      errors.push('sourceJobId 必须为字符串')
+    }
+  }
+  if (data.sourceFileName !== undefined) {
+    if (typeof data.sourceFileName !== 'string') {
+      errors.push('sourceFileName 必须为字符串')
+    }
+  }
 
   return errors
 }

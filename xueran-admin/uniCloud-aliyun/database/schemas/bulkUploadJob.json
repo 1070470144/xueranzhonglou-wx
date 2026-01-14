@@ -1,0 +1,16 @@
+{
+  "collectionName": "bulkUploadJobs",
+  "fields": {
+    "jobId": { "type": "string", "required": true },
+    "userId": { "type": "string" },
+    "startTime": { "type": "date" },
+    "endTime": { "type": "date" },
+    "totalFiles": { "type": "number" },
+    "successCount": { "type": "number" },
+    "failCount": { "type": "number" },
+    "status": { "type": "string" },
+    "errorSummary": { "type": "string" }
+  }
+}
+
+

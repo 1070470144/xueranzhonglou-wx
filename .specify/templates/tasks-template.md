@@ -23,6 +23,7 @@ description: "Task list template for feature implementation"
 - **Single project**: `src/`, `tests/` at repository root
 - **Web app**: `backend/src/`, `frontend/src/`
 - **Mobile**: `api/src/`, `ios/src/` or `android/src/`
+Note: For 管理端 (admin) 功能，任务模板应默认采用 **Web app** 结构（`frontend/` + `backend/`），并且任务与测试场景只需覆盖浏览器（H5）端的实现与验证，不必为原生 App 或小程序编写额外任务，除非在 spec 中明确提出并获得宪章批准。
 - Paths shown below assume single project - adjust based on plan.md structure
 
 <!-- 

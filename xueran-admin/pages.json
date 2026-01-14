@@ -415,6 +415,13 @@
 					}
 				},
 				{
+					"path": "../../pages/admin/scripts/bulk-upload",
+					"style": {
+						"navigationBarTitleText": "批量上传",
+						"navigationStyle": "default"
+					}
+				},
+				{
 					"path": "user/overview/overview",
 					"style": {
 						"navigationBarTitleText": "今日概况",

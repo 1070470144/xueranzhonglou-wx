@@ -1,0 +1,223 @@
+openapi: 3.0.3
+info:
+  title: 批量上传作业 API
+  version: 1.0.0
+
+paths:
+  /bulk/createJob:
+    post:
+      summary: 创建批量上传作业（接受 manifest 或单文件/zip 的降级）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                manifest:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      fileName:
+                        type: string
+                      relativePath:
+                        type: string
+                      content:
+                        type: string
+                      extractedMeta:
+                        type: object
+                processNow:
+                  type: boolean
+              required: [manifest]
+      responses:
+        '200':
+          description: 作业已创建
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  data:
+                    type: object
+                    properties:
+                      jobId:
+                        type: string
+        '400':
+          description: 请求错误
+        '500':
+          description: 服务器错误
+
+  /bulk/getJob:
+    get:
+      summary: 获取批量作业状态
+      parameters:
+        - name: jobId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 返回作业状态
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  data:
+                    type: object
+                    properties:
+                      jobId:
+                        type: string
+                      status:
+                        type: string
+                      successCount:
+                        type: integer
+                      failCount:
+                        type: integer
+        '404':
+          description: 未找到作业
+
+  /bulk/getJobErrors:
+    get:
+      summary: 获取作业失败详情（用于导出）
+      parameters:
+        - name: jobId
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 返回失败详情数组
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  data:
+                    type: object
+                    properties:
+                      errors:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            fileName:
+                              type: string
+                            error:
+                              type: string
+
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+        message:
+          type: string
+
+openapi: 3.0.1
+info:
+  title: Bulk JSON Upload API
+  version: "1.0.0"
+paths:
+  /bulk-upload:
+    post:
+      summary: Start a bulk upload job (submit list of files or folder manifest)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                source: 
+                  type: string
+                  description: "来源类型：client-folder / zip / manifest"
+                files:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      fileName:
+                        type: string
+                      content:
+                        type: string
+                      extractedMeta:
+                        type: object
+              required: ["source", "files"]
+      responses:
+        '200':
+          description: Job created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId:
+                    type: string
+                  totalFiles:
+                    type: integer
+  /bulk-upload/{jobId}:
+    get:
+      summary: Get bulk upload job status
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Job status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId: { type: string }
+                  status: { type: string }
+                  totalFiles: { type: integer }
+                  successCount: { type: integer }
+                  failCount: { type: integer }
+                  startedAt: { type: string }
+                  finishedAt: { type: string }
+  /bulk-upload/{jobId}/errors:
+    get:
+      summary: Download or view failed items for a job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Error list / CSV
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId: { type: string }
+                  errors:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        fileName: { type: string }
+                        error: { type: string }
+
+
