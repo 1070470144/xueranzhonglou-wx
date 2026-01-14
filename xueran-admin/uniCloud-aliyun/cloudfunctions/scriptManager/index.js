@@ -1,0 +1,317 @@
+'use strict'
+
+/**
+ * 统一剧本管理云对象
+ * 提供剧本的创建、读取、更新、删除和上传功能
+ */
+
+// 云数据库引用
+const db = uniCloud.database()
+const scriptsCollection = db.collection('scripts')
+
+// 文件上传到云存储
+const uploadToCloudStorage = async (filePath) => {
+  // 确保filePath是字符串
+  if (typeof filePath !== 'string' || !filePath) {
+    throw new Error('文件路径必须是有效的字符串')
+  }
+
+  const result = await uniCloud.uploadFile({
+    filePath: filePath,
+    cloudPath: `scripts/${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+  })
+  return result
+}
+
+// 数据验证函数
+const validateScriptData = (data, isUpdate = false) => {
+  const errors = []
+
+  if (!isUpdate) {
+    // 创建时的必填验证
+    if (!data.title || typeof data.title !== 'string' || data.title.length < 1 || data.title.length > 200) {
+      errors.push('标题必须是1-200字符的字符串')
+    }
+    if (!data.content || typeof data.content !== 'string' || data.content.length < 1) {
+      errors.push('内容不能为空')
+    }
+    if (!data.author || typeof data.author !== 'string' || data.author.length < 1 || data.author.length > 100) {
+      errors.push('作者必须是1-100字符的字符串')
+    }
+  } else {
+    // 更新时的可选验证
+    if (data.title !== undefined && (typeof data.title !== 'string' || data.title.length < 1 || data.title.length > 200)) {
+      errors.push('标题必须是1-200字符的字符串')
+    }
+    if (data.author !== undefined && (typeof data.author !== 'string' || data.author.length < 1 || data.author.length > 100)) {
+      errors.push('作者必须是1-100字符的字符串')
+    }
+  }
+
+  // 可选字段验证
+  if (data.status && !['active', 'inactive'].includes(data.status)) {
+    errors.push('状态必须是 active 或 inactive 之一')
+  }
+  if (data.tags && (!Array.isArray(data.tags) || data.tags.length > 20 || data.tags.some(tag => typeof tag !== 'string' || tag.length > 50))) {
+    errors.push('标签必须是字符串数组，最多20个，每个标签最多50字符')
+  }
+  if (data.category && (typeof data.category !== 'string' || data.category.length > 100)) {
+    errors.push('分类必须是字符串，最多100字符')
+  }
+  if (data.description && (typeof data.description !== 'string' || data.description.length > 1000)) {
+    errors.push('描述必须是字符串，最多1000字符')
+  }
+
+  return errors
+}
+
+// 统一响应格式
+const createResponse = (code = 0, message = '操作成功', data = null) => {
+  return {
+    code,
+    message,
+    data
+  }
+}
+
+// 错误响应
+const createErrorResponse = (message, code = -1) => {
+  return createResponse(code, message, null)
+}
+
+exports.main = async (event, context) => {
+  const { action, ...params } = event
+
+  try {
+    switch (action) {
+      case 'list':
+        return await handleList(params)
+      case 'get':
+        return await handleGet(params)
+      case 'create':
+        return await handleCreate(params)
+      case 'update':
+        return await handleUpdate(params)
+      case 'delete':
+        return await handleDelete(params)
+      case 'upload':
+        return await handleUpload(params)
+      default:
+        return createErrorResponse('不支持的操作类型')
+    }
+  } catch (error) {
+    console.error('剧本管理操作失败:', error)
+    return createErrorResponse('操作失败：' + error.message)
+  }
+}
+
+// 获取剧本列表
+async function handleList(params) {
+  const {
+    page = 1,
+    pageSize = 20,
+    keyword,
+    status,
+    category
+  } = params
+
+  // 构建查询条件（组合 keyword 与 status，避免互相覆盖）
+  const query = {}
+
+  if (status || category || keyword) {
+    const conditions = []
+
+    if (status) {
+      // Treat legacy records without status as active when filtering active.
+      if (status === 'active') {
+        conditions.push({ $or: [{ status: 'active' }, { status: { $exists: false } }] })
+      } else {
+        conditions.push({ status: status })
+      }
+    }
+
+    if (category) {
+      conditions.push({ category })
+    }
+
+    if (keyword) {
+      // 搜索标题、作者和描述
+      conditions.push({
+        $or: [
+          { title: { $regex: keyword, $options: 'i' } },
+          { author: { $regex: keyword, $options: 'i' } },
+          { description: { $regex: keyword, $options: 'i' } }
+        ]
+      })
+    }
+
+    // 使用 $and 组合所有条件
+    query.$and = conditions
+  }
+
+  // 分页查询
+  const skip = (page - 1) * pageSize
+  const result = await scriptsCollection
+    .where(query)
+    .skip(skip)
+    .limit(pageSize)
+    .orderBy('createTime', 'desc')
+    .get()
+
+  // 获取总数
+  const totalResult = await scriptsCollection.where(query).count()
+
+  return createResponse(0, '获取成功', {
+    list: result.data,
+    total: totalResult.total,
+    page: parseInt(page),
+    pageSize: parseInt(pageSize)
+  })
+}
+
+// 获取单个剧本
+async function handleGet(params) {
+  const { id } = params
+
+  if (!id) {
+    return createErrorResponse('剧本ID不能为空')
+  }
+
+  const result = await scriptsCollection.doc(id).get()
+
+  if (result.data.length === 0) {
+    return createErrorResponse('剧本不存在', 404)
+  }
+
+  return createResponse(0, '获取成功', result.data[0])
+}
+
+// 创建剧本
+async function handleCreate(params) {
+  // 验证数据
+  const validationErrors = validateScriptData(params, false)
+  if (validationErrors.length > 0) {
+    return createErrorResponse('数据验证失败：' + validationErrors.join(', '))
+  }
+
+  // 准备数据
+  const now = new Date()
+  const scriptData = {
+    ...params,
+    status: params.status || 'active',
+    createTime: now,
+    updateTime: now
+  }
+
+  // 创建剧本
+  const result = await scriptsCollection.add(scriptData)
+
+  return createResponse(0, '创建成功', {
+    id: result.id
+  })
+}
+
+// 更新剧本
+async function handleUpdate(params) {
+  const { id, ...updateData } = params
+
+  if (!id) {
+    return createErrorResponse('剧本ID不能为空')
+  }
+
+  // 验证数据
+  const validationErrors = validateScriptData(updateData, true)
+  if (validationErrors.length > 0) {
+    return createErrorResponse('数据验证失败：' + validationErrors.join(', '))
+  }
+
+  // 检查剧本是否存在
+  const existingScript = await scriptsCollection.doc(id).get()
+  if (existingScript.data.length === 0) {
+    return createErrorResponse('剧本不存在', 404)
+  }
+
+  // 更新数据
+  const updatePayload = {
+    ...updateData,
+    updateTime: new Date()
+  }
+
+  await scriptsCollection.doc(id).update(updatePayload)
+
+  return createResponse(0, '更新成功')
+}
+
+// 删除剧本
+async function handleDelete(params) {
+  const { id } = params
+
+  if (!id) {
+    return createErrorResponse('剧本ID不能为空')
+  }
+
+  // 检查剧本是否存在
+  const existingScript = await scriptsCollection.doc(id).get()
+  if (existingScript.data.length === 0) {
+    return createErrorResponse('剧本不存在', 404)
+  }
+
+  // 删除剧本
+  await scriptsCollection.doc(id).remove()
+
+  return createResponse(0, '删除成功')
+}
+
+// 上传剧本文件
+async function handleUpload(params) {
+  const { filePath, title, author, description, tags, category } = params
+
+  if (!filePath) {
+    return createErrorResponse('文件路径不能为空')
+  }
+
+  try {
+    // 上传文件到云存储
+    const uploadResult = await uploadToCloudStorage(filePath)
+
+    // 读取文件内容（如果是文本文件）
+    let content = ''
+    try {
+      // 这里需要根据文件类型处理内容读取
+      // 暂时使用占位符，实际实现需要根据文件类型处理
+      content = '文件已上传，内容待解析'
+    } catch (readError) {
+      console.warn('无法读取文件内容:', readError)
+      content = '文件已上传，内容读取失败'
+    }
+
+    // 创建剧本记录
+    const scriptData = {
+      title: title || '未命名剧本',
+      content,
+      author,
+      fileId: uploadResult.fileID,
+      fileUrl: uploadResult.fileURL || uploadResult.tempFileURL,
+      fileSize: uploadResult.size || 0,
+      mimeType: uploadResult.mimeType || 'application/octet-stream',
+    status: 'active',
+      tags: tags || [],
+      category,
+      description,
+      createTime: new Date(),
+      updateTime: new Date()
+    }
+
+    const createResult = await scriptsCollection.add(scriptData)
+
+    return createResponse(0, '上传成功', {
+      id: createResult.id,
+      fileId: uploadResult.fileID,
+      fileUrl: uploadResult.fileURL || uploadResult.tempFileURL
+    })
+
+  } catch (uploadError) {
+    console.error('文件上传失败:', uploadError)
+    return createErrorResponse('文件上传失败：' + uploadError.message)
+  }
+}

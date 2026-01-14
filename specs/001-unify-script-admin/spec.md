@@ -1,4 +1,4 @@
-# Feature Specification: 统一剧本管理接口
+# 功能规范：统一剧本管理接口
 
 **Feature Branch**: `001-unify-script-admin`
 **Created**: 2026-01-14
@@ -7,70 +7,70 @@
 
 **文档语言**: 本规范与其衍生文档须使用中文编写（除非另有说明并获批准）。
 
-## User Scenarios & Testing *(mandatory)*
+## 用户场景与测试 *(mandatory)*
 
 <!--
-  IMPORTANT: User stories should be PRIORITIZED as user journeys ordered by importance.
-  Each user story/journey must be INDEPENDENTLY TESTABLE - meaning if you implement just ONE of them,
-  you should still have a viable MVP (Minimum Viable Product) that delivers value.
-  
-  Assign priorities (P1, P2, P3, etc.) to each story, where P1 is the most critical.
-  Think of each story as a standalone slice of functionality that can be:
-  - Developed independently
-  - Tested independently
-  - Deployed independently
-  - Demonstrated to users independently
+  重要提示：用户故事应按重要性排序的用户旅程进行优先级排序。
+  每个用户故事/旅程必须能够独立测试 - 这意味着如果你只实现其中一个，
+  你仍然应该有一个可行的 MVP（最小可行产品）能够提供价值。
+
+  为每个故事分配优先级（P1、P2、P3 等），其中 P1 最关键。
+  考虑将每个故事作为一个独立的功能片段，可以：
+  - 独立开发
+  - 独立测试
+  - 独立部署
+  - 独立展示给用户
 -->
 
-### User Story 1 - 统一剧本列表管理 (Priority: P1)
+### 用户故事 1 - 统一剧本列表管理 (优先级: P1)
 
 管理员需要通过统一的管理界面查看所有剧本，支持分页、搜索和筛选功能。
 
-**Why this priority**: 这是剧本管理的基础功能，管理员需要首先能够查看和浏览所有剧本。
+**优先级原因**: 这是剧本管理的基础功能，管理员需要首先能够查看和浏览所有剧本。
 
-**Independent Test**: 可以独立测试通过管理界面访问剧本列表，验证列表显示正确且响应快速。
+**独立测试**: 可以独立测试通过管理界面访问剧本列表，验证列表显示正确且响应快速。
 
-**Acceptance Scenarios**:
+**验收场景**:
 
-1. **Given** 管理员已登录管理后台，**When** 访问剧本管理页面，**Then** 显示剧本列表包含剧本名称、状态和操作按钮
-2. **Given** 剧本列表页面已加载，**When** 使用搜索功能输入关键词，**Then** 列表只显示匹配的剧本
-3. **Given** 剧本列表页面已加载，**When** 点击分页控件，**Then** 显示对应页码的剧本数据
+1. **假设** 管理员已登录管理后台，**当** 访问剧本管理页面，**那么** 显示剧本列表包含剧本名称、状态和操作按钮
+2. **假设** 剧本列表页面已加载，**当** 使用搜索功能输入关键词，**那么** 列表只显示匹配的剧本
+3. **假设** 剧本列表页面已加载，**当** 点击分页控件，**那么** 显示对应页码的剧本数据
 
 ---
 
-### User Story 2 - 统一剧本上传管理 (Priority: P2)
+### 用户故事 2 - 统一剧本上传管理 (优先级: P2)
 
 管理员需要通过统一的管理界面上传新的剧本文件，支持文件验证和上传进度显示。
 
-**Why this priority**: 上传功能是剧本管理系统的重要入口，需要确保文件上传的可靠性和用户体验。
+**优先级原因**: 上传功能是剧本管理系统的重要入口，需要确保文件上传的可靠性和用户体验。
 
-**Independent Test**: 可以独立测试上传单个剧本文件，验证文件被正确保存且在列表中可见。
+**独立测试**: 可以独立测试上传单个剧本文件，验证文件被正确保存且在列表中可见。
 
-**Acceptance Scenarios**:
+**验收场景**:
 
-1. **Given** 管理员在剧本管理页面，**When** 点击上传按钮并选择剧本文件，**Then** 显示上传进度且文件成功保存
-2. **Given** 上传界面已打开，**When** 选择无效文件格式，**Then** 显示错误提示且阻止上传
-3. **Given** 剧本文件已上传，**When** 刷新列表页面，**Then** 新上传的剧本出现在列表中
+1. **假设** 管理员在剧本管理页面，**当** 点击上传按钮并选择剧本文件，**那么** 显示上传进度且文件成功保存
+2. **假设** 上传界面已打开，**当** 选择无效文件格式，**那么** 显示错误提示且阻止上传
+3. **假设** 剧本文件已上传，**当** 刷新列表页面，**那么** 新上传的剧本出现在列表中
 
 ---
 
-### User Story 3 - 统一剧本更新管理 (Priority: P3)
+### 用户故事 3 - 统一剧本更新管理 (优先级: P3)
 
 管理员需要通过统一的管理界面编辑和更新现有剧本信息，包括基本信息和文件内容。
 
-**Why this priority**: 更新功能支持剧本的持续维护和管理，是完整管理流程的重要组成部分。
+**优先级原因**: 更新功能支持剧本的持续维护和管理，是完整管理流程的重要组成部分。
 
-**Independent Test**: 可以独立测试编辑单个剧本信息，验证修改被正确保存。
+**独立测试**: 可以独立测试编辑单个剧本信息，验证修改被正确保存。
 
-**Acceptance Scenarios**:
+**验收场景**:
 
-1. **Given** 管理员在剧本列表中选择一个剧本，**When** 点击编辑按钮，**Then** 打开编辑页面显示当前剧本信息
-2. **Given** 剧本编辑页面已打开，**When** 修改剧本信息并保存，**Then** 显示成功提示且信息更新到数据库
-3. **Given** 剧本已更新，**When** 返回列表页面，**Then** 显示更新后的剧本信息
+1. **假设** 管理员在剧本列表中选择一个剧本，**当** 点击编辑按钮，**那么** 打开编辑页面显示当前剧本信息
+2. **假设** 剧本编辑页面已打开，**当** 修改剧本信息并保存，**那么** 显示成功提示且信息更新到数据库
+3. **假设** 剧本已更新，**当** 返回列表页面，**那么** 显示更新后的剧本信息
 
 ---
 
-### Edge Cases
+### 边缘案例
 
 - 网络连接中断时如何处理正在上传的文件？
 - 上传大文件时如何防止超时和内存溢出？
@@ -79,42 +79,38 @@
 - 文件格式校验失败时如何提供有意义的错误信息？
 - 数据库连接异常时如何处理数据一致性？
 
-## Requirements *(mandatory)*
+## 需求 *(mandatory)*
 
 <!--
-  ACTION REQUIRED: The content in this section represents placeholders.
-  Fill them out with the right functional requirements.
+  需要执行的操作：本部分的内容代表占位符。
+  请填写正确的功能需求。
 -->
 
-### Functional Requirements
+### 功能需求
 
-- **FR-001**: System MUST provide unified admin interface for script management operations
-- **FR-002**: System MUST implement single, consistent API for listing scripts with pagination and filtering
-- **FR-003**: System MUST implement single, consistent API for uploading scripts with validation
-- **FR-004**: System MUST implement single, consistent API for updating script information
-- **FR-005**: System MUST remove all fallback/redundant logic from existing script management interfaces
-- **FR-006**: System MUST ensure data consistency across all script operations without fallback mechanisms
-- **FR-007**: System MUST provide clear error messages and validation feedback for all operations
+- **FR-001**: 系统必须提供统一的剧本管理操作管理界面
+- **FR-002**: 系统必须实现统一的剧本列表API，支持分页和筛选功能
+- **FR-003**: 系统必须实现统一的剧本上传API，支持文件验证
+- **FR-004**: 系统必须实现统一的剧本信息更新API
+- **FR-005**: 系统必须移除现有剧本管理接口中的所有兜底/冗余逻辑
+- **FR-006**: 系统必须确保所有剧本操作的数据一致性，不使用兜底机制
+- **FR-007**: 系统必须为所有操作提供清晰的错误信息和验证反馈
+- **FR-008**: 系统必须为所有剧本管理操作统一定义具体的接口数据结构
 
-### Key Entities *(include if feature involves data)*
+### 关键实体 *(如果功能涉及数据则包含)*
 
 - **剧本 (Script)**: 包含剧本文件、元数据信息、状态和操作历史
 - **管理员用户 (Admin User)**: 具有剧本管理权限的用户账户
 - **上传记录 (Upload Record)**: 记录每次文件上传的详细信息和状态
 
-### Key Entities *(include if feature involves data)*
-
-- **[Entity 1]**: [What it represents, key attributes without implementation]
-- **[Entity 2]**: [What it represents, relationships to other entities]
-
-## Success Criteria *(mandatory)*
+## 成功标准 *(mandatory)*
 
 <!--
-  ACTION REQUIRED: Define measurable success criteria.
-  These must be technology-agnostic and measurable.
+  需要执行的操作：定义可衡量的成功标准。
+  这些标准必须是技术无关且可衡量的。
 -->
 
-### Measurable Outcomes
+### 可衡量的成果
 
 - **SC-001**: 管理员可以在10秒内完成剧本列表页面的加载和显示
 - **SC-002**: 剧本上传成功率达到99%，错误情况提供清晰的用户反馈

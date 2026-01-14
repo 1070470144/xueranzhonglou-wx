@@ -1,13 +1,15 @@
-# Implementation Plan: [FEATURE]
+# Implementation Plan: 统一剧本管理接口
 
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
+**Branch**: `001-unify-script-admin` | **Date**: 2026-01-14 | **Spec**: specs/001-unify-script-admin/spec.md
+**Input**: Feature specification from `/specs/001-unify-script-admin/spec.md`
 
 **Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
 
 ## Summary
 
-[Extract from feature spec: primary requirement + technical approach from research]
+重新设计并统一当前管理端剧本管理功能，实现统一的上传、列表、更新接口，移除所有兜底逻辑，确保数据一致性。采用云对象优先策略，统一定义接口数据结构，简化开发和维护复杂度。
+
+技术方案：基于现有 HBuilderX 云对象架构，重构现有分散的剧本管理接口，合并为统一的 API 集合，确保所有操作使用一致的数据结构和错误处理机制。
 
 ## Technical Context
 
@@ -17,15 +19,15 @@
   the iteration process.
 -->
 
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [single/web/mobile - determines source structure]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+**Language/Version**: JavaScript/Vue 2.x (uni-app框架)
+**Primary Dependencies**: uni-app, uniCloud云对象, 云存储, 云数据库
+**Storage**: uniCloud云数据库 (优先使用云对象，位于 xueran-admin/uniCloud-aliyun/database/)
+**Testing**: 手动测试流程 (按宪章要求)
+**Target Platform**: H5、小程序、App多端部署
+**Project Type**: uni-app前端项目 + 云对象后端 (云对象位于 xueran-admin/uniCloud-aliyun/cloudfunctions/)
+**Performance Goals**: 页面加载<10秒，上传成功率99%，更新响应<5秒
+**Constraints**: 必须使用云对象优先策略，禁止使用云函数兜底逻辑
+**Scale/Scope**: 剧本管理模块重构，涉及上传、列表、编辑三大核心功能
 
 ## Constitution Check
 
@@ -54,51 +56,27 @@ specs/[###-feature]/
 ```
 
 ### Source Code (repository root)
-<!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
--->
 
 ```text
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
-
-tests/
-├── contract/
-├── integration/
-└── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+xueran-admin/                    # uni-app管理端项目
+├── pages/
+│   └── admin/
+│       └── scripts/             # 剧本管理页面
+│           ├── list.vue         # 剧本列表页面
+│           └── edit.vue         # 剧本编辑页面
+├── components/                  # 通用组件
+├── utils/                       # 工具函数
+└── uniCloud-aliyun/             # 云对象和云函数
+    ├── cloudfunctions/          # 云函数
+    │   ├── scriptManager/       # 统一剧本管理云对象
+    │   │   └── index.js         # 统一API实现
+    │   ├── getScript/           # 获取剧本云函数 (待移除)
+    │   └── listScripts/         # 列表剧本云函数 (待移除)
+    └── database/                # 云数据库schema
+        └── scripts.schema.json  # 剧本数据结构定义
 ```
 
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
+**Structure Decision**: 基于现有uni-app项目结构，专注于重构剧本管理相关页面和云对象。保留现有目录结构，只修改剧本管理相关文件，移除不必要的云函数依赖。
 
 ## Complexity Tracking
 

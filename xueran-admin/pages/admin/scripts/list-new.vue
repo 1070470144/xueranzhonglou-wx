@@ -7,11 +7,24 @@
 				<button class="uni-button hide-on-phone" type="default" size="mini" @click="handleSearch">搜索</button>
 				<select class="uni-select" v-model="statusFilter" @change="handleFilterChange">
 					<option value="">全部状态</option>
-				<option value="active">激活</option>
-				<option value="inactive">未激活</option>
+					<option value="active">激活</option>
+					<option value="inactive">未激活</option>
 				</select>
 				<button class="uni-button" type="primary" size="mini" @click="navigateTo('./edit')">新增剧本</button>
 				<button class="uni-button" type="warn" size="mini" :disabled="!selectedScripts.length" @click="handleBatchDelete">批量删除</button>
+			</view>
+		</view>
+
+		<!-- 文件上传区域 -->
+		<view class="upload-section">
+			<view class="upload-controls">
+				<button class="uni-button" type="default" size="mini" @click="chooseFile">
+					{{ selectedFile ? '重新选择文件' : '选择剧本文件' }}
+				</button>
+				<text v-if="selectedFile && selectedFile.name" class="file-info">{{ selectedFile.name }}</text>
+				<button class="uni-button" type="primary" size="mini" @click="uploadScript" :disabled="!selectedFile">
+					上传剧本
+				</button>
 			</view>
 		</view>
 
@@ -35,9 +48,6 @@
 						<uni-th align="center">作者</uni-th>
 						<uni-th align="center">状态</uni-th>
 						<uni-th align="center">标签</uni-th>
-						<uni-th align="center">封面</uni-th>
-						<uni-th align="center">使用次数</uni-th>
-						<uni-th align="center">点赞数</uni-th>
 						<uni-th align="center">文件大小</uni-th>
 						<uni-th align="center">更新时间</uni-th>
 						<uni-th align="center">操作</uni-th>
@@ -64,17 +74,6 @@
 									style="margin-right: 4px;" />
 							</view>
 						</uni-td>
-						<uni-td align="center">
-							<image
-								v-if="resolveImageUrl(item)"
-								:src="resolveImageUrl(item)"
-								class="cover-image"
-								mode="aspectFill"
-								@click="previewImage(item)" />
-							<view v-else class="no-image">暂无封面</view>
-						</uni-td>
-						<uni-td align="center">{{ item.usageCount || 0 }}</uni-td>
-						<uni-td align="center">{{ item.likes || 0 }}</uni-td>
 						<uni-td align="center">
 							{{ item.fileSize ? formatFileSize(item.fileSize) : '未知' }}
 						</uni-td>
@@ -128,7 +127,7 @@ export default {
 			searchKeyword: '',
 			statusFilter: '',
 			selectedScripts: [],
-			
+			selectedFile: null,
 			loading: false,
 			error: null
 		}
@@ -283,7 +282,73 @@ export default {
 		}
 	},
 
-		getStatusType(status) {
+	async chooseFile() {
+		try {
+			const result = await uni.chooseFile({
+				count: 1,
+				type: 'file',
+				extension: ['txt', 'md', 'json']
+			})
+
+			if (result.tempFiles && result.tempFiles.length > 0) {
+				this.selectedFile = result.tempFiles[0]
+			}
+		} catch (error) {
+			// 用户取消选择文件
+			console.log('用户取消选择文件')
+		}
+	},
+
+	async uploadScript() {
+		if (!this.selectedFile || !this.selectedFile.path || typeof this.selectedFile.path !== 'string') {
+			uni.showToast({
+				title: '请先选择有效的文件',
+				icon: 'none'
+			})
+			return
+		}
+
+		const loading = uni.showLoading({
+			title: '上传中...'
+		})
+
+		try {
+			const result = await uniCloud.callFunction({
+				name: 'scriptManager',
+				data: {
+					action: 'upload',
+					filePath: this.selectedFile.path,
+					title: this.selectedFile.name || '未命名剧本',
+					author: '当前用户', // 这里应该从用户信息获取
+					description: '通过文件上传创建的剧本'
+				}
+			})
+
+			uni.hideLoading()
+
+			if (result.result && result.result.code === 0) {
+				uni.showToast({
+					title: '上传成功',
+					icon: 'success'
+				})
+				this.selectedFile = null
+				await this.loadScripts() // 刷新列表
+			} else {
+				uni.showToast({
+					title: result.result?.message || '上传失败',
+					icon: 'none'
+				})
+			}
+		} catch (error) {
+			uni.hideLoading()
+			uni.showToast({
+				title: '上传失败：' + error.message,
+				icon: 'none'
+			})
+		}
+	},
+
+	getStatusType(status) {
 			const s = status || 'active'
 			const typeMap = {
 				'active': 'success',
@@ -306,81 +371,6 @@ export default {
 			const sizes = ['B', 'KB', 'MB', 'GB']
 			const i = Math.floor(Math.log(bytes) / Math.log(1024))
 			return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i]
-		},
-
-		async previewImage(target) {
-			try {
-				if (!target) return
-
-				// If a string URL was passed
-				if (typeof target === 'string') {
-					uni.previewImage({ urls: [target], current: target })
-					return
-				}
-
-				// Otherwise treat target as an item object
-				const item = target
-
-				// Try images array first
-				if (item.images && item.images.length) {
-					const img = item.images[0]
-					// img can be string or object
-					if (typeof img === 'string') {
-						uni.previewImage({ urls: [img], current: img })
-						return
-					}
-					// if url present use it
-					if (img.url) {
-						uni.previewImage({ urls: [img.url], current: img.url })
-						return
-					}
-					// if fileId present, download temp file and preview
-					const fid = img.fileId || img.fileID
-					if (fid) {
-						const res = await uniCloud.downloadFile({ fileID: fid })
-						if (res && res.tempFilePath) {
-							uni.previewImage({ urls: [res.tempFilePath], current: res.tempFilePath })
-							return
-						}
-					}
-				}
-
-				// fallback to top-level fileUrl or fileId
-				if (item.fileUrl) {
-					uni.previewImage({ urls: [item.fileUrl], current: item.fileUrl })
-					return
-				}
-				const topFid = item.fileId || item.fileID
-				if (topFid) {
-					const res = await uniCloud.downloadFile({ fileID: topFid })
-					if (res && res.tempFilePath) {
-						uni.previewImage({ urls: [res.tempFilePath], current: res.tempFilePath })
-						return
-					}
-				}
-
-				uni.showToast({ title: '没有可预览的图片', icon: 'none' })
-			} catch (err) {
-				console.error('previewImage error:', err)
-				uni.showToast({ title: '预览失败', icon: 'none' })
-			}
-		},
-
-		resolveImageUrl(item) {
-			if (!item) return null
-			if (item.images && item.images.length) {
-				const img = item.images[0]
-				if (typeof img === 'string') return img
-				// support multiple possible fields returned by different upload implementations
-				return img.url || img.fileUrl || img.fileId || img.fileID || img.path || null
-			}
-			// fallback to thumbnails or top-level fileUrl/fileId
-			if (item.thumbnails && item.thumbnails.length) {
-				const t = item.thumbnails[0]
-				if (typeof t === 'string') return t
-				return t.url || t.fileUrl || t.fileId || t.fileID || null
-			}
-			return item.fileUrl || item.fileId || item.fileID || null
 		},
 
 		navigateTo(url, isTab = false) {
@@ -435,20 +425,15 @@ export default {
 	border-radius: 4px;
 }
 
-.upload-controls { display: none; }
-
-.cover-image {
-	width: 60px;
-	height: 60px;
-	border-radius: 4px;
+.upload-controls {
+	display: flex;
+	align-items: center;
+	gap: 12px;
 }
 
-.no-image {
-	color: #999;
-	font-size: 12px;
-	text-align: center;
-	line-height: 60px;
-	border: 1px dashed #ddd;
-	border-radius: 4px;
+.file-info {
+	flex: 1;
+	color: #666;
+	font-size: 14px;
 }
 </style>

@@ -1,0 +1,478 @@
+openapi: 3.0.3
+info:
+  title: 统一剧本管理API
+  description: 剧本的创建、读取、更新、删除和上传管理接口
+  version: 1.0.0
+  contact:
+    name: 开发团队
+
+servers:
+  - url: https://unicloud.dcloud.net.cn
+    description: uniCloud云函数服务
+
+paths:
+  /script/list:
+    get:
+      summary: 获取剧本列表
+      description: 支持分页、搜索和筛选的剧本列表查询
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          description: 页码
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: 每页数量
+        - name: keyword
+          in: query
+          schema:
+            type: string
+            maxLength: 100
+          description: 搜索关键词
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [draft, published, archived]
+          description: 剧本状态筛选
+        - name: category
+          in: query
+          schema:
+            type: string
+            maxLength: 100
+          description: 分类筛选
+      responses:
+        '200':
+          description: 成功返回剧本列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: "success"
+                  data:
+                    type: object
+                    properties:
+                      list:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Script'
+                      total:
+                        type: integer
+                        description: 总数量
+                      page:
+                        type: integer
+                        description: 当前页码
+                      pageSize:
+                        type: integer
+                        description: 每页数量
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /script/{id}:
+    get:
+      summary: 获取单个剧本详情
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 剧本ID
+      responses:
+        '200':
+          description: 成功返回剧本详情
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: "success"
+                  data:
+                    $ref: '#/components/schemas/Script'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    put:
+      summary: 更新剧本信息
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 剧本ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScriptUpdate'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: "更新成功"
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+    delete:
+      summary: 删除剧本
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: 剧本ID
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: "删除成功"
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /script:
+    post:
+      summary: 创建新剧本
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ScriptCreate'
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: "创建成功"
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        description: 新创建的剧本ID
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+  /script/upload:
+    post:
+      summary: 上传剧本文件
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: 剧本文件
+                title:
+                  type: string
+                  maxLength: 200
+                  description: 剧本标题
+                author:
+                  type: string
+                  maxLength: 100
+                  description: 作者
+                description:
+                  type: string
+                  maxLength: 1000
+                  description: 描述
+                tags:
+                  type: array
+                  items:
+                    type: string
+                    maxLength: 50
+                  description: 标签列表
+      responses:
+        '201':
+          description: 上传成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  message:
+                    type: string
+                    example: "上传成功"
+                  data:
+                    $ref: '#/components/schemas/Script'
+        '400':
+          description: 文件验证失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '413':
+          description: 文件过大
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
+components:
+  schemas:
+    Script:
+      type: object
+      required:
+        - _id
+        - title
+        - content
+        - author
+        - status
+        - createTime
+        - updateTime
+      properties:
+        _id:
+          type: string
+          description: 剧本ID
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: 剧本标题
+        content:
+          type: string
+          minLength: 1
+          description: 剧本内容
+        author:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: 作者
+        fileId:
+          type: string
+          description: 文件ID
+        fileUrl:
+          type: string
+          format: uri
+          description: 文件访问URL
+        fileSize:
+          type: integer
+          minimum: 0
+          description: 文件大小(字节)
+        mimeType:
+          type: string
+          description: 文件MIME类型
+        status:
+          type: string
+          enum: [active, inactive]
+          description: 剧本状态
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 50
+          description: 标签列表
+        category:
+          type: string
+          maxLength: 100
+          description: 分类
+        description:
+          type: string
+          maxLength: 1000
+          description: 描述
+        createTime:
+          type: string
+          format: date-time
+          description: 创建时间
+        updateTime:
+          type: string
+          format: date-time
+          description: 更新时间
+        usageCount:
+          type: integer
+          minimum: 0
+          default: 0
+          description: 使用次数
+        likes:
+          type: integer
+          minimum: 0
+          default: 0
+          description: 点赞数
+        images:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+                format: uri
+                description: 图片URL
+              fileId:
+                type: string
+                description: 图片文件ID
+          description: 封面图片列表
+
+    ScriptCreate:
+      type: object
+      required:
+        - title
+        - content
+        - author
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        content:
+          type: string
+          minLength: 1
+        author:
+          type: string
+          minLength: 1
+          maxLength: 100
+        status:
+          type: string
+          enum: [active, inactive]
+          default: active
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 50
+        category:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 1000
+
+    ScriptUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        content:
+          type: string
+          minLength: 1
+        author:
+          type: string
+          minLength: 1
+          maxLength: 100
+        status:
+          type: string
+          enum: [active, inactive]
+        tags:
+          type: array
+          items:
+            type: string
+            maxLength: 50
+        category:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 1000
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+          description: 错误码
+        message:
+          type: string
+          description: 错误信息
+        details:
+          type: object
+          description: 详细错误信息
+
+  responses:
+    BadRequest:
+      description: 请求参数错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: 资源不存在
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ServerError:
+      description: 服务器内部错误
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []
