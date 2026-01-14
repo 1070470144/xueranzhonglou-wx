@@ -5,6 +5,8 @@
         <uni-easyinput v-model="formData.title" placeholder="请输入剧本名" />
       </uni-forms-item>
 
+      
+
       <uni-forms-item name="author" label="作者" required>
         <uni-easyinput v-model="formData.author" placeholder="请输入作者名" />
       </uni-forms-item>
@@ -44,6 +46,13 @@
           type="number"
           v-model.number="formData.usageCount"
           placeholder="请输入使用次数"
+        />
+      </uni-forms-item>
+      <uni-forms-item name="likes" label="点赞数">
+        <uni-easyinput
+          type="number"
+          v-model.number="formData.likes"
+          placeholder="请输入点赞数"
         />
       </uni-forms-item>
 
@@ -144,6 +153,7 @@ export default {
 				playerCount: '8-12',
 				difficulty: '中等',
 				usageCount: 0,
+				likes: 0,
 				tag: '娱乐',
 				jsonFile: null,
 				images: []
@@ -166,6 +176,13 @@ export default {
 						min: 0,
 						type: 'number',
 						errorMessage: '使用次数必须大于等于0'
+					}]
+				},
+				likes: {
+					rules: [{
+						min: 0,
+						type: 'number',
+						errorMessage: '点赞数必须大于等于0'
 					}]
 				},
 				tag: {
@@ -283,6 +300,9 @@ export default {
 								fileId: img.fileId || img.fileID,
 								url: img.url || img.fileId || img.fileID
 							}))
+							,
+							usageCount: payload.usageCount,
+							likes: payload.likes
 						}
 					});
 				} else {
@@ -299,6 +319,9 @@ export default {
 								author: payload.author,
 								description: payload.description,
 								tags: payload.tag ? [payload.tag] : []
+								,
+								usageCount: payload.usageCount,
+								likes: payload.likes
 							}
 						});
 					} else {
@@ -317,6 +340,9 @@ export default {
 									fileId: img.fileId || img.fileID,
 									url: img.url || img.fileId || img.fileID
 								}))
+								,
+								usageCount: payload.usageCount,
+								likes: payload.likes
 							}
 						});
 					}

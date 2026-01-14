@@ -65,6 +65,20 @@ const validateScriptData = (data, isUpdate = false) => {
     errors.push('描述必须是字符串，最多1000字符')
   }
 
+  // 数值字段验证（允许数字字符串，但需能转换为非负数）
+  if (data.usageCount !== undefined) {
+    const uc = Number(data.usageCount)
+    if (!Number.isFinite(uc) || uc < 0) {
+      errors.push('使用次数必须为非负数字')
+    }
+  }
+  if (data.likes !== undefined) {
+    const lk = Number(data.likes)
+    if (!Number.isFinite(lk) || lk < 0) {
+      errors.push('点赞数必须为非负数字')
+    }
+  }
+
   return errors
 }
 
@@ -349,6 +363,8 @@ async function handleUpload(params) {
         fileId: fileId,
         url: Array.isArray(thumbnails) && thumbnails[index] ? thumbnails[index] : fileId
       })) : [],
+      usageCount: params.usageCount !== undefined ? Number(params.usageCount) : 0,
+      likes: params.likes !== undefined ? Number(params.likes) : 0,
       createTime: new Date(),
       updateTime: new Date()
     }
