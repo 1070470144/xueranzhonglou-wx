@@ -1,9 +1,9 @@
 # xueran-admin 项目宪章
 <!--
 Sync Impact Report
-- Version change: 1.2.0 → 1.3.0
+- Version change: 1.3.0 → 1.4.0
 - Modified principles:
-  - 新增: Git 工作流规范（强制）
+  - 新增: 回复与沟通规范（强制）
 - Added sections: none
 - Removed sections: none
 - Templates updated:
@@ -28,6 +28,10 @@ Sync Impact Report
 ### 文档与沟通一律中文（必需）
 项目内的计划、规范、任务、快速上手文档、代码注释（非第三方接口说明除外）应使用中文编写。若需对外发布英文文档，应在中文文档准备完毕后单独维护译本并标注来源。
 理由：团队协作效率与长期可维护性依赖一致的语言标准，中文为首选以减少歧义。
+
+### 回复与沟通规范（强制）
+所有文档、评论、回复、评审意见和团队沟通必须使用中文。包括但不限于：代码评审意见、问题讨论、Pull Request 描述、提交信息、会议记录等。
+理由：确保团队沟通的一致性和高效性，避免语言混用导致的理解偏差和沟通障碍。
 
 ### 文件上传与数据一致性（必需）
 涉及文件/图片的功能必须：
@@ -72,4 +76,4 @@ Sync Impact Report
 3. 修订须包含迁移计划（如影响接口或运行时约束）；  
 4. 修订通过后，更新 `.specify/memory/constitution.md` 的 `Last Amended` 与 `Version` 字段，并在 Sync Impact Report 中列出受影响的模板与后续 TODO。
 
-**Version**: 1.3.0 | **Ratified**: TODO(RATIFICATION_DATE): 填写宪章首次通过日期 | **Last Amended**: 2026-01-14
+**Version**: 1.4.0 | **Ratified**: TODO(RATIFICATION_DATE): 填写宪章首次通过日期 | **Last Amended**: 2026-01-14
