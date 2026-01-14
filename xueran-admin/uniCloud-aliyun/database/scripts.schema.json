@@ -64,13 +64,13 @@
     "tags": {
       "bsonType": "array",
       "title": "标签列表",
-      "maxItems": 20,
+      "maxItems": 2,
       "items": {
         "bsonType": "string",
-        "maxLength": 50,
-        "description": "单个标签，最大50字符"
+        "enum": ["推理", "娱乐"],
+        "description": "标签枚举：推理或娱乐"
       },
-      "description": "剧本标签数组"
+      "description": "剧本标签数组，只能选择推理或娱乐"
     },
     "category": {
       "bsonType": "string",

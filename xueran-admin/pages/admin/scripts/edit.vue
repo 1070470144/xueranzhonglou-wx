@@ -14,11 +14,18 @@
       </uni-forms-item>
 
       <uni-forms-item name="tag" label="标签">
-        <uni-data-picker
-          v-model="formData.tag"
-          :localdata="tagOptions"
+        <picker
+          mode="selector"
+          :range="tagOptions"
+          range-key="text"
+          :value="tagOptions.findIndex(item => item.value === formData.tag)"
+          @change="onTagChange"
           placeholder="请选择标签"
-        />
+        >
+          <view class="picker-display">
+            {{ formData.tag ? tagOptions.find(item => item.value === formData.tag)?.text : '请选择标签' }}
+          </view>
+        </picker>
       </uni-forms-item>
 
       <uni-forms-item name="description" label="简介">
@@ -143,14 +150,25 @@ export default {
 						type: 'number',
 						errorMessage: '使用次数必须大于等于0'
 					}]
+				},
+				tag: {
+					rules: [{
+						required: true,
+						errorMessage: '请选择标签'
+					}, {
+						validateFunction: function(rule, value, data, callback) {
+							if (value !== '推理' && value !== '娱乐') {
+								callback('标签只能选择推理或娱乐')
+							} else {
+								callback()
+							}
+						}
+					}]
 				}
 			},
 			tagOptions: [
-				{ value: '娱乐', text: '娱乐' },
 				{ value: '推理', text: '推理' },
-				{ value: '恐怖', text: '恐怖' },
-				{ value: '情感', text: '情感' },
-				{ value: '其他', text: '其他' }
+				{ value: '娱乐', text: '娱乐' }
 			]
 		}
 	},
@@ -160,6 +178,12 @@ export default {
 		}
 	},
 	methods: {
+		// 标签选择变化
+		onTagChange(e) {
+			const index = e.detail.value;
+			this.formData.tag = this.tagOptions[index].value;
+		},
+
 		// 触发表单提交
 		submitForm() {
 			this.$refs.form.submit();
@@ -623,6 +647,16 @@ export default {
 // 表单项标签宽度调整
 ::v-deep .uni-forms-item__label {
   width: 100px !important;
+}
+
+.picker-display {
+  padding: 8px 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  color: #333;
 }
 
 // 文件上传区域样式

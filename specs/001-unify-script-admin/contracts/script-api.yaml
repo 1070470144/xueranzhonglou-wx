@@ -41,7 +41,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [draft, published, archived]
+            enum: [active, inactive]
           description: 剧本状态筛选
         - name: category
           in: query
@@ -241,10 +241,11 @@ paths:
                   description: 描述
                 tags:
                   type: array
+                  maxItems: 2
                   items:
                     type: string
-                    maxLength: 50
-                  description: 标签列表
+                    enum: [推理, 娱乐]
+                  description: 标签列表，只能选择推理或娱乐
       responses:
         '201':
           description: 上传成功
@@ -326,10 +327,11 @@ components:
           description: 剧本状态
         tags:
           type: array
+          maxItems: 2
           items:
             type: string
-            maxLength: 50
-          description: 标签列表
+            enum: [推理, 娱乐]
+          description: 标签列表，只能选择推理或娱乐
         category:
           type: string
           maxLength: 100
@@ -394,9 +396,10 @@ components:
           default: active
         tags:
           type: array
+          maxItems: 2
           items:
             type: string
-            maxLength: 50
+            enum: [推理, 娱乐]
         category:
           type: string
           maxLength: 100
@@ -423,9 +426,10 @@ components:
           enum: [active, inactive]
         tags:
           type: array
+          maxItems: 2
           items:
             type: string
-            maxLength: 50
+            enum: [推理, 娱乐]
         category:
           type: string
           maxLength: 100

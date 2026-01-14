@@ -52,8 +52,8 @@ const validateScriptData = (data, isUpdate = false) => {
   if (data.status && !['active', 'inactive'].includes(data.status)) {
     errors.push('状态必须是 active 或 inactive 之一')
   }
-  if (data.tags && (!Array.isArray(data.tags) || data.tags.length > 20 || data.tags.some(tag => typeof tag !== 'string' || tag.length > 50))) {
-    errors.push('标签必须是字符串数组，最多20个，每个标签最多50字符')
+  if (data.tags && (!Array.isArray(data.tags) || data.tags.length > 2 || data.tags.some(tag => typeof tag !== 'string' || !['推理', '娱乐'].includes(tag)))) {
+    errors.push('标签必须是数组，最多2个，只能包含"推理"或"娱乐"')
   }
   if (data.category && (typeof data.category !== 'string' || data.category.length > 100)) {
     errors.push('分类必须是字符串，最多100字符')

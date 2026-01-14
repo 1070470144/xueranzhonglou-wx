@@ -55,12 +55,11 @@
 						<uni-td align="center">
 							<view class="tags-container">
 								<uni-tag
-									v-for="tag in item.tags"
-									:key="tag"
+									v-if="item.tag"
 									type="primary"
 									inverted
 									size="mini"
-									:text="tag"
+									:text="item.tag"
 									style="margin-right: 4px;" />
 							</view>
 						</uni-td>

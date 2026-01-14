@@ -74,7 +74,7 @@ const newScript = await uniCloud.callFunction({
     content: '剧本正文内容...',
     author: '作者姓名',
     status: 'inactive',
-    tags: ['奇幻', '冒险'],
+    tag: '推理', // 只能选择'推理'或'娱乐'
     category: '小说',
     description: '剧本简介'
   }
@@ -354,7 +354,7 @@ const advancedQuery = await uniCloud.callFunction({
     filters: {
       status: 'published',
       category: '小说',
-      tags: ['奇幻', '冒险'],
+      tag: '推理', // 只能选择'推理'或'娱乐'
       createTime: {
         $gte: '2024-01-01',
         $lte: '2024-12-31'

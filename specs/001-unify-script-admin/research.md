@@ -35,7 +35,7 @@
 - 剧本基本信息: id, title, content, author, createTime, updateTime
 - 文件信息: fileId, fileUrl, fileSize, mimeType
 - 状态信息: status, publishStatus, version
-- 元数据: tags, category, description
+- 元数据: tag, category, description
 
 **决策**: 定义标准化的剧本数据结构，所有接口使用统一格式
 
@@ -100,7 +100,7 @@ interface Script {
   fileSize?: number,     // 文件大小
   mimeType?: string,     // 文件类型
   status: 'active' | 'inactive',  // 状态 (active=激活, inactive=未激活)
-  tags: string[],        // 标签
+  tag: '推理' | '娱乐',  // 标签，只能选择推理或娱乐
   category?: string,     // 分类
   description?: string,  // 描述
   createTime: Date,      // 创建时间
