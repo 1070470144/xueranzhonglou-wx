@@ -1,36 +1,38 @@
 # Implementation Plan: 优化现有 Bulk JSON 上传（列表界面）
 
 **Branch**: `002-bulk-json-upload` | **Date**: 2026-01-14 | **Spec**: specs/002-bulk-json-upload/spec.md
-**Input**: 不是全新实现，而是基于已存在 `BulkUploadPanel.vue` 与 `bulkUpload` 接口的增量优化与修正
+**Input**: 在现有批量上传功能基础上增加解析进度条，并参考提供的JSON格式样本进行优化
 
 ## Summary
 
-本次计划以“最小变更、快速交付”为原则，对现有管理端批量上传页面和后端接口做定向优化，重点目标：
-- 修复 H5 目录选择与回退 UX 问题（确保在支持和不支持目录 API 的浏览器上均能正确触发文件选择）  
-- 在 manifest 中记录 `relativePath` 并稳定抽取 `extractedMeta`（便于回溯与审计）  
-- 前端实现可配置的并发/分批上传与更友好的进度/错误展示（避免 UI 阻塞）  
-- 后端增强 job 接口的错误/失败导出与批处理健壮性（processor 重试/批次控制、审计日志）  
-- 遵循项目宪章（管理端 H5-only、Ant Design 风格、云对象优先）进行小范围兼容性保证
+本次计划在现有批量上传功能基础上增加解析进度条，重点目标：
+- 在文件选择后立即显示解析进度条，实时展示JSON文件的读取和解析进度
+- 解析过程中显示当前处理的文件名和进度百分比，避免大批量文件时的UI阻塞感
+- 解析完成后显示解析结果统计（成功/失败文件数）再进入上传确认流程
+- 优化JSON格式识别，支持标准Clocktower剧本格式（包含_meta元数据和角色数组）
+- 遵循项目宪章（管理端 H5-only、Ant Design 风格、云对象优先）进行实现
 
 ## Technical Context
 
-**Language/Version**: JavaScript (Node.js for cloud objects) + Vue 2.x (uni-app / uni-h5)  
-**Primary Dependencies**: uni-app, uniCloud 云对象、uniCloud 云存储、browser File API (H5)  
-**Storage**: uniCloud 云数据库（scripts 集合），云存储用于大型文件（如需）  
-**Testing**: 以手动 E2E 为主，补充关键集成/契约测试（若时间允许）  
-**Target Platform**: 管理端限定为浏览器（H5），按宪章不强制兼容原生 App/小程序  
-**Project Type**: uni-app 前端 + uniCloud 云对象后端  
-**Performance Goals**: UI 不阻塞，默认并发 5、每批建议最大 200 条，处理 100 个 JSON 的交互体验良好  
-**Constraints**: 浏览器对目录访问差异、云对象执行时间与并发限制、避免破坏现有接口契约
+**Language/Version**: JavaScript (Node.js for cloud objects) + Vue 2.x (uni-app / uni-h5)
+**Primary Dependencies**: uni-app, uniCloud 云对象、uniCloud 云存储、browser File API (H5)
+**Storage**: uniCloud 云数据库（scripts 集合），云存储用于大型文件（如需）
+**Testing**: 以手动 E2E 为主，补充关键集成/契约测试（若时间允许）
+**Target Platform**: 管理端限定为浏览器（H5），按宪章不强制兼容原生 App/小程序
+**Project Type**: uni-app 前端 + uniCloud 云对象后端
+**Performance Goals**: 解析阶段显示实时进度，处理 100 个 JSON 的解析时间 < 30秒；UI响应流畅，无明显阻塞
+**JSON Format Reference**: Clocktower剧本格式，包含_meta元数据对象和角色数组，参考 @f:\BaiduNetdiskDownload\剧本JSON（SE整理版）
+**Constraints**: 浏览器File API限制、大文件JSON解析性能、内存使用控制、现有接口契约保持兼容
 
 ## Constitution Check
 
-本次优化受宪章约束：
-- 管理端目标平台（强制）：仅覆盖 H5 行为与降级方案（符合宪章）  
-- UI 设计规范（强制）：任何 UI/交互改进需保持 Ant Design 风格或在 PR 中说明偏差  
-- 文件上传与数据一致性：前端/后端校验规则不能与现有契约冲突；若需变更契约必须提交迁移与兼容说明
+本次功能增强受宪章约束：
+- 管理端目标平台（强制）：仅在 H5 浏览器环境实现，保持平台一致性
+- UI 设计规范（强制）：进度条和解析界面遵循 Ant Design 进度条组件规范
+- 文件上传与数据一致性：解析逻辑不改变现有上传接口契约，新增解析状态为前端增强
+- 云对象优先：解析逻辑在前端处理，不增加后端云对象复杂度
 
-GATE: 若优化需改变外部契约或字段名（例如改变 `fileId`/`fileID` 行为），必须在 PR 中声明并获得至少两位维护者批准。
+GATE: 新增功能不改变现有API契约，无需额外批准。
 
 ## Project Structure (existing)
 
@@ -58,56 +60,56 @@ xueran-admin/
     └── validators.js
 ```
 
-## Phase 0: Audit (1-2 days)
+## Phase 0: Research & Design (1-2 days)
 
-目标：审阅现有实现、复现已知问题并产出修复优先级清单。输出：
-- 审计报告（issues with repro steps）  
-- 优先级与估时（quick wins vs medium/large work）  
-- 变更兼容性评估（是否影响现有调用方）
+目标：调研解析进度条实现方案，分析JSON格式特征，设计用户体验流程。
 
-关键审计点：
-- 回退/目录选择：修复 showDirectoryPicker 分支不触发 fallback input 的逻辑  
-- Manifest：确保 `relativePath` 字段被保存并随 manifest 发送给后端  
-- Error format：后端 job 返回错误数组的字段名与格式需标准化（便于前端 CSV 导出）  
-- Concurrency：前端并发控制点（默认 5）与可配置接口
+关键研究点：
+- 进度条实现：Web Worker vs 主线程解析，内存管理策略
+- JSON格式分析：Clocktower剧本结构特征，元数据提取规则
+- UX设计：解析阶段的状态展示，错误处理展示
+- 性能评估：大批量JSON文件的解析性能瓶颈分析
 
-验收：审计报告提交到 `specs/002-bulk-json-upload/`，并在 PR 中列出需改动的文件清单
+验收：research.md 更新解析进度条实现方案和技术选型
 
 ## Phase 1: Implementation (iterative, small PRs)
 
-按优先级拆分为多个小的 PR：
+按功能模块拆分为多个小的 PR：
 
-1) Quick fixes (PR A)
-- 修复目录选择回退逻辑并在 H5 中支持 `showDirectoryPicker()` 的可选路径（实现兼容 fallback）  
-- 确保 hidden input 与 DOM click 能在所有目标浏览器上触发
+1) 解析进度条核心 (PR A)
+- 实现文件选择后的即时解析进度显示
+- 支持 Web Worker 后台解析避免UI阻塞
+- 实时显示当前文件名和总体进度百分比
 
-2) Manifest & Meta (PR B)
-- 确保前端构建 manifest 含 `fileName`, `relativePath`, `content`, `extractedMeta`  
-- 后端接受 manifest 时保留 `relativePath` 并写入 `UploadedScript.sourceFileName`（回溯路径）
+2) JSON格式识别与元数据提取 (PR B)
+- 实现Clocktower剧本JSON格式识别（_meta + 角色数组）
+- 自动提取剧本元数据（名称、作者、描述、logo等）
+- 支持格式校验和错误收集
 
-3) Backend robustness (PR C)
-- 明确定义 `createJob` 返回格式（jobId、queuedCount）与 `getJob` 状态字段（status, successCount, failCount）  
-- 实现 `getJobErrors` 返回标准化 errors 数组：[{ fileName, error }]  
-- Processor 支持批处理/重试策略与审计日志
+3) 解析结果展示与状态管理 (PR C)
+- 解析完成后的结果统计界面（成功/失败文件数）
+- 解析错误的文件列表和错误原因展示
+- 解析状态与上传流程的衔接
 
-4) Frontend UX & batching (PR D)
-- 可配置并发/批次控制（默认并发 = 5）并在 UI 中暴露基础配置（高级设置隐藏）  
-- 改进预览编辑流程（小改：编辑 metadata 并映射到 manifest）  
-- 改进轮询与失败导出的 UX（CSV 导出）
+4) 性能优化与边界处理 (PR D)
+- 大文件JSON的流式解析优化
+- 内存使用监控和垃圾回收
+- 解析中断/取消功能实现
 
 每个 PR 应包含：
 - 变更说明、兼容性/回归风险、回归测试步骤（手动）、CI lint 通过
 
 ## Phase 2: Validation & Rollout
 
-- 手动 E2E 测试（10/100 文件样本）执行并记录性能数据  
+- 手动 E2E 测试（10/100 文件样本）执行，重点验证解析进度条的实时性和准确性
+- 性能测试：验证100个JSON文件的解析时间 < 30秒，内存使用峰值 < 100MB
 - 若无兼容问题，按小步部署策略合并到主分支并在次日观察（保留回滚计划）
-- 更新 `specs/002-bulk-json-upload/quickstart.md` 与 `docs/test-procedures/us1-bulk-upload.md`
+- 更新 `specs/002-bulk-json-upload/quickstart.md` 与 `docs/test-procedures/us2-upload-progress.md`
 
 ## Outputs (paths)
 
-- Updated plan: `specs/002-bulk-json-upload/plan.md` (this file)  
-- Audit report: `specs/002-bulk-json-upload/audit-report.md` (to be created)  
+- Updated plan: `specs/002-bulk-json-upload/plan.md` (this file)
+- Research findings: `specs/002-bulk-json-upload/research.md` (updated)
 - Implementation PRs: small, focused PRs (A-D as above)
 
 ## Next actions (I will do now if you confirm)

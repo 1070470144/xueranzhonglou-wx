@@ -2,14 +2,16 @@
   "collectionName": "bulkUploadJobs",
   "fields": {
     "jobId": { "type": "string", "required": true },
-    "userId": { "type": "string" },
-    "startTime": { "type": "date" },
+    "userId": { "type": "string", "required": true },
+    "startTime": { "type": "date", "required": true },
     "endTime": { "type": "date" },
-    "totalFiles": { "type": "number" },
-    "successCount": { "type": "number" },
-    "failCount": { "type": "number" },
-    "status": { "type": "string" },
-    "errorSummary": { "type": "string" }
+    "totalFiles": { "type": "number", "required": true },
+    "successCount": { "type": "number", "required": true },
+    "failCount": { "type": "number", "required": true },
+    "status": { "type": "string", "required": true },
+    "errorSummary": { "type": "object" },
+    "createdAt": { "type": "date" },
+    "updatedAt": { "type": "date" }
   }
 }
 

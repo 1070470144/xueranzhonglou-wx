@@ -403,13 +403,21 @@ export default {
             let extractedMeta = null
             try {
               const parsed = JSON.parse(text)
+              // Support Clocktower format (array with first element _meta) and plain object formats
+              let metaFromJson = null
+              if (Array.isArray(parsed) && parsed.length > 0 && parsed[0] && parsed[0].id === '_meta') {
+                metaFromJson = parsed[0]
+              } else if (parsed && typeof parsed === 'object') {
+                metaFromJson = parsed._meta || parsed
+              }
+
               extractedMeta = {
-                title: parsed.title || parsed.name || parsed._meta && parsed._meta.title,
-                author: parsed.author || parsed._meta && parsed._meta.author,
-                description: parsed.description || null,
-                tags: parsed.tags || null,
-                usageCount: parsed.usageCount || null,
-                likes: parsed.likes || null
+                title: (metaFromJson && (metaFromJson.title || metaFromJson.name)) || '',
+                author: (metaFromJson && (metaFromJson.author || '')) || '',
+                description: (metaFromJson && (metaFromJson.description || null)) || null,
+                tags: parsed.tags || (metaFromJson && metaFromJson.tags) || null,
+                usageCount: parsed.usageCount || (metaFromJson && metaFromJson.usageCount) || null,
+                likes: parsed.likes || (metaFromJson && metaFromJson.likes) || null
               }
             } catch (err) {
               extractedMeta = null
