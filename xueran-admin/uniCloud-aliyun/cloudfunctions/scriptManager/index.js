@@ -46,6 +46,9 @@ const validateScriptData = (data, isUpdate = false) => {
     if (data.author !== undefined && (typeof data.author !== 'string' || data.author.length < 1 || data.author.length > 100)) {
       errors.push('作者必须是1-100字符的字符串')
     }
+    if (data.version !== undefined && (typeof data.version !== 'string' || data.version.length > 20)) {
+      errors.push('版本号必须是字符串，最多20字符')
+    }
     if (data.content !== undefined && (typeof data.content !== 'string' || data.content.length < 1)) {
       errors.push('内容不能为空')
     }
