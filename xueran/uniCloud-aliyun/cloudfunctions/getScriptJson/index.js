@@ -228,9 +228,26 @@ exports.main = async (event, context) => {
           const base64Data = Buffer.from(jsonString, 'utf8').toString('base64');
           const dataUrl = `data:application/json;charset=utf-8;base64,${base64Data}`;
 
+          // 统计使用次数 - 使用原子操作确保并发安全
+          let usageUpdated = false;
+          let newUsageCount = resultData.usageCount || 0;
+          try {
+            await db.collection('scripts').doc(scriptId).update({
+              usageCount: db.command.inc(1),
+              updateTime: new Date()
+            });
+            newUsageCount += 1;
+            usageUpdated = true;
+          } catch (usageErr) {
+            console.warn('Failed to update usage count for script:', scriptId, usageErr);
+            // 不影响主要功能，继续返回JSON数据
+          }
+
           return respond({
             jsonUrl: dataUrl,
-            format: 'pretty'
+            format: 'pretty',
+            usageCount: newUsageCount,
+            usageUpdated: usageUpdated
           }, 200);
         }
 

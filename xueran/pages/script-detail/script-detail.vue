@@ -375,6 +375,11 @@ export default {
 					await uni.setClipboardData({
 						data: result.jsonUrl,
 						success: () => {
+							// 更新本地使用次数显示
+							if (result.usageUpdated && result.usageCount !== undefined) {
+								this.script.usageCount = result.usageCount;
+							}
+
 							uni.showToast({
 								title: 'JSON链接已复制',
 								icon: 'success'
