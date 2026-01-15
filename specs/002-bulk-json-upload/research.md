@@ -23,17 +23,61 @@
 - 性能：前端应采用分批与并发限制（例如每批 5-10 个并发请求）以避免同时发起过多请求影响网络或后端。后端应把批量作业以异步任务（job）方式处理并返回 jobId，前端通过轮询/WS 订阅获取进度。  
 - 审计：创建 `BulkUploadJob` 记录，包含 jobId 与统计信息，便于回溯与导出失败列表。
 
+## Parsing Progress Bar Implementation (新增)
+
+- Chosen approach: 前端Web Worker + 主线程状态同步
+  - 使用 Web Worker 在后台线程处理JSON文件解析，避免阻塞主UI线程
+  - 主线程负责进度条更新和用户交互响应
+  - 通过 postMessage 实现 Worker 与主线程的进度状态同步
+
+- Rationale: Web Worker 方案提供最佳用户体验
+  - 解析大量JSON文件时不会导致页面冻结或无响应
+  - 进度条可以实时更新，显示具体文件名和解析进度
+  - 内存管理更可控，可以及时清理已解析的文件数据
+  - Alternatives considered: 主线程解析（会导致UI阻塞，不适合大批量文件）
+
+- UX Design decisions:
+  - 进度条显示：总体进度百分比 + 当前处理文件名 + 已处理/总数统计
+  - 状态反馈：解析中/成功/失败 三种状态用不同颜色区分
+  - 错误处理：解析失败的文件单独展示，允许用户查看具体错误信息
+  - 取消功能：提供取消按钮允许用户中断解析过程
+
+- Performance considerations:
+  - 单文件解析超时：30秒超时限制，避免单个大文件阻塞整个流程
+  - 内存监控：定期检查内存使用，超过阈值时触发垃圾回收
+  - 并发控制：默认同时解析3个文件，可配置调整
+
+## JSON Format Analysis (新增)
+
+- Clocktower script format identified:
+  - Structure: Array with first element being `_meta` object, followed by role objects
+  - Meta fields: `name`, `author`, `description`, `logo`, `id: "_meta"`
+  - Role fields: `name`, `ability`, `team`, `firstNight`, `otherNight`, `image`, etc.
+
+- Extraction rules:
+  - Title: `_meta.name` 或 fallback 到 filename
+  - Author: `_meta.author`
+  - Description: `_meta.description`
+  - Logo: `_meta.logo`
+  - Roles count: array length - 1 (excluding meta)
+
+- Validation rules:
+  - Must be valid JSON array
+  - First element must have `id: "_meta"`
+  - Must contain at least one role object
+  - Required meta fields: name, author
+
 ## Folder selection & recursion (补充)
 
 - Chosen approach:
-  - H5: 首选 `input[type=file][webkitdirectory]`（若浏览器支持）或 `showDirectoryPicker()`（更现代的 API）来选择目录并递归读取目录下文件，保留相对路径用于 manifest；若不支持则回退到多文件选择或 zip 上传。  
-  - App (原生): 使用 `uni.chooseFile` / 原生文件系统接口递归读取目录并返回文件列表（包含相对路径或 tempPath）。  
+  - H5: 首选 `input[type=file][webkitdirectory]`（若浏览器支持）或 `showDirectoryPicker()`（更现代的 API）来选择目录并递归读取目录下文件，保留相对路径用于 manifest；若不支持则回退到多文件选择或 zip 上传。
+  - App (原生): 使用 `uni.chooseFile` / 原生文件系统接口递归读取目录并返回文件列表（包含相对路径或 tempPath）。
 
 - Manifest format recommendation:
   - 每项包含：`fileName`, `relativePath`, `content`（或 `tempPath`）, `extractedMeta`。后端使用 `relativePath` 写入 `sourceFileName` 以便追溯原始相对路径。
 
 - Security & limitations:
-  - 浏览器目录选择受限，需用户授权；小程序不保证支持文件夹选择。  
+  - 浏览器目录选择受限，需用户授权；小程序不保证支持文件夹选择。
   - 对大数量文件建议转为异步后端处理（worker），避免云函数超时。
 
 

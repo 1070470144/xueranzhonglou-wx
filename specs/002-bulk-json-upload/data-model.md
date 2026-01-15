@@ -31,12 +31,26 @@
 用于前端/后端在处理批量文件时的中间表示。
 
 字段:
-- `fileName` (String)  
-- `relativePath` (String) 可选 — 相对路径以便追溯目录结构  
-- `content` (String) — JSON 文本或摘要  
-- `extractedMeta` (Object) — `{ title, author, description, tags, usageCount, likes }`  
-- `status` (String) — `pending` / `processing` / `success` / `failed`  
-- `error` (String) 可选
+- `fileName` (String)
+- `relativePath` (String) 可选 — 相对路径以便追溯目录结构
+- `fileSize` (Number) 可选 — 文件大小（字节），用于进度估算
+- `content` (String) — JSON 文本或摘要
+- `extractedMeta` (Object) — `{ title, author, description, tags, usageCount, likes, rolesCount }`
+- `status` (String) — `pending` / `parsing` / `parsed` / `failed`
+- `parseProgress` (Number) 可选 — 解析进度百分比 (0-100)
+- `error` (String) 可选 — 解析或验证错误信息
+- `parsedAt` (Date) 可选 — 解析完成时间戳
+
+### ParsingProgress (前端状态管理)
+用于前端展示解析进度条的状态管理。
+
+字段:
+- `totalFiles` (Number) — 总文件数
+- `parsedFiles` (Number) — 已解析文件数
+- `currentFile` (String) — 当前正在解析的文件名
+- `overallProgress` (Number) — 总体进度百分比 (0-100)
+- `status` (String) — `idle` / `parsing` / `completed` / `cancelled`
+- `errors` (Array) — 解析失败的文件列表 `[{fileName, error}]`
 
 ## 验证规则
 
