@@ -177,6 +177,14 @@ paths:
                         type: string
                         enum: [json, pretty]
                         description: 使用的格式化方式
+                      usageCount:
+                        type: integer
+                        description: 更新后的使用次数
+                        example: 156
+                      usageUpdated:
+                        type: boolean
+                        description: 使用次数是否成功更新
+                        example: true
         '404':
           description: 剧本不存在
           content:

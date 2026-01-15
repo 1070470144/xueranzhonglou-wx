@@ -200,6 +200,51 @@ async copyJsonUrl() {
 
 **注意**: 复制JSON按钮的UI已经存在，无需添加新的按钮元素。
 
+### 步骤3.5: 集成使用次数统计
+
+在 `xueran/uniCloud-aliyun/cloudfunctions/getScriptJson/index.js` 中添加使用次数统计：
+
+```javascript
+// 在link处理之后，JSON数据返回之前添加统计逻辑
+if (link) {
+  // 生成浏览器可直接访问的data URL
+  const jsonString = JSON.stringify(resultData, null, 2);
+  const base64Data = Buffer.from(jsonString, 'utf8').toString('base64');
+  const dataUrl = `data:application/json;charset=utf-8;base64,${base64Data}`;
+
+  // 统计使用次数
+  let usageUpdated = false;
+  let newUsageCount = resultData.usageCount || 0;
+  try {
+    await db.collection('scripts').doc(scriptId).update({
+      usageCount: db.command.inc(1),
+      updateTime: new Date()
+    });
+    newUsageCount += 1;
+    usageUpdated = true;
+  } catch (usageErr) {
+    console.warn('Failed to update usage count:', usageErr);
+    // 不影响主要功能
+  }
+
+  return respond({
+    jsonUrl: dataUrl,
+    format: format,
+    usageCount: newUsageCount,
+    usageUpdated: usageUpdated
+  }, 200);
+}
+```
+
+更新前端显示：
+
+```javascript
+// 在script-detail.vue中，复制成功后更新本地显示
+if (result.usageUpdated && result.usageCount) {
+  this.script.usageCount = result.usageCount;
+}
+```
+
 ### 步骤4: 测试数据准备
 
 确保云数据库中的scripts集合包含测试数据，字段包括：
@@ -280,6 +325,19 @@ async copyJsonUrl() {
    - ✅ 剪贴板中包含以data:application/json;charset=utf-8;base64开头的链接
    - ✅ 在浏览器中打开链接能看到格式化的JSON数据
    - ✅ JSON数据包含剧本的完整字段信息
+
+### 步骤4.5: 使用次数统计验证
+
+1. 记录剧本的初始使用次数
+2. 点击"复制JSON地址"按钮
+3. 等待复制成功提示
+4. 刷新页面或重新进入详情页
+5. 验证使用次数是否增加1
+
+**预期结果**:
+- ✅ 使用次数准确增加
+- ✅ 数据库中数据正确更新
+- ✅ 统计操作不影响JSON复制功能
 
 ## 常见问题排查
 
