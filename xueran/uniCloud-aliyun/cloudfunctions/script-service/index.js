@@ -300,7 +300,7 @@ async function likeScript(data) {
         success: true,
         data: {
           likes: newLikes,
-          message: action === 'like' ? 'Liked successfully' : 'Unliked successfully'
+          message: action === 'like' ? '点赞成功' : '取消点赞成功'
         }
       }
     } catch (error) {
