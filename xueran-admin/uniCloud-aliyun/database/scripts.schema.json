@@ -33,6 +33,12 @@
       "maxLength": 100,
       "description": "剧本作者，1-100字符"
     },
+    "version": {
+      "bsonType": "string",
+      "title": "版本号",
+      "maxLength": 20,
+      "description": "剧本版本号"
+    },
     "fileId": {
       "bsonType": "string",
       "title": "文件ID",

@@ -293,6 +293,7 @@ export default {
 							id: this.id,
 							title: payload.title,
 							author: payload.author,
+							version: payload.version,
 							description: payload.description,
 							content: jsonContentForSend || '',
 							tag: payload.tag,
