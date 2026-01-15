@@ -166,10 +166,83 @@ export default {
 		this.loadScriptDetail();
 	},
 	methods: {
-		loadScriptDetail() {
-			// 模拟加载剧本详情
-			// 在实际项目中，这里应该调用API获取数据
-			console.log('加载剧本详情:', this.scriptId);
+		async loadScriptDetail() {
+			if (!this.scriptId) return;
+
+			try {
+				const res = await uniCloud.callFunction({
+					name: 'getScript',
+					data: { id: this.scriptId }
+				});
+				const result = (res && res.result) ? res.result : res;
+
+				if (result && result.code === 0 && Array.isArray(result.data) && result.data.length) {
+					const item = result.data[0];
+
+					// 数据结构统一适配
+					// ID字段标准化
+					item.id = item._id || item.id;
+					delete item._id;
+
+					// 图片字段处理
+					this.resolveImages(item);
+
+					// 状态字段默认值
+					item.status = item.status || 'active';
+
+					// 标签字段转换：数组转字符串（用于显示）
+					if (Array.isArray(item.tags) && item.tags.length > 0) {
+						item.tag = item.tags[0]; // 取第一个标签用于显示
+					} else {
+						item.tag = '推理'; // 默认标签
+					}
+
+					// 时间字段格式化
+					item.updateTime = item.updateTime || item.createdAt;
+
+					// 统计字段默认值
+					item.usageCount = item.usageCount || 0;
+					item.likes = item.likes || 0;
+
+					// 版本字段默认值
+					item.version = item.version || '1.0.0';
+
+					// 其他字段默认值
+					item.playerCount = item.playerCount || '8-12人';
+					item.difficulty = item.difficulty || '中等';
+					item.jsonUrl = item.fileUrl || item.jsonUrl || '#';
+
+					this.script = item;
+				} else {
+					console.error('剧本详情加载失败:', result);
+					uni.showToast({
+						title: '加载失败',
+						icon: 'none'
+					});
+				}
+			} catch (err) {
+				console.error('loadScriptDetail error', err);
+				uni.showToast({
+					title: '网络错误',
+					icon: 'none'
+				});
+			}
+		},
+
+		// 图片字段处理方法
+		resolveImages(item) {
+			// 优先使用 thumbnails (管理端标准)
+			if (Array.isArray(item.thumbnails) && item.thumbnails.length) {
+				item.images = item.thumbnails.slice(0, 3);
+			} else if (item.thumbnail) {
+				// 降级到 thumbnail (单个图片)
+				item.images = [item.thumbnail];
+			} else if (Array.isArray(item.images)) {
+				// 最后使用 images 数组
+				item.images = item.images.slice(0, 3);
+			} else {
+				item.images = [];
+			}
 		},
 		// fetch full-size images for viewer
 		async fetchFullImages() {

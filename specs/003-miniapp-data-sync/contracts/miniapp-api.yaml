@@ -1,0 +1,258 @@
+openapi: 3.0.1
+info:
+  title: 小程序端剧本数据API
+  description: 小程序端适配管理端数据结构的API合约
+  version: 1.0.0
+  contact:
+    name: 小程序端数据同步功能
+
+servers:
+  - url: https://unicloud.dcloud.net.cn
+    description: uniCloud云函数环境
+
+paths:
+  /listScripts:
+    post:
+      summary: 获取剧本列表（小程序端适配版）
+      description: 获取剧本列表，支持分页、搜索和筛选，适配小程序端数据结构
+      operationId: listScripts
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                page:
+                  type: integer
+                  minimum: 1
+                  default: 1
+                  description: 页码
+                pageSize:
+                  type: integer
+                  minimum: 1
+                  maximum: 50
+                  default: 12
+                  description: 每页数量
+                q:
+                  type: string
+                  maxLength: 100
+                  description: 搜索关键词（标题或作者）
+                sortBy:
+                  type: string
+                  enum: [createdAt, title, author, likes]
+                  default: createdAt
+                  description: 排序字段
+      responses:
+        '200':
+          description: 成功获取剧本列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ScriptMiniapp'
+                  total:
+                    type: integer
+                    description: 总记录数
+                    example: 150
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+
+  /getScript:
+    post:
+      summary: 获取剧本详情（小程序端适配版）
+      description: 获取单个剧本的详细信息，适配小程序端数据结构
+      operationId: getScript
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - id
+              properties:
+                id:
+                  type: string
+                  description: 剧本ID
+                  example: "507f1f77bcf86cd799439011"
+      responses:
+        '200':
+          description: 成功获取剧本详情
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 0
+                  data:
+                    type: array
+                    maxItems: 1
+                    items:
+                      $ref: '#/components/schemas/ScriptDetailMiniapp'
+        '404':
+          description: 剧本不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/NotFoundResponse'
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+
+components:
+  schemas:
+    ScriptMiniapp:
+      type: object
+      description: 小程序端剧本列表项数据结构
+      required:
+        - id
+        - title
+        - author
+        - createdAt
+      properties:
+        id:
+          type: string
+          description: 剧本ID
+          example: "507f1f77bcf86cd799439011"
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: 剧本标题
+          example: "经典狼人杀剧本"
+        author:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: 剧本作者
+          example: "官方出品"
+        version:
+          type: string
+          description: 版本号
+          example: "1.0.0"
+          default: "1.0.0"
+        likes:
+          type: integer
+          minimum: 0
+          description: 点赞数
+          example: 156
+          default: 0
+        images:
+          type: array
+          maxItems: 3
+          items:
+            type: string
+            format: uri
+          description: 图片URL数组
+          example: ["https://example.com/image1.jpg"]
+        createdAt:
+          type: string
+          format: date-time
+          description: 创建时间
+          example: "2024-01-12T10:00:00Z"
+        status:
+          type: string
+          enum: [active, inactive]
+          description: 剧本状态
+          example: "active"
+          default: "active"
+        tags:
+          type: array
+          maxItems: 2
+          items:
+            type: string
+            enum: ["推理", "娱乐"]
+          description: 标签数组
+          example: ["推理"]
+        category:
+          type: string
+          maxLength: 100
+          description: 分类
+          example: "桌游"
+        description:
+          type: string
+          maxLength: 1000
+          description: 剧本描述
+        updateTime:
+          type: string
+          format: date-time
+          description: 更新时间
+        usageCount:
+          type: integer
+          minimum: 0
+          description: 使用次数
+          default: 0
+        fileSize:
+          type: integer
+          minimum: 0
+          description: 文件大小(字节)
+
+    ScriptDetailMiniapp:
+      type: object
+      description: 小程序端剧本详情数据结构
+      allOf:
+        - $ref: '#/components/schemas/ScriptMiniapp'
+        - type: object
+          properties:
+            content:
+              type: string
+              description: 剧本正文内容
+            fileId:
+              type: string
+              description: 文件ID
+            fileUrl:
+              type: string
+              format: uri
+              description: 文件访问URL
+            mimeType:
+              type: string
+              description: 文件MIME类型
+            thumbnails:
+              type: array
+              items:
+                type: string
+                format: uri
+              description: 缩略图URL数组
+            thumbnail:
+              type: string
+              format: uri
+              description: 单个缩略图URL
+
+  responses:
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: -1
+        errMsg:
+          type: string
+          description: 错误信息
+          example: "服务器内部错误"
+
+    NotFoundResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 404
+        errMsg:
+          type: string
+          description: 错误信息
+          example: "剧本不存在"
+
+  securitySchemes:
+    uniCloudAuth:
+      type: apiKey
+      in: header
+      name: uniCloud-Auth
+      description: uniCloud自动认证头

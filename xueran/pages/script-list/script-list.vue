@@ -159,6 +159,10 @@ export default {
 				const result = (res && res.result) ? res.result : res;
 				const list = (result && result.data) ? result.data : [];
 				list.forEach(item => {
+					// ID字段标准化
+					item.id = item._id || item.id;
+					delete item._id;
+
 					// 确保images是数组且包含有效的URL
 					if (Array.isArray(item.images)) {
 						item.images = item.images.slice(0, 3).map(img => {
@@ -173,6 +177,26 @@ export default {
 					} else {
 						item.images = [];
 					}
+
+					// 数据结构统一适配
+					// 状态字段默认值
+					item.status = item.status || 'active';
+
+					// 标签字段转换：数组转字符串
+					if (Array.isArray(item.tags) && item.tags.length > 0) {
+						item.tag = item.tags[0]; // 取第一个标签
+					} else {
+						item.tag = '推理'; // 默认标签
+					}
+
+					// 时间字段映射
+					item.updateTime = item.updateTime || item.createdAt;
+
+					// 统计字段默认值
+					item.usageCount = item.usageCount || 0;
+
+					// 版本字段默认值
+					item.version = item.version || '1.0.0';
 				});
 				if (append) {
 					this.scripts = this.scripts.concat(list);
