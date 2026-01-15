@@ -231,18 +231,31 @@ export default {
 
 		// 图片字段处理方法
 		resolveImages(item) {
+			let processedImages = [];
+
 			// 优先使用 thumbnails (管理端标准)
 			if (Array.isArray(item.thumbnails) && item.thumbnails.length) {
-				item.images = item.thumbnails.slice(0, 3);
+				processedImages = item.thumbnails.slice(0, 3);
 			} else if (item.thumbnail) {
 				// 降级到 thumbnail (单个图片)
-				item.images = [item.thumbnail];
-			} else if (Array.isArray(item.images)) {
-				// 最后使用 images 数组
-				item.images = item.images.slice(0, 3);
-			} else {
-				item.images = [];
+				processedImages = [item.thumbnail];
+			} else if (Array.isArray(item.images) && item.images.length) {
+				// 处理 images 数组中的对象或字符串
+				processedImages = item.images.slice(0, 3).map(img => {
+					// 如果是字符串，直接使用
+					if (typeof img === 'string') {
+						return img;
+					}
+					// 如果是对象，尝试获取url属性
+					if (typeof img === 'object' && img !== null) {
+						return img.url || img.fileId || img.path || null;
+					}
+					return null;
+				}).filter(url => url && typeof url === 'string');
 			}
+
+			// 确保至少有一个有效的URL
+			item.images = processedImages.length > 0 ? processedImages : [];
 		},
 		// fetch full-size images for viewer
 		async fetchFullImages() {
@@ -255,9 +268,19 @@ export default {
 				const result = (res && res.result) ? res.result : res;
 				if (result && result.code === 0 && Array.isArray(result.data) && result.data.length) {
 					const item = result.data[0];
-					// use original images if present
+					// use original images if present, convert objects to URLs
 					if (Array.isArray(item.images) && item.images.length) {
-						this.viewerImages = item.images.slice();
+						this.viewerImages = item.images.map(img => {
+							// 如果是字符串，直接使用
+							if (typeof img === 'string') {
+								return img;
+							}
+							// 如果是对象，尝试获取url属性
+							if (typeof img === 'object' && img !== null) {
+								return img.url || img.fileId || img.path || null;
+							}
+							return null;
+						}).filter(url => url && typeof url === 'string');
 						this.showingOriginals = true;
 						return;
 					}
@@ -270,7 +293,7 @@ export default {
 		// toggle between thumbnails and originals
 		async toggleOriginal() {
 			if (this.showingOriginals) {
-				// switch back to thumbnails
+				// switch back to thumbnails (current images should already be processed URLs)
 				this.viewerImages = (this.script.images || []).slice(0, 3);
 				this.showingOriginals = false;
 			} else {
