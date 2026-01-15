@@ -108,6 +108,98 @@ paths:
         '500':
           $ref: '#/components/responses/ErrorResponse'
 
+  /getScriptJson:
+    post:
+      summary: 获取剧本JSON数据（扩展现有功能）
+      description: 获取剧本的完整JSON数据，用于数据导出和调试，支持格式化输出和链接生成
+      operationId: getScriptJson
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - scriptId
+              properties:
+                scriptId:
+                  type: string
+                  description: 剧本ID
+                  example: "507f1f77bcf86cd799439011"
+                link:
+                  type: boolean
+                  default: false
+                  description: 是否返回浏览器可直接访问的data URL链接
+                format:
+                  type: string
+                  enum: [json, pretty]
+                  default: json
+                  description: 输出格式，json为压缩格式，pretty为格式化输出（当link=true时有效）
+                download:
+                  type: boolean
+                  default: false
+                  description: 是否返回HTML格式显示（向后兼容）
+      responses:
+        '200':
+          description: 成功获取剧本JSON数据或链接
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    description: 直接返回JSON数据（link=false时）
+                    example:
+                      _id: "507f1f77bcf86cd799439011"
+                      title: "经典狼人杀剧本"
+                      author: "官方出品"
+                      content: "...剧本内容..."
+                      status: "active"
+                      tags: ["推理"]
+                      category: "桌游"
+                      description: "经典的狼人杀游戏剧本"
+                      createTime: "2024-01-12T10:00:00Z"
+                      updateTime: "2024-01-15T08:30:00Z"
+                      usageCount: 1250
+                      likes: 156
+                      images: ["https://example.com/image1.jpg"]
+                      fileId: "file-uuid-123"
+                      fileUrl: "https://example.com/script.json"
+                      fileSize: 10240
+                      mimeType: "application/json"
+                  - type: object
+                    description: 返回data URL链接（link=true时）
+                    properties:
+                      jsonUrl:
+                        type: string
+                        description: 浏览器可直接访问的data URL
+                        example: "data:application/json;charset=utf-8;base64,eyJ0aXRsZSI6I..."
+                      format:
+                        type: string
+                        enum: [json, pretty]
+                        description: 使用的格式化方式
+        '404':
+          description: 剧本不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/responses/NotFoundResponse'
+        '403':
+          description: 权限不足
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 403
+                  errMsg:
+                    type: string
+                    description: 错误信息
+                    example: "无权限访问此剧本数据"
+        '500':
+          $ref: '#/components/responses/ErrorResponse'
+
 components:
   schemas:
     ScriptMiniapp:

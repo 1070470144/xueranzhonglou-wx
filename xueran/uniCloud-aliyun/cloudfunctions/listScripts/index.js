@@ -55,22 +55,91 @@ exports.main = async (event, context) => {
       .get();
 
     const data = (res && res.data) ? res.data.map(item => {
-      // normalize id field
-      item.id = item._id || item.id;
-      delete item._id;
-      // Prefer thumbnail fields if present
-      // support: item.thumbnails (array), item.thumbnail (single), fallback to item.images (array of urls)
-      if (Array.isArray(item.thumbnails) && item.thumbnails.length) {
-        item.images = item.thumbnails.slice(0, 3);
-      } else if (item.thumbnail) {
-        item.images = [item.thumbnail];
-      } else if (Array.isArray(item.images)) {
-        item.images = item.images.slice(0, 3);
-      } else {
-        item.images = [];
+      // 字段验证和标准化处理
+      try {
+        // ID字段标准化和验证
+        item.id = item._id || item.id;
+        if (!item.id) {
+          console.warn('Script missing id field:', item);
+          return null; // 跳过无效数据
+        }
+        delete item._id;
+
+        // 标题字段验证
+        if (!item.title || typeof item.title !== 'string' || item.title.trim().length === 0) {
+          console.warn('Script missing or invalid title:', item.id);
+          item.title = '未命名剧本'; // 默认值
+        }
+        item.title = item.title.trim();
+
+        // 作者字段验证
+        if (!item.author || typeof item.author !== 'string' || item.author.trim().length === 0) {
+          console.warn('Script missing or invalid author:', item.id);
+          item.author = '未知作者'; // 默认值
+        }
+        item.author = item.author.trim();
+
+        // 状态字段验证
+        const validStatuses = ['active', 'inactive', 'published', 'draft', 'archived'];
+        if (!item.status || !validStatuses.includes(item.status)) {
+          item.status = 'active'; // 默认值
+        }
+
+        // 标签字段验证和转换
+        if (Array.isArray(item.tags)) {
+          // 过滤无效标签，确保都是字符串且不为空
+          item.tags = item.tags.filter(tag => typeof tag === 'string' && tag.trim().length > 0).slice(0, 2);
+        } else {
+          item.tags = [];
+        }
+
+        // 图片字段验证和标准化
+        if (Array.isArray(item.thumbnails) && item.thumbnails.length) {
+          item.images = item.thumbnails.slice(0, 3);
+        } else if (item.thumbnail && typeof item.thumbnail === 'string') {
+          item.images = [item.thumbnail];
+        } else if (Array.isArray(item.images)) {
+          item.images = item.images
+            .filter(img => typeof img === 'string' && img.trim().length > 0)
+            .slice(0, 3);
+        } else {
+          item.images = [];
+        }
+
+        // 数值字段验证
+        item.likes = (typeof item.likes === 'number' && item.likes >= 0) ? item.likes : 0;
+        item.usageCount = (typeof item.usageCount === 'number' && item.usageCount >= 0) ? item.usageCount : 0;
+
+        // 字符串字段长度验证
+        if (item.description && typeof item.description === 'string') {
+          item.description = item.description.trim();
+          if (item.description.length > 1000) {
+            item.description = item.description.substring(0, 1000) + '...';
+          }
+        }
+
+        // 时间字段验证
+        if (item.createTime && !(item.createTime instanceof Date)) {
+          try {
+            item.createTime = new Date(item.createTime);
+          } catch (e) {
+            item.createTime = new Date();
+          }
+        }
+        if (item.updateTime && !(item.updateTime instanceof Date)) {
+          try {
+            item.updateTime = new Date(item.updateTime);
+          } catch (e) {
+            item.updateTime = item.createTime || new Date();
+          }
+        }
+
+        return item;
+      } catch (validationError) {
+        console.error('Field validation failed for script:', item.id, validationError);
+        return null; // 跳过验证失败的数据
       }
-      return item;
-    }) : [];
+    }).filter(item => item !== null) : []; // 过滤掉验证失败的项目
 
     return { code: 0, data, total };
   } catch (err) {

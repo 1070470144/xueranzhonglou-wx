@@ -5,12 +5,13 @@
 
 ## 功能概述
 
-本功能实现小程序端与管理端的数据结构统一，确保小程序能够正常显示和管理端创建的剧本数据。主要包括：
+本功能实现小程序端与管理端的数据结构统一，确保小程序能够正常显示和管理端创建的剧本数据。同时提供剧本JSON数据复制功能。主要包括：
 
 - 数据字段映射和适配
 - 云函数字段投影扩展
 - 前端数据处理逻辑优化
 - 数据同步机制验证
+- 剧本JSON数据导出功能
 
 ## 前置条件
 
@@ -116,7 +117,90 @@ list.forEach(item => {
 });
 ```
 
-### 步骤3: 测试数据准备
+### 步骤3: 完善JSON复制功能
+
+修改现有的云函数 `xueran/uniCloud-aliyun/cloudfunctions/getScriptJson/index.js`，增加link参数支持：
+
+```javascript
+// 在现有云函数中添加link参数处理
+// 在参数解析部分添加：
+
+let link = false;
+try {
+  // 检查是否需要生成data URL链接
+  link = (event && (event.link === 'true' || event.link === true)) ||
+         (event && event.query && (event.query.link === 'true' || event.query.link === true)) ||
+         (event && event.queryStringParameters && (event.queryStringParameters.link === 'true' || event.queryStringParameters.link === true)) ||
+         false;
+} catch (e) {
+  link = false;
+}
+
+// 在返回结果之前添加链接生成逻辑：
+
+// 根据link参数决定返回格式
+if (link) {
+  // 生成浏览器可直接访问的data URL
+  const jsonString = format === 'pretty'
+    ? JSON.stringify(resultData, null, 2)
+    : JSON.stringify(resultData);
+
+  const base64Data = Buffer.from(jsonString, 'utf8').toString('base64');
+  const dataUrl = `data:application/json;charset=utf-8;base64,${base64Data}`;
+
+  return respond({
+    jsonUrl: dataUrl,
+    format: format
+  }, 200);
+}
+
+// 保持原有返回逻辑...
+```
+
+修改 `xueran/pages/script-detail/script-detail.vue` 中的 `copyJsonUrl` 方法：
+
+```javascript
+// 修改现有的copyJsonUrl方法
+async copyJsonUrl() {
+  try {
+    uni.showLoading({ title: '生成链接中...' });
+
+    // 调用getScriptJson云函数，设置link=true生成data URL
+    const result = await this.$api.getScriptJson({
+      scriptId: this.scriptId,
+      link: true,
+      format: 'pretty'
+    });
+
+    if (result && result.jsonUrl) {
+      // 复制生成的data URL到剪贴板
+      await uni.setClipboardData({
+        data: result.jsonUrl,
+        success: () => {
+          uni.showToast({
+            title: 'JSON链接已复制',
+            icon: 'success'
+          });
+        }
+      });
+    } else {
+      throw new Error('生成链接失败');
+    }
+  } catch (error) {
+    console.error('Copy JSON URL error:', error);
+    uni.showToast({
+      title: '复制失败',
+      icon: 'error'
+    });
+  } finally {
+    uni.hideLoading();
+  }
+}
+```
+
+**注意**: 复制JSON按钮的UI已经存在，无需添加新的按钮元素。
+
+### 步骤4: 测试数据准备
 
 确保云数据库中的scripts集合包含测试数据，字段包括：
 
@@ -185,6 +269,17 @@ list.forEach(item => {
 1. 在管理端修改剧本数据
 2. 在小程序端下拉刷新
 3. 验证数据是否及时同步
+
+### 步骤4: JSON复制功能验证
+
+1. 进入剧本详情页面
+2. 点击"复制JSON地址"按钮（现有按钮）
+3. 验证以下内容：
+   - ✅ 显示"生成链接中..."加载提示
+   - ✅ 显示"JSON链接已复制"成功提示
+   - ✅ 剪贴板中包含以data:application/json;charset=utf-8;base64开头的链接
+   - ✅ 在浏览器中打开链接能看到格式化的JSON数据
+   - ✅ JSON数据包含剧本的完整字段信息
 
 ## 常见问题排查
 

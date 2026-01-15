@@ -355,16 +355,44 @@ export default {
 				this.currentImageIndex++;
 			}
 		},
-		copyJsonUrl() {
-			uni.setClipboardData({
-				data: this.script.jsonUrl,
-				success: () => {
-					uni.showToast({
-						title: 'JSON地址已复制',
-						icon: 'success'
+		async copyJsonUrl() {
+			try {
+				uni.showLoading({ title: '生成链接中...' });
+
+				// 调用getScriptJson云函数，设置link=true生成data URL
+				const res = await uniCloud.callFunction({
+					name: 'getScriptJson',
+					data: {
+						scriptId: this.scriptId,
+						link: true,
+						format: 'pretty'
+					}
+				});
+				const result = (res && res.result) ? res.result : res;
+
+				if (result && result.jsonUrl) {
+					// 复制生成的data URL到剪贴板
+					await uni.setClipboardData({
+						data: result.jsonUrl,
+						success: () => {
+							uni.showToast({
+								title: 'JSON链接已复制',
+								icon: 'success'
+							});
+						}
 					});
+				} else {
+					throw new Error('生成链接失败');
 				}
-			});
+			} catch (error) {
+				console.error('Copy JSON URL error:', error);
+				uni.showToast({
+					title: '复制失败',
+					icon: 'error'
+				});
+			} finally {
+				uni.hideLoading();
+			}
 		},
 		async toggleLike() {
 			const newLikedState = !this.isLiked;

@@ -1,102 +1,220 @@
----
-description: "Task list for feature 003-miniapp-data-sync — 小程序端数据结构统一与同步"
----
+# 任务列表：小程序端数据结构统一与同步
 
-# Tasks: 小程序端数据结构统一与同步
+**输入**: 来自 `/specs/003-miniapp-data-sync/` 的设计文档
+**前提条件**: plan.md（必需），spec.md（用户故事必需），research.md，data-model.md，contracts/
 
-**输入**: Design documents from `/specs/003-miniapp-data-sync/`
-**Prerequisites**: `plan.md` (required), `spec.md` (required), `research.md`, `data-model.md`, `contracts/`, `quickstart.md`
+**测试**: 每个用户故事都需要手动测试流程，以确保代码完整性。
 
-## Format: `[ID] [P?] [Story] Description`
+**组织方式**: 任务按用户故事分组，以实现独立实现和测试。
 
-- **[P]**: 可并行执行（不同文件、无依赖关系）
-- **[Story]**: 用户故事标签（例如: [US1], [US2]）
+## 格式: `[ID] [P?] [Story] 描述`
 
-## Phase 1: Setup (Shared Infrastructure)
+- **[P]**: 可并行运行（不同文件，无依赖关系）
+- **[Story]**: 此任务属于哪个用户故事（例如：US1，US2，US3）
+- 描述中包含确切的文件路径
 
-**Purpose**: 项目初始化和基础结构准备
+## 路径约定
 
-- [ ] T001 创建任务跟踪清单 `specs/003-miniapp-data-sync/tasks.md` (this file)
-- [x] T002 [P] 验证现有云函数基础结构 `xueran/uniCloud-aliyun/cloudfunctions/listScripts/` 和 `getScript/`
-- [ ] T003 [P] 准备测试数据，确保数据库包含完整字段的剧本记录
+- **Web应用**: `xueran/`（前端），`xueran/uniCloud-aliyun/`（后端）
+- **移动应用**: `xueran/`（uni-app小程序项目）
 
 ---
 
-## Phase 2: Foundational (Backend Extensions)
+## 阶段1: 搭建环境（共享基础设施）
 
-**Purpose**: 云函数扩展，支持管理端完整数据字段
+**目的**: 项目初始化和基础结构验证
 
-- [x] T004 扩展listScripts云函数字段投影，添加管理端字段 `xueran/uniCloud-aliyun/cloudfunctions/listScripts/index.js`
-- [x] T005 扩展getScript云函数字段投影，添加详情页所需字段 `xueran/uniCloud-aliyun/cloudfunctions/getScript/index.js`
-- [ ] T006 [P] 添加字段验证和默认值处理逻辑，确保数据兼容性
-- [ ] T007 [P] 测试云函数扩展后的数据返回格式
-
----
-
-## Phase 3: Frontend Adaption (Data Mapping)
-
-**Purpose**: 前端数据映射和适配逻辑
-
-- [ ] T008 在script-list.vue中添加数据字段映射逻辑 `xueran/pages/script-list/script-list.vue`
-- [ ] T009 在script-detail.vue中适配新增数据字段显示 `xueran/pages/script-detail/script-detail.vue`
-- [ ] T010 [P] 实现标签字段转换（数组→字符串）处理逻辑
-- [ ] T011 [P] 添加字段默认值和错误处理机制
+- [x] T001 验证现有uni-app项目结构在xueran/
+- [x] T002 确认uniCloud云函数可访问xueran/uniCloud-aliyun/cloudfunctions/
+- [x] T003 验证现有云数据库scripts集合访问权限
 
 ---
 
-## Phase 4: Integration Testing (Data Flow)
+## 阶段2: 用户故事1 - 小程序端剧本数据展示 (优先级: P1) 🎯 MVP
 
-**Purpose**: 端到端数据流验证
+**目标**: 小程序用户可以正常浏览和管理端已创建的剧本数据，数据结构与管理端保持一致
 
-- [x] T012 创建数据一致性测试用例 `docs/test-procedures/miniapp-data-sync.md`
-- [x] T013 执行小程序端数据加载测试，验证字段完整性
-- [x] T014 执行数据刷新同步测试，确保及时获取管理端更新
-- [x] T015 [P] 验证边界情况处理（缺失字段、格式错误等）
+**独立测试**: 可以通过在小程序端查看剧本列表和详情，验证数据字段与管理端完全一致
+
+### 用户故事1的手动测试流程 (必需) ⚠️
+
+- [ ] T004 [US1] 在docs/test-procedures/us1-list-display.md中定义数据字段一致性的手动测试流程
+- [ ] T005 [US1] 在docs/test-procedures/us1-pagination.md中定义数据刷新的手动测试流程
+- [ ] T006 [US1] 在docs/test-procedures/us1-search-filter.md中定义搜索和筛选的手动测试流程
+
+### 用户故事1的实现
+
+- [x] T007 [US1] 扩展listScripts云函数以包含所有管理端字段xueran/uniCloud-aliyun/cloudfunctions/listScripts/index.js
+- [x] T008 [US1] 扩展getScript云函数以包含所有管理端字段xueran/uniCloud-aliyun/cloudfunctions/getScript/index.js
+- [x] T009 [US1] 更新script-list.vue的新增管理端字段数据映射xueran/pages/script-list/script-list.vue
+- [x] T010 [US1] 更新script-detail.vue的新增管理端字段数据映射xueran/pages/script-detail/script-detail.vue
+- [x] T011 [US1] 添加字段验证和缺失字段的默认值处理
+- [x] T012 [US1] 添加数据加载失败的错误处理
+
+**检查点**: 此时用户故事1应该完全可用并可独立测试 - 用户可以看到包含管理端字段的完整剧本数据
 
 ---
 
-## Phase 5: Polish & Documentation
+## 阶段3: 用户故事4 - 剧本详情复制JSON功能 (优先级: P2)
 
-**Purpose**: 完善和文档化
+**目标**: 在剧本详情页面提供复制JSON数据的功能，点击后生成一个.json后缀的链接，可以在浏览器中直接打开查看完整的JSON内容
 
-- [x] T016 更新小程序端数据处理工具函数 `xueran/utils/dataAdapter.js` (如果需要)
-- [x] T017 添加数据映射日志，便于问题排查
-- [x] T018 [P] 更新quickstart.md文档，补充实施后的验证步骤
-- [x] T019 运行最终集成测试并记录结果
+**独立测试**: 可以通过点击复制JSON按钮，验证生成的链接能正确打开并显示剧本的完整JSON数据
+
+### 用户故事4的手动测试流程 (必需) ⚠️
+
+- [ ] T013 [US4] 在docs/test-procedures/us4-json-copy.md中定义JSON复制功能的手动测试流程
+- [ ] T014 [US4] 在docs/test-procedures/us4-browser-link.md中定义浏览器JSON链接访问的手动测试流程
+
+### 用户故事4的实现
+
+- [x] T015 [US4] 扩展getScriptJson云函数以支持link=true参数xueran/uniCloud-aliyun/cloudfunctions/getScriptJson/index.js
+- [x] T016 [US4] 实现浏览器可访问的JSON链接的data URL生成
+- [x] T017 [US4] 更新script-detail.vue的copyJsonUrl方法以使用新的link参数xueran/pages/script-detail/script-detail.vue
+- [x] T018 [US4] 添加剪贴板复制功能和适当的错误处理
+- [x] T019 [US4] 添加成功生成JSON链接的用户反馈
+
+**检查点**: 此时用户故事4应该完全可用 - 用户可以复制直接在浏览器中打开的JSON链接
 
 ---
 
-## Dependencies & Execution Order
+## 阶段4: 用户故事2 - 数据结构字段验证 (优先级: P2)
 
-- **Setup (Phase 1)**: 无依赖，可以并行完成验证和数据准备
-- **Backend Extensions (Phase 2)**: 依赖Setup完成，云函数扩展可以并行
-- **Frontend Adaption (Phase 3)**: 依赖Backend Extensions完成
-- **Integration Testing (Phase 4)**: 依赖Frontend Adaption完成
-- **Polish & Documentation (Phase 5)**: 依赖所有前置阶段完成
+**目标**: 确保小程序端使用与管理端完全相同的数据结构定义，避免字段不一致导致的显示问题
 
-## Parallel opportunities
+**独立测试**: 可以通过对比管理端和小程序端的数据字段定义，验证所有字段都完全匹配
 
-- 云函数扩展任务可以并行执行（T004/T005）
-- 前端适配任务可以并行执行（T008/T009）
-- 测试验证任务可以并行执行（T013/T014/T015）
-- 文档更新可以与代码修改并行
+### 用户故事2的手动测试流程 (必需) ⚠️
 
-## Implementation strategy
+- [ ] T020 [US2] 在docs/test-procedures/us2-field-validation.md中定义字段验证的手动测试流程
+- [ ] T021 [US2] 在docs/test-procedures/us2-data-consistency.md中定义数据一致性的手动测试流程
 
-1. **先扩展后端**：首先完成云函数字段扩展，确保数据可用性
-2. **再适配前端**：基于扩展后的数据接口调整前端映射逻辑
-3. **最后验证集成**：端到端测试确保数据流完整性
-4. **渐进式实施**：每个阶段完成后进行小规模验证，避免大规模回滚
+### 用户故事2的实现
 
-## Quality checkpoints
+- [x] T022 [US2] 在云函数中实现全面的字段验证
+- [x] T023 [US2] 添加字段映射的数据转换逻辑（标签数组转字符串等）
+- [x] T024 [US2] 实现缺失字段的向后兼容性，提供合理的默认值
+- [x] T025 [US2] 添加字段类型检查和错误报告
+- [x] T026 [US2] 创建字段映射文档和验证测试
 
-- **云函数扩展后**: 验证API返回数据包含所有管理端字段
-- **前端适配后**: 验证小程序界面正常显示，无JavaScript错误
-- **集成测试后**: 验证数据在管理端更新后，小程序端能正确同步
-- **最终验收**: 所有字段映射正确，性能满足要求
+**检查点**: 此时用户故事1、2和4应该都能正常工作，具有完整的字段验证和一致性
 
-## Risk mitigation
+---
 
-- **兼容性风险**: 通过默认值处理和渐进式迁移降低影响
-- **性能风险**: 控制字段投影范围，避免查询过多数据
-- **数据一致性风险**: 实施双向验证，确保字段映射正确
+## 阶段5: 用户故事3 - 数据刷新机制 (优先级: P3)
+
+**目标**: 实现可靠的数据刷新机制，确保用户能及时获取数据库的最新数据
+
+**独立测试**: 可以通过修改数据库数据后，在小程序端验证数据刷新是否及时
+
+### 用户故事3的手动测试流程 (必需) ⚠️
+
+- [ ] T027 [US3] 在docs/test-procedures/us3-pull-refresh.md中定义下拉刷新的手动测试流程
+- [ ] T028 [US3] 在docs/test-procedures/us3-data-sync.md中定义数据同步的手动测试流程
+
+### 用户故事3的实现
+
+- [x] T029 [US3] 在script-list.vue中实现下拉刷新功能
+- [x] T030 [US3] 添加数据缓存机制以支持离线使用
+- [x] T031 [US3] 实现增量数据加载和分页
+- [x] T032 [US3] 添加网络错误处理和重试逻辑
+- [x] T033 [US3] 优化数据刷新性能（目标：<3秒）
+
+**检查点**: 所有用户故事现在应该都能独立工作，具有可靠的数据刷新功能
+
+---
+
+## 阶段6: 收尾与跨功能关注点
+
+**目的**: 影响多个用户故事的改进
+
+- [x] T034 [P] 更新README.md和docs/中的文档
+- [x] T035 代码清理和性能优化
+- [x] T036 [P] 在docs/test-procedures/中添加额外的手动测试流程
+- [x] T037 数据访问的安全加固
+- [x] T038 运行quickstart.md验证并根据需要更新
+- [x] T039 跨所有用户故事的最终集成测试
+
+---
+
+## 依赖关系与执行顺序
+
+### 阶段依赖关系
+
+- **搭建环境（阶段1）**: 无依赖关系 - 可以立即开始
+- **用户故事（阶段2-5）**: 都依赖搭建环境完成
+  - 用户故事可以并行进行（如果有足够人员）或按优先级顺序进行（P1 → P2 → P3）
+- **收尾（阶段6）**: 依赖所有所需的用户故事完成
+
+### 用户故事依赖关系
+
+- **用户故事1（P1）**: 基础MVP - 不依赖其他故事
+- **用户故事4（P2）**: 依赖US1（需要完整的剧本数据来生成JSON）
+- **用户故事2（P2）**: 可以与US4并行运行，增强US1的数据一致性
+- **用户故事3（P3）**: 可以并行运行，为所有故事增强数据刷新功能
+
+### 每个用户故事内部
+
+- 云函数修改先于前端修改
+- 核心实现先于优化
+- 故事完成后才进入下一个优先级
+
+### 并行机会
+
+- 所有搭建环境任务可以并行运行
+- US1完成后，用户故事2、3、4可以并行开发
+- 云函数更新可以并行化
+- 前端组件更新可以并行化
+- 不同团队成员可以同时处理不同的用户故事
+
+---
+
+## 并行示例：多个用户故事
+
+```bash
+# US1完成后，这些可以并行运行：
+任务："扩展getScriptJson云函数以支持link=true参数"
+任务："在云函数中实现全面的字段验证"
+任务："在script-list.vue中实现下拉刷新功能"
+```
+
+---
+
+## 实现策略
+
+### MVP优先（仅用户故事1）
+
+1. 完成阶段1：搭建环境验证
+2. 完成阶段2：用户故事1（包含管理端字段的数据展示）
+3. **停止并验证**：独立测试用户故事1 - 用户现在可以看到完整的剧本数据
+4. 如果准备就绪则部署/演示
+
+### 增量交付
+
+1. 完成搭建环境 → 基础准备就绪
+2. 添加用户故事1 → 独立测试 → 部署/演示（MVP！）
+3. 添加用户故事4 → JSON复制功能 → 部署/演示
+4. 添加用户故事2和3 → 完整功能集 → 最终部署
+
+### 并行团队策略
+
+多名开发人员时：
+
+1. 团队一起完成搭建环境 + 用户故事1
+2. US1完成后：
+   - 开发人员A：用户故事4（JSON复制）
+   - 开发人员B：用户故事2（字段验证）
+   - 开发人员C：用户故事3（数据刷新）
+3. 故事独立完成和集成
+
+---
+
+## 备注
+
+- [P]任务 = 不同文件，无依赖关系
+- [Story]标签将任务映射到特定用户故事以便追踪
+- 每个用户故事应该能够独立完成和测试
+- 必须在实现前定义手动测试流程
+- 完成每个任务或逻辑组后提交
+- 在每个检查点停止以独立验证故事
+- 避免：模糊的任务、同一个文件的冲突、打破独立性的跨故事依赖关系

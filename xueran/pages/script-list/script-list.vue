@@ -89,7 +89,14 @@ export default {
 			loading: false,
 			noMore: false,
 			refreshing: false,
-			error: null
+			error: null,
+			// cache
+			cacheKey: 'script_list_cache',
+			cacheExpiry: 5 * 60 * 1000, // 5分钟缓存
+			lastCacheTime: null,
+			// retry
+			maxRetries: 3,
+			retryDelay: 1000 // 1秒重试延迟
 		}
 	},
 	computed: {
@@ -177,21 +184,98 @@ export default {
 				}, 300);
 			}
 		},
+		// 缓存管理方法
+		saveToCache(data) {
+			try {
+				const cacheData = {
+					data: data,
+					timestamp: Date.now(),
+					searchKeyword: this.searchKeyword
+				};
+				uni.setStorageSync(this.cacheKey, JSON.stringify(cacheData));
+				this.lastCacheTime = Date.now();
+			} catch (e) {
+				console.warn('Failed to save cache:', e);
+			}
+		},
+		loadFromCache() {
+			try {
+				const cacheStr = uni.getStorageSync(this.cacheKey);
+				if (!cacheStr) return null;
+
+				const cacheData = JSON.parse(cacheStr);
+				const now = Date.now();
+
+				// 检查缓存是否过期
+				if (now - cacheData.timestamp > this.cacheExpiry) {
+					uni.removeStorageSync(this.cacheKey);
+					return null;
+				}
+
+				// 检查搜索关键词是否匹配
+				if (cacheData.searchKeyword !== this.searchKeyword) {
+					return null;
+				}
+
+				this.lastCacheTime = cacheData.timestamp;
+				return cacheData.data;
+			} catch (e) {
+				console.warn('Failed to load cache:', e);
+				return null;
+			}
+		},
+		clearCache() {
+			try {
+				uni.removeStorageSync(this.cacheKey);
+				this.lastCacheTime = null;
+			} catch (e) {
+				console.warn('Failed to clear cache:', e);
+			}
+		},
+
+		// 重试机制
+		async retryWithBackoff(fn, retries = this.maxRetries) {
+			for (let i = 0; i < retries; i++) {
+				try {
+					return await fn();
+				} catch (error) {
+					if (i === retries - 1) throw error;
+					console.warn(`Retry ${i + 1}/${retries} failed:`, error);
+					await new Promise(resolve => setTimeout(resolve, this.retryDelay * Math.pow(2, i)));
+				}
+			}
+		},
+
 		// fetch paginated scripts from cloud
-		async fetchScripts({ page = 1, append = false, q = '' } = {}) {
+		async fetchScripts({ page = 1, append = false, q = '', useCache = true } = {}) {
 			if (this.loading) return;
 			this.loading = true;
 			this.error = null;
+
 			try {
-				const res = await uniCloud.callFunction({
-					name: 'listScripts',
-					data: {
-						page,
-						pageSize: this.pageSize,
-						q
+				// 对于第一页且启用缓存，尝试从缓存加载
+				if (page === 1 && useCache && !append) {
+					const cachedData = this.loadFromCache();
+					if (cachedData) {
+						this.scripts = cachedData.scripts || [];
+						this.page = cachedData.page || 1;
+						this.noMore = cachedData.noMore || false;
+						this.loading = false;
+						return;
 					}
+				}
+				// 使用重试机制调用云函数
+				const result = await this.retryWithBackoff(async () => {
+					const res = await uniCloud.callFunction({
+						name: 'listScripts',
+						data: {
+							page,
+							pageSize: this.pageSize,
+							q
+						}
+					});
+					return (res && res.result) ? res.result : res;
 				});
-				const result = (res && res.result) ? res.result : res;
 				const rawList = (result && result.data) ? result.data : [];
 				const processedList = [];
 				for (let i = 0; i < rawList.length; i++) {
@@ -250,6 +334,13 @@ export default {
 					this.scripts = this.scripts.concat(list);
 				} else {
 					this.scripts = list;
+					// 保存第一页数据到缓存
+					this.saveToCache({
+						scripts: list,
+						page: this.page,
+						noMore: this.noMore,
+						total: result.total
+					});
 				}
 				if (!result.total) {
 					this.noMore = list.length < this.pageSize;
@@ -274,11 +365,21 @@ export default {
 		async handlePullDownRefresh() {
 			this.refreshing = true;
 			this.noMore = false;
-			await this.fetchScripts({ page: 1, append: false, q: this.searchKeyword });
+			// 清除缓存，强制重新加载最新数据
+			this.clearCache();
+			await this.fetchScripts({ page: 1, append: false, q: this.searchKeyword, useCache: false });
 		},
 		// reach bottom load more
 		async handleReachBottom() {
 			if (this.loading || this.noMore) return;
+
+			// 性能优化：限制最大页数，避免过度加载
+			const maxPages = 10;
+			if (this.page >= maxPages) {
+				this.noMore = true;
+				return;
+			}
+
 			const next = this.page + 1;
 			await this.fetchScripts({ page: next, append: true, q: this.searchKeyword });
 		}
