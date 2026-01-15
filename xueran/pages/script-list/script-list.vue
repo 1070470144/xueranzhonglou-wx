@@ -75,6 +75,8 @@
 </template>
 
 <script>
+import { likeScript, unlikeScript, initScriptsLikeStatus } from '@/utils/api.js';
+
 export default {
 	data() {
 		return {
@@ -124,22 +126,55 @@ export default {
 				url: `/pages/script-detail/script-detail?id=${script.id}`
 			});
 		},
-		toggleLike(script) {
+		async toggleLike(script) {
 			// 添加点赞动画
 			script.likeAnimating = true;
 			setTimeout(() => {
 				script.likeAnimating = false;
 			}, 300);
 
-			script.isLiked = !script.isLiked;
-			if (script.isLiked) {
-				script.likes++;
+			const wasLiked = script.isLiked;
+			const newLikedState = !wasLiked;
+
+			try {
+				let result;
+				if (newLikedState) {
+					// 点赞
+					result = await likeScript(script.id);
+					if (result.success) {
+						script.likes++;
+					}
+				} else {
+					// 取消点赞
+					result = await unlikeScript(script.id);
+					if (result.success) {
+						script.likes = Math.max(0, script.likes - 1);
+					}
+				}
+
+				if (result.success) {
+					script.isLiked = newLikedState;
+					uni.showToast({
+						title: result.message,
+						icon: 'success'
+					});
+				} else {
+					uni.showToast({
+						title: result.message,
+						icon: 'none'
+					});
+				}
+			} catch (error) {
+				console.error('点赞操作失败:', error);
 				uni.showToast({
-					title: '点赞成功',
-					icon: 'success'
+					title: '操作失败，请重试',
+					icon: 'none'
 				});
-			} else {
-				script.likes--;
+			} finally {
+				// 无论成功失败，都停止动画
+				setTimeout(() => {
+					script.likeAnimating = false;
+				}, 300);
 			}
 		},
 		// fetch paginated scripts from cloud
@@ -157,47 +192,60 @@ export default {
 					}
 				});
 				const result = (res && res.result) ? res.result : res;
-				const list = (result && result.data) ? result.data : [];
-				list.forEach(item => {
-					// ID字段标准化
-					item.id = item._id || item.id;
-					delete item._id;
+				const rawList = (result && result.data) ? result.data : [];
+				const processedList = [];
+				for (let i = 0; i < rawList.length; i++) {
+					const item = rawList[i];
+					try {
+						// ID字段标准化
+						item.id = item._id || item.id;
+						delete item._id;
 
-					// 确保images是数组且包含有效的URL
-					if (Array.isArray(item.images)) {
-						item.images = item.images.slice(0, 3).map(img => {
-							// 如果是对象，尝试获取url属性；如果是字符串，直接使用
-							if (typeof img === 'object' && img.url) {
-								return img.url;
-							} else if (typeof img === 'string') {
-								return img;
-							}
-							return null;
-						}).filter(url => url && typeof url === 'string');
-					} else {
-						item.images = [];
+						// 确保images是数组且包含有效的URL
+						if (Array.isArray(item.images)) {
+							item.images = item.images.slice(0, 3).map(img => {
+								// 如果是对象，尝试获取url属性；如果是字符串，直接使用
+								if (typeof img === 'object' && img !== null) {
+									return img.url || img.fileId || img.path || null;
+								} else if (typeof img === 'string') {
+									return img;
+								}
+								return null;
+							}).filter(url => url && typeof url === 'string');
+						} else {
+							item.images = [];
+						}
+
+						// 数据结构统一适配
+						// 状态字段默认值
+						item.status = item.status || 'active';
+
+						// 标签字段转换：数组转字符串
+						if (Array.isArray(item.tags) && item.tags.length > 0) {
+							item.tag = item.tags[0]; // 取第一个标签
+						} else {
+							item.tag = '推理'; // 默认标签
+						}
+
+						// 时间字段映射
+						item.updateTime = item.updateTime || item.createdAt;
+
+						// 统计字段默认值
+						item.usageCount = item.usageCount || 0;
+
+						// 版本字段默认值
+						item.version = item.version || '1.0.0';
+
+						processedList.push(item);
+					} catch (itemErr) {
+						// 单条数据处理失败，记录并跳过该条，继续处理余下数据
+						console.error('process script item error', itemErr, item && item.id ? item.id : i);
 					}
+				}
 
-					// 数据结构统一适配
-					// 状态字段默认值
-					item.status = item.status || 'active';
+				// 初始化点赞状态（只对成功处理的条目）
+				const list = initScriptsLikeStatus(processedList);
 
-					// 标签字段转换：数组转字符串
-					if (Array.isArray(item.tags) && item.tags.length > 0) {
-						item.tag = item.tags[0]; // 取第一个标签
-					} else {
-						item.tag = '推理'; // 默认标签
-					}
-
-					// 时间字段映射
-					item.updateTime = item.updateTime || item.createdAt;
-
-					// 统计字段默认值
-					item.usageCount = item.usageCount || 0;
-
-					// 版本字段默认值
-					item.version = item.version || '1.0.0';
-				});
 				if (append) {
 					this.scripts = this.scripts.concat(list);
 				} else {
@@ -210,8 +258,10 @@ export default {
 				}
 				this.page = page;
 			} catch (err) {
+				// 记录完整错误用于调试，但对用户显示友好信息，避免将内部错误细节暴露给用户
 				console.error('fetchScripts error', err);
-				this.error = err.message || '加载失败';
+				this._lastError = err;
+				this.error = '加载数据失败，请稍后重试';
 			} finally {
 				this.loading = false;
 				if (this.refreshing) {

@@ -1,6 +1,17 @@
 'use strict'
 
-const { testScripts } = require('../database/init-data')
+let testScripts = []
+try {
+  // optional dev-only test data module; guard in case it's absent in production or restored repo
+  // eslint-disable-next-line global-require
+  const init = require('../database/init-data')
+  if (init && Array.isArray(init.testScripts)) {
+    testScripts = init.testScripts
+  }
+} catch (e) {
+  // don't fail if init-data not present; log for local debug
+  console.warn('init-data module not found or failed to load; proceeding without test data')
+}
 
 /**
  * 获取剧本列表

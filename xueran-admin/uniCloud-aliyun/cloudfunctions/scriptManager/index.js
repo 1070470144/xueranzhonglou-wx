@@ -127,6 +127,10 @@ exports.main = async (event, context) => {
         return await handleDelete(params)
       case 'upload':
         return await handleUpload(params)
+      case 'like':
+        return await handleLike(params)
+      case 'unlike':
+        return await handleUnlike(params)
       default:
         return createErrorResponse('不支持的操作类型')
     }
@@ -417,5 +421,49 @@ async function handleUpload(params) {
     } else {
       return createErrorResponse('文件上传失败：' + uploadError.message)
     }
+  }
+}
+
+// 点赞剧本
+async function handleLike(params) {
+  const { id } = params
+
+  if (!id) {
+    return createErrorResponse('剧本ID不能为空')
+  }
+
+  try {
+    // 使用原子操作增加点赞数
+    const result = await scriptsCollection.doc(id).update({
+      likes: db.command.inc(1),
+      updateTime: new Date()
+    })
+
+    return createResponse(0, '点赞成功')
+  } catch (error) {
+    console.error('点赞操作失败:', error)
+    return createErrorResponse('点赞失败')
+  }
+}
+
+// 取消点赞剧本
+async function handleUnlike(params) {
+  const { id } = params
+
+  if (!id) {
+    return createErrorResponse('剧本ID不能为空')
+  }
+
+  try {
+    // 使用原子操作减少点赞数，确保不会小于0
+    const result = await scriptsCollection.doc(id).update({
+      likes: db.command.max(db.command.inc(-1), 0),
+      updateTime: new Date()
+    })
+
+    return createResponse(0, '取消点赞成功')
+  } catch (error) {
+    console.error('取消点赞操作失败:', error)
+    return createErrorResponse('取消点赞失败')
   }
 }
