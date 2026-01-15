@@ -131,6 +131,8 @@
 </template>
 
 <script>
+import { likeScript, unlikeScript, initScriptLikeStatus } from '@/utils/api.js';
+
 export default {
 	data() {
 		return {
@@ -170,62 +172,89 @@ export default {
 			if (!this.scriptId) return;
 
 			try {
+				this._lastError = null;
 				const res = await uniCloud.callFunction({
 					name: 'getScript',
 					data: { id: this.scriptId }
 				});
 				const result = (res && res.result) ? res.result : res;
 
-				if (result && result.code === 0 && Array.isArray(result.data) && result.data.length) {
-					const item = result.data[0];
-
-					// 数据结构统一适配
-					// ID字段标准化
-					item.id = item._id || item.id;
-					delete item._id;
-
-					// 图片字段处理
-					this.resolveImages(item);
-
-					// 状态字段默认值
-					item.status = item.status || 'active';
-
-					// 标签字段转换：数组转字符串（用于显示）
-					if (Array.isArray(item.tags) && item.tags.length > 0) {
-						item.tag = item.tags[0]; // 取第一个标签用于显示
+				// Support result.data as array or single object
+				let item = null;
+				if (result && result.code === 0 && result.data) {
+					if (Array.isArray(result.data)) {
+						item = result.data[0];
+					} else if (typeof result.data === 'object') {
+						item = result.data;
 					} else {
-						item.tag = '推理'; // 默认标签
+						// Try parse JSON string
+						try {
+							item = JSON.parse(result.data);
+						} catch (parseErr) {
+							console.warn('getScript returned data in unexpected format', parseErr, result.data);
+							item = null;
+						}
+					}
+				}
+
+				if (item && typeof item === 'object') {
+					// 数据结构统一适配 - defensive: wrap per-field operations to avoid throwing
+					try {
+						// ID字段标准化
+						item.id = item._id || item.id;
+						delete item._id;
+
+						// 图片字段处理
+						this.resolveImages(item);
+
+						// 状态字段默认值
+						item.status = item.status || 'active';
+
+						// 标签字段转换：数组转字符串（用于显示）
+						if (Array.isArray(item.tags) && item.tags.length > 0) {
+							item.tag = item.tags[0];
+						} else {
+							item.tag = '推理';
+						}
+
+						// 时间字段映射/格式化
+						item.updateTime = item.updateTime || item.createdAt;
+
+						// 统计字段默认值
+						item.usageCount = item.usageCount || 0;
+						item.likes = item.likes || 0;
+
+						// 版本字段默认值
+						item.version = item.version || '1.0.0';
+
+						// 其他字段默认值
+						item.playerCount = item.playerCount || '8-12人';
+						item.difficulty = item.difficulty || '中等';
+						item.jsonUrl = item.fileUrl || item.jsonUrl || '#';
+					} catch (procErr) {
+						console.error('process fetched script failed', procErr, item && item.id);
 					}
 
-					// 时间字段格式化
-					item.updateTime = item.updateTime || item.createdAt;
-
-					// 统计字段默认值
-					item.usageCount = item.usageCount || 0;
-					item.likes = item.likes || 0;
-
-					// 版本字段默认值
-					item.version = item.version || '1.0.0';
-
-					// 其他字段默认值
-					item.playerCount = item.playerCount || '8-12人';
-					item.difficulty = item.difficulty || '中等';
-					item.jsonUrl = item.fileUrl || item.jsonUrl || '#';
+					// 初始化点赞状态 safely
+					try {
+						item = initScriptLikeStatus(item);
+						this.isLiked = !!item.isLiked;
+					} catch (likeErr) {
+						console.warn('initScriptLikeStatus failed', likeErr);
+						this.isLiked = false;
+					}
 
 					this.script = item;
 				} else {
-					console.error('剧本详情加载失败:', result);
-					uni.showToast({
-						title: '加载失败',
-						icon: 'none'
-					});
+					console.error('剧本详情加载失败: invalid data', result);
+					this._lastError = result;
+					uni.showToast({ title: '加载失败，请稍后重试', icon: 'none' });
 				}
 			} catch (err) {
+				// Log full error for debugging but show friendly UI message
 				console.error('loadScriptDetail error', err);
-				uni.showToast({
-					title: '网络错误',
-					icon: 'none'
-				});
+				this._lastError = err;
+				uni.showToast({ title: '加载失败，请稍后重试', icon: 'none' });
 			}
 		},
 
@@ -337,16 +366,44 @@ export default {
 				}
 			});
 		},
-		toggleLike() {
-			this.isLiked = !this.isLiked;
-			if (this.isLiked) {
-				this.script.likes++;
+		async toggleLike() {
+			const newLikedState = !this.isLiked;
+
+			try {
+				let result;
+				if (newLikedState) {
+					// 点赞
+					result = await likeScript(this.script.id);
+					if (result.success) {
+						this.script.likes++;
+					}
+				} else {
+					// 取消点赞
+					result = await unlikeScript(this.script.id);
+					if (result.success) {
+						this.script.likes = Math.max(0, this.script.likes - 1);
+					}
+				}
+
+				if (result.success) {
+					this.isLiked = newLikedState;
+					this.script.isLiked = newLikedState;
+					uni.showToast({
+						title: result.message,
+						icon: 'success'
+					});
+				} else {
+					uni.showToast({
+						title: result.message,
+						icon: 'none'
+					});
+				}
+			} catch (error) {
+				console.error('点赞操作失败:', error);
 				uni.showToast({
-					title: '点赞成功',
-					icon: 'success'
+					title: '操作失败，请重试',
+					icon: 'none'
 				});
-			} else {
-				this.script.likes--;
 			}
 		}
 	}
