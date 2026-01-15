@@ -8,5 +8,72 @@
 // 数据库查询有最大返回条数限制，详见：https://uniapp.dcloud.net.cn/uniCloud/cf-database.html#limit
 // 详细JQL语法，请参考：https://uniapp.dcloud.net.cn/uniCloud/jql.html
 
-// 下面示例查询uni-id-users表的所有数据
-db.collection('uni-id-users').get();
+// 测试数据：小程序端数据结构统一与同步
+// 插入包含完整管理端字段的测试剧本数据
+
+// 清空现有数据（可选，用于重新开始测试）
+db.collection('scripts').remove();
+
+// 插入测试剧本数据
+db.collection('scripts').add({
+  title: "经典狼人杀剧本 - 数据结构测试",
+  author: "官方出品",
+  version: "1.0.0",
+  description: "用于验证小程序端数据结构统一与同步功能的经典狼人杀剧本测试数据",
+  content: "剧本内容：这是一个完整的狼人杀剧本，包含所有游戏规则和角色分配...",
+  status: "active",
+  tags: ["推理"],
+  category: "桌游",
+  fileId: "test_file_id_001",
+  fileUrl: "https://example.com/script1.json",
+  fileSize: 2048,
+  mimeType: "application/json",
+  usageCount: 1250,
+  likes: 156,
+  images: [
+    "https://example.com/image1.jpg",
+    "https://example.com/image2.jpg"
+  ],
+  createTime: Date.now(),
+  updateTime: Date.now()
+});
+
+db.collection('scripts').add({
+  title: "欢乐杀人游戏 - 完整字段测试",
+  author: "游戏大师",
+  version: "2.1.0",
+  description: "另一个测试剧本，用于验证所有字段的正确映射和显示",
+  content: "剧本内容：欢乐杀人游戏的完整规则说明...",
+  status: "active",
+  tags: ["娱乐"],
+  category: "派对游戏",
+  fileId: "test_file_id_002",
+  fileUrl: "https://example.com/script2.json",
+  fileSize: 1536,
+  mimeType: "application/json",
+  usageCount: 890,
+  likes: 234,
+  images: [
+    "https://example.com/image3.jpg"
+  ],
+  createTime: Date.now() - 86400000, // 1天前
+  updateTime: Date.now() - 3600000   // 1小时前
+});
+
+db.collection('scripts').add({
+  title: "未激活测试剧本",
+  author: "测试作者",
+  version: "0.1.0",
+  description: "用于测试状态字段的未激活剧本",
+  content: "测试内容...",
+  status: "inactive",
+  tags: ["测试"],
+  category: "测试",
+  usageCount: 0,
+  likes: 0,
+  createTime: Date.now() - 172800000, // 2天前
+  updateTime: Date.now() - 172800000
+});
+
+// 查询插入的数据进行验证
+db.collection('scripts').get();

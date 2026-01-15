@@ -33,13 +33,24 @@ exports.main = async (event, context) => {
       .skip(skip)
       .limit(limit)
       .field({
+        // 现有字段保持兼容
         title: true,
         author: true,
         version: true,
         likes: true,
         images: true,
         _id: true,
-        createdAt: true
+        createdAt: true,
+
+        // 新增管理端字段支持
+        status: true,
+        tags: true,
+        category: true,
+        description: true,
+        updateTime: true,
+        usageCount: true,
+        fileSize: true,
+        mimeType: true
       })
       .get();
 
