@@ -57,8 +57,45 @@
       </view>
 
       <!-- Bulk actions toolbar -->
+      <view class="bulk-actions" v-if="manifest.length > 0">
+        <view class="bulk-controls">
+          <label class="checkbox-container">
+            <input type="checkbox" v-model="selectAll" @change="toggleSelectAll" />
+            <view class="checkmark"></view>
+            <text class="checkbox-label">全选</text>
+          </label>
+          <text class="selection-count">已选择 {{ selectedFiles.length }} 个文件</text>
+        </view>
+        <view class="bulk-edit-controls" v-if="selectedFiles.length > 0">
+          <button class="bulk-edit-btn" @click="openBulkEditModal">
+            <text class="btn-text">批量编辑</text>
+          </button>
+          <button class="bulk-set-tags-btn" @click="openBulkTagsModal">
+            <text class="btn-text">批量设置标签</text>
+          </button>
+        </view>
+      </view>
+
+      <!-- 验证摘要 -->
+      <view class="validation-summary" v-if="manifest.length > 0">
+        <view class="summary-stats">
+          <view class="stat-item">
+            <text class="stat-value valid">{{ getValidFilesCount() }}</text>
+            <text class="stat-label">有效文件</text>
+          </view>
+          <view class="stat-item">
+            <text class="stat-value invalid">{{ getInvalidFilesCount() }}</text>
+            <text class="stat-label">需编辑</text>
+          </view>
+        </view>
+        <view class="validation-hint" v-if="getInvalidFilesCount() > 0">
+          <text class="hint-text">⚠️ 红色标记的文件需要编辑，请点击"编辑"按钮完善信息</text>
+        </view>
+      </view>
+
       <view class="file-list">
         <view class="file-list-header">
+          <text class="header-cell file-select">选择</text>
           <text class="header-cell file-index">#</text>
           <text class="header-cell file-name">文件名</text>
           <text class="header-cell file-title">剧本标题</text>
@@ -70,6 +107,12 @@
         <view class="file-list-body">
           <view v-for="(item, idx) in manifest" :key="idx" class="file-item">
             <view class="file-row">
+              <view class="file-cell file-select">
+                <label class="checkbox-container">
+                  <input type="checkbox" :value="idx" v-model="selectedFiles" />
+                  <view class="checkmark"></view>
+                </label>
+              </view>
               <text class="file-cell file-index">{{ idx + 1 }}</text>
               <view class="file-cell file-name">
                 <text class="file-name-text">{{ item.fileName }}</text>
@@ -175,7 +218,7 @@
 
     <!-- 预览编辑弹窗 -->
     <view v-if="previewVisible" class="preview-modal-overlay" @click="cancelPreview">
-      <view ref="previewModal" class="preview-modal" tabindex="-1" @click.stop="">
+      <view class="preview-modal" @click.stop="">
         <view class="modal-header">
           <text class="modal-title">编辑剧本信息</text>
           <view class="modal-close" @click="cancelPreview">
@@ -201,22 +244,26 @@
 
           <view class="form-group">
             <text class="form-label">标签</text>
-            <select class="form-input" v-model="previewModel.tag">
-              <option value="">-- 请选择标签 --</option>
-              <option value="娱乐">娱乐</option>
-              <option value="推理">推理</option>
-            </select>
+            <view class="tags-input-container">
+              <view class="current-tags" v-if="previewModel.tags && previewModel.tags.length > 0">
+                <view v-for="(tag, idx) in previewModel.tags" :key="idx" class="tag-item">
+                  <text class="tag-text">{{ tag }}</text>
+                  <text class="tag-remove" @click="removeTag(idx)">×</text>
+                </view>
+              </view>
+              <input class="form-input tag-input" type="text" v-model="newTag" placeholder="输入新标签，按回车添加" @keyup.enter="addTag" />
+            </view>
           </view>
 
           <view class="form-group">
             <text class="form-label">状态</text>
             <view class="radio-group">
               <label class="radio-option" @click="previewModel.status = 'active'">
-                <view class="radio-indicator" :class="{ active: previewModel.status === 'active', 'indicator-active-selected': previewModel.status === 'active' }"></view>
+                <view class="radio-indicator" :class="{ active: previewModel.status === 'active' }"></view>
                 <text class="radio-text">激活</text>
               </label>
               <label class="radio-option" @click="previewModel.status = 'inactive'">
-                <view class="radio-indicator" :class="{ active: previewModel.status === 'inactive', 'indicator-inactive-selected': previewModel.status === 'inactive' }"></view>
+                <view class="radio-indicator" :class="{ active: previewModel.status === 'inactive' }"></view>
                 <text class="radio-text">未激活</text>
               </label>
             </view>
@@ -232,7 +279,7 @@
 
     <!-- 批量编辑弹窗 -->
     <view v-if="bulkEditVisible" class="preview-modal-overlay" @click="bulkEditVisible = false">
-      <view ref="bulkEditModal" class="preview-modal" tabindex="-1" @click.stop="">
+      <view class="preview-modal" @click.stop="">
         <view class="modal-header">
           <text class="modal-title">批量编辑元数据</text>
           <view class="modal-close" @click="bulkEditVisible = false">
@@ -258,11 +305,11 @@
             </label>
             <view v-if="bulkEditModel.applyStatus" class="radio-group">
               <label class="radio-option" @click="bulkEditModel.status = 'active'">
-                <view class="radio-indicator" :class="{ active: bulkEditModel.status === 'active', 'indicator-active-selected': bulkEditModel.status === 'active' }"></view>
+                <view class="radio-indicator" :class="{ active: bulkEditModel.status === 'active' }"></view>
                 <text class="radio-text">激活</text>
               </label>
               <label class="radio-option" @click="bulkEditModel.status = 'inactive'">
-                <view class="radio-indicator" :class="{ active: bulkEditModel.status === 'inactive', 'indicator-inactive-selected': bulkEditModel.status === 'inactive' }"></view>
+                <view class="radio-indicator" :class="{ active: bulkEditModel.status === 'inactive' }"></view>
                 <text class="radio-text">未激活</text>
               </label>
             </view>
@@ -278,7 +325,7 @@
 
     <!-- 批量标签设置弹窗 -->
     <view v-if="bulkTagsVisible" class="preview-modal-overlay" @click="bulkTagsVisible = false">
-      <view ref="bulkTagsModal" class="preview-modal" tabindex="-1" @click.stop="">
+      <view class="preview-modal" @click.stop="">
         <view class="modal-header">
           <text class="modal-title">批量设置标签</text>
           <view class="modal-close" @click="bulkTagsVisible = false">
@@ -307,12 +354,14 @@
 
           <view class="form-group">
             <text class="form-label">标签列表</text>
-            <view class="checkbox-group">
-              <select class="form-input" v-model="bulkTagsModel.tag">
-                <option value="">-- 请选择标签 --</option>
-                <option value="娱乐">娱乐</option>
-                <option value="推理">推理</option>
-              </select>
+            <view class="tags-input-container">
+              <view class="current-tags" v-if="bulkTagsModel.tags && bulkTagsModel.tags.length > 0">
+                <view v-for="(tag, idx) in bulkTagsModel.tags" :key="idx" class="tag-item">
+                  <text class="tag-text">{{ tag }}</text>
+                  <text class="tag-remove" @click="bulkTagsModel.tags.splice(idx, 1)">×</text>
+                </view>
+              </view>
+              <input class="form-input tag-input" type="text" v-model="newBulkTag" placeholder="输入标签，按回车添加" @keyup.enter="addBulkTag" />
             </view>
           </view>
         </view>
@@ -331,10 +380,6 @@ export default {
   name: 'BulkUploadPanel',
   data() {
     return {
-      // accessibility helpers
-      activeModalRef: null,
-      lastFocusedElement: null,
-      modalMessage: '',
       // Cache for validation results to improve performance
       validationCache: new Map(),
       manifest: [],
@@ -354,7 +399,6 @@ export default {
         author: '',
         description: '',
         tags: [],
-        tag: '',
         status: 'active'
       },
       newTag: '',
@@ -369,7 +413,6 @@ export default {
         applyStatus: false
       },
       bulkTagsModel: {
-        tag: '',
         tags: [],
         action: 'add' // 'add', 'replace', 'remove'
       },
@@ -400,110 +443,9 @@ export default {
       this.selectedFiles = []
       this.selectAll = false
       this.validationCache.clear()
-    },
-    previewVisible(val) {
-      if (val) {
-        this.enableModalAccessibility('previewModal')
-      } else {
-        this.disableModalAccessibility()
-      }
-    },
-    bulkEditVisible(val) {
-      if (val) {
-        this.enableModalAccessibility('bulkEditModal')
-      } else {
-        this.disableModalAccessibility()
-      }
-    },
-    bulkTagsVisible(val) {
-      if (val) {
-        this.enableModalAccessibility('bulkTagsModal')
-      } else {
-        this.disableModalAccessibility()
-      }
     }
   },
   methods: {
-    // Set active modal for keyboard handling and focus trap
-    enableModalAccessibility(refName) {
-      this.lastFocusedElement = document.activeElement
-      this.activeModalRef = refName
-      document.addEventListener('keydown', this.handleModalKeydown)
-      // focus the modal root
-      this.$nextTick(() => {
-        const m = this.$refs[refName]
-        const el = m && (m.$el || m)
-        if (el && typeof el.focus === 'function') {
-          el.focus()
-        } else if (el && el.querySelector) {
-          const firstFocusable = this.getFocusableElements(el)[0]
-          if (firstFocusable) firstFocusable.focus()
-        }
-      })
-    },
-
-    // Disable modal accessibility hooks
-    disableModalAccessibility() {
-      document.removeEventListener('keydown', this.handleModalKeydown)
-      this.activeModalRef = null
-      // restore focus
-      this.$nextTick(() => {
-        try {
-          if (this.lastFocusedElement && typeof this.lastFocusedElement.focus === 'function') {
-            this.lastFocusedElement.focus()
-          }
-        } catch (e) {}
-      })
-    },
-
-    // Keydown handler for modal: Esc to close, Tab trap
-    handleModalKeydown(e) {
-      if (!this.activeModalRef) return
-      const m = this.$refs[this.activeModalRef]
-      const el = m && (m.$el || m)
-      if (!el) return
-      if (e.key === 'Escape' || e.key === 'Esc') {
-        e.preventDefault()
-        // close appropriate modal
-        if (this.activeModalRef === 'previewModal') this.cancelPreview()
-        else if (this.activeModalRef === 'bulkEditModal') this.bulkEditVisible = false
-        else if (this.activeModalRef === 'bulkTagsModal') this.bulkTagsVisible = false
-        return
-      }
-
-      if (e.key === 'Tab') {
-        const focusable = this.getFocusableElements(el)
-        if (focusable.length === 0) {
-          e.preventDefault()
-          return
-        }
-        const first = focusable[0]
-        const last = focusable[focusable.length - 1]
-        if (e.shiftKey) {
-          if (document.activeElement === first) {
-            e.preventDefault()
-            last.focus()
-          }
-        } else {
-          if (document.activeElement === last) {
-            e.preventDefault()
-            first.focus()
-          }
-        }
-      }
-    },
-
-    // Return focusable elements inside a container element
-    getFocusableElements(container) {
-      try {
-        const el = container && (container.$el || container)
-        if (!el || !el.querySelectorAll) return []
-        const selectors = 'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), iframe, [tabindex]:not([tabindex="-1"])'
-        return Array.from(el.querySelectorAll(selectors)).filter(node => node.offsetWidth > 0 || node.offsetHeight > 0 || node === document.activeElement)
-      } catch (e) {
-        return []
-      }
-    },
     // Enhanced metadata extraction supporting multiple JSON formats
     extractMetadata(parsed, fileName) {
       try {
@@ -645,7 +587,17 @@ export default {
                     content = null
                   }
                   // push manifest entry (content may be null; server should handle tempFile path if supported)
-                  this.manifest.push({ fileName, content, tempPath: path })
+                  // Attempt to extract metadata if content is available
+                  let extractedMeta = null
+                  try {
+                    if (content) {
+                      const parsed = JSON.parse(content)
+                      extractedMeta = this.extractMetadata(parsed, fileName)
+                    }
+                  } catch (e) {
+                    extractedMeta = null
+                  }
+                  this.manifest.push({ fileName, content, tempPath: path, extractedMeta })
                 }
               } catch (e) {
                 console.warn('chooseFile success handler error', e)
@@ -1014,7 +966,6 @@ export default {
         author: (item.extractedMeta && item.extractedMeta.author) || '',
         description: (item.extractedMeta && item.extractedMeta.description) || '',
         tags: (item.extractedMeta && item.extractedMeta.tags) ? [...item.extractedMeta.tags] : [],
-        tag: (item.extractedMeta && item.extractedMeta.tags && item.extractedMeta.tags.length > 0) ? item.extractedMeta.tags[0] : '',
         status: (item.extractedMeta && item.extractedMeta.status) || 'active'
       }
       this.newTag = ''
@@ -1028,7 +979,7 @@ export default {
       item.extractedMeta.title = this.previewModel.title
       item.extractedMeta.author = this.previewModel.author
       item.extractedMeta.description = this.previewModel.description
-      item.extractedMeta.tags = this.previewModel.tag ? [this.previewModel.tag] : []
+      item.extractedMeta.tags = [...this.previewModel.tags]
       item.extractedMeta.status = this.previewModel.status
       this.manifest.splice(this.previewIndex, 1, item)
       this.previewVisible = false
@@ -1084,7 +1035,6 @@ export default {
     openBulkTagsModal() {
       if (this.selectedFiles.length === 0) return
       this.bulkTagsModel = {
-        tag: '',
         tags: [],
         action: 'add'
       }
@@ -1097,17 +1047,19 @@ export default {
           if (!item.extractedMeta.tags) {
             item.extractedMeta.tags = []
           }
-          const t = this.bulkTagsModel.tag
+
           if (this.bulkTagsModel.action === 'replace') {
-            item.extractedMeta.tags = t ? [t] : []
+            item.extractedMeta.tags = [...this.bulkTagsModel.tags]
           } else if (this.bulkTagsModel.action === 'add') {
-            if (t && !item.extractedMeta.tags.includes(t)) {
-              item.extractedMeta.tags.push(t)
-            }
+            this.bulkTagsModel.tags.forEach(tag => {
+              if (!item.extractedMeta.tags.includes(tag)) {
+                item.extractedMeta.tags.push(tag)
+              }
+            })
           } else if (this.bulkTagsModel.action === 'remove') {
-            if (t) {
-              item.extractedMeta.tags = item.extractedMeta.tags.filter(tag => tag !== t)
-            }
+            item.extractedMeta.tags = item.extractedMeta.tags.filter(tag =>
+              !this.bulkTagsModel.tags.includes(tag)
+            )
           }
         }
       })
@@ -1165,14 +1117,15 @@ export default {
 
     // UI 辅助方法
     getStatusClass(item) {
-      // Show explicit activation status only: 'active' or 'inactive'
-      if (!item.extractedMeta || !item.extractedMeta.status) return 'status-inactive'
-      return item.extractedMeta.status === 'active' ? 'status-active' : 'status-inactive'
+      if (!item.extractedMeta) return 'status-error'
+      if (item.extractedMeta.title && item.extractedMeta.author) return 'status-success'
+      return 'status-warning'
     },
 
     getStatusText(item) {
-      if (!item.extractedMeta || !item.extractedMeta.status) return '未激活'
-      return item.extractedMeta.status === 'active' ? '激活' : '未激活'
+      if (!item.extractedMeta) return '解析失败'
+      if (item.extractedMeta.title && item.extractedMeta.author) return '完整'
+      return '部分'
     },
 
     getJobStatusClass(status) {
@@ -1491,49 +1444,27 @@ export default {
 }
 
 .radio-indicator {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border: 2px solid #d9d9d9;
-  border-radius: 4px; /* square-ish */
+  border-radius: 50%;
   margin-right: 8px;
   position: relative;
-  display: inline-block;
-  box-sizing: border-box;
 }
 
 .radio-indicator.active {
   border-color: #1890ff;
 }
 
-.radio-indicator::after {
+.radio-indicator.active::after {
   content: '';
   position: absolute;
-  top: 50%;
-  left: 50%;
+  top: 2px;
+  left: 2px;
   width: 8px;
   height: 8px;
-  background-color: transparent;
-  transform: translate(-50%, -50%);
-  box-sizing: border-box;
-}
-
-.radio-indicator.active::after {
   background-color: #1890ff;
-  border-radius: 2px; /* small square */
-}
-
-/* Indicator styles for active/inactive status choices */
-.radio-indicator.indicator-active-selected {
-  border-color: #52c41a;
-}
-.radio-indicator.indicator-active-selected::after {
-  background-color: #52c41a;
-}
-.radio-indicator.indicator-inactive-selected {
-  border-color: #d9d9d9;
-}
-.radio-indicator.indicator-inactive-selected::after {
-  background-color: #8c8c8c;
+  border-radius: 50%;
 }
 
 .radio-text {
@@ -1754,16 +1685,6 @@ export default {
 .status-error {
   background: #fff2f0;
   color: #ff4d4f;
-}
-
-/* Explicit active/inactive status styles */
-.status-active {
-  background: #f6ffed;
-  color: #52c41a;
-}
-.status-inactive {
-  background: #f5f5f5;
-  color: #8c8c8c;
 }
 
 .action-btn {
@@ -2065,10 +1986,6 @@ export default {
   font-size: 14px;
   transition: border-color 0.2s ease;
   box-sizing: border-box;
-  /* Ensure inputs have sufficient height for single-line text */
-  min-height: 40px;
-  height: 40px;
-  line-height: 20px;
 }
 
 .form-input:focus,

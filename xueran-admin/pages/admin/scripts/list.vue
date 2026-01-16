@@ -317,19 +317,57 @@ export default {
 			}
 
 			try {
-				const count = this.selectedScripts.length
-				const modalRes = await uni.showModal({
-					title: '确认批量删除',
-					content: `确定要删除选中的 ${count} 个剧本吗？此操作不可恢复。`,
-					showCancel: true,
-					confirmText: '删除',
-					confirmColor: '#ff0000'
-				})
-				if (!modalRes.confirm) return
+				let idsToDelete = this.selectedScripts.slice()
+				// If selection is partial relative to totalCount, ask user whether to delete selected or all
+				const count = idsToDelete.length
+				if (this.totalCount && count > 0 && count < this.totalCount) {
+					const modalRes = await uni.showModal({
+						title: '确认批量删除',
+						content: `您当前选择了 ${count} 条结果，总共有 ${this.totalCount} 条。点击“删除所选”仅删除 ${count} 条；点击“删除全部”将删除全部 ${this.totalCount} 条（不可撤销）。`,
+						showCancel: true,
+						confirmText: '删除所选',
+						cancelText: '删除全部',
+						confirmColor: '#ff0000'
+					})
+					// If user chose "删除全部" (cancel), fetch all IDs
+					if (!modalRes.confirm) {
+						uni.showLoading({ title: '正在获取所有剧本列表...' })
+						try {
+							idsToDelete = []
+							const pageSize = 100
+							let page = 1
+							while (true) {
+								const resp = await getScriptList({ page, pageSize, keyword: this.searchKeyword || undefined, status: this.statusFilter || undefined })
+								if (!resp.success || !resp.data || !Array.isArray(resp.data.list)) break
+								const list = resp.data.list
+								idsToDelete = idsToDelete.concat(list.map(i => i._id).filter(Boolean))
+								if (idsToDelete.length >= (resp.data.total || 0) || list.length < pageSize) break
+								page++
+							}
+						} catch (fetchErr) {
+							console.warn('fetch all ids failed', fetchErr)
+							uni.showToast({ title: '获取全部列表失败，请稍后重试', icon: 'none' })
+							uni.hideLoading()
+							return
+						} finally {
+							uni.hideLoading()
+						}
+					}
+				} else {
+					// confirm deletion when selection equals total or no totalCount available
+					const confirmRes = await uni.showModal({
+						title: '确认批量删除',
+						content: `确定要删除选中的 ${count} 个剧本吗？此操作不可恢复。`,
+						showCancel: true,
+						confirmText: '删除',
+						confirmColor: '#ff0000'
+					})
+					if (!confirmRes.confirm) return
+				}
 
 				let successCount = 0
 				let failCount = 0
-				for (const scriptId of this.selectedScripts) {
+				for (const scriptId of idsToDelete) {
 					try {
 						const response = await deleteScript(scriptId)
 						if (response && response.success) {
