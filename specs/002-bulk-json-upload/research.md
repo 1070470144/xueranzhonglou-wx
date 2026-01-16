@@ -23,49 +23,49 @@
 - 性能：前端应采用分批与并发限制（例如每批 5-10 个并发请求）以避免同时发起过多请求影响网络或后端。后端应把批量作业以异步任务（job）方式处理并返回 jobId，前端通过轮询/WS 订阅获取进度。  
 - 审计：创建 `BulkUploadJob` 记录，包含 jobId 与统计信息，便于回溯与导出失败列表。
 
-## Parsing Progress Bar Implementation (新增)
+## Metadata Extraction Optimization (优化)
 
-- Chosen approach: 前端Web Worker + 主线程状态同步
-  - 使用 Web Worker 在后台线程处理JSON文件解析，避免阻塞主UI线程
-  - 主线程负责进度条更新和用户交互响应
-  - 通过 postMessage 实现 Worker 与主线程的进度状态同步
+- Chosen approach: 多策略自适应提取算法
+  - 优先识别标准 Clocktower 格式（_meta + 角色数组）
+  - 支持常见 JSON 结构变体和自定义格式
+  - 实现字段别名映射和类型推断
+  - 提供提取准确性统计和错误诊断
 
-- Rationale: Web Worker 方案提供最佳用户体验
-  - 解析大量JSON文件时不会导致页面冻结或无响应
-  - 进度条可以实时更新，显示具体文件名和解析进度
-  - 内存管理更可控，可以及时清理已解析的文件数据
-  - Alternatives considered: 主线程解析（会导致UI阻塞，不适合大批量文件）
+- Rationale: 自适应算法提供最佳兼容性
+  - 支持多种 JSON 格式自动识别，无需用户手动配置
+  - 提高元数据提取准确率，减少人工修正需求
+  - 保持向后兼容，不影响现有上传流程
+  - Alternatives considered: 固定格式解析（兼容性差）、可视化映射器（复杂度高）
 
-- UX Design decisions:
-  - 进度条显示：总体进度百分比 + 当前处理文件名 + 已处理/总数统计
-  - 状态反馈：解析中/成功/失败 三种状态用不同颜色区分
-  - 错误处理：解析失败的文件单独展示，允许用户查看具体错误信息
-  - 取消功能：提供取消按钮允许用户中断解析过程
+- Extraction Algorithm decisions:
+  - 多级策略：标准格式 → 启发式识别 → 文件名回退
+  - 字段映射：支持 title/name、author/creator、description/summary 等别名
+  - 类型检测：自动识别字符串、数字、布尔值字段
+  - 验证机制：提取结果完整性检查和置信度评分
 
 - Performance considerations:
-  - 单文件解析超时：30秒超时限制，避免单个大文件阻塞整个流程
-  - 内存监控：定期检查内存使用，超过阈值时触发垃圾回收
-  - 并发控制：默认同时解析3个文件，可配置调整
+  - 单文件提取超时：10秒限制，避免阻塞批量处理
+  - 内存优化：及时清理临时解析结果
+  - 并发处理：保持现有分批上传机制
 
-## JSON Format Analysis (新增)
+## JSON Format Compatibility Enhancement (优化)
 
-- Clocktower script format identified:
-  - Structure: Array with first element being `_meta` object, followed by role objects
-  - Meta fields: `name`, `author`, `description`, `logo`, `id: "_meta"`
-  - Role fields: `name`, `ability`, `team`, `firstNight`, `otherNight`, `image`, etc.
+- Extended format support:
+  - Clocktower标准格式：`_meta`对象 + 角色数组
+  - 简化格式：直接包含 title/author/description 的对象
+  - 嵌套格式：metadata 在子对象中的结构
+  - 数组格式：多个剧本信息在数组中的结构
 
-- Extraction rules:
-  - Title: `_meta.name` 或 fallback 到 filename
-  - Author: `_meta.author`
-  - Description: `_meta.description`
-  - Logo: `_meta.logo`
-  - Roles count: array length - 1 (excluding meta)
+- Enhanced extraction rules:
+  - Title: `_meta.name` → `title` → `name` → filename (优先级递减)
+  - Author: `_meta.author` → `author` → `creator` → "未知作者"
+  - Description: `_meta.description` → `description` → `summary` → 自动生成
+  - Tags: 默认添加"娱乐"标签，支持从JSON中提取其他标签
 
-- Validation rules:
-  - Must be valid JSON array
-  - First element must have `id: "_meta"`
-  - Must contain at least one role object
-  - Required meta fields: name, author
+- Validation and defaults:
+  - 激活状态：新上传剧本默认设置为激活状态
+  - 标签设置：自动添加"娱乐"分类标签
+  - 完整性检查：确保必要字段都有合理默认值
 
 ## Folder selection & recursion (补充)
 

@@ -74,18 +74,34 @@ async function logJobStatusChange(jobId, oldStatus, newStatus) {
  * @param {boolean} success - Whether processing succeeded
  * @param {string} error - Error message if failed
  * @param {number} processingTime - Time taken to process (ms)
+ * @param {Object} metadata - Extracted metadata for accuracy tracking
  */
-async function logFileProcessed(jobId, fileName, success, error = null, processingTime = 0) {
+async function logFileProcessed(jobId, fileName, success, error = null, processingTime = 0, metadata = null) {
   const level = success ? LOG_LEVELS.INFO : LOG_LEVELS.ERROR
   const message = success ? `File processed successfully: ${fileName}` : `File processing failed: ${fileName}`
 
-  await logJobEvent(jobId, level, message, {
+  const extra = {
     fileName,
     success,
     error,
     processingTime,
     event: 'file_processed'
-  })
+  }
+
+  // Add metadata extraction details for accuracy tracking
+  if (metadata) {
+    extra.metadata = {
+      hasTitle: !!(metadata.title && metadata.title.trim()),
+      hasAuthor: !!(metadata.author && metadata.author.trim()),
+      hasDescription: !!(metadata.description && metadata.description.trim()),
+      tagsCount: metadata.tags ? metadata.tags.length : 0,
+      hasTags: !!(metadata.tags && metadata.tags.length > 0),
+      status: metadata.status || 'unknown',
+      extractionMethod: metadata.extractionMethod || 'unknown'
+    }
+  }
+
+  await logJobEvent(jobId, level, message, extra)
 }
 
 /**
@@ -105,6 +121,34 @@ async function logBatchCompleted(jobId, batchIndex, batchSize, successCount, fai
     failCount,
     processingTime,
     event: 'batch_completed'
+  })
+}
+
+/**
+ * Log metadata extraction statistics
+ * @param {string} jobId - Job ID
+ * @param {Object} stats - Extraction statistics
+ */
+async function logMetadataExtractionStats(jobId, stats) {
+  const {
+    totalFiles,
+    titleExtractionRate,
+    authorExtractionRate,
+    descriptionExtractionRate,
+    tagsExtractionRate,
+    defaultTagsApplied,
+    defaultStatusApplied
+  } = stats
+
+  await logJobEvent(jobId, LOG_LEVELS.INFO, `Metadata extraction completed: Title ${titleExtractionRate}%, Author ${authorExtractionRate}%, Description ${descriptionExtractionRate}%, Tags ${tagsExtractionRate}%`, {
+    totalFiles,
+    titleExtractionRate,
+    authorExtractionRate,
+    descriptionExtractionRate,
+    tagsExtractionRate,
+    defaultTagsApplied,
+    defaultStatusApplied,
+    event: 'metadata_extraction_stats'
   })
 }
 
@@ -218,6 +262,7 @@ module.exports = {
   logFileProcessed,
   logBatchCompleted,
   logJobCompleted,
+  logMetadataExtractionStats,
   logSystemError,
   getJobLogs,
   cleanupOldLogs

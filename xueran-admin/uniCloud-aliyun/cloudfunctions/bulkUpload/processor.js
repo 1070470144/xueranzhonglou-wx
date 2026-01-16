@@ -26,18 +26,36 @@ async function processSingleFile(fileEntry, jobId) {
 
     // Extract metadata for script creation
     const meta = validation.meta
+    const title = meta.name || fileName.replace(/\.json$/i, '')
+
+    // Check for duplicate titles (conflict detection)
+    const existingScript = await db.collection('scripts')
+      .where({
+        title: title,
+        status: 'active' // Only check active scripts
+      })
+      .get()
+
+    if (existingScript && existingScript.data && existingScript.data.length > 0) {
+      return {
+        success: false,
+        error: `剧本标题 "${title}" 已存在，跳过创建`,
+        fileName,
+        conflictType: 'duplicate_title'
+      }
+    }
 
     // Call scriptManager to create the script
     const createRes = await uniCloud.callFunction({
       name: 'scriptManager',
       data: {
         action: 'create',
-        title: meta.name,
+        title: title,
         content: fileEntry.content,
-        author: meta.author,
+        author: meta.author || '批量导入',
         status: 'active', // Default to active
-        description: meta.description || '',
-        tags: fileEntry.tags || [],
+        description: meta.description || `从 ${fileName} 导入的剧本`,
+        tags: fileEntry.tags || ['娱乐'],
         images: fileEntry.images || [],
         sourceJobId: jobId,
         sourceFileName: fileName

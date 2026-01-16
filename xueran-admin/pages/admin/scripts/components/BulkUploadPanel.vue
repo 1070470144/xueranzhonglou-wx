@@ -55,24 +55,82 @@
         <text class="section-title-text">2. 文件预览</text>
         <text class="section-subtitle">检查并编辑文件信息</text>
       </view>
+
+      <!-- Bulk actions toolbar -->
+      <view class="bulk-actions" v-if="manifest.length > 0">
+        <view class="bulk-controls">
+          <label class="checkbox-container">
+            <input type="checkbox" v-model="selectAll" @change="toggleSelectAll" />
+            <view class="checkmark"></view>
+            <text class="checkbox-label">全选</text>
+          </label>
+          <text class="selection-count">已选择 {{ selectedFiles.length }} 个文件</text>
+        </view>
+        <view class="bulk-edit-controls" v-if="selectedFiles.length > 0">
+          <button class="bulk-edit-btn" @click="openBulkEditModal">
+            <text class="btn-text">批量编辑</text>
+          </button>
+          <button class="bulk-set-tags-btn" @click="openBulkTagsModal">
+            <text class="btn-text">批量设置标签</text>
+          </button>
+        </view>
+      </view>
+
+      <!-- 验证摘要 -->
+      <view class="validation-summary" v-if="manifest.length > 0">
+        <view class="summary-stats">
+          <view class="stat-item">
+            <text class="stat-value valid">{{ getValidFilesCount() }}</text>
+            <text class="stat-label">有效文件</text>
+          </view>
+          <view class="stat-item">
+            <text class="stat-value invalid">{{ getInvalidFilesCount() }}</text>
+            <text class="stat-label">需编辑</text>
+          </view>
+        </view>
+        <view class="validation-hint" v-if="getInvalidFilesCount() > 0">
+          <text class="hint-text">⚠️ 红色标记的文件需要编辑，请点击"编辑"按钮完善信息</text>
+        </view>
+      </view>
+
       <view class="file-list">
         <view class="file-list-header">
+          <text class="header-cell file-select">选择</text>
           <text class="header-cell file-index">#</text>
           <text class="header-cell file-name">文件名</text>
           <text class="header-cell file-title">剧本标题</text>
+          <text class="header-cell file-author">作者</text>
+          <text class="header-cell file-tags">标签</text>
           <text class="header-cell file-status">状态</text>
           <text class="header-cell file-actions">操作</text>
         </view>
         <view class="file-list-body">
           <view v-for="(item, idx) in manifest" :key="idx" class="file-item">
             <view class="file-row">
+              <view class="file-cell file-select">
+                <label class="checkbox-container">
+                  <input type="checkbox" :value="idx" v-model="selectedFiles" />
+                  <view class="checkmark"></view>
+                </label>
+              </view>
               <text class="file-cell file-index">{{ idx + 1 }}</text>
               <view class="file-cell file-name">
                 <text class="file-name-text">{{ item.fileName }}</text>
                 <text class="file-path" v-if="item.relativePath">{{ item.relativePath }}</text>
               </view>
               <view class="file-cell file-title">
-                <text class="title-text">{{ item.extractedMeta && item.extractedMeta.title ? item.extractedMeta.title : '未提取' }}</text>
+                <text class="title-text" :class="{ 'validation-error': !item.extractedMeta || !item.extractedMeta.title }">
+                  {{ item.extractedMeta && item.extractedMeta.title ? item.extractedMeta.title : '未提取' }}
+                </text>
+              </view>
+              <view class="file-cell file-author">
+                <text class="author-text">{{ item.extractedMeta && item.extractedMeta.author ? item.extractedMeta.author : '未提取' }}</text>
+              </view>
+              <view class="file-cell file-tags">
+                <view class="tags-container">
+                  <text v-for="tag in (item.extractedMeta && item.extractedMeta.tags ? item.extractedMeta.tags : [])" :key="tag" class="tag-chip">{{ tag }}</text>
+                  <text v-if="!item.extractedMeta || !item.extractedMeta.tags || item.extractedMeta.tags.length === 0" class="no-tags">无标签</text>
+                </view>
               </view>
               <view class="file-cell file-status">
                 <view class="status-indicator" :class="getStatusClass(item)">
@@ -159,10 +217,10 @@
     </view>
 
     <!-- 预览编辑弹窗 -->
-    <view v-if="previewVisible" class="preview-modal-overlay" @click="cancelPreview">
-      <view class="preview-modal" @click.stop="">
+    <view v-if="previewVisible" class="preview-modal-overlay" role="dialog" aria-modal="true" :aria-labelledby="'preview-modal-title'" @click="cancelPreview">
+      <view ref="previewModal" class="preview-modal" tabindex="-1" @click.stop="">
         <view class="modal-header">
-          <text class="modal-title">编辑剧本信息</text>
+          <text id="preview-modal-title" class="modal-title">编辑剧本信息</text>
           <view class="modal-close" @click="cancelPreview">
             <text class="close-text">✕</text>
           </view>
@@ -183,11 +241,134 @@
             <text class="form-label">描述</text>
             <textarea class="form-textarea" v-model="previewModel.description" placeholder="请输入剧本描述（可选）" rows="3"></textarea>
           </view>
+
+          <view class="form-group">
+            <text class="form-label">标签</text>
+            <view class="tags-input-container">
+              <view class="current-tags" v-if="previewModel.tags && previewModel.tags.length > 0">
+                <view v-for="(tag, idx) in previewModel.tags" :key="idx" class="tag-item">
+                  <text class="tag-text">{{ tag }}</text>
+                  <text class="tag-remove" @click="removeTag(idx)">×</text>
+                </view>
+              </view>
+              <input class="form-input tag-input" type="text" v-model="newTag" placeholder="输入新标签，按回车添加" @keyup.enter="addTag" />
+            </view>
+          </view>
+
+          <view class="form-group">
+            <text class="form-label">状态</text>
+            <view class="radio-group">
+              <label class="radio-option" @click="previewModel.status = 'active'">
+                <view class="radio-indicator" :class="{ active: previewModel.status === 'active' }"></view>
+                <text class="radio-text">激活</text>
+              </label>
+              <label class="radio-option" @click="previewModel.status = 'inactive'">
+                <view class="radio-indicator" :class="{ active: previewModel.status === 'inactive' }"></view>
+                <text class="radio-text">未激活</text>
+              </label>
+            </view>
+          </view>
         </view>
 
         <view class="modal-footer">
           <button class="modal-btn cancel-btn" @click="cancelPreview">取消</button>
           <button class="modal-btn confirm-btn" @click="savePreview">保存</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- 批量编辑弹窗 -->
+    <view v-if="bulkEditVisible" class="preview-modal-overlay" role="dialog" aria-modal="true" :aria-labelledby="'bulk-edit-modal-title'" @click="bulkEditVisible = false">
+      <view ref="bulkEditModal" class="preview-modal" tabindex="-1" @click.stop="">
+        <view class="modal-header">
+          <text id="bulk-edit-modal-title" class="modal-title">批量编辑元数据</text>
+          <view class="modal-close" @click="bulkEditVisible = false">
+            <text class="close-text">✕</text>
+          </view>
+        </view>
+
+        <view class="modal-body">
+          <view class="form-group">
+            <label class="checkbox-container">
+              <input type="checkbox" v-model="bulkEditModel.applyAuthor" />
+              <view class="checkmark"></view>
+              <text class="checkbox-label">设置作者</text>
+            </label>
+            <input v-if="bulkEditModel.applyAuthor" class="form-input" type="text" v-model="bulkEditModel.author" placeholder="输入作者姓名" />
+          </view>
+
+          <view class="form-group">
+            <label class="checkbox-container">
+              <input type="checkbox" v-model="bulkEditModel.applyStatus" />
+              <view class="checkmark"></view>
+              <text class="checkbox-label">设置状态</text>
+            </label>
+            <view v-if="bulkEditModel.applyStatus" class="radio-group">
+              <label class="radio-option" @click="bulkEditModel.status = 'active'">
+                <view class="radio-indicator" :class="{ active: bulkEditModel.status === 'active' }"></view>
+                <text class="radio-text">激活</text>
+              </label>
+              <label class="radio-option" @click="bulkEditModel.status = 'inactive'">
+                <view class="radio-indicator" :class="{ active: bulkEditModel.status === 'inactive' }"></view>
+                <text class="radio-text">未激活</text>
+              </label>
+            </view>
+          </view>
+        </view>
+
+        <view class="modal-footer">
+          <button class="modal-btn cancel-btn" @click="bulkEditVisible = false">取消</button>
+          <button class="modal-btn confirm-btn" @click="applyBulkEdit">应用到选中文件</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- 批量标签设置弹窗 -->
+    <view v-if="bulkTagsVisible" class="preview-modal-overlay" role="dialog" aria-modal="true" :aria-labelledby="'bulk-tags-modal-title'" @click="bulkTagsVisible = false">
+      <view ref="bulkTagsModal" class="preview-modal" tabindex="-1" @click.stop="">
+        <view class="modal-header">
+          <text id="bulk-tags-modal-title" class="modal-title">批量设置标签</text>
+          <view class="modal-close" @click="bulkTagsVisible = false">
+            <text class="close-text">✕</text>
+          </view>
+        </view>
+
+        <view class="modal-body">
+          <view class="form-group">
+            <text class="form-label">操作类型</text>
+            <view class="radio-group">
+              <label class="radio-option" @click="bulkTagsModel.action = 'add'">
+                <view class="radio-indicator" :class="{ active: bulkTagsModel.action === 'add' }"></view>
+                <text class="radio-text">添加标签</text>
+              </label>
+              <label class="radio-option" @click="bulkTagsModel.action = 'replace'">
+                <view class="radio-indicator" :class="{ active: bulkTagsModel.action === 'replace' }"></view>
+                <text class="radio-text">替换标签</text>
+              </label>
+              <label class="radio-option" @click="bulkTagsModel.action = 'remove'">
+                <view class="radio-indicator" :class="{ active: bulkTagsModel.action === 'remove' }"></view>
+                <text class="radio-text">移除标签</text>
+              </label>
+            </view>
+          </view>
+
+          <view class="form-group">
+            <text class="form-label">标签列表</text>
+            <view class="tags-input-container">
+              <view class="current-tags" v-if="bulkTagsModel.tags && bulkTagsModel.tags.length > 0">
+                <view v-for="(tag, idx) in bulkTagsModel.tags" :key="idx" class="tag-item">
+                  <text class="tag-text">{{ tag }}</text>
+                  <text class="tag-remove" @click="bulkTagsModel.tags.splice(idx, 1)">×</text>
+                </view>
+              </view>
+              <input class="form-input tag-input" type="text" v-model="newBulkTag" placeholder="输入标签，按回车添加" @keyup.enter="addBulkTag" />
+            </view>
+          </view>
+        </view>
+
+        <view class="modal-footer">
+          <button class="modal-btn cancel-btn" @click="bulkTagsVisible = false">取消</button>
+          <button class="modal-btn confirm-btn" @click="applyBulkTags">应用到选中文件</button>
         </view>
       </view>
     </view>
@@ -199,6 +380,8 @@ export default {
   name: 'BulkUploadPanel',
   data() {
     return {
+      // Cache for validation results to improve performance
+      validationCache: new Map(),
       manifest: [],
       jobId: null,
       jobStatus: null,
@@ -214,8 +397,26 @@ export default {
       previewModel: {
         title: '',
         author: '',
-        description: ''
+        description: '',
+        tags: [],
+        status: 'active'
       },
+      newTag: '',
+      selectedFiles: [],
+      selectAll: false,
+      bulkEditVisible: false,
+      bulkTagsVisible: false,
+      bulkEditModel: {
+        author: '',
+        status: '',
+        applyAuthor: false,
+        applyStatus: false
+      },
+      bulkTagsModel: {
+        tags: [],
+        action: 'add' // 'add', 'replace', 'remove'
+      },
+      newBulkTag: '',
       isUploading: false
     }
   },
@@ -233,7 +434,114 @@ export default {
       return this.jobStatus === 'running'
     }
   },
+  watch: {
+    selectedFiles() {
+      this.selectAll = this.selectedFiles.length === this.manifest.length && this.manifest.length > 0
+    },
+    manifest() {
+      // Reset selection and validation cache when manifest changes
+      this.selectedFiles = []
+      this.selectAll = false
+      this.validationCache.clear()
+    }
+  },
   methods: {
+    // Enhanced metadata extraction supporting multiple JSON formats
+    extractMetadata(parsed, fileName) {
+      try {
+        let metaFromJson = null
+        let isClocktowerFormat = false
+
+        // Check for Clocktower format (array with _meta as first element)
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0] && parsed[0].id === '_meta') {
+          metaFromJson = parsed[0]
+          isClocktowerFormat = true
+        }
+        // Check for object with _meta field
+        else if (parsed && typeof parsed === 'object' && parsed._meta) {
+          metaFromJson = parsed._meta
+        }
+        // Check for direct metadata object
+        else if (parsed && typeof parsed === 'object' &&
+                 (parsed.title || parsed.name || parsed.author || parsed.description)) {
+          metaFromJson = parsed
+        }
+
+        // Extract metadata with fallback priorities
+        const metadata = {
+          title: this.extractField(metaFromJson, ['title', 'name'], fileName.replace(/\.json$/i, '')),
+          author: this.extractField(metaFromJson, ['author', 'creator'], ''),
+          description: this.extractField(metaFromJson, ['description', 'summary'], null),
+          tags: this.extractTags(metaFromJson, parsed),
+          usageCount: this.extractField(metaFromJson, ['usageCount'], 0),
+          likes: this.extractField(metaFromJson, ['likes'], 0),
+          status: 'active' // Default to active status
+        }
+
+        // Ensure tags include "娱乐" if not already present
+        if (!metadata.tags || !Array.isArray(metadata.tags) || metadata.tags.length === 0) {
+          metadata.tags = ['娱乐']
+        } else if (!metadata.tags.includes('娱乐')) {
+          metadata.tags.unshift('娱乐')
+        }
+
+        return metadata
+      } catch (err) {
+        console.warn('Metadata extraction failed:', err)
+        // Return minimal metadata with defaults
+        return {
+          title: fileName.replace(/\.json$/i, ''),
+          author: '',
+          description: null,
+          tags: ['娱乐'],
+          usageCount: 0,
+          likes: 0,
+          status: 'active'
+        }
+      }
+    },
+
+    // Helper method to extract field with fallback priorities
+    extractField(obj, fieldNames, defaultValue) {
+      if (!obj) return defaultValue
+      for (const fieldName of fieldNames) {
+        if (obj[fieldName] !== undefined && obj[fieldName] !== null && obj[fieldName] !== '') {
+          return obj[fieldName]
+        }
+      }
+      return defaultValue
+    },
+
+    // Enhanced tag extraction
+    extractTags(metaFromJson, fullParsed) {
+      let tags = []
+
+      // Try to extract from metadata
+      if (metaFromJson && metaFromJson.tags) {
+        if (Array.isArray(metaFromJson.tags)) {
+          tags = tags.concat(metaFromJson.tags)
+        } else if (typeof metaFromJson.tags === 'string') {
+          tags.push(metaFromJson.tags)
+        }
+      }
+
+      // Try to extract from root object
+      if (fullParsed && fullParsed.tags) {
+        if (Array.isArray(fullParsed.tags)) {
+          tags = tags.concat(fullParsed.tags)
+        } else if (typeof fullParsed.tags === 'string') {
+          tags.push(fullParsed.tags)
+        }
+      }
+
+      // Ensure "娱乐" tag is included
+      if (!tags.includes('娱乐')) {
+        tags.unshift('娱乐')
+      }
+
+      return tags.length > 0 ? tags : ['娱乐']
+    },
+
     triggerFileInput() {
       try {
         // Prefer platform API (uni.chooseFile) when available (App / H5 wrappers)
@@ -325,18 +633,11 @@ export default {
                   const text = await file.text()
                   const fileName = file.name
                   const relativePath = (pathPrefix ? pathPrefix + '/' : '') + fileName
-                  // try parse meta
+                  // enhanced metadata extraction with multiple format support
                   let extractedMeta = null
                   try {
                     const parsed = JSON.parse(text)
-                    extractedMeta = {
-                      title: parsed.title || parsed.name || (parsed._meta && parsed._meta.title),
-                      author: parsed.author || (parsed._meta && parsed._meta.author),
-                      description: parsed.description || null,
-                      tags: parsed.tags || null,
-                      usageCount: parsed.usageCount || null,
-                      likes: parsed.likes || null
-                    }
+                    extractedMeta = this.extractMetadata(parsed, fileName)
                   } catch (err) {
                     extractedMeta = null
                   }
@@ -388,53 +689,99 @@ export default {
       try {
         const files = e.target.files
         if (!files || !files.length) return
-        this.manifest = []
-        for (const f of Array.from(files)) {
-          const fileName = f.name
-          if (fileName.toLowerCase().endsWith('.json')) {
-            // read file content
-            const text = await new Promise((resolve, reject) => {
-              const reader = new FileReader()
-              reader.onload = () => resolve(reader.result)
-              reader.onerror = err => reject(err)
-              reader.readAsText(f)
-            })
-            // try parse JSON and extract meta
-            let extractedMeta = null
-            try {
-              const parsed = JSON.parse(text)
-              // Support Clocktower format (array with first element _meta) and plain object formats
-              let metaFromJson = null
-              if (Array.isArray(parsed) && parsed.length > 0 && parsed[0] && parsed[0].id === '_meta') {
-                metaFromJson = parsed[0]
-              } else if (parsed && typeof parsed === 'object') {
-                metaFromJson = parsed._meta || parsed
-              }
 
-              extractedMeta = {
-                title: (metaFromJson && (metaFromJson.title || metaFromJson.name)) || '',
-                author: (metaFromJson && (metaFromJson.author || '')) || '',
-                description: (metaFromJson && (metaFromJson.description || null)) || null,
-                tags: parsed.tags || (metaFromJson && metaFromJson.tags) || null,
-                usageCount: parsed.usageCount || (metaFromJson && metaFromJson.usageCount) || null,
-                likes: parsed.likes || (metaFromJson && metaFromJson.likes) || null
-              }
-            } catch (err) {
-              extractedMeta = null
-            }
-            // capture relative path when available (webkitRelativePath for directory input)
-            const relativePath = f.webkitRelativePath || f.relativePath || null
-            this.manifest.push({ fileName, relativePath, content: text, extractedMeta })
-          } else if (fileName.toLowerCase().endsWith('.zip')) {
-            // zip handling is not supported per product decision - inform user
-            uni.showToast({ title: '不支持 zip 上传，请选择 json 文件或在桌面端拆分后上传', icon: 'none' })
-          }
+        // Performance optimization: limit file count for large uploads
+        const MAX_FILES = 500
+        if (files.length > MAX_FILES) {
+          uni.showModal({
+            title: '文件数量过多',
+            content: `单次最多支持 ${MAX_FILES} 个文件，您选择了 ${files.length} 个文件。建议分批上传。`,
+            showCancel: false
+          })
+          return
         }
+
+        this.manifest = []
+        uni.showLoading({ title: '正在处理文件...' })
+
+        // Performance optimization: process files in chunks to avoid UI blocking
+        const CHUNK_SIZE = 10
+        const fileArray = Array.from(files)
+
+        for (let i = 0; i < fileArray.length; i += CHUNK_SIZE) {
+          const chunk = fileArray.slice(i, i + CHUNK_SIZE)
+          await this.processFileChunk(chunk)
+
+          // Update loading progress
+          const progress = Math.round((i + chunk.length) / fileArray.length * 100)
+          uni.showLoading({ title: `正在处理文件... ${progress}%` })
+
+          // Allow UI to update between chunks
+          await new Promise(resolve => setTimeout(resolve, 10))
+        }
+
+        uni.hideLoading()
+        this.$forceUpdate() // Ensure UI updates
       } catch (err) {
+        uni.hideLoading()
         console.error('onFilesChange error', err)
         uni.showToast({ title: '读取文件失败', icon: 'none' })
       }
     },
+
+    // Process a chunk of files for better performance
+    async processFileChunk(files) {
+      const promises = files.map(async (f) => {
+        const fileName = f.name
+        if (!fileName.toLowerCase().endsWith('.json')) return null
+
+        try {
+          // Security and performance: limit file size
+          const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+          if (f.size > MAX_FILE_SIZE) {
+            throw new Error(`文件过大: ${fileName} (${Math.round(f.size / 1024 / 1024)}MB)`)
+          }
+
+          // Security: validate filename
+          if (fileName.includes('..') || fileName.includes('/') || fileName.includes('\\') ||
+              fileName.match(/[<>:"|?*]/)) {
+            throw new Error(`文件名包含非法字符: ${fileName}`)
+          }
+
+          const text = await new Promise((resolve, reject) => {
+            const reader = new FileReader()
+            reader.onload = () => resolve(reader.result)
+            reader.onerror = err => reject(err)
+            reader.readAsText(f)
+          })
+
+          const parsed = JSON.parse(text)
+          const extractedMeta = this.extractMetadata(parsed, fileName)
+
+          return {
+            fileName,
+            content: text,
+            extractedMeta
+          }
+        } catch (err) {
+          console.warn(`Failed to process file ${fileName}:`, err.message)
+          return {
+            fileName,
+            content: '',
+            extractedMeta: null,
+            error: err.message
+          }
+        }
+      })
+
+      const results = await Promise.allSettled(promises)
+      for (const result of results) {
+        if (result.status === 'fulfilled' && result.value) {
+          this.manifest.push(result.value)
+        }
+      }
+    },
+
     async startUpload() {
       if (!this.manifest || this.manifest.length === 0) {
         uni.showToast({ title: '请先选择文件', icon: 'none' })
@@ -492,7 +839,9 @@ export default {
               clearInterval(this.pollTimer)
               this.pollTimer = null
               this.isUploading = false
-              uni.showToast({ title: '作业结束', icon: 'success' })
+
+              // Show detailed completion summary
+              this.showCompletionSummary(rr.data)
             }
           }
         } catch (e) {
@@ -525,8 +874,77 @@ export default {
         console.error('downloadErrors error', err)
         uni.showToast({ title: '获取失败详情失败', icon: 'none' })
       }
-    }
-    ,
+    },
+    // Show detailed completion summary
+    async showCompletionSummary(jobData) {
+      const totalFiles = jobData.totalFiles || 0
+      const successCount = jobData.successCount || 0
+      const failCount = jobData.failCount || 0
+
+      let message = `批量上传完成\n成功: ${successCount}, 失败: ${failCount}`
+
+      if (failCount > 0) {
+        // Get detailed error breakdown
+        try {
+          const errorRes = await uniCloud.callFunction({
+            name: 'bulkUpload',
+            data: { action: 'getJobErrors', jobId: this.jobId }
+          })
+          const errorData = (errorRes && errorRes.result) ? errorRes.result : errorRes
+
+          if (errorData && errorData.code === 0 && errorData.data && errorData.data.errors) {
+            const errors = errorData.data.errors
+            const errorTypes = {}
+
+            // Categorize errors
+            errors.forEach(error => {
+              const type = error.errorType || 'unknown_error'
+              errorTypes[type] = (errorTypes[type] || 0) + 1
+            })
+
+            const errorSummary = Object.entries(errorTypes)
+              .map(([type, count]) => `${this.getErrorTypeLabel(type)}: ${count}`)
+              .join('\n')
+
+            message += `\n\n失败原因:\n${errorSummary}`
+          }
+        } catch (err) {
+          console.warn('Failed to get detailed error summary:', err)
+        }
+
+        uni.showModal({
+          title: '上传完成',
+          content: message,
+          confirmText: '查看详情',
+          cancelText: '关闭',
+          success: (res) => {
+            if (res.confirm) {
+              this.downloadErrors()
+            }
+          }
+        })
+      } else {
+        uni.showToast({
+          title: `上传完成: ${successCount}/${totalFiles} 成功`,
+          icon: 'success',
+          duration: 3000
+        })
+      }
+    },
+    // Get human-readable error type labels
+    getErrorTypeLabel(errorType) {
+      const labels = {
+        'invalid_filename': '文件名无效',
+        'empty_content': '内容为空',
+        'invalid_json': 'JSON格式错误',
+        'serialization_failed': '序列化失败',
+        'invalid_content': '内容无效',
+        'script_creation_failed': '剧本创建失败',
+        'duplicate_title': '标题重复',
+        'unknown_error': '未知错误'
+      }
+      return labels[errorType] || errorType
+    },
     // UI: open preview modal for item index
     openPreview(index) {
       if (index === undefined || index === null) return
@@ -536,9 +954,21 @@ export default {
       this.previewModel = {
         title: (item.extractedMeta && item.extractedMeta.title) || '',
         author: (item.extractedMeta && item.extractedMeta.author) || '',
-        description: (item.extractedMeta && item.extractedMeta.description) || ''
+        description: (item.extractedMeta && item.extractedMeta.description) || '',
+        tags: (item.extractedMeta && item.extractedMeta.tags) ? [...item.extractedMeta.tags] : [],
+        status: (item.extractedMeta && item.extractedMeta.status) || 'active'
       }
+      this.newTag = ''
       this.previewVisible = true
+      // focus modal for accessibility
+      this.$nextTick(() => {
+        const m = this.$refs.previewModal
+        if (m && typeof m.focus === 'function') {
+          m.focus()
+        } else if (m && m.$el && typeof m.$el.focus === 'function') {
+          m.$el.focus()
+        }
+      })
     },
     savePreview() {
       if (this.previewIndex < 0) return
@@ -548,9 +978,152 @@ export default {
       item.extractedMeta.title = this.previewModel.title
       item.extractedMeta.author = this.previewModel.author
       item.extractedMeta.description = this.previewModel.description
+      item.extractedMeta.tags = [...this.previewModel.tags]
+      item.extractedMeta.status = this.previewModel.status
       this.manifest.splice(this.previewIndex, 1, item)
       this.previewVisible = false
       this.previewIndex = -1
+    },
+    // Tag management methods
+    addTag() {
+      if (this.newTag.trim() && !this.previewModel.tags.includes(this.newTag.trim())) {
+        this.previewModel.tags.push(this.newTag.trim())
+        this.newTag = ''
+      }
+    },
+    removeTag(index) {
+      this.previewModel.tags.splice(index, 1)
+    },
+    // Bulk selection methods
+    toggleSelectAll() {
+      if (this.selectAll) {
+        this.selectedFiles = this.manifest.map((_, idx) => idx)
+      } else {
+        this.selectedFiles = []
+      }
+    },
+    // Bulk edit methods
+    openBulkEditModal() {
+      if (this.selectedFiles.length === 0) return
+      this.bulkEditModel = {
+        author: '',
+        status: '',
+        applyAuthor: false,
+        applyStatus: false
+      }
+      this.bulkEditVisible = true
+      this.$nextTick(() => {
+        const m = this.$refs.bulkEditModal
+        if (m && typeof m.focus === 'function') {
+          m.focus()
+        } else if (m && m.$el && typeof m.$el.focus === 'function') {
+          m.$el.focus()
+        }
+      })
+    },
+    applyBulkEdit() {
+      this.selectedFiles.forEach(idx => {
+        const item = this.manifest[idx]
+        if (item && item.extractedMeta) {
+          if (this.bulkEditModel.applyAuthor && this.bulkEditModel.author.trim()) {
+            item.extractedMeta.author = this.bulkEditModel.author.trim()
+          }
+          if (this.bulkEditModel.applyStatus && this.bulkEditModel.status) {
+            item.extractedMeta.status = this.bulkEditModel.status
+          }
+        }
+      })
+      this.bulkEditVisible = false
+      this.selectedFiles = []
+      this.selectAll = false
+      uni.showToast({ title: '批量编辑完成', icon: 'success' })
+    },
+    // Bulk tags methods
+    openBulkTagsModal() {
+      if (this.selectedFiles.length === 0) return
+      this.bulkTagsModel = {
+        tags: [],
+        action: 'add'
+      }
+      this.bulkTagsVisible = true
+      this.$nextTick(() => {
+        const m = this.$refs.bulkTagsModal
+        if (m && typeof m.focus === 'function') {
+          m.focus()
+        } else if (m && m.$el && typeof m.$el.focus === 'function') {
+          m.$el.focus()
+        }
+      })
+    },
+    applyBulkTags() {
+      this.selectedFiles.forEach(idx => {
+        const item = this.manifest[idx]
+        if (item && item.extractedMeta) {
+          if (!item.extractedMeta.tags) {
+            item.extractedMeta.tags = []
+          }
+
+          if (this.bulkTagsModel.action === 'replace') {
+            item.extractedMeta.tags = [...this.bulkTagsModel.tags]
+          } else if (this.bulkTagsModel.action === 'add') {
+            this.bulkTagsModel.tags.forEach(tag => {
+              if (!item.extractedMeta.tags.includes(tag)) {
+                item.extractedMeta.tags.push(tag)
+              }
+            })
+          } else if (this.bulkTagsModel.action === 'remove') {
+            item.extractedMeta.tags = item.extractedMeta.tags.filter(tag =>
+              !this.bulkTagsModel.tags.includes(tag)
+            )
+          }
+        }
+      })
+      this.bulkTagsVisible = false
+      this.selectedFiles = []
+      this.selectAll = false
+      uni.showToast({ title: '批量标签设置完成', icon: 'success' })
+    },
+    addBulkTag() {
+      if (this.newBulkTag.trim() && !this.bulkTagsModel.tags.includes(this.newBulkTag.trim())) {
+        this.bulkTagsModel.tags.push(this.newBulkTag.trim())
+        this.newBulkTag = ''
+      }
+    },
+    // Validation methods with caching for performance
+    validateMetadata(item) {
+      if (!item || !item.fileName) return { isValid: false, issues: ['无效文件项'] }
+
+      // Use cache to avoid repeated validation
+      const cacheKey = `${item.fileName}_${item.extractedMeta ? JSON.stringify(item.extractedMeta) : 'no-meta'}`
+      if (this.validationCache.has(cacheKey)) {
+        return this.validationCache.get(cacheKey)
+      }
+
+      const result = this._validateMetadataUncached(item)
+      this.validationCache.set(cacheKey, result)
+      return result
+    },
+    _validateMetadataUncached(item) {
+      if (!item.extractedMeta) return { isValid: false, issues: ['无元数据'] }
+
+      const issues = []
+      if (!item.extractedMeta.title || item.extractedMeta.title.trim() === '') {
+        issues.push('缺少标题')
+      }
+      if (!item.extractedMeta.tags || item.extractedMeta.tags.length === 0) {
+        issues.push('缺少标签')
+      }
+
+      return {
+        isValid: issues.length === 0,
+        issues
+      }
+    },
+    getValidFilesCount() {
+      return this.manifest.filter(item => this.validateMetadata(item).isValid).length
+    },
+    getInvalidFilesCount() {
+      return this.manifest.filter(item => !this.validateMetadata(item).isValid).length
     },
     cancelPreview() {
       this.previewVisible = false
@@ -766,24 +1339,299 @@ export default {
   padding: 0 8px;
 }
 
+.file-select {
+  width: 60px;
+  text-align: center;
+}
+
 .file-index {
   width: 40px;
   text-align: center;
 }
 
 .file-name {
-  flex: 2;
+  flex: 1.5;
 }
 
 .file-title {
-  flex: 2;
+  flex: 1.5;
+}
+
+.file-author {
+  flex: 1;
+}
+
+.file-tags {
+  flex: 1.5;
 }
 
 .file-status {
   width: 80px;
+}
+
+/* Tags styles */
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-height: 60px;
+  overflow: hidden;
+}
+
+.tag-chip {
+  background-color: #e6f7ff;
+  color: #1890ff;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.no-tags {
+  color: #999;
+  font-size: 12px;
+  font-style: italic;
+}
+
+.author-text, .title-text {
+  font-size: 13px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+.validation-error {
+  color: #ff4d4f;
+  font-weight: 500;
+}
+
+/* Form enhancements for preview modal */
+.tags-input-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.current-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.tag-item {
+  display: flex;
+  align-items: center;
+  background-color: #e6f7ff;
+  color: #1890ff;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+}
+
+.tag-text {
+  margin-right: 4px;
+}
+
+.tag-remove {
+  cursor: pointer;
+  color: #1890ff;
+  font-weight: bold;
+}
+
+.tag-remove:hover {
+  color: #40a9ff;
+}
+
+.tag-input {
+  margin-top: 4px;
+}
+
+.radio-group {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  padding: 4px 0;
+}
+
+.radio-indicator {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #d9d9d9;
+  border-radius: 50%;
+  margin-right: 8px;
+  position: relative;
+}
+
+.radio-indicator.active {
+  border-color: #1890ff;
+}
+
+.radio-indicator.active::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 8px;
+  height: 8px;
+  background-color: #1890ff;
+  border-radius: 50%;
+}
+
+.radio-text {
+  font-size: 14px;
+  color: #262626;
+}
+
+/* Bulk actions styles */
+.bulk-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.bulk-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.selection-count {
+  font-size: 14px;
+  color: #666;
+}
+
+.bulk-edit-controls {
+  display: flex;
+  gap: 8px;
+}
+
+/* Checkbox styles */
+.checkbox-container {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.checkbox-container input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.checkmark {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #d9d9d9;
+  border-radius: 3px;
+  background-color: white;
+  margin-right: 8px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.checkbox-container input[type="checkbox"]:checked ~ .checkmark {
+  background-color: #1890ff;
+  border-color: #1890ff;
+}
+
+.checkbox-container input[type="checkbox"]:checked ~ .checkmark::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 5px;
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.checkbox-label {
+  font-size: 14px;
+  color: #262626;
+}
+
+/* Bulk action buttons */
+.bulk-edit-btn, .bulk-set-tags-btn {
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  border: 1px solid #1890ff;
+  background-color: #1890ff;
+  color: white;
+  transition: all 0.2s ease;
+}
+
+.bulk-edit-btn:hover, .bulk-set-tags-btn:hover {
+  background-color: #40a9ff;
+  border-color: #40a9ff;
+}
+
+/* File select column */
+.file-select {
+  width: 60px;
   text-align: center;
 }
 
+/* Validation summary styles */
+.validation-summary {
+  padding: 12px 16px;
+  background-color: #f6ffed;
+  border: 1px solid #b7eb8f;
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.summary-stats {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 8px;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-value.valid {
+  color: #52c41a;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.stat-value.invalid {
+  color: #ff4d4f;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #666;
+  margin-top: 2px;
+}
+
+.validation-hint {
+  padding-top: 8px;
+  border-top: 1px solid #d9d9d9;
+}
+
+.hint-text {
+  font-size: 13px;
+  color: #faad14;
+}
 .file-actions {
   width: 80px;
   text-align: center;
