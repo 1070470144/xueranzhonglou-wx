@@ -244,15 +244,11 @@
 
           <view class="form-group">
             <text class="form-label">标签</text>
-            <view class="tags-input-container">
-              <view class="current-tags" v-if="previewModel.tags && previewModel.tags.length > 0">
-                <view v-for="(tag, idx) in previewModel.tags" :key="idx" class="tag-item">
-                  <text class="tag-text">{{ tag }}</text>
-                  <text class="tag-remove" @click="removeTag(idx)">×</text>
-                </view>
-              </view>
-              <input class="form-input tag-input" type="text" v-model="newTag" placeholder="输入新标签，按回车添加" @keyup.enter="addTag" />
-            </view>
+            <select class="form-input" v-model="previewModel.tag">
+              <option value="">-- 请选择标签 --</option>
+              <option value="娱乐">娱乐</option>
+              <option value="推理">推理</option>
+            </select>
           </view>
 
           <view class="form-group">
@@ -354,14 +350,12 @@
 
           <view class="form-group">
             <text class="form-label">标签列表</text>
-            <view class="tags-input-container">
-              <view class="current-tags" v-if="bulkTagsModel.tags && bulkTagsModel.tags.length > 0">
-                <view v-for="(tag, idx) in bulkTagsModel.tags" :key="idx" class="tag-item">
-                  <text class="tag-text">{{ tag }}</text>
-                  <text class="tag-remove" @click="bulkTagsModel.tags.splice(idx, 1)">×</text>
-                </view>
-              </view>
-              <input class="form-input tag-input" type="text" v-model="newBulkTag" placeholder="输入标签，按回车添加" @keyup.enter="addBulkTag" />
+            <view class="checkbox-group">
+              <select class="form-input" v-model="bulkTagsModel.tag">
+                <option value="">-- 请选择标签 --</option>
+                <option value="娱乐">娱乐</option>
+                <option value="推理">推理</option>
+              </select>
             </view>
           </view>
         </view>
@@ -403,6 +397,7 @@ export default {
         author: '',
         description: '',
         tags: [],
+        tag: '',
         status: 'active'
       },
       newTag: '',
@@ -417,6 +412,7 @@ export default {
         applyStatus: false
       },
       bulkTagsModel: {
+        tag: '',
         tags: [],
         action: 'add' // 'add', 'replace', 'remove'
       },
@@ -1061,6 +1057,7 @@ export default {
         author: (item.extractedMeta && item.extractedMeta.author) || '',
         description: (item.extractedMeta && item.extractedMeta.description) || '',
         tags: (item.extractedMeta && item.extractedMeta.tags) ? [...item.extractedMeta.tags] : [],
+        tag: (item.extractedMeta && item.extractedMeta.tags && item.extractedMeta.tags.length > 0) ? item.extractedMeta.tags[0] : '',
         status: (item.extractedMeta && item.extractedMeta.status) || 'active'
       }
       this.newTag = ''
@@ -1074,7 +1071,7 @@ export default {
       item.extractedMeta.title = this.previewModel.title
       item.extractedMeta.author = this.previewModel.author
       item.extractedMeta.description = this.previewModel.description
-      item.extractedMeta.tags = [...this.previewModel.tags]
+      item.extractedMeta.tags = this.previewModel.tag ? [this.previewModel.tag] : []
       item.extractedMeta.status = this.previewModel.status
       this.manifest.splice(this.previewIndex, 1, item)
       this.previewVisible = false
@@ -1130,6 +1127,7 @@ export default {
     openBulkTagsModal() {
       if (this.selectedFiles.length === 0) return
       this.bulkTagsModel = {
+        tag: '',
         tags: [],
         action: 'add'
       }
@@ -1142,19 +1140,17 @@ export default {
           if (!item.extractedMeta.tags) {
             item.extractedMeta.tags = []
           }
-
+          const t = this.bulkTagsModel.tag
           if (this.bulkTagsModel.action === 'replace') {
-            item.extractedMeta.tags = [...this.bulkTagsModel.tags]
+            item.extractedMeta.tags = t ? [t] : []
           } else if (this.bulkTagsModel.action === 'add') {
-            this.bulkTagsModel.tags.forEach(tag => {
-              if (!item.extractedMeta.tags.includes(tag)) {
-                item.extractedMeta.tags.push(tag)
-              }
-            })
+            if (t && !item.extractedMeta.tags.includes(t)) {
+              item.extractedMeta.tags.push(t)
+            }
           } else if (this.bulkTagsModel.action === 'remove') {
-            item.extractedMeta.tags = item.extractedMeta.tags.filter(tag =>
-              !this.bulkTagsModel.tags.includes(tag)
-            )
+            if (t) {
+              item.extractedMeta.tags = item.extractedMeta.tags.filter(tag => tag !== t)
+            }
           }
         }
       })
