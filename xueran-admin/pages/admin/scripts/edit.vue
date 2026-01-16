@@ -581,6 +581,7 @@ export default {
 						playerCount: script.playerCount || '8-12',
 						difficulty: script.difficulty || '中等',
 						usageCount: script.usageCount || 0,
+						likes: script.likes || 0,
 						tag: script.tag || '娱乐',
 						jsonFile: normalizedJson,
 						images: normalizedImages,
