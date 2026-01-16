@@ -100,18 +100,40 @@ async function getUsageRankings(limit) {
         _id: 1,
         title: 1,
         author: 1,
-        usageCount: 1
+        usageCount: 1,
+        images: 1,
+        thumbnails: 1,
+        thumbnail: 1
       })
       .get();
 
-    return result.data.map((item, index) => ({
-      rank: index + 1,
-      scriptId: item._id,
-      title: item.title || '未命名剧本',
-      author: item.author || '未知作者',
-      value: item.usageCount || 0,
-      medal: index < 3 ? ['🥇', '🥈', '🥉'][index] : null
-    }));
+    return result.data.map((item, index) => {
+      // 处理封面图片
+      let coverImage = null;
+      if (Array.isArray(item.thumbnails) && item.thumbnails.length) {
+        coverImage = item.thumbnails[0];
+      } else if (item.thumbnail && typeof item.thumbnail === 'string') {
+        coverImage = item.thumbnail;
+      } else if (Array.isArray(item.images)) {
+        const img = item.images.find(img =>
+          typeof img === 'string' && img.trim().length > 0 ||
+          (typeof img === 'object' && img !== null && (img.url || img.fileId))
+        );
+        if (img) {
+          coverImage = typeof img === 'string' ? img : (img.url || img.fileId);
+        }
+      }
+
+      return {
+        rank: index + 1,
+        scriptId: item._id,
+        title: item.title || '未命名剧本',
+        author: item.author || '未知作者',
+        value: item.usageCount || 0,
+        coverImage: coverImage,
+        medal: index < 3 ? ['🥇', '🥈', '🥉'][index] : null
+      };
+    });
 
   } catch (error) {
     console.error('getUsageRankings error:', error);
@@ -137,18 +159,40 @@ async function getLikesRankings(limit) {
         _id: 1,
         title: 1,
         author: 1,
-        likes: 1
+        likes: 1,
+        images: 1,
+        thumbnails: 1,
+        thumbnail: 1
       })
       .get();
 
-    return result.data.map((item, index) => ({
-      rank: index + 1,
-      scriptId: item._id,
-      title: item.title || '未命名剧本',
-      author: item.author || '未知作者',
-      value: item.likes || 0,
-      medal: index < 3 ? ['🥇', '🥈', '🥉'][index] : null
-    }));
+    return result.data.map((item, index) => {
+      // 处理封面图片
+      let coverImage = null;
+      if (Array.isArray(item.thumbnails) && item.thumbnails.length) {
+        coverImage = item.thumbnails[0];
+      } else if (item.thumbnail && typeof item.thumbnail === 'string') {
+        coverImage = item.thumbnail;
+      } else if (Array.isArray(item.images)) {
+        const img = item.images.find(img =>
+          typeof img === 'string' && img.trim().length > 0 ||
+          (typeof img === 'object' && img !== null && (img.url || img.fileId))
+        );
+        if (img) {
+          coverImage = typeof img === 'string' ? img : (img.url || img.fileId);
+        }
+      }
+
+      return {
+        rank: index + 1,
+        scriptId: item._id,
+        title: item.title || '未命名剧本',
+        author: item.author || '未知作者',
+        value: item.likes || 0,
+        coverImage: coverImage,
+        medal: index < 3 ? ['🥇', '🥈', '🥉'][index] : null
+      };
+    });
 
   } catch (error) {
     console.error('getLikesRankings error:', error);
@@ -170,6 +214,20 @@ async function getHotRankings(limit, debugMode = false) {
       .aggregate()
       .match({
         status: 'active' // 只显示激活状态的剧本
+      })
+      .lookup({
+        from: 'scripts',
+        let: { scriptId: '$_id' },
+        pipeline: [
+          { $match: { $expr: { $eq: ['$_id', '$$scriptId'] } } },
+          { $project: { images: 1, thumbnails: 1, thumbnail: 1 } }
+        ],
+        as: 'scriptData'
+      })
+      .addFields({
+        images: { $arrayElemAt: ['$scriptData.images', 0] },
+        thumbnails: { $arrayElemAt: ['$scriptData.thumbnails', 0] },
+        thumbnail: { $arrayElemAt: ['$scriptData.thumbnail', 0] }
       })
       .addFields({
         // 使用 updateTime 或 createTime，如果字段为时间戳（秒/数字）需要转换为 Date
@@ -210,12 +268,29 @@ async function getHotRankings(limit, debugMode = false) {
     console.log('Hot aggregation sample:', result.data.slice(0, 5));
 
     return result.data.map((item, index) => {
+      // 处理封面图片
+      let coverImage = null;
+      if (Array.isArray(item.thumbnails) && item.thumbnails.length) {
+        coverImage = item.thumbnails[0];
+      } else if (item.thumbnail && typeof item.thumbnail === 'string') {
+        coverImage = item.thumbnail;
+      } else if (Array.isArray(item.images)) {
+        const img = item.images.find(img =>
+          typeof img === 'string' && img.trim().length > 0 ||
+          (typeof img === 'object' && img !== null && (img.url || img.fileId))
+        );
+        if (img) {
+          coverImage = typeof img === 'string' ? img : (img.url || img.fileId);
+        }
+      }
+
       const mapped = {
         rank: index + 1,
         scriptId: item._id,
         title: item.title || '未命名剧本',
         author: item.author || '未知作者',
         value: Math.round((item.hotScore || 0) * 10) / 10, // 保留一位小数，避免 undefined 导致 NaN
+        coverImage: coverImage,
         medal: index < 3 ? ['🥇', '🥈', '🥉'][index] : null
       };
 

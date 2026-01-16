@@ -77,3 +77,10 @@ db.collection('scripts').add({
 
 // 查询插入的数据进行验证
 db.collection('scripts').get();
+
+// 专门查询图片字段来验证图片数据格式
+db.collection('scripts')
+  .where({ images: db.command.exists(true) })
+  .field({ title: 1, images: 1, thumbnails: 1, thumbnail: 1 })
+  .limit(10)
+  .get();
