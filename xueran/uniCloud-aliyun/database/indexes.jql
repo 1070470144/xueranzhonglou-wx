@@ -1,0 +1,38 @@
+// 排行榜查询索引定义
+// 为排行榜功能优化查询性能
+
+// 使用次数排行索引
+db.collection('scripts').createIndex({
+  usageCount: -1,
+  status: 1
+}, {
+  name: 'usage_ranking_index',
+  background: true
+});
+
+// 点赞数排行索引
+db.collection('scripts').createIndex({
+  likes: -1,
+  status: 1
+}, {
+  name: 'likes_ranking_index',
+  background: true
+});
+
+// 更新时间索引（用于热度计算的时间权重）
+db.collection('scripts').createIndex({
+  updateTime: -1,
+  status: 1
+}, {
+  name: 'update_time_ranking_index',
+  background: true
+});
+
+// 复合索引：状态 + 更新时间（用于过滤活跃剧本并按时间排序）
+db.collection('scripts').createIndex({
+  status: 1,
+  updateTime: -1
+}, {
+  name: 'status_update_time_index',
+  background: true
+});

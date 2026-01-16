@@ -1,0 +1,144 @@
+openapi: 3.0.3
+info:
+  title: 小程序排行榜API
+  description: 小程序端排行榜数据获取API接口
+  version: 1.0.0
+  contact:
+    name: Rankings API Support
+
+servers:
+  - url: https://unicloud.dcloud.net.cn
+    description: uniCloud云对象服务
+
+paths:
+  /rankings/getRankings:
+    post:
+      summary: 获取排行榜数据
+      description: 根据类型获取指定类型的排行榜数据
+      operationId: getRankings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - type
+              properties:
+                type:
+                  type: string
+                  enum: [usage, likes, hot]
+                  description: 排行榜类型
+                  example: "usage"
+                limit:
+                  type: integer
+                  minimum: 1
+                  maximum: 50
+                  default: 20
+                  description: 返回数量限制
+                  example: 20
+      responses:
+        '200':
+          description: 成功返回排行榜数据
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/RankingItem'
+                    maxItems: 50
+                  totalCount:
+                    type: integer
+                    description: 总剧本数量
+                    example: 150
+                  lastUpdated:
+                    type: string
+                    format: date-time
+                    description: 数据最后更新时间
+                    example: "2026-01-16T12:00:00Z"
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: 服务器内部错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    RankingItem:
+      type: object
+      required:
+        - rank
+        - scriptId
+        - title
+        - author
+        - value
+      properties:
+        rank:
+          type: integer
+          minimum: 1
+          maximum: 50
+          description: 排名位置
+          example: 1
+        scriptId:
+          type: string
+          description: 剧本ID
+          example: "507f1f77bcf86cd799439011"
+        title:
+          type: string
+          description: 剧本标题
+          example: "血色不夜城"
+        author:
+          type: string
+          description: 剧本作者
+          example: "卷饼"
+        value:
+          type: number
+          description: 排名指标值（使用次数/点赞数/热度分数）
+          example: 1250
+        medal:
+          type: string
+          enum: ["🥇", "🥈", "🥉"]
+          description: 奖牌图标（仅前三名）
+          example: "🥇"
+      description: 排行榜单项数据
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          description: 错误信息
+          example: "无效的排行榜类型"
+        code:
+          type: string
+          description: 错误代码
+          example: "INVALID_TYPE"
+      required:
+        - success
+        - message
+
+  securitySchemes:
+    uniIdToken:
+      type: apiKey
+      in: header
+      name: uni_id_token
+      description: uni-id token for authentication
+
+security:
+  - uniIdToken: []
