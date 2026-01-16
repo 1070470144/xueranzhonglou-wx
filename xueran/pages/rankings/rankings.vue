@@ -15,17 +15,35 @@
 
 		<!-- 排行榜内容 -->
 		<scroll-view scroll-y="true" class="rankings-content">
-			<view class="rankings-list">
+			<!-- 加载状态 -->
+			<view v-if="loading" class="loading-container">
+				<view class="loading-spinner">
+					<text class="loading-text">加载中...</text>
+				</view>
+			</view>
+
+			<!-- 错误状态 -->
+			<view v-else-if="error" class="error-container">
+				<view class="error-content">
+					<text class="error-icon">⚠️</text>
+					<text class="error-text">{{ error }}</text>
+					<button class="retry-btn" @click="loadRankings">重试</button>
+				</view>
+			</view>
+
+			<!-- 排行榜列表 -->
+			<view v-else class="rankings-list">
 				<view
-					v-for="(item, index) in currentRankings"
-					:key="item.id"
+					v-for="(item, index) in rankings"
+					:key="item.scriptId"
 					class="ranking-item slide-up"
 					:style="{ animationDelay: index * 0.08 + 's' }"
 					@click="goToScriptDetail(item)"
 				>
 					<!-- 排名 -->
-					<view class="rank-number" :class="getRankClass(index + 1)">
-						{{ index + 1 }}
+					<view class="rank-number" :class="getRankClass(item.rank)">
+						<text v-if="item.medal" class="medal">{{ item.medal }}</text>
+						<text v-else class="rank-text">{{ item.rank }}</text>
 					</view>
 
 					<!-- 剧本信息 -->
@@ -33,14 +51,13 @@
 						<view class="script-title">{{ item.title }}</view>
 						<view class="script-meta">
 							<text class="author">作者：{{ item.author }}</text>
-							<text class="value">{{ activeTab === 'usage' ? `使用次数：${item.usageCount}` : `点赞数：${item.likes}` }}</text>
 						</view>
 					</view>
 
 					<!-- 数值显示 -->
 					<view class="rank-value">
-						<text class="value-text">{{ activeTab === 'usage' ? item.usageCount : item.likes }}</text>
-						<text class="value-label">{{ activeTab === 'usage' ? '次使用' : '个点赞' }}</text>
+						<text class="value-text">{{ formatValue(item.value, activeTab) }}</text>
+						<text class="value-label">{{ getValueLabel(activeTab) }}</text>
 					</view>
 				</view>
 			</view>
@@ -49,109 +66,127 @@
 </template>
 
 <script>
+import { getRankings } from '@/utils/rankingsApi.js';
+
 export default {
 	data() {
 		return {
 			activeTab: 'usage',
 			tabs: [
 				{ key: 'usage', label: '使用排行' },
-				{ key: 'likes', label: '点赞排行' }
+				{ key: 'likes', label: '点赞排行' },
+				{ key: 'hot', label: '热度排行' }
 			],
-			usageRankings: [
-				{
-					id: 1,
-					title: '经典剧本：狼人杀',
-					author: '血染钟楼官方',
-					usageCount: 1250,
-					likes: 156
-				},
-				{
-					id: 2,
-					title: '扩展包：恶魔的觉醒',
-					author: '社区贡献者',
-					usageCount: 890,
-					likes: 134
-				},
-				{
-					id: 3,
-					title: '欢乐剧本：僵尸危机',
-					author: '创意工作室',
-					usageCount: 756,
-					likes: 98
-				},
-				{
-					id: 4,
-					title: '推理剧本：神秘古堡',
-					author: '推理大师',
-					usageCount: 623,
-					likes: 87
-				},
-				{
-					id: 5,
-					title: '搞笑剧本：校园奇谈',
-					author: '幽默小队',
-					usageCount: 545,
-					likes: 76
-				}
-			],
-			likesRankings: [
-				{
-					id: 1,
-					title: '经典剧本：狼人杀',
-					author: '血染钟楼官方',
-					usageCount: 1250,
-					likes: 156
-				},
-				{
-					id: 2,
-					title: '扩展包：恶魔的觉醒',
-					author: '社区贡献者',
-					usageCount: 890,
-					likes: 134
-				},
-				{
-					id: 3,
-					title: '欢乐剧本：僵尸危机',
-					author: '创意工作室',
-					usageCount: 756,
-					likes: 98
-				},
-				{
-					id: 4,
-					title: '推理剧本：神秘古堡',
-					author: '推理大师',
-					usageCount: 623,
-					likes: 87
-				},
-				{
-					id: 6,
-					title: '竞技剧本：诸神之战',
-					author: '竞技高手',
-					usageCount: 432,
-					likes: 89
-				}
-			]
+			rankings: [], // 当前显示的排行榜数据
+			loading: false, // 加载状态
+			error: null // 错误信息
 		}
 	},
-	computed: {
-		currentRankings() {
-			return this.activeTab === 'usage' ? this.usageRankings : this.likesRankings;
-		}
+
+	onLoad() {
+		this.loadRankings();
 	},
+
+	onPullDownRefresh() {
+		this.loadRankings();
+		uni.stopPullDownRefresh();
+	},
+
 	methods: {
+		/**
+		 * 切换选项卡
+		 * @param {string} tabKey - 选项卡键值
+		 */
 		switchTab(tabKey) {
 			this.activeTab = tabKey;
+			this.loadRankings();
 		},
+
+		/**
+		 * 加载排行榜数据
+		 */
+		async loadRankings() {
+			this.loading = true;
+			this.error = null;
+
+			try {
+				const result = await getRankings(this.activeTab, 20);
+
+				if (result.success) {
+					this.rankings = result.data;
+					console.log(`Loaded ${this.activeTab} rankings:`, this.rankings.length);
+				} else {
+					this.error = result.message;
+					this.rankings = [];
+					console.error('Load rankings failed:', result.message);
+				}
+			} catch (error) {
+				this.error = '加载失败，请重试';
+				this.rankings = [];
+				console.error('Load rankings error:', error);
+			} finally {
+				this.loading = false;
+			}
+		},
+
+		/**
+		 * 获取排名样式类
+		 * @param {number} rank - 排名
+		 * @returns {string} CSS类名
+		 */
 		getRankClass(rank) {
 			if (rank === 1) return 'gold';
 			if (rank === 2) return 'silver';
 			if (rank === 3) return 'bronze';
 			return 'normal';
 		},
-		goToScriptDetail(script) {
+
+		/**
+		 * 跳转到剧本详情页
+		 * @param {Object} item - 排行榜项
+		 */
+		goToScriptDetail(item) {
 			uni.navigateTo({
-				url: `/pages/script-detail/script-detail?id=${script.id}`
+				url: `/pages/script-detail/script-detail?id=${item.scriptId}`,
+				fail: (error) => {
+					console.error('Navigate to script detail failed:', error);
+					uni.showToast({
+						title: '跳转失败',
+						icon: 'none'
+					});
+				}
 			});
+		},
+
+		/**
+		 * 格式化数值显示
+		 * @param {number} value - 数值
+		 * @param {string} type - 排行榜类型
+		 * @returns {string} 格式化后的字符串
+		 */
+		formatValue(value, type) {
+			if (type === 'hot') {
+				return value.toFixed(1);
+			}
+			return value.toString();
+		},
+
+		/**
+		 * 获取数值标签
+		 * @param {string} type - 排行榜类型
+		 * @returns {string} 标签文本
+		 */
+		getValueLabel(type) {
+			switch (type) {
+				case 'usage':
+					return '次使用';
+				case 'likes':
+					return '个点赞';
+				case 'hot':
+					return '热度值';
+				default:
+					return '';
+			}
 		}
 	}
 }
@@ -383,5 +418,80 @@ export default {
 	color: #999;
 	line-height: 1.2;
 	text-align: right;
+}
+
+/* 加载状态 */
+.loading-container {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	height: 400rpx;
+}
+
+.loading-spinner {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+}
+
+.loading-text {
+	font-size: 28rpx;
+	color: #666;
+	margin-top: 20rpx;
+}
+
+/* 错误状态 */
+.error-container {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	height: 400rpx;
+	padding: 0 60rpx;
+}
+
+.error-content {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	text-align: center;
+}
+
+.error-icon {
+	font-size: 60rpx;
+	margin-bottom: 20rpx;
+}
+
+.error-text {
+	font-size: 28rpx;
+	color: #666;
+	margin-bottom: 30rpx;
+	line-height: 1.5;
+}
+
+.retry-btn {
+	background-color: #007AFF;
+	color: white;
+	border: none;
+	border-radius: 8rpx;
+	padding: 20rpx 40rpx;
+	font-size: 28rpx;
+	cursor: pointer;
+	transition: background-color 0.3s ease;
+}
+
+.retry-btn:active {
+	background-color: #0056CC;
+}
+
+/* 奖牌显示 */
+.medal {
+	font-size: 40rpx;
+	line-height: 1;
+}
+
+.rank-text {
+	font-size: 32rpx;
+	font-weight: bold;
+	line-height: 1;
 }
 </style>

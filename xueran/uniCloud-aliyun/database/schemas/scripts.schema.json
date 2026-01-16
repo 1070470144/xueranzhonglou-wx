@@ -54,6 +54,12 @@
       "minimum": 0,
       "default": 0
     },
+    "usageCount": {
+      "bsonType": "int",
+      "description": "使用次数",
+      "minimum": 0,
+      "default": 0
+    },
     "views": {
       "bsonType": "int",
       "description": "浏览数",
