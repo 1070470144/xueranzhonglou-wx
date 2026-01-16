@@ -55,7 +55,8 @@ async function processSingleFile(fileEntry, jobId) {
         author: meta.author || '批量导入',
         status: 'active', // Default to active
         description: meta.description || `从 ${fileName} 导入的剧本`,
-        tags: fileEntry.tags || ['娱乐'],
+        // single tag string (prefer fileEntry.tag or first tags element)
+        tag: (fileEntry.tag || (fileEntry.tags && fileEntry.tags[0])) || '娱乐',
         images: fileEntry.images || [],
         sourceJobId: jobId,
         sourceFileName: fileName

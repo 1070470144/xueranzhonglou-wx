@@ -56,10 +56,46 @@
         <text class="section-subtitle">检查并编辑文件信息</text>
       </view>
 
-      <!-- Bulk actions and validation summary removed — default: upload all manifest items -->
+      <!-- Bulk actions toolbar -->
+      <view class="bulk-actions" v-if="manifest.length > 0">
+        <view class="bulk-controls">
+          <label class="checkbox-container">
+            <input type="checkbox" v-model="selectAll" @change="toggleSelectAll" />
+            <view class="checkmark"></view>
+            <text class="checkbox-label">全选</text>
+          </label>
+          <text class="selection-count">已选择 {{ selectedFiles.length }} 个文件</text>
+        </view>
+        <view class="bulk-edit-controls" v-if="selectedFiles.length > 0">
+          <button class="bulk-edit-btn" @click="openBulkEditModal">
+            <text class="btn-text">批量编辑</text>
+          </button>
+          <button class="bulk-set-tags-btn" @click="openBulkTagsModal">
+            <text class="btn-text">批量设置标签</text>
+          </button>
+        </view>
+      </view>
+
+      <!-- 验证摘要 -->
+      <view class="validation-summary" v-if="manifest.length > 0">
+        <view class="summary-stats">
+          <view class="stat-item">
+            <text class="stat-value valid">{{ getValidFilesCount() }}</text>
+            <text class="stat-label">有效文件</text>
+          </view>
+          <view class="stat-item">
+            <text class="stat-value invalid">{{ getInvalidFilesCount() }}</text>
+            <text class="stat-label">需编辑</text>
+          </view>
+        </view>
+        <view class="validation-hint" v-if="getInvalidFilesCount() > 0">
+          <text class="hint-text">⚠️ 红色标记的文件需要编辑，请点击"编辑"按钮完善信息</text>
+        </view>
+      </view>
 
       <view class="file-list">
         <view class="file-list-header">
+          <text class="header-cell file-select">选择</text>
           <text class="header-cell file-index">#</text>
           <text class="header-cell file-name">文件名</text>
           <text class="header-cell file-title">剧本标题</text>
@@ -71,6 +107,12 @@
         <view class="file-list-body">
           <view v-for="(item, idx) in manifest" :key="idx" class="file-item">
             <view class="file-row">
+              <view class="file-cell file-select">
+                <label class="checkbox-container">
+                  <input type="checkbox" :value="idx" v-model="selectedFiles" />
+                  <view class="checkmark"></view>
+                </label>
+              </view>
               <text class="file-cell file-index">{{ idx + 1 }}</text>
               <view class="file-cell file-name">
                 <text class="file-name-text">{{ item.fileName }}</text>
@@ -202,11 +244,15 @@
 
           <view class="form-group">
             <text class="form-label">标签</text>
-            <select class="form-input" v-model="previewModel.tag">
-              <option value="">-- 请选择标签 --</option>
-              <option value="娱乐">娱乐</option>
-              <option value="推理">推理</option>
-            </select>
+            <view class="tags-input-container">
+              <view class="current-tags" v-if="previewModel.tags && previewModel.tags.length > 0">
+                <view v-for="(tag, idx) in previewModel.tags" :key="idx" class="tag-item">
+                  <text class="tag-text">{{ tag }}</text>
+                  <text class="tag-remove" @click="removeTag(idx)">×</text>
+                </view>
+              </view>
+              <input class="form-input tag-input" type="text" v-model="newTag" placeholder="输入新标签，按回车添加" @keyup.enter="addTag" />
+            </view>
           </view>
 
           <view class="form-group">
@@ -308,11 +354,15 @@
 
           <view class="form-group">
             <text class="form-label">标签列表</text>
-            <select class="form-input" v-model="bulkTagsModel.tag">
-              <option value="">-- 请选择标签 --</option>
-              <option value="娱乐">娱乐</option>
-              <option value="推理">推理</option>
-            </select>
+            <view class="tags-input-container">
+              <view class="current-tags" v-if="bulkTagsModel.tags && bulkTagsModel.tags.length > 0">
+                <view v-for="(tag, idx) in bulkTagsModel.tags" :key="idx" class="tag-item">
+                  <text class="tag-text">{{ tag }}</text>
+                  <text class="tag-remove" @click="bulkTagsModel.tags.splice(idx, 1)">×</text>
+                </view>
+              </view>
+              <input class="form-input tag-input" type="text" v-model="newBulkTag" placeholder="输入标签，按回车添加" @keyup.enter="addBulkTag" />
+            </view>
           </view>
         </view>
 
@@ -905,7 +955,7 @@ export default {
         title: (item.extractedMeta && item.extractedMeta.title) || '',
         author: (item.extractedMeta && item.extractedMeta.author) || '',
         description: (item.extractedMeta && item.extractedMeta.description) || '',
-        tag: (item.extractedMeta && item.extractedMeta.tags && item.extractedMeta.tags.length > 0) ? item.extractedMeta.tags[0] : '',
+        tags: (item.extractedMeta && item.extractedMeta.tags) ? [...item.extractedMeta.tags] : [],
         status: (item.extractedMeta && item.extractedMeta.status) || 'active'
       }
       this.newTag = ''
@@ -919,7 +969,7 @@ export default {
       item.extractedMeta.title = this.previewModel.title
       item.extractedMeta.author = this.previewModel.author
       item.extractedMeta.description = this.previewModel.description
-      item.extractedMeta.tags = this.previewModel.tag ? [this.previewModel.tag] : []
+      item.extractedMeta.tags = [...this.previewModel.tags]
       item.extractedMeta.status = this.previewModel.status
       this.manifest.splice(this.previewIndex, 1, item)
       this.previewVisible = false
@@ -927,14 +977,13 @@ export default {
     },
     // Tag management methods
     addTag() {
-      // legacy tag add - no-op when using dropdown
-      if (this.newTag && this.newTag.trim()) {
+      if (this.newTag.trim() && !this.previewModel.tags.includes(this.newTag.trim())) {
+        this.previewModel.tags.push(this.newTag.trim())
         this.newTag = ''
       }
     },
     removeTag(index) {
-      // legacy tag remove - no-op with dropdown
-      return
+      this.previewModel.tags.splice(index, 1)
     },
     // Bulk selection methods
     toggleSelectAll() {
@@ -976,7 +1025,6 @@ export default {
     openBulkTagsModal() {
       if (this.selectedFiles.length === 0) return
       this.bulkTagsModel = {
-        tag: '',
         tags: [],
         action: 'add'
       }
@@ -989,17 +1037,19 @@ export default {
           if (!item.extractedMeta.tags) {
             item.extractedMeta.tags = []
           }
-          const t = this.bulkTagsModel.tag
+
           if (this.bulkTagsModel.action === 'replace') {
-            item.extractedMeta.tags = t ? [t] : []
+            item.extractedMeta.tags = [...this.bulkTagsModel.tags]
           } else if (this.bulkTagsModel.action === 'add') {
-            if (t && !item.extractedMeta.tags.includes(t)) {
-              item.extractedMeta.tags.push(t)
-            }
+            this.bulkTagsModel.tags.forEach(tag => {
+              if (!item.extractedMeta.tags.includes(tag)) {
+                item.extractedMeta.tags.push(tag)
+              }
+            })
           } else if (this.bulkTagsModel.action === 'remove') {
-            if (t) {
-              item.extractedMeta.tags = item.extractedMeta.tags.filter(tag => tag !== t)
-            }
+            item.extractedMeta.tags = item.extractedMeta.tags.filter(tag =>
+              !this.bulkTagsModel.tags.includes(tag)
+            )
           }
         }
       })
@@ -1055,15 +1105,17 @@ export default {
       this.previewIndex = -1
     },
 
-    // UI 辅助方法 - 状态仅显示为激活或未激活
+    // UI 辅助方法
     getStatusClass(item) {
-      if (!item.extractedMeta || !item.extractedMeta.status) return 'status-inactive'
-      return item.extractedMeta.status === 'active' ? 'status-active' : 'status-inactive'
+      if (!item.extractedMeta) return 'status-error'
+      if (item.extractedMeta.title && item.extractedMeta.author) return 'status-success'
+      return 'status-warning'
     },
 
     getStatusText(item) {
-      if (!item.extractedMeta || !item.extractedMeta.status) return '未激活'
-      return item.extractedMeta.status === 'active' ? '激活' : '未激活'
+      if (!item.extractedMeta) return '解析失败'
+      if (item.extractedMeta.title && item.extractedMeta.author) return '完整'
+      return '部分'
     },
 
     getJobStatusClass(status) {
@@ -1623,16 +1675,6 @@ export default {
 .status-error {
   background: #fff2f0;
   color: #ff4d4f;
-}
-
-/* Explicit active/inactive status styles */
-.status-active {
-  background: #f6ffed;
-  color: #52c41a;
-}
-.status-inactive {
-  background: #f5f5f5;
-  color: #8c8c8c;
 }
 
 .action-btn {
