@@ -1,5 +1,12 @@
 <template>
 	<view class="container fade-in">
+		<!-- 信息提示 -->
+		<view class="info-header">
+			<view class="info-icon" @tap="showInfoPopup">
+				<text class="info-icon-text">ℹ️</text>
+			</view>
+		</view>
+
 		<!-- 标签页切换 -->
 		<view class="tab-bar slide-down">
 			<view
@@ -62,6 +69,21 @@
 				</view>
 			</view>
 		</scroll-view>
+
+		<!-- 信息提示弹窗（简易实现：避免组件与 v-model 不同步问题） -->
+		<view v-if="showInfo" class="modal-mask" @tap.self="closeInfoPopup">
+			<view class="info-popup" @click.stop>
+				<view class="popup-header">
+					<text class="popup-title">排行榜说明</text>
+				</view>
+				<view class="popup-content">
+					<text class="popup-text">排行榜每10分钟刷新一次</text>
+				</view>
+				<view class="popup-footer">
+					<button class="popup-btn" @click="closeInfoPopup">知道了</button>
+				</view>
+			</view>
+		</view>
 	</view>
 </template>
 
@@ -79,7 +101,8 @@ export default {
 			],
 			rankings: [], // 当前显示的排行榜数据
 			loading: false, // 加载状态
-			error: null // 错误信息
+			error: null, // 错误信息
+			showInfo: false // 信息弹窗显示状态
 		}
 	},
 
@@ -187,6 +210,31 @@ export default {
 				default:
 					return '';
 			}
+		},
+
+		/**
+		 * 显示信息弹窗
+		 */
+		showInfoPopup() {
+			console.log('DEBUG: showInfoPopup called');
+			console.log('DEBUG: Current showInfo value:', this.showInfo);
+			this.showInfo = true;
+			console.log('DEBUG: showInfo set to', this.showInfo);
+			// 额外验证
+			this.$nextTick(() => {
+				console.log('DEBUG: After nextTick, showInfo is:', this.showInfo);
+			});
+		},
+
+		/**
+		 * 关闭信息弹窗
+		 */
+		closeInfoPopup() {
+			console.log('DEBUG: closeInfoPopup called');
+			this.showInfo = false;
+			this.$nextTick(() => {
+				console.log('DEBUG: After close, showInfo is:', this.showInfo);
+			});
 		}
 	}
 }
@@ -493,5 +541,113 @@ export default {
 	font-size: 32rpx;
 	font-weight: bold;
 	line-height: 1;
+}
+
+/* 信息提示头部 */
+.info-header {
+	/* 放在标题栏右侧，使用绝对定位以避免被滚动区域覆盖 */
+	position: absolute;
+	top: 24rpx;
+	right: 24rpx;
+	display: flex;
+	justify-content: flex-end;
+	z-index: 50;
+	pointer-events: none; /* 由子元素接收点击，防止遮挡 */
+}
+
+.info-icon {
+	width: 60rpx;
+	height: 60rpx;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background-color: rgba(0, 86, 204, 0.2);
+	border: 2rpx solid rgba(0, 86, 204, 0.3);
+	border-radius: 50%;
+	cursor: pointer;
+	transition: all 0.3s ease;
+	position: relative;
+	z-index: 60;
+	pointer-events: auto; /* 接收点击 */
+}
+
+.info-icon:active {
+	background-color: rgba(0, 86, 204, 0.2);
+}
+
+.info-icon-text {
+	font-size: 32rpx;
+	line-height: 1;
+}
+
+/* 信息弹窗 */
+.info-popup {
+	/* 强制居中模态弹窗，避免出现在底部滚动区域 */
+	position: fixed;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	width: 600rpx;
+	max-width: 90%;
+	background-color: white;
+	border-radius: 16rpx;
+	overflow: hidden;
+	box-shadow: 0 12rpx 30rpx rgba(0, 0, 0, 0.15);
+	z-index: 9999;
+}
+
+.popup-header {
+	padding: 40rpx 40rpx 20rpx 40rpx;
+	text-align: center;
+	border-bottom: 1rpx solid #f0f0f0;
+}
+
+.popup-title {
+	font-size: 36rpx;
+	font-weight: bold;
+	color: #333;
+}
+
+.popup-content {
+	padding: 40rpx;
+	text-align: center;
+}
+
+.popup-text {
+	font-size: 30rpx;
+	color: #666;
+	line-height: 1.5;
+}
+
+.popup-footer {
+	padding: 20rpx 40rpx 40rpx 40rpx;
+	text-align: center;
+}
+
+.popup-btn {
+	background-color: #0056CC;
+	color: white;
+	border: none;
+	border-radius: 8rpx;
+	padding: 20rpx 60rpx;
+	font-size: 28rpx;
+	cursor: pointer;
+	transition: background-color 0.3s ease;
+	min-width: 200rpx;
+}
+
+.popup-btn:active {
+	background-color: #004499;
+}
+
+/* 模态遮罩（自实现） */
+.modal-mask {
+	position: fixed;
+	inset: 0;
+	background-color: rgba(0,0,0,0.4);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 9998;
 }
 </style>
