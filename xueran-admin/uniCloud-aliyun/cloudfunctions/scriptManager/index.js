@@ -132,8 +132,6 @@ exports.main = async (event, context) => {
         return await handleLike(params)
       case 'unlike':
         return await handleUnlike(params)
-      case 'migrateTags':
-        return await handleMigrateTags(params)
       default:
         return createErrorResponse('不支持的操作类型')
     }
@@ -473,70 +471,3 @@ async function handleUnlike(params) {
   }
 }
 
-// 迁移标签字段：将 tags 数组转换为 tag 字符串
-async function handleMigrateTags(params) {
-  try {
-    // 查找所有包含 tags 字段的记录
-    const recordsWithTags = await scriptsCollection.where({
-      tags: db.command.exists(true)
-    }).get()
-
-    let migratedCount = 0
-    let skippedCount = 0
-
-    for (const record of recordsWithTags.data) {
-      const updateData = {
-        updateTime: new Date()
-      }
-
-      // 如果有 tags 数组，取第一个元素作为 tag
-      if (record.tags && Array.isArray(record.tags) && record.tags.length > 0) {
-        updateData.tag = record.tags[0]
-      } else if (record.tags && typeof record.tags === 'string') {
-        updateData.tag = record.tags
-      } else {
-        // 如果没有有效的 tags，设置默认值
-        updateData.tag = '娱乐'
-      }
-
-      // 移除旧的 tags 字段
-      updateData.tags = db.command.remove()
-
-      try {
-        await scriptsCollection.doc(record._id).update(updateData)
-        migratedCount++
-      } catch (updateError) {
-        console.error(`迁移记录 ${record._id} 失败:`, updateError)
-        skippedCount++
-      }
-    }
-
-    // 查找没有 tag 字段但有其他标签信息的记录
-    const recordsWithoutTag = await scriptsCollection.where({
-      tag: db.command.exists(false),
-      tags: db.command.exists(false)
-    }).get()
-
-    for (const record of recordsWithoutTag.data) {
-      try {
-        await scriptsCollection.doc(record._id).update({
-          tag: '娱乐', // 默认标签
-          updateTime: new Date()
-        })
-        migratedCount++
-      } catch (updateError) {
-        console.error(`设置默认标签失败 ${record._id}:`, updateError)
-        skippedCount++
-      }
-    }
-
-    return createResponse(0, '标签字段迁移完成', {
-      migrated: migratedCount,
-      skipped: skippedCount,
-      totalProcessed: migratedCount + skippedCount
-    })
-  } catch (error) {
-    console.error('标签迁移失败:', error)
-    return createErrorResponse('标签迁移失败：' + error.message)
-  }
-}

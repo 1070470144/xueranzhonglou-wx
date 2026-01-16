@@ -12,7 +12,6 @@
 				</select>
 				<button class="uni-button" type="primary" size="mini" @click="navigateTo('./bulk-upload')">批量上传</button>
 				<button class="uni-button" type="primary" size="mini" @click="navigateTo('./edit')">新增剧本</button>
-				<button class="uni-button" type="info" size="mini" @click="handleMigrateTags">迁移标签</button>
 				<button class="uni-button" type="warn" size="mini" @click="handleBatchDelete">批量删除</button>
 			</view>
 		</view>
@@ -455,54 +454,6 @@ export default {
 				return t.url || t.fileUrl || t.fileId || t.fileID || null
 			}
 			return item.fileUrl || item.fileId || item.fileID || null
-		},
-
-		async handleMigrateTags() {
-			try {
-				const confirm = await uni.showModal({
-					title: '确认迁移',
-					content: '确定要迁移标签字段吗？此操作会将所有剧本的 tags 字段转换为 tag 字段。',
-					showCancel: true,
-					confirmText: '迁移',
-					confirmColor: '#007aff'
-				})
-
-				if (!confirm.confirm) return
-
-				uni.showLoading({ title: '迁移中...' })
-
-				const result = await uniCloud.callFunction({
-					name: 'scriptManager',
-					data: {
-						action: 'migrateTags'
-					}
-				})
-
-				uni.hideLoading()
-
-				if (result.result && result.result.code === 0) {
-					const { migrated, skipped, totalProcessed } = result.result.data
-					uni.showModal({
-						title: '迁移完成',
-						content: `成功迁移 ${migrated} 条记录，跳过 ${skipped} 条记录，共处理 ${totalProcessed} 条记录`,
-						showCancel: false
-					})
-					// 刷新列表
-					await this.loadScripts()
-				} else {
-					uni.showToast({
-						title: result.result?.message || '迁移失败',
-						icon: 'none'
-					})
-				}
-			} catch (error) {
-				uni.hideLoading()
-				console.error('迁移标签失败:', error)
-				uni.showToast({
-					title: '迁移失败，请稍后重试',
-					icon: 'none'
-				})
-			}
 		},
 
 		navigateTo(url, isTab = false) {
