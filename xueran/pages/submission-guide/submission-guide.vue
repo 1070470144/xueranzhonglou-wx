@@ -62,7 +62,7 @@
 					<view class="list-title">审核流程</view>
 					<view class="list-item">
 						<text class="item-number">1.</text>
-						<text class="item-text">提交后一周内内完成审核并上传</text>
+						<text class="item-text">提交后一周内完成审核并上传</text>
 					</view>
 					<view class="list-item">
 						<text class="item-number">2.</text>
