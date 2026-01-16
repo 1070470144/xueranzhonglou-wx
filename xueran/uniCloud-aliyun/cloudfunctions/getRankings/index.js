@@ -9,7 +9,7 @@ const $ = db.command.aggregate;
  * event: { type: 'usage'|'likes'|'hot', limit: number }
  */
 exports.main = async (event, context) => {
-  const { type, limit = 20 } = event;
+  const { type, limit = 20, debug = false } = event;
 
   console.log('getRankings called with:', { type, limit });
 
@@ -53,8 +53,8 @@ exports.main = async (event, context) => {
           console.log('Likes rankings result:', rankings.length, 'items');
           break;
         case 'hot':
-          console.log('Getting hot rankings...');
-          rankings = await getHotRankings(limit);
+          console.log('Getting hot rankings... debug=', !!debug);
+          rankings = await getHotRankings(limit, !!debug);
           console.log('Hot rankings result:', rankings.length, 'items');
           break;
         default:
@@ -161,7 +161,7 @@ async function getLikesRankings(limit) {
  * @param {number} limit - 返回数量限制
  * @returns {Array} 排行榜数据
  */
-async function getHotRankings(limit) {
+async function getHotRankings(limit, debugMode = false) {
   try {
     const now = new Date();
 
@@ -172,35 +172,71 @@ async function getHotRankings(limit) {
         status: 'active' // 只显示激活状态的剧本
       })
       .addFields({
-        // 使用updateTime或createTime，如果都不存在则使用当前时间
-        updateTimeOrDefault: $.ifNull(['$updateTime', $.ifNull(['$createTime', now])]),
-        // 计算时间权重：e^(-0.1 × 天数)
+        // 使用 updateTime 或 createTime，如果字段为时间戳（秒/数字）需要转换为 Date
+        // 尝试将字段转换为 Date，若失败则使用 $$NOW 作为回退
+        updateTimeOrDefault: $.ifNull([
+          { $toDate: '$updateTime' },
+          $.ifNull([{ $toDate: '$createTime' }, '$$NOW'])
+        ]),
+
+        // 计算时间权重：先计算天数差，再用更稳健的线性衰减近似（避免聚合环境中指数运算不稳定）
         daysSinceUpdate: $.divide([
-          $.subtract([now, '$updateTimeOrDefault']),
+          $.subtract(['$$NOW', '$updateTimeOrDefault']),
           1000 * 60 * 60 * 24 // 转换为天数
         ]),
-        timeWeight: $.pow([2.718281828459045, $.multiply(['$daysSinceUpdate', -0.1])]),
+        // 调整时间衰减系数（从0.1改为0.01，使衰减更平缓）
+        timeWeight: $.divide([
+          1,
+          $.add([1, $.multiply([0.01, '$daysSinceUpdate'])])
+        ]),
 
-        // 计算基础分数：使用次数 × 1 + 点赞数 × 3
-        usageScore: $.multiply(['$usageCount', 1]),
-        likesScore: $.multiply(['$likes', 3]),
-        baseScore: $.add(['$usageScore', '$likesScore']),
+        // 计算基础分数：使用次数 × 1 + 点赞数 × 3，直接在表达式中处理 null
+        baseScore: $.add([
+          $.multiply([$.ifNull(['$usageCount', 0]), 1]),
+          $.multiply([$.ifNull(['$likes', 0]), 3])
+        ]),
 
-        // 计算最终热度分数
-        hotScore: $.multiply(['$baseScore', '$timeWeight'])
+        // 计算最终热度分数：baseScore * timeWeight，并确保最小热度为0.1
+        hotScore: $.max([
+          $.multiply([$.ifNull(['$baseScore', 0]), $.ifNull(['$timeWeight', 0])]),
+          0.1  // 为零值剧本提供最小热度保证
+        ])
       })
       .sort({ hotScore: -1 })
       .limit(limit)
       .end();
 
-    return result.data.map((item, index) => ({
-      rank: index + 1,
-      scriptId: item._id,
-      title: item.title || '未命名剧本',
-      author: item.author || '未知作者',
-      value: Math.round(item.hotScore * 10) / 10, // 保留一位小数
-      medal: index < 3 ? ['🥇', '🥈', '🥉'][index] : null
-    }));
+    // Debug: 输出聚合结果的前几项，帮助排查热度分数问题
+    console.log('Hot aggregation sample:', result.data.slice(0, 5));
+
+    return result.data.map((item, index) => {
+      const mapped = {
+        rank: index + 1,
+        scriptId: item._id,
+        title: item.title || '未命名剧本',
+        author: item.author || '未知作者',
+        value: Math.round((item.hotScore || 0) * 10) / 10, // 保留一位小数，避免 undefined 导致 NaN
+        medal: index < 3 ? ['🥇', '🥈', '🥉'][index] : null
+      };
+
+      // 在 debug 模式下返回中间计算字段，便于定位问题
+      if (debugMode) {
+        mapped._debug = {
+          usageCount: item.usageCount || 0,
+          likes: item.likes || 0,
+          updateTimeOrDefault: item.updateTimeOrDefault || null,
+          daysSinceUpdate: item.daysSinceUpdate || 0,
+          timeWeight: item.timeWeight || 0,
+          baseScore: item.baseScore || 0,
+          rawHotScore: item.hotScore || 0,
+          finalHotScore: Math.round((item.hotScore || 0) * 10) / 10, // 显示最终格式化的值
+          minHotScoreApplied: (item.hotScore || 0) < 0.1 // 标记是否应用了最小热度
+        };
+      }
+
+      return mapped;
+    });
+    
 
   } catch (error) {
     console.error('getHotRankings error:', error);

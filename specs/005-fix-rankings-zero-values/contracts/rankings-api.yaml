@@ -1,0 +1,258 @@
+openapi: 3.0.3
+info:
+  title: 排行榜API
+  description: 小程序排行榜数据获取API
+  version: 1.1.0
+  contact:
+    name: 开发团队
+
+servers:
+  - url: https://unicloud.dcloud.net.cn
+    description: uniCloud云函数环境
+
+paths:
+  /getRankings:
+    post:
+      summary: 获取排行榜数据
+      description: 获取指定类型的排行榜数据，支持使用排行、点赞排行和热度排行
+      operationId: getRankings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - type
+              properties:
+                type:
+                  type: string
+                  enum: [usage, likes, hot]
+                  description: 排行榜类型
+                  example: hot
+                limit:
+                  type: integer
+                  minimum: 1
+                  maximum: 50
+                  default: 20
+                  description: 返回数量限制
+                debug:
+                  type: boolean
+                  default: false
+                  description: 调试模式，输出详细计算信息
+      responses:
+        '200':
+          description: 成功获取排行榜数据
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                        - rank
+                        - scriptId
+                        - title
+                        - author
+                        - value
+                      properties:
+                        rank:
+                          type: integer
+                          description: 排名
+                          example: 1
+                        scriptId:
+                          type: string
+                          description: 剧本ID
+                          example: "507f1f77bcf86cd799439011"
+                        title:
+                          type: string
+                          description: 剧本标题
+                          example: "经典狼人杀剧本"
+                        author:
+                          type: string
+                          description: 作者姓名
+                          example: "官方出品"
+                        value:
+                          type: number
+                          description: 排行榜数值
+                          example: 125.5
+                        medal:
+                          type: string
+                          enum: ["🥇", "🥈", "🥉"]
+                          description: 奖牌（前三名）
+                        _debug:
+                          type: object
+                          description: 调试信息（仅在debug=true时返回）
+                          properties:
+                            usageCount:
+                              type: integer
+                              example: 1250
+                            likes:
+                              type: integer
+                              example: 156
+                            updateTimeOrDefault:
+                              type: string
+                              format: date-time
+                            daysSinceUpdate:
+                              type: number
+                              example: 2.5
+                            timeWeight:
+                              type: number
+                              example: 0.8
+                            baseScore:
+                              type: number
+                              example: 546
+                            hotScore:
+                              type: number
+                              example: 436.8
+                  totalCount:
+                    type: integer
+                    description: 总记录数
+                    example: 20
+                  lastUpdated:
+                    type: string
+                    format: date-time
+                    description: 最后更新时间
+                    example: "2024-01-16T10:30:00.000Z"
+        '400':
+          description: 参数错误
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - message
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "无效的排行榜类型"
+        '500':
+          description: 服务器错误
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - message
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: "获取排行榜失败: 数据库连接错误"
+
+components:
+  schemas:
+    RankingItem:
+      type: object
+      required:
+        - rank
+        - scriptId
+        - title
+        - author
+        - value
+      properties:
+        rank:
+          type: integer
+          description: 排名（从1开始）
+        scriptId:
+          type: string
+          description: 剧本唯一标识
+        title:
+          type: string
+          description: 剧本标题
+        author:
+          type: string
+          description: 作者姓名
+        value:
+          type: number
+          description: 排行榜数值（使用次数/点赞数/热度值）
+        medal:
+          type: string
+          enum: ["🥇", "🥈", "🥉"]
+          description: 排名奖牌（仅前三名）
+        _debug:
+          type: object
+          description: 调试信息
+          properties:
+            usageCount:
+              type: integer
+              description: 使用次数
+            likes:
+              type: integer
+              description: 点赞数
+            updateTimeOrDefault:
+              type: string
+              format: date-time
+              description: 更新时间
+            daysSinceUpdate:
+              type: number
+              description: 距今天数
+            timeWeight:
+              type: number
+              description: 时间权重
+            baseScore:
+              type: number
+              description: 基础分数
+            hotScore:
+              type: number
+              description: 最终热度分数
+
+  parameters:
+    RankingType:
+      name: type
+      in: query
+      required: true
+      schema:
+        type: string
+        enum: [usage, likes, hot]
+      description: 排行榜类型
+
+  responses:
+    RankingsResponse:
+      description: 排行榜数据响应
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+              data:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RankingItem'
+              totalCount:
+                type: integer
+              lastUpdated:
+                type: string
+                format: date-time
+
+    ErrorResponse:
+      description: 错误响应
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              success:
+                type: boolean
+                example: false
+              message:
+                type: string
+                example: "获取排行榜失败"
