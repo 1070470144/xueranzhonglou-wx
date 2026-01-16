@@ -111,37 +111,6 @@
 
 ---
 
-## 阶段 6：重置编辑界面（UI 重制，仅界面，不改功能）
-
-**目的**: 重制批量上传中的“编辑剧本信息”与相关弹窗的 UI，提升可用性、可访问性与视觉一致性（遵循 Ant Design 风格）。不改变后端逻辑或功能行为。
-
-**独立测试**: 打开批量上传，选择文件并进入编辑界面，验证所有输入、标签、保存/取消、批量编辑功能在键盘与屏幕阅读器上均可操作且视觉符合规范。
-
-### 实施任务（仅界面重制）
-
-- [ ] T035 生成编辑模态高保真 mockup（桌面 + 小屏），保存到 `specs/002-bulk-json-upload/designs/edit-modal-mockup.png`
-- [X] T036 [P] 在 `xueran-admin/pages/admin/scripts/components/BulkUploadPanel.vue` 中重构模态 HTML 结构与 ARIA 标记（role、aria-modal、aria-labelledby、tabindex）
-- [X] T037 [P] 在 `xueran-admin/pages/admin/scripts/components/BulkUploadPanel.vue` 中实现焦点管理与 focus trap（打开聚焦模态、关闭恢复触发元素）
-- [X] T038 [P] 在 `xueran-admin/pages/admin/scripts/components/BulkUploadPanel.vue` 中实现键盘交互：Esc 关闭、Enter 提交、Tab 循环
-- [X] T039 在 `xueran-admin/pages/admin/scripts/components/BulkUploadPanel.vue` 中重构编辑表单样式（间距、字体、按钮样式，遵循 Ant Design token）
-- [X] T040 在 `xueran-admin/pages/admin/scripts/components/BulkUploadPanel.vue` 中实现标签 chips 编辑交互与键盘支持（回车添加、Backspace 删除）
-- [X] T041 [P] 在 `xueran-admin/utils/bulkUploadApi.js` 中保留/调整任何与 UI 显示相关的 helper（仅样式与展示字段，不影响逻辑）
-- [X] T042 在 `docs/test-procedures/us2-upload-preview.md` 中加入 UI 验证步骤，路径：`docs/test-procedures/us2-upload-preview.md`
-- [ ] T043 验收与截图：手动执行测试步骤，记录截图并在 `specs/002-bulk-json-upload/audit-report.md` 中提交结果
- - [X] T035 生成编辑模态高保真 mockup（桌面 + 小屏），保存到 `specs/002-bulk-json-upload/designs/edit-modal-mockup.png`
- - [X] T036 [P] 在 `xueran-admin/pages/admin/scripts/components/BulkUploadPanel.vue` 中重构模态 HTML 结构与 ARIA 标记（role、aria-modal、aria-labelledby、tabindex）
- - [X] T037 [P] 在 `xueran-admin/pages/admin/scripts/components/BulkUploadPanel.vue` 中实现焦点管理与 focus trap（打开聚焦模态、关闭恢复触发元素）
- - [X] T038 [P] 在 `xueran-admin/pages/admin/scripts/components/BulkUploadPanel.vue` 中实现键盘交互：Esc 关闭、Enter 提交、Tab 循环
- - [X] T039 在 `xueran-admin/pages/admin/scripts/components/BulkUploadPanel.vue` 中重构编辑表单样式（间距、字体、按钮样式，遵循 Ant Design token）
- - [X] T040 在 `xueran-admin/pages/admin/scripts/components/BulkUploadPanel.vue` 中实现标签 chips 编辑交互与键盘支持（回车添加、Backspace 删除）
- - [X] T041 [P] 在 `xueran-admin/utils/bulkUploadApi.js` 中保留/调整任何与 UI 显示相关的 helper（仅样式与展示字段，不影响逻辑）
- - [X] T042 在 `docs/test-procedures/us2-upload-preview.md` 中加入 UI 验证步骤，路径：`docs/test-procedures/us2-upload-preview.md`
- - [X] T043 验收与截图：手动执行测试步骤，记录截图并在 `specs/002-bulk-json-upload/audit-report.md` 中提交结果
-
-**检查点**: 完成上述任务后，编辑界面 UI 将符合规范且保持功能不变
-
----
-
 ## 依赖关系与执行顺序
 
 ### 阶段依赖关系
