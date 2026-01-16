@@ -1,12 +1,5 @@
 <template>
 	<view class="container fade-in">
-		<!-- 信息提示 -->
-		<view class="info-header">
-			<view class="info-icon" @tap="showInfoPopup">
-				<text class="info-icon-text">ℹ️</text>
-			</view>
-		</view>
-
 		<!-- 标签页切换 -->
 		<view class="tab-bar slide-down">
 			<view
@@ -17,6 +10,13 @@
 				@click="switchTab(tab.key)"
 			>
 				{{ tab.label }}
+			</view>
+		</view>
+
+		<!-- 信息提示按钮（右下角固定定位） -->
+		<view class="info-fab">
+			<view class="info-icon" @tap="showInfoPopup">
+				<text class="info-icon-text">ℹ️</text>
 			</view>
 		</view>
 
@@ -245,11 +245,9 @@ export default {
 @keyframes fadeIn {
 	0% {
 		opacity: 0;
-		transform: translateY(20rpx);
 	}
 	100% {
 		opacity: 1;
-		transform: translateY(0);
 	}
 }
 
@@ -543,16 +541,14 @@ export default {
 	line-height: 1;
 }
 
-/* 信息提示头部 */
-.info-header {
-	/* 放在标题栏右侧，使用绝对定位以避免被滚动区域覆盖 */
-	position: absolute;
-	top: 24rpx;
-	right: 24rpx;
-	display: flex;
-	justify-content: flex-end;
-	z-index: 50;
-	pointer-events: none; /* 由子元素接收点击，防止遮挡 */
+/* 信息提示按钮（右下角固定定位） */
+.info-fab {
+	position: fixed;
+	/* 上调以避免被底部选项卡或 tabbar 遮挡 */
+	bottom: 160rpx;
+	right: 40rpx;
+	z-index: 1000;
+	pointer-events: none; /* 由子元素接收点击 */
 }
 
 .info-icon {
