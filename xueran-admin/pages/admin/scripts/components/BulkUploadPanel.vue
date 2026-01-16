@@ -217,10 +217,10 @@
     </view>
 
     <!-- 预览编辑弹窗 -->
-    <view v-if="previewVisible" class="preview-modal-overlay" role="dialog" aria-modal="true" :aria-labelledby="'preview-modal-title'" @click="cancelPreview">
+    <view v-if="previewVisible" class="preview-modal-overlay" @click="cancelPreview">
       <view ref="previewModal" class="preview-modal" tabindex="-1" @click.stop="">
         <view class="modal-header">
-          <text id="preview-modal-title" class="modal-title">编辑剧本信息</text>
+          <text class="modal-title">编辑剧本信息</text>
           <view class="modal-close" @click="cancelPreview">
             <text class="close-text">✕</text>
           </view>
@@ -259,11 +259,11 @@
             <text class="form-label">状态</text>
             <view class="radio-group">
               <label class="radio-option" @click="previewModel.status = 'active'">
-                <view class="radio-indicator" :class="{ active: previewModel.status === 'active' }"></view>
+                <view class="radio-indicator" :class="{ active: previewModel.status === 'active', 'indicator-active-selected': previewModel.status === 'active' }"></view>
                 <text class="radio-text">激活</text>
               </label>
               <label class="radio-option" @click="previewModel.status = 'inactive'">
-                <view class="radio-indicator" :class="{ active: previewModel.status === 'inactive' }"></view>
+                <view class="radio-indicator" :class="{ active: previewModel.status === 'inactive', 'indicator-inactive-selected': previewModel.status === 'inactive' }"></view>
                 <text class="radio-text">未激活</text>
               </label>
             </view>
@@ -278,10 +278,10 @@
     </view>
 
     <!-- 批量编辑弹窗 -->
-    <view v-if="bulkEditVisible" class="preview-modal-overlay" role="dialog" aria-modal="true" :aria-labelledby="'bulk-edit-modal-title'" @click="bulkEditVisible = false">
+    <view v-if="bulkEditVisible" class="preview-modal-overlay" @click="bulkEditVisible = false">
       <view ref="bulkEditModal" class="preview-modal" tabindex="-1" @click.stop="">
         <view class="modal-header">
-          <text id="bulk-edit-modal-title" class="modal-title">批量编辑元数据</text>
+          <text class="modal-title">批量编辑元数据</text>
           <view class="modal-close" @click="bulkEditVisible = false">
             <text class="close-text">✕</text>
           </view>
@@ -305,11 +305,11 @@
             </label>
             <view v-if="bulkEditModel.applyStatus" class="radio-group">
               <label class="radio-option" @click="bulkEditModel.status = 'active'">
-                <view class="radio-indicator" :class="{ active: bulkEditModel.status === 'active' }"></view>
+                <view class="radio-indicator" :class="{ active: bulkEditModel.status === 'active', 'indicator-active-selected': bulkEditModel.status === 'active' }"></view>
                 <text class="radio-text">激活</text>
               </label>
               <label class="radio-option" @click="bulkEditModel.status = 'inactive'">
-                <view class="radio-indicator" :class="{ active: bulkEditModel.status === 'inactive' }"></view>
+                <view class="radio-indicator" :class="{ active: bulkEditModel.status === 'inactive', 'indicator-inactive-selected': bulkEditModel.status === 'inactive' }"></view>
                 <text class="radio-text">未激活</text>
               </label>
             </view>
@@ -324,10 +324,10 @@
     </view>
 
     <!-- 批量标签设置弹窗 -->
-    <view v-if="bulkTagsVisible" class="preview-modal-overlay" role="dialog" aria-modal="true" :aria-labelledby="'bulk-tags-modal-title'" @click="bulkTagsVisible = false">
+    <view v-if="bulkTagsVisible" class="preview-modal-overlay" @click="bulkTagsVisible = false">
       <view ref="bulkTagsModal" class="preview-modal" tabindex="-1" @click.stop="">
         <view class="modal-header">
-          <text id="bulk-tags-modal-title" class="modal-title">批量设置标签</text>
+          <text class="modal-title">批量设置标签</text>
           <view class="modal-close" @click="bulkTagsVisible = false">
             <text class="close-text">✕</text>
           </view>
@@ -380,6 +380,10 @@ export default {
   name: 'BulkUploadPanel',
   data() {
     return {
+      // accessibility helpers
+      activeModalRef: null,
+      lastFocusedElement: null,
+      modalMessage: '',
       // Cache for validation results to improve performance
       validationCache: new Map(),
       manifest: [],
@@ -443,9 +447,110 @@ export default {
       this.selectedFiles = []
       this.selectAll = false
       this.validationCache.clear()
+    },
+    previewVisible(val) {
+      if (val) {
+        this.enableModalAccessibility('previewModal')
+      } else {
+        this.disableModalAccessibility()
+      }
+    },
+    bulkEditVisible(val) {
+      if (val) {
+        this.enableModalAccessibility('bulkEditModal')
+      } else {
+        this.disableModalAccessibility()
+      }
+    },
+    bulkTagsVisible(val) {
+      if (val) {
+        this.enableModalAccessibility('bulkTagsModal')
+      } else {
+        this.disableModalAccessibility()
+      }
     }
   },
   methods: {
+    // Set active modal for keyboard handling and focus trap
+    enableModalAccessibility(refName) {
+      this.lastFocusedElement = document.activeElement
+      this.activeModalRef = refName
+      document.addEventListener('keydown', this.handleModalKeydown)
+      // focus the modal root
+      this.$nextTick(() => {
+        const m = this.$refs[refName]
+        const el = m && (m.$el || m)
+        if (el && typeof el.focus === 'function') {
+          el.focus()
+        } else if (el && el.querySelector) {
+          const firstFocusable = this.getFocusableElements(el)[0]
+          if (firstFocusable) firstFocusable.focus()
+        }
+      })
+    },
+
+    // Disable modal accessibility hooks
+    disableModalAccessibility() {
+      document.removeEventListener('keydown', this.handleModalKeydown)
+      this.activeModalRef = null
+      // restore focus
+      this.$nextTick(() => {
+        try {
+          if (this.lastFocusedElement && typeof this.lastFocusedElement.focus === 'function') {
+            this.lastFocusedElement.focus()
+          }
+        } catch (e) {}
+      })
+    },
+
+    // Keydown handler for modal: Esc to close, Tab trap
+    handleModalKeydown(e) {
+      if (!this.activeModalRef) return
+      const m = this.$refs[this.activeModalRef]
+      const el = m && (m.$el || m)
+      if (!el) return
+      if (e.key === 'Escape' || e.key === 'Esc') {
+        e.preventDefault()
+        // close appropriate modal
+        if (this.activeModalRef === 'previewModal') this.cancelPreview()
+        else if (this.activeModalRef === 'bulkEditModal') this.bulkEditVisible = false
+        else if (this.activeModalRef === 'bulkTagsModal') this.bulkTagsVisible = false
+        return
+      }
+
+      if (e.key === 'Tab') {
+        const focusable = this.getFocusableElements(el)
+        if (focusable.length === 0) {
+          e.preventDefault()
+          return
+        }
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault()
+            last.focus()
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault()
+            first.focus()
+          }
+        }
+      }
+    },
+
+    // Return focusable elements inside a container element
+    getFocusableElements(container) {
+      try {
+        const el = container && (container.$el || container)
+        if (!el || !el.querySelectorAll) return []
+        const selectors = 'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), iframe, [tabindex]:not([tabindex="-1"])'
+        return Array.from(el.querySelectorAll(selectors)).filter(node => node.offsetWidth > 0 || node.offsetHeight > 0 || node === document.activeElement)
+      } catch (e) {
+        return []
+      }
+    },
     // Enhanced metadata extraction supporting multiple JSON formats
     extractMetadata(parsed, fileName) {
       try {
@@ -960,15 +1065,6 @@ export default {
       }
       this.newTag = ''
       this.previewVisible = true
-      // focus modal for accessibility
-      this.$nextTick(() => {
-        const m = this.$refs.previewModal
-        if (m && typeof m.focus === 'function') {
-          m.focus()
-        } else if (m && m.$el && typeof m.$el.focus === 'function') {
-          m.$el.focus()
-        }
-      })
     },
     savePreview() {
       if (this.previewIndex < 0) return
@@ -1012,14 +1108,6 @@ export default {
         applyStatus: false
       }
       this.bulkEditVisible = true
-      this.$nextTick(() => {
-        const m = this.$refs.bulkEditModal
-        if (m && typeof m.focus === 'function') {
-          m.focus()
-        } else if (m && m.$el && typeof m.$el.focus === 'function') {
-          m.$el.focus()
-        }
-      })
     },
     applyBulkEdit() {
       this.selectedFiles.forEach(idx => {
@@ -1046,14 +1134,6 @@ export default {
         action: 'add'
       }
       this.bulkTagsVisible = true
-      this.$nextTick(() => {
-        const m = this.$refs.bulkTagsModal
-        if (m && typeof m.focus === 'function') {
-          m.focus()
-        } else if (m && m.$el && typeof m.$el.focus === 'function') {
-          m.$el.focus()
-        }
-      })
     },
     applyBulkTags() {
       this.selectedFiles.forEach(idx => {
@@ -1459,27 +1539,49 @@ export default {
 }
 
 .radio-indicator {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border: 2px solid #d9d9d9;
-  border-radius: 50%;
+  border-radius: 4px; /* square-ish */
   margin-right: 8px;
   position: relative;
+  display: inline-block;
+  box-sizing: border-box;
 }
 
 .radio-indicator.active {
   border-color: #1890ff;
 }
 
-.radio-indicator.active::after {
+.radio-indicator::after {
   content: '';
   position: absolute;
-  top: 2px;
-  left: 2px;
+  top: 50%;
+  left: 50%;
   width: 8px;
   height: 8px;
+  background-color: transparent;
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+}
+
+.radio-indicator.active::after {
   background-color: #1890ff;
-  border-radius: 50%;
+  border-radius: 2px; /* small square */
+}
+
+/* Indicator styles for active/inactive status choices */
+.radio-indicator.indicator-active-selected {
+  border-color: #52c41a;
+}
+.radio-indicator.indicator-active-selected::after {
+  background-color: #52c41a;
+}
+.radio-indicator.indicator-inactive-selected {
+  border-color: #d9d9d9;
+}
+.radio-indicator.indicator-inactive-selected::after {
+  background-color: #8c8c8c;
 }
 
 .radio-text {
@@ -1632,6 +1734,7 @@ export default {
   font-size: 13px;
   color: #faad14;
 }
+
 .file-actions {
   width: 80px;
   text-align: center;
@@ -2000,6 +2103,10 @@ export default {
   font-size: 14px;
   transition: border-color 0.2s ease;
   box-sizing: border-box;
+  /* Ensure inputs have sufficient height for single-line text */
+  min-height: 40px;
+  height: 40px;
+  line-height: 20px;
 }
 
 .form-input:focus,
