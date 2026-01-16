@@ -57,45 +57,9 @@
       </view>
 
       <!-- Bulk actions toolbar -->
-      <view class="bulk-actions" v-if="manifest.length > 0">
-        <view class="bulk-controls">
-          <label class="checkbox-container">
-            <input type="checkbox" v-model="selectAll" @change="toggleSelectAll" />
-            <view class="checkmark"></view>
-            <text class="checkbox-label">全选</text>
-          </label>
-          <text class="selection-count">已选择 {{ selectedFiles.length }} 个文件</text>
-        </view>
-        <view class="bulk-edit-controls" v-if="selectedFiles.length > 0">
-          <button class="bulk-edit-btn" @click="openBulkEditModal">
-            <text class="btn-text">批量编辑</text>
-          </button>
-          <button class="bulk-set-tags-btn" @click="openBulkTagsModal">
-            <text class="btn-text">批量设置标签</text>
-          </button>
-        </view>
-      </view>
-
-      <!-- 验证摘要 -->
-      <view class="validation-summary" v-if="manifest.length > 0">
-        <view class="summary-stats">
-          <view class="stat-item">
-            <text class="stat-value valid">{{ getValidFilesCount() }}</text>
-            <text class="stat-label">有效文件</text>
-          </view>
-          <view class="stat-item">
-            <text class="stat-value invalid">{{ getInvalidFilesCount() }}</text>
-            <text class="stat-label">需编辑</text>
-          </view>
-        </view>
-        <view class="validation-hint" v-if="getInvalidFilesCount() > 0">
-          <text class="hint-text">⚠️ 红色标记的文件需要编辑，请点击"编辑"按钮完善信息</text>
-        </view>
-      </view>
 
       <view class="file-list">
         <view class="file-list-header">
-          <text class="header-cell file-select">选择</text>
           <text class="header-cell file-index">#</text>
           <text class="header-cell file-name">文件名</text>
           <text class="header-cell file-title">剧本标题</text>
@@ -107,12 +71,6 @@
         <view class="file-list-body">
           <view v-for="(item, idx) in manifest" :key="idx" class="file-item">
             <view class="file-row">
-              <view class="file-cell file-select">
-                <label class="checkbox-container">
-                  <input type="checkbox" :value="idx" v-model="selectedFiles" />
-                  <view class="checkmark"></view>
-                </label>
-              </view>
               <text class="file-cell file-index">{{ idx + 1 }}</text>
               <view class="file-cell file-name">
                 <text class="file-name-text">{{ item.fileName }}</text>
@@ -273,101 +231,6 @@
       </view>
     </view>
 
-    <!-- 批量编辑弹窗 -->
-    <view v-if="bulkEditVisible" class="preview-modal-overlay" @click="bulkEditVisible = false">
-      <view class="preview-modal" @click.stop="">
-        <view class="modal-header">
-          <text class="modal-title">批量编辑元数据</text>
-          <view class="modal-close" @click="bulkEditVisible = false">
-            <text class="close-text">✕</text>
-          </view>
-        </view>
-
-        <view class="modal-body">
-          <view class="form-group">
-            <label class="checkbox-container">
-              <input type="checkbox" v-model="bulkEditModel.applyAuthor" />
-              <view class="checkmark"></view>
-              <text class="checkbox-label">设置作者</text>
-            </label>
-            <input v-if="bulkEditModel.applyAuthor" class="form-input" type="text" v-model="bulkEditModel.author" placeholder="输入作者姓名" />
-          </view>
-
-          <view class="form-group">
-            <label class="checkbox-container">
-              <input type="checkbox" v-model="bulkEditModel.applyStatus" />
-              <view class="checkmark"></view>
-              <text class="checkbox-label">设置状态</text>
-            </label>
-            <view v-if="bulkEditModel.applyStatus" class="radio-group">
-              <label class="radio-option" @click="bulkEditModel.status = 'active'">
-                <view class="radio-indicator" :class="{ active: bulkEditModel.status === 'active' }"></view>
-                <text class="radio-text">激活</text>
-              </label>
-              <label class="radio-option" @click="bulkEditModel.status = 'inactive'">
-                <view class="radio-indicator" :class="{ active: bulkEditModel.status === 'inactive' }"></view>
-                <text class="radio-text">未激活</text>
-              </label>
-            </view>
-          </view>
-        </view>
-
-        <view class="modal-footer">
-          <button class="modal-btn cancel-btn" @click="bulkEditVisible = false">取消</button>
-          <button class="modal-btn confirm-btn" @click="applyBulkEdit">应用到选中文件</button>
-        </view>
-      </view>
-    </view>
-
-    <!-- 批量标签设置弹窗 -->
-    <view v-if="bulkTagsVisible" class="preview-modal-overlay" @click="bulkTagsVisible = false">
-      <view class="preview-modal" @click.stop="">
-        <view class="modal-header">
-          <text class="modal-title">批量设置标签</text>
-          <view class="modal-close" @click="bulkTagsVisible = false">
-            <text class="close-text">✕</text>
-          </view>
-        </view>
-
-        <view class="modal-body">
-          <view class="form-group">
-            <text class="form-label">操作类型</text>
-            <view class="radio-group">
-              <label class="radio-option" @click="bulkTagsModel.action = 'add'">
-                <view class="radio-indicator" :class="{ active: bulkTagsModel.action === 'add' }"></view>
-                <text class="radio-text">添加标签</text>
-              </label>
-              <label class="radio-option" @click="bulkTagsModel.action = 'replace'">
-                <view class="radio-indicator" :class="{ active: bulkTagsModel.action === 'replace' }"></view>
-                <text class="radio-text">替换标签</text>
-              </label>
-              <label class="radio-option" @click="bulkTagsModel.action = 'remove'">
-                <view class="radio-indicator" :class="{ active: bulkTagsModel.action === 'remove' }"></view>
-                <text class="radio-text">移除标签</text>
-              </label>
-            </view>
-          </view>
-
-          <view class="form-group">
-            <text class="form-label">标签列表</text>
-            <view class="tags-input-container">
-              <view class="current-tags" v-if="bulkTagsModel.tags && bulkTagsModel.tags.length > 0">
-                <view v-for="(tag, idx) in bulkTagsModel.tags" :key="idx" class="tag-item">
-                  <text class="tag-text">{{ tag }}</text>
-                  <text class="tag-remove" @click="bulkTagsModel.tags.splice(idx, 1)">×</text>
-                </view>
-              </view>
-              <input class="form-input tag-input" type="text" v-model="newBulkTag" placeholder="输入标签，按回车添加" @keyup.enter="addBulkTag" />
-            </view>
-          </view>
-        </view>
-
-        <view class="modal-footer">
-          <button class="modal-btn cancel-btn" @click="bulkTagsVisible = false">取消</button>
-          <button class="modal-btn confirm-btn" @click="applyBulkTags">应用到选中文件</button>
-        </view>
-      </view>
-    </view>
   </view>
 </template>
 
@@ -397,21 +260,6 @@ export default {
         tags: [],
         status: 'active'
       },
-      selectedFiles: [],
-      selectAll: false,
-      bulkEditVisible: false,
-      bulkTagsVisible: false,
-      bulkEditModel: {
-        author: '',
-        status: '',
-        applyAuthor: false,
-        applyStatus: false
-      },
-      bulkTagsModel: {
-        tags: [],
-        action: 'add' // 'add', 'replace', 'remove'
-      },
-      newBulkTag: '',
       isUploading: false
     }
   },
@@ -427,17 +275,6 @@ export default {
     },
     isUploading() {
       return this.jobStatus === 'running'
-    }
-  },
-  watch: {
-    selectedFiles() {
-      this.selectAll = this.selectedFiles.length === this.manifest.length && this.manifest.length > 0
-    },
-    manifest() {
-      // Reset selection and validation cache when manifest changes
-      this.selectedFiles = []
-      this.selectAll = false
-      this.validationCache.clear()
     }
   },
   methods: {
@@ -990,85 +827,6 @@ export default {
     },
     removeTag(index) {
       this.previewModel.tags.splice(index, 1)
-    },
-    // Bulk selection methods
-    toggleSelectAll() {
-      if (this.selectAll) {
-        this.selectedFiles = this.manifest.map((_, idx) => idx)
-      } else {
-        this.selectedFiles = []
-      }
-    },
-    // Bulk edit methods
-    openBulkEditModal() {
-      if (this.selectedFiles.length === 0) return
-      this.bulkEditModel = {
-        author: '',
-        status: '',
-        applyAuthor: false,
-        applyStatus: false
-      }
-      this.bulkEditVisible = true
-    },
-    applyBulkEdit() {
-      this.selectedFiles.forEach(idx => {
-        const item = this.manifest[idx]
-        if (item && item.extractedMeta) {
-          if (this.bulkEditModel.applyAuthor && this.bulkEditModel.author.trim()) {
-            item.extractedMeta.author = this.bulkEditModel.author.trim()
-          }
-          if (this.bulkEditModel.applyStatus && this.bulkEditModel.status) {
-            item.extractedMeta.status = this.bulkEditModel.status
-          }
-        }
-      })
-      this.bulkEditVisible = false
-      this.selectedFiles = []
-      this.selectAll = false
-      uni.showToast({ title: '批量编辑完成', icon: 'success' })
-    },
-    // Bulk tags methods
-    openBulkTagsModal() {
-      if (this.selectedFiles.length === 0) return
-      this.bulkTagsModel = {
-        tags: [],
-        action: 'add'
-      }
-      this.bulkTagsVisible = true
-    },
-    applyBulkTags() {
-      this.selectedFiles.forEach(idx => {
-        const item = this.manifest[idx]
-        if (item && item.extractedMeta) {
-          if (!item.extractedMeta.tags) {
-            item.extractedMeta.tags = []
-          }
-
-          if (this.bulkTagsModel.action === 'replace') {
-            item.extractedMeta.tags = [...this.bulkTagsModel.tags]
-          } else if (this.bulkTagsModel.action === 'add') {
-            this.bulkTagsModel.tags.forEach(tag => {
-              if (!item.extractedMeta.tags.includes(tag)) {
-                item.extractedMeta.tags.push(tag)
-              }
-            })
-          } else if (this.bulkTagsModel.action === 'remove') {
-            item.extractedMeta.tags = item.extractedMeta.tags.filter(tag =>
-              !this.bulkTagsModel.tags.includes(tag)
-            )
-          }
-        }
-      })
-      this.bulkTagsVisible = false
-      this.selectedFiles = []
-      this.selectAll = false
-      uni.showToast({ title: '批量标签设置完成', icon: 'success' })
-    },
-    addBulkTag() {
-      if (this.newBulkTag.trim() && !this.bulkTagsModel.tags.includes(this.newBulkTag.trim())) {
-        this.bulkTagsModel.tags.push(this.newBulkTag.trim())
-        this.newBulkTag = ''
-      }
     },
     // Validation methods with caching for performance
     validateMetadata(item) {
