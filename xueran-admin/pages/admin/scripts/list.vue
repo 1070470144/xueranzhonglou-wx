@@ -56,13 +56,15 @@
 						</uni-td>
 						<uni-td align="center">
 							<view class="tags-container">
+								<!-- support tags array (preferred) and fallback to single tag -->
 								<uni-tag
-									v-if="item.tag"
+									v-for="(t, i) in (item.tags && item.tags.length ? item.tags : (item.tag ? [item.tag] : []))"
+									:key="i"
 									type="primary"
 									inverted
 									size="mini"
-									:text="item.tag"
-									style="margin-right: 4px;" />
+									:text="t"
+									:style="{ marginRight: '4px' }" />
 							</view>
 						</uni-td>
 						<uni-td align="center">

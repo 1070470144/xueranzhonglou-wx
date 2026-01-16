@@ -105,7 +105,8 @@ exports.main = async (event, context) => {
                 author: (fileEntry.extractedMeta && fileEntry.extractedMeta.author) || '批量导入',
                 status: (fileEntry.extractedMeta && fileEntry.extractedMeta.status) || 'active',
                 description: (fileEntry.extractedMeta && fileEntry.extractedMeta.description) || `从 ${fileName} 导入的剧本`,
-                tags: (fileEntry.extractedMeta && fileEntry.extractedMeta.tags) || ['娱乐'],
+                // single tag string (prefer extractedMeta.tag, fallback to first tags entry)
+                tag: (fileEntry.extractedMeta && (fileEntry.extractedMeta.tag || (fileEntry.extractedMeta.tags && fileEntry.extractedMeta.tags[0]))) || '娱乐',
                 images: (fileEntry.extractedMeta && fileEntry.extractedMeta.images) || [],
                 usageCount: (fileEntry.extractedMeta && fileEntry.extractedMeta.usageCount) || 0,
                 likes: (fileEntry.extractedMeta && fileEntry.extractedMeta.likes) || 0

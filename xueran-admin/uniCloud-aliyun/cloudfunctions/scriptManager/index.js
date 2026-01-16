@@ -58,6 +58,10 @@ const validateScriptData = (data, isUpdate = false) => {
   if (data.status && !['active', 'inactive'].includes(data.status)) {
     errors.push('状态必须是 active 或 inactive 之一')
   }
+  // Accept single tag string `tag` (preferred) or legacy `tags` array
+  if (data.tag && (typeof data.tag !== 'string' || !['推理', '娱乐'].includes(data.tag))) {
+    errors.push('标签必须为字符串，值为"推理"或"娱乐"')
+  }
   if (data.tags && (!Array.isArray(data.tags) || data.tags.length > 2 || data.tags.some(tag => typeof tag !== 'string' || !['推理', '娱乐'].includes(tag)))) {
     errors.push('标签必须是数组，最多2个，只能包含"推理"或"娱乐"')
   }
@@ -223,6 +227,10 @@ async function handleGet(params) {
 
 // 创建剧本
 async function handleCreate(params) {
+  // Normalize tag input: prefer params.tag, fall back to params.tags[0] if present
+  if (params && params.tags && !params.tag) {
+    params.tag = Array.isArray(params.tags) && params.tags.length ? params.tags[0] : undefined
+  }
   // 验证数据
   const validationErrors = validateScriptData(params, false)
   if (validationErrors.length > 0) {
@@ -233,6 +241,8 @@ async function handleCreate(params) {
   const now = new Date()
   const scriptData = {
     ...params,
+    // Store single tag string for consistency
+    tag: params.tag || (params.tags && params.tags[0]) || undefined,
     status: params.status || 'active',
     createTime: now,
     updateTime: now
