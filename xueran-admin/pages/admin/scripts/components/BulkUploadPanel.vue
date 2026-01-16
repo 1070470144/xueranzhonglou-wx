@@ -57,45 +57,8 @@
       </view>
 
       <!-- Bulk actions toolbar -->
-      <view class="bulk-actions" v-if="manifest.length > 0">
-        <view class="bulk-controls">
-          <label class="checkbox-container">
-            <input type="checkbox" v-model="selectAll" @change="toggleSelectAll" />
-            <view class="checkmark"></view>
-            <text class="checkbox-label">全选</text>
-          </label>
-          <text class="selection-count">已选择 {{ selectedFiles.length }} 个文件</text>
-        </view>
-        <view class="bulk-edit-controls" v-if="selectedFiles.length > 0">
-          <button class="bulk-edit-btn" @click="openBulkEditModal">
-            <text class="btn-text">批量编辑</text>
-          </button>
-          <button class="bulk-set-tags-btn" @click="openBulkTagsModal">
-            <text class="btn-text">批量设置标签</text>
-          </button>
-        </view>
-      </view>
-
-      <!-- 验证摘要 -->
-      <view class="validation-summary" v-if="manifest.length > 0">
-        <view class="summary-stats">
-          <view class="stat-item">
-            <text class="stat-value valid">{{ getValidFilesCount() }}</text>
-            <text class="stat-label">有效文件</text>
-          </view>
-          <view class="stat-item">
-            <text class="stat-value invalid">{{ getInvalidFilesCount() }}</text>
-            <text class="stat-label">需编辑</text>
-          </view>
-        </view>
-        <view class="validation-hint" v-if="getInvalidFilesCount() > 0">
-          <text class="hint-text">⚠️ 红色标记的文件需要编辑，请点击"编辑"按钮完善信息</text>
-        </view>
-      </view>
-
       <view class="file-list">
         <view class="file-list-header">
-          <text class="header-cell file-select">选择</text>
           <text class="header-cell file-index">#</text>
           <text class="header-cell file-name">文件名</text>
           <text class="header-cell file-title">剧本标题</text>
@@ -107,12 +70,6 @@
         <view class="file-list-body">
           <view v-for="(item, idx) in manifest" :key="idx" class="file-item">
             <view class="file-row">
-              <view class="file-cell file-select">
-                <label class="checkbox-container">
-                  <input type="checkbox" :value="idx" v-model="selectedFiles" />
-                  <view class="checkmark"></view>
-                </label>
-              </view>
               <text class="file-cell file-index">{{ idx + 1 }}</text>
               <view class="file-cell file-name">
                 <text class="file-name-text">{{ item.fileName }}</text>
@@ -1208,15 +1165,14 @@ export default {
 
     // UI 辅助方法
     getStatusClass(item) {
-      if (!item.extractedMeta) return 'status-error'
-      if (item.extractedMeta.title && item.extractedMeta.author) return 'status-success'
-      return 'status-warning'
+      // Show explicit activation status only: 'active' or 'inactive'
+      if (!item.extractedMeta || !item.extractedMeta.status) return 'status-inactive'
+      return item.extractedMeta.status === 'active' ? 'status-active' : 'status-inactive'
     },
 
     getStatusText(item) {
-      if (!item.extractedMeta) return '解析失败'
-      if (item.extractedMeta.title && item.extractedMeta.author) return '完整'
-      return '部分'
+      if (!item.extractedMeta || !item.extractedMeta.status) return '未激活'
+      return item.extractedMeta.status === 'active' ? '激活' : '未激活'
     },
 
     getJobStatusClass(status) {
@@ -1798,6 +1754,16 @@ export default {
 .status-error {
   background: #fff2f0;
   color: #ff4d4f;
+}
+
+/* Explicit active/inactive status styles */
+.status-active {
+  background: #f6ffed;
+  color: #52c41a;
+}
+.status-inactive {
+  background: #f5f5f5;
+  color: #8c8c8c;
 }
 
 .action-btn {
