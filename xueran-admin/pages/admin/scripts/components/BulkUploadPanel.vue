@@ -244,15 +244,11 @@
 
           <view class="form-group">
             <text class="form-label">标签</text>
-            <view class="tags-input-container">
-              <view class="current-tags" v-if="previewModel.tags && previewModel.tags.length > 0">
-                <view v-for="(tag, idx) in previewModel.tags" :key="idx" class="tag-item">
-                  <text class="tag-text">{{ tag }}</text>
-                  <text class="tag-remove" @click="removeTag(idx)">×</text>
-                </view>
-              </view>
-              <input class="form-input tag-input" type="text" v-model="newTag" placeholder="输入新标签，按回车添加" @keyup.enter="addTag" />
-            </view>
+            <select class="form-input" v-model="previewModel.tag">
+              <option value="">请选择标签</option>
+              <option value="娱乐">娱乐</option>
+              <option value="推理">推理</option>
+            </select>
           </view>
 
           <view class="form-group">
@@ -401,7 +397,6 @@ export default {
         tags: [],
         status: 'active'
       },
-      newTag: '',
       selectedFiles: [],
       selectAll: false,
       bulkEditVisible: false,
@@ -790,16 +785,27 @@ export default {
       try {
         this.isUploading = true
         uni.showLoading({ title: '创建作业...' })
+        // Deduplicate manifest by (relativePath + fileName) to avoid duplicate uploads
+        const seen = new Set()
+        const deduped = []
+        for (const m of this.manifest) {
+          const key = `${m.relativePath || ''}::${m.fileName || ''}`
+          if (!seen.has(key)) {
+            seen.add(key)
+            deduped.push(m)
+          }
+        }
+
         const res = await uniCloud.callFunction({
           name: 'bulkUpload',
           data: {
             action: 'createJob',
-          manifest: this.manifest.map(m => ({
-            fileName: m.fileName,
-            relativePath: m.relativePath || null,
-            content: m.content,
-            extractedMeta: m.extractedMeta
-          })),
+            manifest: deduped.map(m => ({
+              fileName: m.fileName,
+              relativePath: m.relativePath || null,
+              content: m.content,
+              extractedMeta: m.extractedMeta
+            })),
             processNow: true
           }
         })
@@ -955,7 +961,7 @@ export default {
         title: (item.extractedMeta && item.extractedMeta.title) || '',
         author: (item.extractedMeta && item.extractedMeta.author) || '',
         description: (item.extractedMeta && item.extractedMeta.description) || '',
-        tags: (item.extractedMeta && item.extractedMeta.tags) ? [...item.extractedMeta.tags] : [],
+        tag: (item.extractedMeta && item.extractedMeta.tags && item.extractedMeta.tags.length > 0) ? item.extractedMeta.tags[0] : '',
         status: (item.extractedMeta && item.extractedMeta.status) || 'active'
       }
       this.newTag = ''
@@ -969,7 +975,7 @@ export default {
       item.extractedMeta.title = this.previewModel.title
       item.extractedMeta.author = this.previewModel.author
       item.extractedMeta.description = this.previewModel.description
-      item.extractedMeta.tags = [...this.previewModel.tags]
+      item.extractedMeta.tags = this.previewModel.tag ? [this.previewModel.tag] : []
       item.extractedMeta.status = this.previewModel.status
       this.manifest.splice(this.previewIndex, 1, item)
       this.previewVisible = false
@@ -1105,17 +1111,15 @@ export default {
       this.previewIndex = -1
     },
 
-    // UI 辅助方法
+    // UI 辅助方法 — 仅显示激活/未激活
     getStatusClass(item) {
-      if (!item.extractedMeta) return 'status-error'
-      if (item.extractedMeta.title && item.extractedMeta.author) return 'status-success'
-      return 'status-warning'
+      if (!item.extractedMeta || !item.extractedMeta.status) return 'status-inactive'
+      return item.extractedMeta.status === 'active' ? 'status-active' : 'status-inactive'
     },
 
     getStatusText(item) {
-      if (!item.extractedMeta) return '解析失败'
-      if (item.extractedMeta.title && item.extractedMeta.author) return '完整'
-      return '部分'
+      if (!item.extractedMeta || !item.extractedMeta.status) return '未激活'
+      return item.extractedMeta.status === 'active' ? '激活' : '未激活'
     },
 
     getJobStatusClass(status) {

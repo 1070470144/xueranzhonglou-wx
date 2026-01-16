@@ -188,10 +188,10 @@ exports.main = async (event, context) => {
               createdAt: new Date()
             })
           } finally {
-            // update counters periodically
+            // update counters periodically — write absolute totals (avoid cumulative increments)
             await db.collection('bulkUploadJobs').doc(jobId).update({
-              successCount: db.command.inc(results.success),
-              failCount: db.command.inc(results.fail),
+              successCount: results.success,
+              failCount: results.fail,
               updatedAt: new Date()
             }).catch(() => {}) // ignore transient errors updating counts
           }
