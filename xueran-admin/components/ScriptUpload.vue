@@ -267,7 +267,7 @@ export default {
           title: this.formData.title || this.selectedFile.name.replace(/\.[^/.]+$/, ''),
           author: this.formData.author,
           description: this.formData.description,
-          tags: this.formData.tag ? [this.formData.tag] : []
+          tag: this.formData.tag || '娱乐'
         }
 
         const result = await uploadScript(uploadParams)
