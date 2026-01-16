@@ -96,7 +96,9 @@ export default {
 			lastCacheTime: null,
 			// retry
 			maxRetries: 3,
-			retryDelay: 1000 // 1秒重试延迟
+			retryDelay: 1000, // 1秒重试延迟
+			// page visibility tracking
+			pageHiddenTime: null
 		}
 	},
 	computed: {
@@ -383,6 +385,28 @@ export default {
 		// 页面加载，先清除缓存确保能看到最新的修改效果，然后加载第一页
 		this.clearCache();
 		this.fetchScripts({ page: 1, append: false, useCache: false });
+	},
+
+	onHide() {
+		// 记录页面隐藏时间，用于判断是否需要刷新数据
+		this.pageHiddenTime = Date.now();
+	},
+
+	onShow() {
+		// 页面重新显示时，检查是否需要刷新数据
+		const now = Date.now();
+		const timeSinceHidden = this.pageHiddenTime ? now - this.pageHiddenTime : Infinity;
+
+		// 如果页面隐藏时间不超过30秒（可能有操作发生），重新获取数据
+		if (timeSinceHidden < 30000 && this.scripts && this.scripts.length > 0) {
+			console.log('页面重新显示，检测到可能有操作发生，刷新数据');
+			this.fetchScripts({ page: 1, append: false, useCache: false });
+		} else {
+			// 否则只重新初始化点赞状态
+			if (this.scripts && this.scripts.length > 0) {
+				this.scripts = initScriptsLikeStatus(this.scripts);
+			}
+		}
 	}
 	// uni-app page hooks
 	,onPullDownRefresh() {
