@@ -86,7 +86,7 @@
               </view>
               <view class="file-cell file-tags">
                 <view class="tags-container">
-                  <text v-for="tag in (item.extractedMeta && item.extractedMeta.tags ? item.extractedMeta.tags : [])" :key="tag" class="tag-chip">{{ tag }}</text>
+                  <text v-if="item.extractedMeta && item.extractedMeta.tag" class="tag-chip">{{ item.extractedMeta.tag }}</text>
                   <text v-if="!item.extractedMeta || !item.extractedMeta.tags || item.extractedMeta.tags.length === 0" class="no-tags">无标签</text>
                 </view>
               </view>
@@ -304,17 +304,10 @@ export default {
           title: this.extractField(metaFromJson, ['title', 'name'], fileName.replace(/\.json$/i, '')),
           author: this.extractField(metaFromJson, ['author', 'creator'], ''),
           description: this.extractField(metaFromJson, ['description', 'summary'], null),
-          tags: this.extractTags(metaFromJson, parsed),
+          tag: this.extractTag(metaFromJson, parsed),
           usageCount: this.extractField(metaFromJson, ['usageCount'], 0),
           likes: this.extractField(metaFromJson, ['likes'], 0),
           status: 'active' // Default to active status
-        }
-
-        // Ensure tags include "娱乐" if not already present
-        if (!metadata.tags || !Array.isArray(metadata.tags) || metadata.tags.length === 0) {
-          metadata.tags = ['娱乐']
-        } else if (!metadata.tags.includes('娱乐')) {
-          metadata.tags.unshift('娱乐')
         }
 
         return metadata
@@ -325,7 +318,7 @@ export default {
           title: fileName.replace(/\.json$/i, ''),
           author: '',
           description: null,
-          tags: ['娱乐'],
+          tag: '娱乐',
           usageCount: 0,
           likes: 0,
           status: 'active'
@@ -344,34 +337,47 @@ export default {
       return defaultValue
     },
 
-    // Enhanced tag extraction
-    extractTags(metaFromJson, fullParsed) {
-      let tags = []
+    // Enhanced tag extraction - return single tag string
+    extractTag(metaFromJson, fullParsed) {
+      let tag = ''
 
-      // Try to extract from metadata
-      if (metaFromJson && metaFromJson.tags) {
-        if (Array.isArray(metaFromJson.tags)) {
-          tags = tags.concat(metaFromJson.tags)
+      // Prefer tag field if present
+      if (metaFromJson && metaFromJson.tag && typeof metaFromJson.tag === 'string') {
+        tag = metaFromJson.tag
+      }
+      // Fallback to tags array (take first element)
+      else if (metaFromJson && metaFromJson.tags) {
+        if (Array.isArray(metaFromJson.tags) && metaFromJson.tags.length > 0) {
+          tag = metaFromJson.tags[0]
         } else if (typeof metaFromJson.tags === 'string') {
-          tags.push(metaFromJson.tags)
+          tag = metaFromJson.tags
         }
       }
-
       // Try to extract from root object
-      if (fullParsed && fullParsed.tags) {
-        if (Array.isArray(fullParsed.tags)) {
-          tags = tags.concat(fullParsed.tags)
+      else if (fullParsed && fullParsed.tags) {
+        if (Array.isArray(fullParsed.tags) && fullParsed.tags.length > 0) {
+          tag = fullParsed.tags[0]
         } else if (typeof fullParsed.tags === 'string') {
-          tags.push(fullParsed.tags)
+          tag = fullParsed.tags
         }
       }
 
-      // Ensure "娱乐" tag is included
-      if (!tags.includes('娱乐')) {
-        tags.unshift('娱乐')
+      // Fallback to other fields
+      if (!tag) {
+        const fallbackFields = ['category', 'genre', 'type']
+        for (const field of fallbackFields) {
+          if (metaFromJson && metaFromJson[field]) {
+            if (Array.isArray(metaFromJson[field]) && metaFromJson[field].length > 0) {
+              tag = metaFromJson[field][0]
+            } else if (typeof metaFromJson[field] === 'string') {
+              tag = metaFromJson[field]
+            }
+            if (tag) break
+          }
+        }
       }
 
-      return tags.length > 0 ? tags : ['娱乐']
+      return tag || '娱乐'
     },
 
     triggerFileInput() {
@@ -798,7 +804,7 @@ export default {
         title: (item.extractedMeta && item.extractedMeta.title) || '',
         author: (item.extractedMeta && item.extractedMeta.author) || '',
         description: (item.extractedMeta && item.extractedMeta.description) || '',
-        tag: (item.extractedMeta && item.extractedMeta.tags && item.extractedMeta.tags.length > 0) ? item.extractedMeta.tags[0] : '',
+        tag: (item.extractedMeta && item.extractedMeta.tag) ? item.extractedMeta.tag : '',
         status: (item.extractedMeta && item.extractedMeta.status) || 'active'
       }
       this.newTag = ''
@@ -812,7 +818,7 @@ export default {
       item.extractedMeta.title = this.previewModel.title
       item.extractedMeta.author = this.previewModel.author
       item.extractedMeta.description = this.previewModel.description
-      item.extractedMeta.tags = this.previewModel.tag ? [this.previewModel.tag] : []
+      item.extractedMeta.tag = this.previewModel.tag || '娱乐'
       item.extractedMeta.status = this.previewModel.status
       this.manifest.splice(this.previewIndex, 1, item)
       this.previewVisible = false

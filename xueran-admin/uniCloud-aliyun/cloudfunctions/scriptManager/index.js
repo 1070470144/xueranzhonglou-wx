@@ -58,12 +58,9 @@ const validateScriptData = (data, isUpdate = false) => {
   if (data.status && !['active', 'inactive'].includes(data.status)) {
     errors.push('状态必须是 active 或 inactive 之一')
   }
-  // Accept single tag string `tag` (preferred) or legacy `tags` array
+  // Only accept single tag string
   if (data.tag && (typeof data.tag !== 'string' || !['推理', '娱乐'].includes(data.tag))) {
     errors.push('标签必须为字符串，值为"推理"或"娱乐"')
-  }
-  if (data.tags && (!Array.isArray(data.tags) || data.tags.length > 2 || data.tags.some(tag => typeof tag !== 'string' || !['推理', '娱乐'].includes(tag)))) {
-    errors.push('标签必须是数组，最多2个，只能包含"推理"或"娱乐"')
   }
   if (data.category && (typeof data.category !== 'string' || data.category.length > 100)) {
     errors.push('分类必须是字符串，最多100字符')
@@ -135,6 +132,8 @@ exports.main = async (event, context) => {
         return await handleLike(params)
       case 'unlike':
         return await handleUnlike(params)
+      case 'migrateTags':
+        return await handleMigrateTags(params)
       default:
         return createErrorResponse('不支持的操作类型')
     }
@@ -227,10 +226,6 @@ async function handleGet(params) {
 
 // 创建剧本
 async function handleCreate(params) {
-  // Normalize tag input: prefer params.tag, fall back to params.tags[0] if present
-  if (params && params.tags && !params.tag) {
-    params.tag = Array.isArray(params.tags) && params.tags.length ? params.tags[0] : undefined
-  }
   // 验证数据
   const validationErrors = validateScriptData(params, false)
   if (validationErrors.length > 0) {
@@ -241,8 +236,8 @@ async function handleCreate(params) {
   const now = new Date()
   const scriptData = {
     ...params,
-    // Store single tag string for consistency
-    tag: params.tag || (params.tags && params.tags[0]) || undefined,
+    // 统一使用 tag 字段
+    tag: params.tag || '娱乐',
     status: params.status || 'active',
     createTime: now,
     updateTime: now
@@ -309,7 +304,7 @@ async function handleDelete(params) {
 
 // 上传剧本文件
 async function handleUpload(params) {
-  const { filePath, title, author, description, tags, category, content, imageFileIds = [], thumbnails = [] } = params
+  const { filePath, title, author, description, tag, category, content, imageFileIds = [], thumbnails = [] } = params
 
   // 基础参数验证
   if (!filePath) {
@@ -325,8 +320,8 @@ async function handleUpload(params) {
   }
 
   // 验证标签
-  if (tags && (!Array.isArray(tags) || tags.length > 2 || tags.some(tag => typeof tag !== 'string' || !['推理', '娱乐'].includes(tag)))) {
-    return createErrorResponse('标签必须是数组，最多2个，只能包含"推理"或"娱乐"')
+  if (tag && (typeof tag !== 'string' || !['推理', '娱乐'].includes(tag))) {
+    return createErrorResponse('标签必须是字符串，只能是"推理"或"娱乐"')
   }
 
   try {
@@ -374,7 +369,7 @@ async function handleUpload(params) {
       }
     }
 
-    // 准备剧本数据
+    // 准备剧本数据 - 统一使用 tag 字段
     const scriptData = {
       title: title.trim(),
       content: fileContent,
@@ -384,7 +379,7 @@ async function handleUpload(params) {
       fileSize: uploadResult.size || 0,
       mimeType: uploadResult.mimeType || 'application/octet-stream',
       status: 'active',
-      tags: tags || [],
+      tag: tag || '娱乐', // 统一使用 tag 字段
       category: category ? category.trim() : undefined,
       description: description ? description.trim() : undefined,
       images: Array.isArray(imageFileIds) ? imageFileIds.map((fileId, index) => ({
@@ -475,5 +470,73 @@ async function handleUnlike(params) {
   } catch (error) {
     console.error('取消点赞操作失败:', error)
     return createErrorResponse('取消点赞失败')
+  }
+}
+
+// 迁移标签字段：将 tags 数组转换为 tag 字符串
+async function handleMigrateTags(params) {
+  try {
+    // 查找所有包含 tags 字段的记录
+    const recordsWithTags = await scriptsCollection.where({
+      tags: db.command.exists(true)
+    }).get()
+
+    let migratedCount = 0
+    let skippedCount = 0
+
+    for (const record of recordsWithTags.data) {
+      const updateData = {
+        updateTime: new Date()
+      }
+
+      // 如果有 tags 数组，取第一个元素作为 tag
+      if (record.tags && Array.isArray(record.tags) && record.tags.length > 0) {
+        updateData.tag = record.tags[0]
+      } else if (record.tags && typeof record.tags === 'string') {
+        updateData.tag = record.tags
+      } else {
+        // 如果没有有效的 tags，设置默认值
+        updateData.tag = '娱乐'
+      }
+
+      // 移除旧的 tags 字段
+      updateData.tags = db.command.remove()
+
+      try {
+        await scriptsCollection.doc(record._id).update(updateData)
+        migratedCount++
+      } catch (updateError) {
+        console.error(`迁移记录 ${record._id} 失败:`, updateError)
+        skippedCount++
+      }
+    }
+
+    // 查找没有 tag 字段但有其他标签信息的记录
+    const recordsWithoutTag = await scriptsCollection.where({
+      tag: db.command.exists(false),
+      tags: db.command.exists(false)
+    }).get()
+
+    for (const record of recordsWithoutTag.data) {
+      try {
+        await scriptsCollection.doc(record._id).update({
+          tag: '娱乐', // 默认标签
+          updateTime: new Date()
+        })
+        migratedCount++
+      } catch (updateError) {
+        console.error(`设置默认标签失败 ${record._id}:`, updateError)
+        skippedCount++
+      }
+    }
+
+    return createResponse(0, '标签字段迁移完成', {
+      migrated: migratedCount,
+      skipped: skippedCount,
+      totalProcessed: migratedCount + skippedCount
+    })
+  } catch (error) {
+    console.error('标签迁移失败:', error)
+    return createErrorResponse('标签迁移失败：' + error.message)
   }
 }
