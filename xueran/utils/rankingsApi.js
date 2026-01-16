@@ -2,7 +2,7 @@
 
 // 本地缓存配置
 const CACHE_KEY_PREFIX = 'rankings_cache_';
-const CACHE_DURATION = 60 * 60 * 1000; // 1小时缓存
+const CACHE_DURATION = 10 * 60 * 1000; // 10分钟缓存
 
 /**
  * 获取排行榜数据
