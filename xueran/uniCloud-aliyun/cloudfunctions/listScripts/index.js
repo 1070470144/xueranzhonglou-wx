@@ -95,12 +95,23 @@ exports.main = async (event, context) => {
 
         // 图片字段验证和标准化
         if (Array.isArray(item.thumbnails) && item.thumbnails.length) {
+          // thumbnails 优先级最高（管理端标准）
           item.images = item.thumbnails.slice(0, 3);
         } else if (item.thumbnail && typeof item.thumbnail === 'string') {
           item.images = [item.thumbnail];
         } else if (Array.isArray(item.images)) {
+          // 处理图片数组，支持字符串和对象格式
           item.images = item.images
-            .filter(img => typeof img === 'string' && img.trim().length > 0)
+            .map(img => {
+              if (typeof img === 'string' && img.trim().length > 0) {
+                return img;
+              } else if (typeof img === 'object' && img !== null) {
+                // 支持对象格式：优先使用 url，然后是 fileId
+                return img.url || img.fileId || null;
+              }
+              return null;
+            })
+            .filter(url => url && typeof url === 'string')
             .slice(0, 3);
         } else {
           item.images = [];

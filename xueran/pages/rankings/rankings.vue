@@ -40,17 +40,30 @@
 
 			<!-- 排行榜列表 -->
 			<view v-else class="rankings-list">
-				<view
-					v-for="(item, index) in rankings"
-					:key="item.scriptId"
-					class="ranking-item slide-up"
-					:style="{ animationDelay: index * 0.08 + 's' }"
-					@click="goToScriptDetail(item)"
-				>
+			<view
+				v-for="(item, index) in rankings"
+				:key="item.scriptId"
+				class="ranking-item slide-up"
+				:style="{ animationDelay: index * 0.08 + 's' }"
+				@click="goToScriptDetail(item)"
+			>
 					<!-- 排名 -->
 					<view class="rank-number" :class="getRankClass(item.rank)">
 						<text v-if="item.medal" class="medal">{{ item.medal }}</text>
 						<text v-else class="rank-text">{{ item.rank }}</text>
+					</view>
+
+					<!-- 剧本封面 -->
+					<view class="script-cover">
+						<image
+							v-if="item.coverImage"
+							:src="item.coverImage"
+							class="cover-image"
+							mode="aspectFill"
+						/>
+						<view v-else class="no-image">
+							<text class="no-image-text">无封面</text>
+						</view>
 					</view>
 
 					<!-- 剧本信息 -->
@@ -418,6 +431,36 @@ export default {
 	&.normal {
 		background-color: #f0f0f0;
 		color: #666;
+	}
+}
+
+.script-cover {
+	width: 120rpx;
+	height: 120rpx;
+	border-radius: 12rpx;
+	margin-right: 20rpx;
+	overflow: hidden;
+
+	.cover-image {
+		width: 100%;
+		height: 100%;
+		border-radius: 12rpx;
+	}
+
+	.no-image {
+		width: 100%;
+		height: 100%;
+		background-color: #f5f5f5;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border: 2rpx dashed #ddd;
+		border-radius: 12rpx;
+
+		.no-image-text {
+			font-size: 24rpx;
+			color: #999;
+		}
 	}
 }
 

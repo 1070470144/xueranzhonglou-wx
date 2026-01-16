@@ -285,19 +285,14 @@ export default {
 						item.id = item._id || item.id;
 						delete item._id;
 
-						// 确保images是数组且包含有效的URL
-						if (Array.isArray(item.images)) {
-							item.images = item.images.slice(0, 3).map(img => {
-								// 如果是对象，尝试获取url属性；如果是字符串，直接使用
-								if (typeof img === 'object' && img !== null) {
-									return img.url || img.fileId || img.path || null;
-								} else if (typeof img === 'string') {
-									return img;
-								}
-								return null;
-							}).filter(url => url && typeof url === 'string');
-						} else {
+						// 云函数已处理图片数据，确保格式正确
+						if (!Array.isArray(item.images)) {
 							item.images = [];
+						} else {
+							// 过滤无效的图片URL
+							item.images = item.images.filter(img =>
+								typeof img === 'string' && img.trim().length > 0
+							).slice(0, 3);
 						}
 
 						// 数据结构统一适配
@@ -385,8 +380,9 @@ export default {
 		}
 	},
 	onLoad() {
-		// 页面加载，先加载第一页
-		this.fetchScripts({ page: 1, append: false });
+		// 页面加载，先清除缓存确保能看到最新的修改效果，然后加载第一页
+		this.clearCache();
+		this.fetchScripts({ page: 1, append: false, useCache: false });
 	}
 	// uni-app page hooks
 	,onPullDownRefresh() {
