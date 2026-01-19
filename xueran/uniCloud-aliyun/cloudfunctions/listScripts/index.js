@@ -12,14 +12,35 @@ exports.main = async (event, context) => {
   const limit = Math.max(1, parseInt(pageSize, 10) || 12);
   const skip = (pageNum - 1) * limit;
 
+  // 调试日志：记录搜索参数
+  console.log('=== listScripts Debug Start ===');
+  console.log('Event:', JSON.stringify(event, null, 2));
+  console.log('Search params:', { page, pageSize, q, sortBy });
+  console.log('Processed params:', { pageNum, limit, skip });
+
   const coll = db.collection(collectionName);
   const where = {};
+  let sortByField = sortBy; // 默认排序字段
+
   if (q && q.trim()) {
-    const regex = new RegExp(q.trim(), 'i');
+    const searchTerm = q.trim();
+    console.log('Search term:', searchTerm);
+    console.log('Search term length:', searchTerm.length);
+    console.log('Search term char codes:', Array.from(searchTerm).map(c => c.charCodeAt(0)));
+
+    // 使用与admin端相同的MongoDB原生查询语法
     where.$or = [
-      { title: regex },
-      { author: regex }
+      { title: { $regex: searchTerm, $options: 'i' } }, // 标题匹配
+      { author: { $regex: searchTerm, $options: 'i' } }, // 作者匹配
+      { description: { $regex: searchTerm, $options: 'i' } } // 描述匹配
     ];
+
+    console.log('Search where condition:', JSON.stringify(where, null, 2));
+
+    // 搜索时使用自定义排序以提高相关度
+    sortByField = 'searchRelevance';
+  } else {
+    console.log('No search term provided');
   }
 
   try {
@@ -27,9 +48,18 @@ exports.main = async (event, context) => {
     const countRes = await coll.where(where).count();
     const total = countRes && countRes.total ? countRes.total : 0;
 
+    console.log('Query count result:', countRes);
+    console.log('Total records found:', total);
+
     // query with projection
-    const res = await coll.where(where)
-      .orderBy(sortBy, 'desc')
+    let query = coll.where(where);
+
+    // 如果不是搜索相关度排序，使用普通排序
+    if (sortByField !== 'searchRelevance') {
+      query = query.orderBy(sortByField, 'desc');
+    }
+
+    const res = await query
       .skip(skip)
       .limit(limit)
       .field({
@@ -54,7 +84,10 @@ exports.main = async (event, context) => {
       })
       .get();
 
-    const data = (res && res.data) ? res.data.map(item => {
+    console.log('Query result:', res);
+    console.log('Raw data length:', res && res.data ? res.data.length : 0);
+
+    let data = (res && res.data) ? res.data.map(item => {
       // 字段验证和标准化处理
       try {
         // ID字段标准化和验证
@@ -151,6 +184,60 @@ exports.main = async (event, context) => {
         return null; // 跳过验证失败的数据
       }
     }).filter(item => item !== null) : []; // 过滤掉验证失败的项目
+
+    console.log('Processed data length:', data.length);
+    if (data.length > 0) {
+      console.log('First few processed items:');
+      data.slice(0, 3).forEach((item, index) => {
+        console.log(`Item ${index}:`, {
+          id: item.id,
+          title: item.title,
+          author: item.author,
+          titleCharCodes: item.title ? Array.from(item.title).map(c => c.charCodeAt(0)) : null,
+          authorCharCodes: item.author ? Array.from(item.author).map(c => c.charCodeAt(0)) : null
+        });
+      });
+    }
+
+    // 如果是搜索模式，按相关度排序
+    if (q && q.trim() && data.length > 0) {
+      const searchTerm = q.trim().toLowerCase();
+
+      data.sort((a, b) => {
+        const aTitle = (a.title || '').toLowerCase();
+        const bTitle = (b.title || '').toLowerCase();
+        const aAuthor = (a.author || '').toLowerCase();
+        const bAuthor = (b.author || '').toLowerCase();
+
+        // 计算相关度分数（越高越相关）
+        const getRelevanceScore = (item) => {
+          const title = (item.title || '').toLowerCase();
+          const author = (item.author || '').toLowerCase();
+
+          // 标题完全匹配得分最高
+          if (title === searchTerm) return 100;
+          // 标题开头匹配
+          if (title.startsWith(searchTerm)) return 80;
+          // 标题包含匹配
+          if (title.includes(searchTerm)) return 60;
+          // 作者匹配
+          if (author.includes(searchTerm)) return 40;
+          // 作者开头匹配
+          if (author.startsWith(searchTerm)) return 20;
+          return 0;
+        };
+
+        const scoreA = getRelevanceScore(a);
+        const scoreB = getRelevanceScore(b);
+
+        // 相关度相同的按时间倒序
+        if (scoreA === scoreB) {
+          return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+        }
+
+        return scoreB - scoreA; // 相关度高的排前面
+      });
+    }
 
     return { code: 0, data, total };
   } catch (err) {
