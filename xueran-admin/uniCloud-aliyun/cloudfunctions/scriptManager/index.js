@@ -151,6 +151,10 @@ async function handleList(params) {
     category
   } = params
 
+  // 确保分页参数是数字类型
+  const pageNum = parseInt(page, 10) || 1
+  const pageSizeNum = parseInt(pageSize, 10) || 20
+
   // 构建查询条件（组合 keyword 与 status，避免互相覆盖）
   const query = {}
 
@@ -186,11 +190,11 @@ async function handleList(params) {
   }
 
   // 分页查询
-  const skip = (page - 1) * pageSize
+  const skip = (pageNum - 1) * pageSizeNum
   const result = await scriptsCollection
     .where(query)
     .skip(skip)
-    .limit(pageSize)
+    .limit(pageSizeNum)
     .orderBy('createTime', 'desc')
     .get()
 
@@ -200,8 +204,8 @@ async function handleList(params) {
   return createResponse(0, '获取成功', {
     list: result.data,
     total: totalResult.total,
-    page: parseInt(page),
-    pageSize: parseInt(pageSize)
+    page: pageNum,
+    pageSize: pageSizeNum
   })
 }
 
