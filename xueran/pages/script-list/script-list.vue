@@ -2,14 +2,28 @@
 	<view class="container fade-in">
 		<!-- 搜索栏 -->
 		<view class="search-bar slide-down">
-			<input
-				v-model="searchKeyword"
-				placeholder="搜索剧本名称或作者"
-				class="search-input"
-				@focus="onSearchFocus"
-				@blur="onSearchBlur"
-				@input="onSearch"
-			/>
+			<view class="search-input-container">
+				<input
+					v-model="searchKeyword"
+					placeholder="搜索剧本名称或作者"
+					class="search-input"
+					@focus="onSearchFocus"
+					@blur="onSearchBlur"
+					@input="onSearch"
+				/>
+				<!-- 清除按钮 -->
+				<view
+					v-if="searchKeyword"
+					class="search-clear"
+					@click="clearSearch"
+				>
+					<text class="clear-icon">×</text>
+				</view>
+				<!-- 搜索状态指示器 -->
+				<view v-if="isSearchMode && loading" class="search-loading">
+					<text class="loading-text">搜索中...</text>
+				</view>
+			</view>
 		</view>
 
 		<!-- 剧本网格 / 骨架占位 -->
@@ -24,7 +38,7 @@
 		</view>
 		<view v-else class="script-grid">
 			<view
-				v-for="(script, index) in filteredScripts"
+				v-for="(script, index) in displayScripts"
 				:key="script.id"
 				class="script-item slide-up"
 				:style="{ animationDelay: index * 0.05 + 's' }"
@@ -62,14 +76,23 @@
 
 		<!-- 列表底部状态 -->
 		<view class="list-footer" v-if="loading && scripts.length > 0">
-			<text>加载中...</text>
+			<text>{{ isSearchMode ? '搜索中...' : '加载中...' }}</text>
 		</view>
 		<view class="list-footer" v-else-if="noMore && scripts.length > 0">
-			<text>没有更多了</text>
+			<text>{{ isSearchMode ? '没有更多搜索结果了' : '没有更多了' }}</text>
 		</view>
 		<view class="list-footer" v-else-if="error">
 			<text>{{ error }}</text>
-			<button @click="fetchScripts({ page: 1, append: false, q: searchKeyword })">重试</button>
+			<button @click="fetchScripts({ page: 1, append: false, q: isSearchMode ? searchKeyword : '' })">重试</button>
+		</view>
+		<!-- 搜索无结果提示 -->
+		<view class="list-footer" v-else-if="isSearchMode && !loading && scripts.length === 0 && !error">
+			<text>没有找到包含 "{{ searchKeyword }}" 的剧本</text>
+			<view class="search-suggestions">
+				<text class="suggestion-text">建议：</text>
+				<text class="suggestion-item" @click="searchKeyword = ''; exitSearchMode()">清除搜索</text>
+				<text class="suggestion-item" @click="performSearch()">重新搜索</text>
+			</view>
 		</view>
 	</view>
 </template>
@@ -90,8 +113,13 @@ export default {
 			noMore: false,
 			refreshing: false,
 			error: null,
+			// search
+			isSearchMode: false,
+			searchTimer: null,
+			searchDebounceDelay: 300, // 300ms防抖延迟
 			// cache
 			cacheKey: 'script_list_cache',
+			searchCacheKey: 'script_search_cache',
 			cacheExpiry: 5 * 60 * 1000, // 5分钟缓存
 			lastCacheTime: null,
 			// retry
@@ -102,27 +130,74 @@ export default {
 		}
 	},
 	computed: {
-		filteredScripts() {
-			if (!this.searchKeyword) {
-				return this.scripts;
-			}
-			const keyword = this.searchKeyword.toLowerCase();
-			return this.scripts.filter(script => {
-				const title = script.title ? String(script.title).toLowerCase() : '';
-				const author = script.author ? String(script.author).toLowerCase() : '';
-				return title.includes(keyword) || author.includes(keyword);
-			});
+		// 显示的剧本列表（搜索模式下直接返回搜索结果，普通模式下返回所有加载的剧本）
+		displayScripts() {
+			return this.scripts;
 		}
 	},
 	methods: {
+		// 搜索输入处理（带防抖）
 		onSearch() {
-			// 搜索逻辑已在computed中处理
+			// 清除之前的定时器
+			if (this.searchTimer) {
+				clearTimeout(this.searchTimer);
+			}
+
+			// 如果搜索关键词为空，退出搜索模式
+			if (!this.searchKeyword.trim()) {
+				this.exitSearchMode();
+				return;
+			}
+
+			// 防抖延迟执行搜索
+			this.searchTimer = setTimeout(() => {
+				this.performSearch();
+			}, this.searchDebounceDelay);
+		},
+
+		// 执行搜索
+		async performSearch() {
+			this.isSearchMode = true;
+			this.page = 1; // 重置页码
+			this.noMore = false; // 重置无更多数据标志
+			this.clearCache(); // 清除普通缓存，避免冲突
+
+			try {
+				await this.fetchScripts({
+					page: 1,
+					append: false,
+					q: this.searchKeyword.trim(),
+					useCache: false // 搜索不使用缓存
+				});
+			} catch (error) {
+				console.error('Search failed:', error);
+				uni.showToast({
+					title: '搜索失败，请重试',
+					icon: 'none'
+				});
+			}
+		},
+
+		// 退出搜索模式
+		exitSearchMode() {
+			if (this.isSearchMode) {
+				this.isSearchMode = false;
+				this.page = 1;
+				this.noMore = false;
+				this.searchKeyword = '';
+				// 重新加载普通列表
+				this.fetchScripts({ page: 1, append: false, useCache: true });
+			}
 		},
 		onSearchFocus() {
 			this.searchFocused = true;
 		},
 		onSearchBlur() {
 			this.searchFocused = false;
+		},
+		clearSearch() {
+			this.searchKeyword = '';
+			this.exitSearchMode();
 		},
 		goToDetail(script) {
 			// 添加点击动画
@@ -192,9 +267,13 @@ export default {
 				const cacheData = {
 					data: data,
 					timestamp: Date.now(),
-					searchKeyword: this.searchKeyword
+					searchKeyword: this.searchKeyword,
+					isSearchMode: this.isSearchMode
 				};
-				uni.setStorageSync(this.cacheKey, JSON.stringify(cacheData));
+
+				// 根据模式选择缓存键
+				const cacheKey = this.isSearchMode ? this.searchCacheKey : this.cacheKey;
+				uni.setStorageSync(cacheKey, JSON.stringify(cacheData));
 				this.lastCacheTime = Date.now();
 			} catch (e) {
 				console.warn('Failed to save cache:', e);
@@ -202,7 +281,9 @@ export default {
 		},
 		loadFromCache() {
 			try {
-				const cacheStr = uni.getStorageSync(this.cacheKey);
+				// 根据模式选择缓存键
+				const cacheKey = this.isSearchMode ? this.searchCacheKey : this.cacheKey;
+				const cacheStr = uni.getStorageSync(cacheKey);
 				if (!cacheStr) return null;
 
 				const cacheData = JSON.parse(cacheStr);
@@ -210,12 +291,17 @@ export default {
 
 				// 检查缓存是否过期
 				if (now - cacheData.timestamp > this.cacheExpiry) {
-					uni.removeStorageSync(this.cacheKey);
+					uni.removeStorageSync(cacheKey);
 					return null;
 				}
 
-				// 检查搜索关键词是否匹配
-				if (cacheData.searchKeyword !== this.searchKeyword) {
+				// 检查搜索关键词是否匹配（搜索模式）
+				if (this.isSearchMode && cacheData.searchKeyword !== this.searchKeyword) {
+					return null;
+				}
+
+				// 检查模式是否匹配
+				if (cacheData.isSearchMode !== this.isSearchMode) {
 					return null;
 				}
 
@@ -229,6 +315,7 @@ export default {
 		clearCache() {
 			try {
 				uni.removeStorageSync(this.cacheKey);
+				uni.removeStorageSync(this.searchCacheKey);
 				this.lastCacheTime = null;
 			} catch (e) {
 				console.warn('Failed to clear cache:', e);
@@ -364,26 +451,30 @@ export default {
 			this.noMore = false;
 			// 清除缓存，强制重新加载最新数据
 			this.clearCache();
-			await this.fetchScripts({ page: 1, append: false, q: this.searchKeyword, useCache: false });
+			const searchQuery = this.isSearchMode ? this.searchKeyword : '';
+			await this.fetchScripts({ page: 1, append: false, q: searchQuery, useCache: false });
 		},
 		// reach bottom load more
 		async handleReachBottom() {
 			if (this.loading || this.noMore) return;
 
 			// 性能优化：限制最大页数，避免过度加载
-			const maxPages = 10;
+			const maxPages = this.isSearchMode ? 20 : 10; // 搜索模式允许更多页数
 			if (this.page >= maxPages) {
 				this.noMore = true;
 				return;
 			}
 
 			const next = this.page + 1;
-			await this.fetchScripts({ page: next, append: true, q: this.searchKeyword });
+			const searchQuery = this.isSearchMode ? this.searchKeyword : '';
+			await this.fetchScripts({ page: next, append: true, q: searchQuery });
 		}
 	},
 	onLoad() {
 		// 页面加载，先清除缓存确保能看到最新的修改效果，然后加载第一页
 		this.clearCache();
+		this.isSearchMode = false; // 确保初始状态为普通模式
+		this.searchKeyword = ''; // 清空搜索关键词
 		this.fetchScripts({ page: 1, append: false, useCache: false });
 	},
 
@@ -493,14 +584,21 @@ export default {
 	animation: slideDown 0.5s ease-out 0.2s forwards;
 }
 
+.search-input-container {
+	position: relative;
+	display: flex;
+	align-items: center;
+}
+
 .search-input {
 	border: 1rpx solid #ddd;
 	border-radius: 25rpx;
-	padding: 16rpx 24rpx;
+	padding: 16rpx 60rpx 16rpx 24rpx;
 	font-size: 28rpx;
 	background-color: #f8f8f8;
 	transition: all 0.3s ease;
 	box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
+	flex: 1;
 
 	&:focus {
 		border-color: #007AFF;
@@ -508,6 +606,44 @@ export default {
 		box-shadow: 0 4rpx 16rpx rgba(0, 122, 255, 0.15);
 		transform: scale(1.02);
 	}
+}
+
+.search-clear {
+	position: absolute;
+	right: 16rpx;
+	width: 32rpx;
+	height: 32rpx;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background-color: #ddd;
+	border-radius: 50%;
+	cursor: pointer;
+	transition: all 0.2s ease;
+
+	&:active {
+		background-color: #ccc;
+		transform: scale(0.9);
+	}
+}
+
+.clear-icon {
+	font-size: 24rpx;
+	color: #666;
+	line-height: 1;
+}
+
+.search-loading {
+	position: absolute;
+	right: 16rpx;
+	display: flex;
+	align-items: center;
+	pointer-events: none;
+}
+
+.loading-text {
+	font-size: 24rpx;
+	color: #007AFF;
 }
 
 .script-grid {
@@ -672,5 +808,30 @@ export default {
 	padding: 24rpx 0;
 	color: #999;
 	font-size: 26rpx;
+}
+
+.search-suggestions {
+	margin-top: 16rpx;
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 16rpx;
+}
+
+.suggestion-text {
+	color: #666;
+	font-size: 24rpx;
+}
+
+.suggestion-item {
+	color: #007AFF;
+	font-size: 24rpx;
+	text-decoration: underline;
+	cursor: pointer;
+
+	&:active {
+		color: #0056CC;
+	}
 }
 </style>
