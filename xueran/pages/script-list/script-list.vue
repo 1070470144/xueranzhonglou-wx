@@ -334,6 +334,20 @@ export default {
 				}
 			}
 		},
+		// 启用分享菜单（仅在微信小程序环境）
+		enableShareMenu() {
+			// #ifdef MP-WEIXIN
+			try {
+				wx.showShareMenu({
+					withShareTicket: true,
+					menus: ['shareAppMessage', 'shareTimeline']
+				})
+				console.log('enableShareMenu called')
+			} catch (e) {
+				console.warn('enableShareMenu failed', e)
+			}
+			// #endif
+		},
 
 		// fetch paginated scripts from cloud
 		async fetchScripts({ page = 1, append = false, q = '', useCache = true } = {}) {
@@ -475,6 +489,8 @@ export default {
 		this.clearCache();
 		this.isSearchMode = false; // 确保初始状态为普通模式
 		this.searchKeyword = ''; // 清空搜索关键词
+		// 启用分享菜单（确保右上角分享可用）
+		this.enableShareMenu && this.enableShareMenu();
 		this.fetchScripts({ page: 1, append: false, useCache: false });
 	},
 
@@ -498,6 +514,8 @@ export default {
 				this.scripts = initScriptsLikeStatus(this.scripts);
 			}
 		}
+		// 确保分享菜单在页面显示时启用
+		this.enableShareMenu && this.enableShareMenu();
 	}
 	// uni-app page hooks
 	,onPullDownRefresh() {
