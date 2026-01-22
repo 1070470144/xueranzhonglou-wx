@@ -9,7 +9,7 @@ const $ = db.command.aggregate;
  * event: { type: 'usage'|'likes'|'hot', limit: number }
  */
 exports.main = async (event, context) => {
-  const { type, limit = 20, debug = false } = event;
+  const { type, limit = 50, debug = false } = event;
 
   console.log('getRankings called with:', { type, limit });
 
