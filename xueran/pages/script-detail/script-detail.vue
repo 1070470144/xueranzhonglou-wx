@@ -113,16 +113,22 @@
 				<!-- 底部操作按钮 -->
 				<view class="bottom-actions">
 					<button
-						class="action-btn primary"
-						@click="copyJsonUrl"
+						class="action-btn secondary"
+						@click="shareScript"
 					>
-						复制JSON地址
+						分享剧本
 					</button>
 					<button
 						class="action-btn secondary"
 						@click="toggleLike"
 					>
 						{{ isLiked ? '已点赞' : '点赞' }} ({{ script.likes }})
+					</button>
+					<button
+						class="action-btn primary"
+						@click="copyJsonUrl"
+					>
+						复制JSON地址
 					</button>
 				</view>
 			</view>
@@ -164,10 +170,49 @@ export default {
 	},
 	onLoad(options) {
 		this.scriptId = options.id;
+		// 启用微信转发功能
+		this.enableShareMenu();
 		// 这里可以根据scriptId从服务器获取剧本详情
 		this.loadScriptDetail();
 	},
+	// (enabled via methods) -- placeholder removed to keep onShareAppMessage at page root
+	// 微信小程序转发功能
+	onShareAppMessage() {
+		const shareData = {
+			title: `${this.script.title} - ${this.script.author}`,
+			path: `/pages/script-detail/script-detail?id=${this.scriptId}`,
+			imageUrl: this.script.images && this.script.images.length > 0 ? this.script.images[0] : undefined
+		};
+
+		return shareData;
+	},
 	methods: {
+		// 启用微信转发菜单（仅在微信小程序环境）
+		enableShareMenu() {
+			// #ifdef MP-WEIXIN
+			wx.showShareMenu({
+				withShareTicket: true,
+				menus: ['shareAppMessage', 'shareTimeline']
+			});
+			// #endif
+		},
+
+		// 主动触发分享（绑定到页面按钮）
+		shareScript() {
+			// #ifdef MP-WEIXIN
+			uni.showShareMenu({
+				withShareTicket: true
+			});
+			// #endif
+
+			// #ifndef MP-WEIXIN
+			uni.showToast({
+				title: '请使用微信小程序体验分享功能',
+				icon: 'none'
+			});
+			// #endif
+		},
+
 		async loadScriptDetail() {
 			if (!this.scriptId) return;
 
