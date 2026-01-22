@@ -239,13 +239,10 @@ paths:
                   type: string
                   maxLength: 1000
                   description: 描述
-                tags:
-                  type: array
-                  maxItems: 2
-                  items:
-                    type: string
-                    enum: [推理, 娱乐]
-                  description: 标签列表，只能选择推理或娱乐
+                tag:
+                  type: string
+                  enum: [推理, 娱乐]
+                  description: 单个标签：推理或娱乐
       responses:
         '201':
           description: 上传成功
@@ -325,13 +322,10 @@ components:
           type: string
           enum: [active, inactive]
           description: 剧本状态
-        tags:
-          type: array
-          maxItems: 2
-          items:
-            type: string
-            enum: [推理, 娱乐]
-          description: 标签列表，只能选择推理或娱乐
+        tag:
+          type: string
+          enum: [推理, 娱乐]
+          description: 单个标签，值为推理或娱乐
         category:
           type: string
           maxLength: 100
@@ -394,12 +388,9 @@ components:
           type: string
           enum: [active, inactive]
           default: active
-        tags:
-          type: array
-          maxItems: 2
-          items:
-            type: string
-            enum: [推理, 娱乐]
+        tag:
+          type: string
+          enum: [推理, 娱乐]
         category:
           type: string
           maxLength: 100

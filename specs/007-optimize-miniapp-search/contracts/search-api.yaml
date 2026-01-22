@@ -119,12 +119,10 @@ components:
           description: 剧本状态
           enum: [active, inactive, published, draft, archived]
           example: "active"
-        tags:
-          type: array
-          items:
-            type: string
-          description: 标签数组
-          example: ["推理", "悬疑"]
+        tag:
+          type: string
+          description: 单个标签
+          example: "推理"
         createdAt:
           type: string
           format: date-time

@@ -110,7 +110,8 @@ export default {
 			tabs: [
 				{ key: 'usage', label: '使用排行' },
 				{ key: 'likes', label: '点赞排行' },
-				{ key: 'hot', label: '热度排行' }
+				{ key: 'mystery', label: '推理排行' },
+				{ key: 'entertainment', label: '娱乐排行' }
 			],
 			rankings: [], // 当前显示的排行榜数据
 			loading: false, // 加载状态
@@ -201,10 +202,13 @@ export default {
 		 * @returns {string} 格式化后的字符串
 		 */
 		formatValue(value, type) {
+			if (value === null || value === undefined) return '';
 			if (type === 'hot') {
-				return value.toFixed(1);
+				// kept for backward compatibility if ever used
+				return Number(value).toFixed(1);
 			}
-			return value.toString();
+			// mystery / entertainment / usage / likes display as integer or string
+			return String(value);
 		},
 
 		/**
@@ -218,8 +222,12 @@ export default {
 					return '次使用';
 				case 'likes':
 					return '个点赞';
-				case 'hot':
-					return '热度值';
+			case 'mystery':
+				return '次使用';
+			case 'entertainment':
+				return '次使用';
+			case 'hot':
+				return '热度值';
 				default:
 					return '';
 			}

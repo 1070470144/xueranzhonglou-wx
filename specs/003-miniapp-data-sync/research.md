@@ -17,7 +17,7 @@
 - `fileSize`: 文件大小(字节)
 - `mimeType`: 文件MIME类型
 - `status`: 剧本状态 (必需, active/inactive)
-- `tags`: 标签列表 (枚举: 推理/娱乐, 最多2个)
+- `tag`: 标签 (枚举: 推理/娱乐，单值)
 - `category`: 分类 (1-100字符)
 - `description`: 剧本描述 (0-1000字符)
 - `createTime`: 创建时间
@@ -117,7 +117,7 @@
 
   // 新增管理端字段
   status: true,
-  tags: true,
+  tag: true,
   category: true,
   description: true,
   updateTime: true,
@@ -143,7 +143,7 @@
 
   // 新增管理端字段
   status: true,
-  tags: true,
+  tag: true,
   category: true,
   description: true,
   content: true,
