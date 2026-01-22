@@ -512,13 +512,43 @@ export default {
 
 		// 主动触发分享（绑定到页面按钮）
 		shareScript() {
+			console.log('分享按钮被点击');
 			// #ifdef MP-WEIXIN
-			uni.showShareMenu({
-				withShareTicket: true
-			});
+			try {
+				console.log('调用 wx.showShareMenu');
+				// 使用微信小程序原生API
+				wx.showShareMenu({
+					withShareTicket: true,
+					menus: ['shareAppMessage', 'shareTimeline'],
+					success: function() {
+						console.log('wx.showShareMenu 成功');
+						// 直接显示引导提示
+						uni.showToast({
+							title: '请点击右上角进行分享',
+							icon: 'none',
+							duration: 3000
+						});
+					},
+					fail: function(err) {
+						console.error('wx.showShareMenu 失败:', err);
+						uni.showToast({
+							title: '请点击右上角进行分享',
+							icon: 'none',
+							duration: 2000
+						});
+					}
+				});
+			} catch (error) {
+				console.error('分享功能调用出错:', error);
+				uni.showToast({
+					title: '分享功能暂时不可用',
+					icon: 'none'
+				});
+			}
 			// #endif
 
 			// #ifndef MP-WEIXIN
+			console.log('非微信小程序环境');
 			uni.showToast({
 				title: '请使用微信小程序体验分享功能',
 				icon: 'none'
