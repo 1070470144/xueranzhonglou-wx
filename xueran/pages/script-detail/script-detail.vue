@@ -115,6 +115,267 @@
 					</view>
 				</view>
 
+				<!-- 剧本角色展示 -->
+				<view class="character-section">
+					<view class="character-header" @click="toggleCharacterDisplay">
+						<view class="section-title">剧本角色</view>
+						<view class="expand-icon" :class="{ 'expanded': showCharacters }">
+							<text class="icon-text">{{ showCharacters ? '▼' : '▶' }}</text>
+						</view>
+					</view>
+					<view class="character-content" v-if="showCharacters">
+						<view class="character-groups" v-if="hasCharacters">
+							<!-- 镇民 -->
+							<view class="character-group" v-if="characters.townsfolk && characters.townsfolk.length > 0">
+								<view class="group-header" @click="toggleCategory('townsfolk')">
+									<text class="group-title">镇民</text>
+									<text class="group-count">({{ characters.townsfolk.length }})</text>
+									<view class="category-expand-icon" :class="{ 'expanded': characterCategoryStates.townsfolk }">
+										<text class="icon-text">{{ characterCategoryStates.townsfolk ? '▼' : '▶' }}</text>
+									</view>
+								</view>
+								<view class="character-list" v-if="characterCategoryStates.townsfolk">
+									<view
+										class="character-card"
+										v-for="(character, index) in characters.townsfolk"
+										:key="`townsfolk-${index}`"
+									>
+										<view class="character-icon" v-if="character.icon">
+											<image :src="character.icon" class="icon-image" mode="aspectFit" />
+										</view>
+										<view class="character-icon-placeholder" v-else>
+											<text class="placeholder-text">{{ character.name ? character.name.charAt(0) : '?' }}</text>
+										</view>
+										<view class="character-info">
+											<view class="character-name">{{ character.name || '未知角色' }}</view>
+									<view class="character-ability" v-if="character.skills && character.skills.length > 0">
+										<view class="ability-content">
+											<text class="ability-text" v-for="(skill, skillIndex) in character.skills" :key="skillIndex">
+												{{ skill }}{{ skillIndex < character.skills.length - 1 ? '。' : '' }}
+											</text>
+										</view>
+									</view>
+										</view>
+									</view>
+								</view>
+							</view>
+
+							<!-- 外来者 -->
+							<view class="character-group" v-if="characters.outsiders && characters.outsiders.length > 0">
+								<view class="group-header" @click="toggleCategory('outsiders')">
+									<text class="group-title">外来者</text>
+									<text class="group-count">({{ characters.outsiders.length }})</text>
+									<view class="category-expand-icon" :class="{ 'expanded': characterCategoryStates.outsiders }">
+										<text class="icon-text">{{ characterCategoryStates.outsiders ? '▼' : '▶' }}</text>
+									</view>
+								</view>
+								<view class="character-list" v-if="characterCategoryStates.outsiders">
+									<view
+										class="character-card"
+										v-for="(character, index) in characters.outsiders"
+										:key="`outsiders-${index}`"
+									>
+										<view class="character-icon" v-if="character.icon">
+											<image :src="character.icon" class="icon-image" mode="aspectFit" />
+										</view>
+										<view class="character-icon-placeholder" v-else>
+											<text class="placeholder-text">{{ character.name ? character.name.charAt(0) : '?' }}</text>
+										</view>
+										<view class="character-info">
+											<view class="character-name">{{ character.name || '未知角色' }}</view>
+									<view class="character-ability" v-if="character.skills && character.skills.length > 0">
+										<view class="ability-content">
+											<text class="ability-text" v-for="(skill, skillIndex) in character.skills" :key="skillIndex">
+												{{ skill }}{{ skillIndex < character.skills.length - 1 ? '。' : '' }}
+											</text>
+										</view>
+									</view>
+										</view>
+									</view>
+								</view>
+							</view>
+
+							<!-- 爪牙 -->
+							<view class="character-group" v-if="characters.minions && characters.minions.length > 0">
+								<view class="group-header" @click="toggleCategory('minions')">
+									<text class="group-title">爪牙</text>
+									<text class="group-count">({{ characters.minions.length }})</text>
+									<view class="category-expand-icon" :class="{ 'expanded': characterCategoryStates.minions }">
+										<text class="icon-text">{{ characterCategoryStates.minions ? '▼' : '▶' }}</text>
+									</view>
+								</view>
+								<view class="character-list" v-if="characterCategoryStates.minions">
+									<view
+										class="character-card"
+										v-for="(character, index) in characters.minions"
+										:key="`minions-${index}`"
+									>
+										<view class="character-icon" v-if="character.icon">
+											<image :src="character.icon" class="icon-image" mode="aspectFit" />
+										</view>
+										<view class="character-icon-placeholder" v-else>
+											<text class="placeholder-text">{{ character.name ? character.name.charAt(0) : '?' }}</text>
+										</view>
+										<view class="character-info">
+											<view class="character-name">{{ character.name || '未知角色' }}</view>
+									<view class="character-ability" v-if="character.skills && character.skills.length > 0">
+										<view class="ability-content">
+											<text class="ability-text" v-for="(skill, skillIndex) in character.skills" :key="skillIndex">
+												{{ skill }}{{ skillIndex < character.skills.length - 1 ? '。' : '' }}
+											</text>
+										</view>
+									</view>
+										</view>
+									</view>
+								</view>
+							</view>
+
+							<!-- 恶魔 -->
+							<view class="character-group" v-if="characters.demons && characters.demons.length > 0">
+								<view class="group-header" @click="toggleCategory('demons')">
+									<text class="group-title">恶魔</text>
+									<text class="group-count">({{ characters.demons.length }})</text>
+									<view class="category-expand-icon" :class="{ 'expanded': characterCategoryStates.demons }">
+										<text class="icon-text">{{ characterCategoryStates.demons ? '▼' : '▶' }}</text>
+									</view>
+								</view>
+								<view class="character-list" v-if="characterCategoryStates.demons">
+									<view
+										class="character-card"
+										v-for="(character, index) in characters.demons"
+										:key="`demons-${index}`"
+									>
+										<view class="character-icon" v-if="character.icon">
+											<image :src="character.icon" class="icon-image" mode="aspectFit" />
+										</view>
+										<view class="character-icon-placeholder" v-else>
+											<text class="placeholder-text">{{ character.name ? character.name.charAt(0) : '?' }}</text>
+										</view>
+										<view class="character-info">
+											<view class="character-name">{{ character.name || '未知角色' }}</view>
+									<view class="character-ability" v-if="character.skills && character.skills.length > 0">
+										<view class="ability-content">
+											<text class="ability-text" v-for="(skill, skillIndex) in character.skills" :key="skillIndex">
+												{{ skill }}{{ skillIndex < character.skills.length - 1 ? '。' : '' }}
+											</text>
+										</view>
+									</view>
+										</view>
+									</view>
+								</view>
+							</view>
+
+							<!-- 旅行者 -->
+							<view class="character-group" v-if="characters.travelers && characters.travelers.length > 0">
+								<view class="group-header" @click="toggleCategory('travelers')">
+									<text class="group-title">旅行者</text>
+									<text class="group-count">({{ characters.travelers.length }})</text>
+									<view class="category-expand-icon" :class="{ 'expanded': characterCategoryStates.travelers }">
+										<text class="icon-text">{{ characterCategoryStates.travelers ? '▼' : '▶' }}</text>
+									</view>
+								</view>
+								<view class="character-list" v-if="characterCategoryStates.travelers">
+									<view
+										class="character-card"
+										v-for="(character, index) in characters.travelers"
+										:key="`travelers-${index}`"
+									>
+										<view class="character-icon" v-if="character.icon">
+											<image :src="character.icon" class="icon-image" mode="aspectFit" />
+										</view>
+										<view class="character-icon-placeholder" v-else>
+											<text class="placeholder-text">{{ character.name ? character.name.charAt(0) : '?' }}</text>
+										</view>
+										<view class="character-info">
+											<view class="character-name">{{ character.name || '未知角色' }}</view>
+									<view class="character-ability" v-if="character.skills && character.skills.length > 0">
+										<view class="ability-content">
+											<text class="ability-text" v-for="(skill, skillIndex) in character.skills" :key="skillIndex">
+												{{ skill }}{{ skillIndex < character.skills.length - 1 ? '。' : '' }}
+											</text>
+										</view>
+									</view>
+										</view>
+									</view>
+								</view>
+							</view>
+
+							<!-- 传奇角色 -->
+							<view class="character-group" v-if="characters.fabled && characters.fabled.length > 0">
+								<view class="group-header" @click="toggleCategory('fabled')">
+									<text class="group-title">传奇角色</text>
+									<text class="group-count">({{ characters.fabled.length }})</text>
+									<view class="category-expand-icon" :class="{ 'expanded': characterCategoryStates.fabled }">
+										<text class="icon-text">{{ characterCategoryStates.fabled ? '▼' : '▶' }}</text>
+									</view>
+								</view>
+								<view class="character-list" v-if="characterCategoryStates.fabled">
+									<view
+										class="character-card"
+										v-for="(character, index) in characters.fabled"
+										:key="`fabled-${index}`"
+									>
+										<view class="character-icon" v-if="character.icon">
+											<image :src="character.icon" class="icon-image" mode="aspectFit" />
+										</view>
+										<view class="character-icon-placeholder" v-else>
+											<text class="placeholder-text">{{ character.name ? character.name.charAt(0) : '?' }}</text>
+										</view>
+										<view class="character-info">
+											<view class="character-name">{{ character.name || '未知角色' }}</view>
+									<view class="character-ability" v-if="character.skills && character.skills.length > 0">
+										<view class="ability-content">
+											<text class="ability-text" v-for="(skill, skillIndex) in character.skills" :key="skillIndex">
+												{{ skill }}{{ skillIndex < character.skills.length - 1 ? '。' : '' }}
+											</text>
+										</view>
+									</view>
+										</view>
+									</view>
+								</view>
+							</view>
+
+							<!-- 其他 -->
+							<view class="character-group" v-if="characters.other && characters.other.length > 0">
+								<view class="group-header" @click="toggleCategory('other')">
+									<text class="group-title">其他</text>
+									<text class="group-count">({{ characters.other.length }})</text>
+									<view class="category-expand-icon" :class="{ 'expanded': characterCategoryStates.other }">
+										<text class="icon-text">{{ characterCategoryStates.other ? '▼' : '▶' }}</text>
+									</view>
+								</view>
+								<view class="character-list" v-if="characterCategoryStates.other">
+									<view
+										class="character-card"
+										v-for="(character, index) in characters.other"
+										:key="`other-${index}`"
+									>
+										<view class="character-icon" v-if="character.icon">
+											<image :src="character.icon" class="icon-image" mode="aspectFit" />
+										</view>
+										<view class="character-icon-placeholder" v-else>
+											<text class="placeholder-text">{{ character.name ? character.name.charAt(0) : '?' }}</text>
+										</view>
+										<view class="character-info">
+											<view class="character-name">{{ character.name || '未知角色' }}</view>
+									<view class="character-ability" v-if="character.skills && character.skills.length > 0">
+										<view class="ability-content">
+											<text class="ability-text" v-for="(skill, skillIndex) in character.skills" :key="skillIndex">
+												{{ skill }}{{ skillIndex < character.skills.length - 1 ? '。' : '' }}
+											</text>
+										</view>
+									</view>
+										</view>
+									</view>
+								</view>
+							</view>
+						</view>
+						<view class="no-characters" v-else>
+							<text class="no-characters-text">暂无角色信息</text>
+						</view>
+					</view>
+				</view>
+
 				<!-- 底部操作按钮 -->
 				<view class="bottom-actions">
 					<button
@@ -153,6 +414,25 @@ export default {
 			currentImageIndex: 0,
 			viewerImages: [],
 			showingOriginals: false,
+			showCharacters: false,
+			characterCategoryStates: {
+				townsfolk: false,   // 镇民默认收缩
+				outsiders: false,   // 外来者默认收缩
+				minions: false,     // 爪牙默认收缩
+				demons: false,      // 恶魔默认收缩
+				travelers: false,   // 旅行者默认收缩
+				fabled: false,      // 传奇角色默认收缩
+				other: false        // 其他默认收缩
+			},
+			characters: {
+				townsfolk: [],    // 镇民
+				outsiders: [],    // 外来者
+				minions: [],      // 爪牙
+				demons: [],       // 恶魔
+				travelers: [],    // 旅行者
+				fabled: [],       // 传奇角色
+				other: []         // 其他
+			},
 			script: {
 				id: 1,
 				title: '经典剧本：狼人杀',
@@ -393,6 +673,9 @@ export default {
 					}
 
 					this.script = item;
+
+					// 提取角色数据
+					await this.extractCharacterData(this.scriptId);
 				} else {
 					console.error('剧本详情加载失败: invalid data', result);
 					this._lastError = result;
@@ -586,6 +869,199 @@ export default {
 					icon: 'none'
 				});
 			}
+		},
+
+		// 切换角色展示区域的展开/收起状态
+		toggleCharacterDisplay() {
+			this.showCharacters = !this.showCharacters;
+		},
+
+		// 切换角色类别的展开/收起状态
+		toggleCategory(category) {
+			this.characterCategoryStates[category] = !this.characterCategoryStates[category];
+		},
+
+		// 提取角色技能信息
+		extractSkills(character) {
+			// 优先级：skills数组 > abilities数组 > skill字符串 > ability字符串
+			if (Array.isArray(character.skills) && character.skills.length > 0) {
+				return character.skills;
+			}
+			if (Array.isArray(character.abilities) && character.abilities.length > 0) {
+				return character.abilities;
+			}
+			if (character.skill && typeof character.skill === 'string') {
+				return [character.skill];
+			}
+			if (character.ability && typeof character.ability === 'string') {
+				// 对于ability字符串，我们可以尝试分割成多个技能
+				// 通常技能描述中可能包含多个句子或段落
+				const skills = character.ability.split(/[。！？]/).filter(s => s.trim().length > 0);
+				return skills.length > 0 ? skills : [character.ability];
+			}
+			return [];
+		},
+
+		// 标准化角色类别名称
+		normalizeCategory(category) {
+			if (!category || typeof category !== 'string') {
+				return 'other';
+			}
+
+			const normalized = category.toLowerCase().trim();
+
+			const categoryMap = {
+				// 镇民 (Townsfolk)
+				'townsfolk': 'townsfolk',
+				'镇民': 'townsfolk',
+				'villager': 'townsfolk',
+				'town': 'townsfolk',
+
+				// 外来者 (Outsiders)
+				'outsider': 'outsiders',
+				'outsiders': 'outsiders',
+				'外来者': 'outsiders',
+
+				// 爪牙 (Minions)
+				'minion': 'minions',
+				'minions': 'minions',
+				'爪牙': 'minions',
+
+				// 恶魔 (Demons)
+				'demon': 'demons',
+				'demons': 'demons',
+				'恶魔': 'demons',
+
+				// 旅行者 (Travelers)
+				'traveler': 'travelers',
+				'travelers': 'travelers',
+				'traveller': 'travelers',
+				'travellers': 'travelers',
+				'旅行者': 'travelers',
+
+				// 传奇角色 (Fabled)
+				'fabled': 'fabled',
+				'传奇角色': 'fabled',
+				'fable': 'fabled',
+				'legendary': 'fabled',
+
+				// 处理特殊情况和变体
+				'a jinxed': 'other',  // 特殊状态的角色
+
+				// 其他保持为other
+				'other': 'other',
+				'其他': 'other',
+				'unknown': 'other'
+			};
+
+			const result = categoryMap[normalized] || 'other';
+			return result;
+		},
+
+		// 从剧本JSON数据中提取角色信息
+		async extractCharacterData(scriptId) {
+			try {
+				// 调用getScriptJson云函数获取完整的JSON数据
+				const res = await uniCloud.callFunction({
+					name: 'getScriptJson',
+					data: { scriptId: scriptId }
+				});
+
+				if (res && res.result) {
+					let jsonData = res.result;
+
+					// 处理角色数据
+					let characters = [];
+
+					// 支持多种JSON结构
+					if (Array.isArray(jsonData)) {
+						// 如果是直接的角色数组
+						characters = jsonData;
+					} else if (jsonData && Array.isArray(jsonData.roles)) {
+						// 如果角色数据在roles属性中
+						characters = jsonData.roles;
+					} else if (jsonData && Array.isArray(jsonData.content)) {
+						// 如果在content属性中
+						characters = jsonData.content;
+					} else if (jsonData && typeof jsonData === 'object') {
+						// 尝试查找可能的角色字段
+						characters = jsonData.characters || jsonData.roles || jsonData.players || [];
+					}
+
+					// 标准化角色数据格式并按类别分组
+					const categorizedCharacters = {
+						townsfolk: [],    // 镇民
+						outsiders: [],    // 外来者
+						minions: [],      // 爪牙
+						demons: [],       // 恶魔
+						travelers: [],    // 旅行者
+						fabled: [],       // 传奇角色
+						other: []         // 其他
+					};
+
+					characters.forEach((character, index) => {
+						let normalizedChar = null;
+
+						// 跳过元数据对象（没有name字段的对象）
+						if (typeof character === 'object' && character !== null && !character.name && character.id === '_meta') {
+							return; // 跳过元数据
+						}
+
+						if (typeof character === 'string') {
+							// 如果是字符串，转换为对象格式
+							normalizedChar = {
+								name: character,
+								icon: null,
+								skills: [],
+								category: 'other'
+							};
+						} else if (typeof character === 'object' && character !== null && character.name) {
+							// 如果是对象且有name字段，标准化字段
+							const rawCategory = character.team || character.category || character.type || character.roleType || 'other';
+							const normalizedCategory = this.normalizeCategory(rawCategory);
+
+							normalizedChar = {
+								name: character.name || character.title || character.role || '未知角色',
+								icon: character.icon || character.image || character.avatar || null,
+								skills: this.extractSkills(character),
+								category: normalizedCategory
+							};
+
+						}
+
+						if (normalizedChar) {
+							// 根据类别分组
+							const category = normalizedChar.category;
+							if (categorizedCharacters[category]) {
+								categorizedCharacters[category].push(normalizedChar);
+							} else {
+								categorizedCharacters.other.push(normalizedChar);
+							}
+						}
+					});
+
+					this.characters = categorizedCharacters;
+
+				} else {
+					console.warn('Failed to fetch character data for script:', scriptId);
+					this.characters = [];
+				}
+			} catch (error) {
+				console.error('Error extracting character data:', error);
+				this.characters = [];
+			}
+		}
+	},
+	computed: {
+		hasCharacters() {
+			return this.characters &&
+				   (this.characters.townsfolk.length > 0 ||
+					this.characters.outsiders.length > 0 ||
+					this.characters.minions.length > 0 ||
+					this.characters.demons.length > 0 ||
+					this.characters.travelers.length > 0 ||
+					this.characters.fabled.length > 0 ||
+					this.characters.other.length > 0);
 		}
 	}
 }
@@ -939,6 +1415,232 @@ export default {
 	to {
 		opacity: 1;
 		transform: translateX(-50%) translateY(0);
+	}
+}
+
+// 角色展示区域样式
+.character-section {
+	margin-top: 32rpx;
+	border-top: 1rpx solid #e8e8e8;
+	padding-top: 20rpx;
+}
+
+.character-groups {
+	display: flex;
+	flex-direction: column;
+	gap: 24rpx;
+}
+
+.character-group {
+	margin-bottom: 16rpx;
+}
+
+.group-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 12rpx;
+	padding: 8rpx 16rpx;
+	background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%);
+	border-radius: 8rpx;
+	border-left: 4rpx solid #007AFF;
+	cursor: pointer;
+
+	&:active {
+		opacity: 0.8;
+	}
+}
+
+.group-title {
+	font-size: 28rpx;
+	font-weight: bold;
+	color: #007AFF;
+	margin-right: 8rpx;
+}
+
+.group-count {
+	font-size: 24rpx;
+	color: #666;
+	font-weight: 500;
+}
+
+.category-expand-icon {
+	transition: transform 0.3s ease;
+
+	&.expanded {
+		transform: rotate(0deg);
+	}
+
+	.icon-text {
+		font-size: 24rpx;
+		color: #007AFF;
+		font-weight: bold;
+	}
+}
+
+.character-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	padding: 16rpx 0;
+	cursor: pointer;
+
+	&:active {
+		opacity: 0.8;
+	}
+}
+
+.expand-icon {
+	transition: transform 0.3s ease;
+
+	&.expanded {
+		transform: rotate(0deg);
+	}
+
+	.icon-text {
+		font-size: 24rpx;
+		color: #666;
+		font-weight: bold;
+	}
+}
+
+.character-content {
+	animation: slideDown 0.3s ease-out;
+}
+
+.character-list {
+	display: flex;
+	flex-direction: column;
+	gap: 12rpx;
+	margin-top: 8rpx;
+	padding-left: 8rpx;
+}
+
+.character-card {
+	display: flex;
+	align-items: center;
+	background-color: #f8f8f8;
+	border-radius: 12rpx;
+	padding: 16rpx;
+	border: 1rpx solid #e8e8e8;
+	transition: all 0.2s ease;
+
+	&:active {
+		transform: scale(0.98);
+		background-color: #f0f0f0;
+	}
+}
+
+.character-icon {
+	width: 60rpx;
+	height: 60rpx;
+	border-radius: 8rpx;
+	overflow: hidden;
+	margin-right: 16rpx;
+	background-color: #fff;
+	border: 1rpx solid #ddd;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+}
+
+.icon-image {
+	width: 100%;
+	height: 100%;
+}
+
+.character-icon-placeholder {
+	width: 60rpx;
+	height: 60rpx;
+	border-radius: 8rpx;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	margin-right: 16rpx;
+	flex-shrink: 0;
+	border: 1rpx solid #ddd;
+
+	.placeholder-text {
+		font-size: 24rpx;
+		color: white;
+		font-weight: bold;
+	}
+}
+
+.character-info {
+	flex: 1;
+	min-width: 0;
+}
+
+.character-name {
+	font-size: 32rpx;
+	font-weight: bold;
+	color: #333;
+	margin-bottom: 8rpx;
+	line-height: 1.2;
+	word-break: break-word;
+}
+
+.character-ability {
+	margin-top: 8rpx;
+}
+
+.ability-content {
+	background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+	border-radius: 8rpx;
+	padding: 12rpx 16rpx;
+	border-left: 4rpx solid #007AFF;
+	box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
+	position: relative;
+
+	&::before {
+		content: '🎯';
+		position: absolute;
+		top: 8rpx;
+		right: 12rpx;
+		font-size: 20rpx;
+		opacity: 0.6;
+	}
+}
+
+.ability-text {
+	font-size: 26rpx;
+	color: #444;
+	line-height: 1.6;
+	display: block;
+	margin-bottom: 6rpx;
+	text-align: justify;
+	word-break: break-word;
+
+	&:last-child {
+		margin-bottom: 0;
+	}
+
+	&:first-letter {
+		font-weight: 500;
+		color: #007AFF;
+	}
+}
+
+.no-characters {
+	text-align: center;
+	padding: 40rpx 20rpx;
+	color: #999;
+	font-size: 28rpx;
+}
+
+@keyframes slideDown {
+	from {
+		opacity: 0;
+		max-height: 0;
+		transform: translateY(-10rpx);
+	}
+	to {
+		opacity: 1;
+		max-height: 1000rpx;
+		transform: translateY(0);
 	}
 }
 </style>
