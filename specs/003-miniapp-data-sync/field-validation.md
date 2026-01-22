@@ -26,7 +26,7 @@
 | `description` | String | 0-1000字符 | "" | 剧本描述 |
 | `content` | String | JSON字符串 | "" | 剧本内容 |
 | `version` | String | 语义化版本 | "1.0.0" | 版本号 |
-| `tags` | Array<String> | 最多2个标签，每个1-20字符 | [] | 标签数组 |
+| `tag` | String | 单个标签，1-20字符 | null | 标签 |
 | `category` | String | 1-100字符 | "" | 分类 |
 
 ### 数值字段
@@ -57,12 +57,12 @@
 ### 数组到字符串转换
 
 ```javascript
-// 标签字段映射：数组转字符串用于显示
-function mapTagsToString(tags) {
-  if (Array.isArray(tags) && tags.length > 0) {
-    return tags[0]; // 取第一个标签
-  }
-  return '推理'; // 默认标签
+// 标签字段映射：兼容旧数据（接受 tags 数组或 tag 字符串）
+function mapTagsToString(tagOrTags) {
+  if (!tagOrTags) return '推理';
+  if (typeof tagOrTags === 'string') return tagOrTags;
+  if (Array.isArray(tagOrTags) && tagOrTags.length > 0) return tagOrTags[0];
+  return '推理';
 }
 ```
 
@@ -145,10 +145,9 @@ const frontendValidation = {
   },
 
   // 标签字段验证
-  tags: {
-    type: 'array',
-    enum: ['推理', '娱乐'],
-    maxLength: 2
+  tag: {
+    type: 'string',
+    enum: ['推理', '娱乐']
   },
 
   // 图片字段验证
@@ -261,13 +260,13 @@ const testCases = [
 // 测试字段映射
 const mappingTests = [
   {
-    name: 'Tags array to string',
-    input: { tags: ['推理', '娱乐'] },
+    name: 'Tag string passthrough',
+    input: { tag: '推理' },
     expected: '推理'
   },
   {
-    name: 'Empty tags array',
-    input: { tags: [] },
+    name: 'Tags array compatibility',
+    input: { tags: ['推理', '娱乐'] },
     expected: '推理'
   },
   {

@@ -22,7 +22,7 @@
 | `fileSize` | Number | 否 | 文件大小(字节) | >0 | (预留) |
 | `mimeType` | String | 否 | 文件MIME类型 | 标准MIME格式 | (预留) |
 | `status` | String | 是 | 剧本状态 | 枚举: active/inactive | status |
-| `tags` | Array<String> | 否 | 标签列表 | 枚举: 推理/娱乐 | tags → tag |
+| `tag` | String | 否 | 标签 | 枚举: 推理/娱乐 | tag |
 | `category` | String | 否 | 分类 | 1-100字符 | (预留) |
 | `description` | String | 否 | 剧本描述 | 0-1000字符 | description |
 | `createTime` | Date | 是 | 创建时间 | 系统生成 | createdAt |
@@ -44,13 +44,13 @@
    - description → description
 
 2. **转换映射字段**:
-   - tags (数组) → tag (字符串): 取第一个标签或默认值
+   - 保证字段 `tag` 为单值字符串（若旧数据使用 `tags` 数组，应在同步过程中取第一个作为 `tag`）
    - _id → id: 前端统一使用id字段
 
 3. **默认值处理**:
    - status: 默认 'active' 如果不存在
    - usageCount: 默认 0 如果不存在
-   - tag: 默认 '推理' 如果tags数组为空
+  - tag: 默认 '推理' 如果不存在
    - version: 从其他字段推导或使用默认值
 
 #### 图片字段处理逻辑
@@ -129,10 +129,9 @@ const miniappValidation = {
   },
 
   // 标签字段验证
-  tags: {
-    type: 'array',
-    enum: ['推理', '娱乐'],
-    maxLength: 2
+  tag: {
+    type: 'string',
+    enum: ['推理', '娱乐']
   },
 
   // 图片字段验证
@@ -147,12 +146,12 @@ const miniappValidation = {
 
 ```javascript
 const dataTransformRules = {
-  // 标签数组转字符串
+  // 兼容旧数据：若存在 tags 数组，取第一个项作为 tag
   tagsToTag: (tags) => {
     if (Array.isArray(tags) && tags.length > 0) {
-      return tags[0]; // 取第一个标签
+      return tags[0];
     }
-    return '推理'; // 默认标签
+    return null;
   },
 
   // ID字段标准化
@@ -209,7 +208,6 @@ const dataTransformRules = {
   "author": "官方出品",
   "description": "经典的狼人杀游戏剧本，适合新手入门",
   "status": "active",
-  "tags": ["推理"],
   "tag": "推理",
   "category": "桌游",
   "usageCount": 1250,

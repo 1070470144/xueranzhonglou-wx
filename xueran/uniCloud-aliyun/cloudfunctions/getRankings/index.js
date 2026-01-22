@@ -14,7 +14,7 @@ exports.main = async (event, context) => {
   console.log('getRankings called with:', { type, limit });
 
   // 参数验证
-  const validTypes = ['usage', 'likes', 'hot'];
+  const validTypes = ['usage', 'likes', 'mystery', 'entertainment'];
   if (!validTypes.includes(type)) {
     console.error('Invalid type:', type);
     return {
@@ -52,10 +52,15 @@ exports.main = async (event, context) => {
           rankings = await getLikesRankings(limit);
           console.log('Likes rankings result:', rankings.length, 'items');
           break;
-        case 'hot':
-          console.log('Getting hot rankings... debug=', !!debug);
-          rankings = await getHotRankings(limit, !!debug);
-          console.log('Hot rankings result:', rankings.length, 'items');
+        case 'mystery':
+          console.log('Getting mystery (推理) rankings...');
+          rankings = await getGenreRankings(limit, '推理');
+          console.log('Mystery rankings result:', rankings.length, 'items');
+          break;
+        case 'entertainment':
+          console.log('Getting entertainment (娱乐) rankings...');
+          rankings = await getGenreRankings(limit, '娱乐');
+          console.log('Entertainment rankings result:', rankings.length, 'items');
           break;
         default:
           throw new Error(`Unknown ranking type: ${type}`);
@@ -315,6 +320,67 @@ async function getHotRankings(limit, debugMode = false) {
 
   } catch (error) {
     console.error('getHotRankings error:', error);
+    throw error;
+  }
+}
+
+/**
+ * 获取按标签分类的排行榜（例如：推理、娱乐）
+ * 目前按 usageCount 降序，likes 为次要排序。
+ * @param {number} limit
+ * @param {string} genreTag - 标签名称，例如 '推理' 或 '娱乐'
+ */
+async function getGenreRankings(limit, genreTag) {
+  try {
+    const result = await db.collection('scripts')
+      .where({
+        status: 'active',
+        tag: genreTag
+      })
+      .orderBy('usageCount', 'desc')
+      .orderBy('likes', 'desc')
+      .limit(limit)
+      .field({
+        _id: 1,
+        title: 1,
+        author: 1,
+        usageCount: 1,
+        likes: 1,
+        images: 1,
+        thumbnails: 1,
+        thumbnail: 1
+      })
+      .get();
+
+    return result.data.map((item, index) => {
+      let coverImage = null;
+      if (Array.isArray(item.thumbnails) && item.thumbnails.length) {
+        coverImage = item.thumbnails[0];
+      } else if (item.thumbnail && typeof item.thumbnail === 'string') {
+        coverImage = item.thumbnail;
+      } else if (Array.isArray(item.images)) {
+        const img = item.images.find(img =>
+          (typeof img === 'string' && img.trim().length > 0) ||
+          (typeof img === 'object' && img !== null && (img.url || img.fileId))
+        );
+        if (img) {
+          coverImage = typeof img === 'string' ? img : (img.url || img.fileId);
+        }
+      }
+
+      return {
+        rank: index + 1,
+        scriptId: item._id,
+        title: item.title || '未命名剧本',
+        author: item.author || '未知作者',
+        value: item.usageCount || 0,
+        likes: item.likes || 0,
+        coverImage: coverImage,
+        medal: index < 3 ? ['🥇', '🥈', '🥉'][index] : null
+      };
+    });
+  } catch (error) {
+    console.error('getGenreRankings error:', error);
     throw error;
   }
 }

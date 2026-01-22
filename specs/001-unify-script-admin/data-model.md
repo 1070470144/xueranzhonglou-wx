@@ -22,7 +22,7 @@
 | `fileSize` | Number | 否 | 文件大小(字节) | >0 |
 | `mimeType` | String | 否 | 文件MIME类型 | 标准MIME格式 |
 | `status` | String | 是 | 剧本状态 | 枚举: active/inactive (激活/未激活) |
-| `tags` | Array<String> | 否 | 标签列表 | 枚举: 推理/娱乐 |
+| `tag` | String | 否 | 标签 | 枚举: 推理/娱乐 |
 | `category` | String | 否 | 分类 | 1-100字符 |
 | `description` | String | 否 | 剧本描述 | 0-1000字符 |
 | `createTime` | Date | 是 | 创建时间 | 系统生成 |

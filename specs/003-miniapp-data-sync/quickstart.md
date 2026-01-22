@@ -99,8 +99,10 @@ list.forEach(item => {
   // 状态字段默认值
   item.status = item.status || 'active';
 
-  // 标签字段转换
-  if (Array.isArray(item.tags) && item.tags.length > 0) {
+  // 标签字段转换（兼容旧数据）
+  if (item.tag && typeof item.tag === 'string') {
+    // 已存在单值 tag，直接使用
+  } else if (Array.isArray(item.tags) && item.tags.length > 0) {
     item.tag = item.tags[0];
   } else {
     item.tag = '推理';
@@ -256,7 +258,7 @@ if (result.usageUpdated && result.usageCount) {
   "author": "测试作者",
   "content": "剧本内容...",
   "status": "active",
-  "tags": ["推理"],
+  "tag": "推理",
   "category": "测试",
   "description": "用于验证小程序数据结构适配的测试剧本",
   "createTime": "2026-01-15T10:00:00Z",
@@ -290,7 +292,8 @@ if (result.usageUpdated && result.usageCount) {
        title: "测试剧本：数据结构验证",
        author: "测试作者",
        status: "active",
-       tags: ["推理"],
+    tag: "推理",
+    tag: "推理",
        description: "用于验证小程序...",
        // ... 其他字段
      }],
@@ -307,7 +310,7 @@ if (result.usageUpdated && result.usageCount) {
    - ✅ 点赞数正确显示
    - ✅ 图片正常加载
    - ✅ 点击进入详情页
-   - ✅ 详情页显示完整信息
+  - ✅ 详情页显示完整信息（字段 `tag` 为单值字符串）
 
 ### 步骤3: 数据同步验证
 
@@ -364,8 +367,8 @@ if (result.usageUpdated && result.usageCount) {
 **现象**: 标签显示为数组或undefined
 
 **解决方案**:
-1. 检查tags字段的数据类型转换
-2. 验证数组到字符串的映射逻辑
+1. 检查 `tag` / `tags` 字段的兼容映射逻辑（支持旧数据的 `tags` 数组）
+2. 验证单值 `tag` 字段是否为字符串
 3. 确认默认标签设置
 
 ## 性能优化建议

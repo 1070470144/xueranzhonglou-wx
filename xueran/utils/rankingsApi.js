@@ -6,13 +6,13 @@ const CACHE_DURATION = 10 * 60 * 1000; // 10分钟缓存
 
 /**
  * 获取排行榜数据
- * @param {string} type - 排行榜类型: 'usage' | 'likes' | 'hot'
+ * @param {string} type - 排行榜类型: 'usage' | 'likes' | 'mystery' | 'entertainment'
  * @param {number} limit - 返回数量限制，默认20
  * @returns {Promise<Object>} 返回排行榜数据
  */
 export const getRankings = async (type, limit = 20) => {
   // 参数验证
-  const validTypes = ['usage', 'likes', 'hot'];
+  const validTypes = ['usage', 'likes', 'mystery', 'entertainment'];
   if (!validTypes.includes(type)) {
     return {
       success: false,
