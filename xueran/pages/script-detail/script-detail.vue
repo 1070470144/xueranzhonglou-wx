@@ -59,6 +59,11 @@
 						<text class="nav-icon">›</text>
 					</view>
 				</view>
+
+				<!-- 长按保存提示 -->
+				<view class="save-hint">
+					<text class="save-hint-text">长按可保存图片</text>
+				</view>
 			</view>
 
 			<!-- 剧本详情信息 -->
@@ -903,5 +908,37 @@ export default {
 	z-index: 1;
 	text-shadow: 0 6rpx 12rpx rgba(0, 0, 0, 0.45);
 	letter-spacing: 2rpx;
+}
+
+.save-hint {
+	position: absolute;
+	bottom: 30rpx;
+	left: 50%;
+	transform: translateX(-50%);
+	background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.08) 100%);
+	border: 1rpx solid rgba(255, 255, 255, 0.2);
+	border-radius: 20rpx;
+	padding: 12rpx 24rpx;
+	backdrop-filter: blur(10rpx);
+	box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.2);
+	animation: fadeInUp 0.5s ease-out;
+}
+
+.save-hint-text {
+	font-size: 26rpx;
+	color: white;
+	font-weight: 500;
+	text-shadow: 0 1rpx 2rpx rgba(0, 0, 0, 0.3);
+}
+
+@keyframes fadeInUp {
+	from {
+		opacity: 0;
+		transform: translateX(-50%) translateY(20rpx);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(-50%) translateY(0);
+	}
 }
 </style>
