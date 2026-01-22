@@ -15,7 +15,7 @@
 						v-for="(image, index) in script.images"
 						:key="index"
 					>
-						<image :src="image" class="script-image" mode="aspectFill" />
+					<image :src="image" class="script-image" mode="aspectFill" @click="openImageViewer" />
 					</swiper-item>
 				</swiper>
 				<view class="zoom-hint" v-if="script.images && script.images.length > 0">
@@ -47,7 +47,7 @@
 						v-for="(image, index) in viewerImages"
 						:key="index"
 					>
-						<image :src="image" class="viewer-image" mode="aspectFit" @click.stop />
+						<image :src="image" class="viewer-image" mode="aspectFit" @click.stop @longpress="onImageLongPress(image)" />
 					</swiper-item>
 				</swiper>
 
@@ -211,6 +211,104 @@ export default {
 				icon: 'none'
 			});
 			// #endif
+		},
+		// 图片长按保存入口
+		onImageLongPress(imageUrl) {
+			try {
+				// 在 HBuilderX / H5 环境中，原生 action sheet 可能被全屏图片遮挡，
+				// 临时隐藏全屏查看器以确保 action sheet 在最上层显示。
+				// #ifdef H5
+				const wasViewerOpen = this.showImageViewer;
+				if (wasViewerOpen) this.showImageViewer = false;
+				// #endif
+
+				uni.showActionSheet({
+					itemList: ['保存图片']
+				}).then(res => {
+					if (res.tapIndex === 0) {
+						this.saveImageToAlbum(imageUrl);
+					}
+				}).catch(() => {
+					// 用户取消或不支持
+				}).finally(() => {
+					// 恢复全屏查看器（仅在之前是打开的情况下）
+					// #ifdef H5
+					if (wasViewerOpen) this.showImageViewer = true;
+					// #endif
+				});
+			} catch (e) {
+				// 兼容回退
+				try {
+					uni.showActionSheet({
+						itemList: ['保存图片'],
+						success: function (r) {
+							if (r.tapIndex === 0) {
+								// fallback to callback style
+							}
+						},
+						fail: function () {}
+					});
+				} catch (err) {
+					// ignore
+				}
+			}
+		},
+
+		// 保存图片到相册，支持远程和本地路径
+		async saveImageToAlbum(url) {
+			if (!url) {
+				uni.showToast({ title: '图片地址无效', icon: 'none' });
+				return;
+			}
+
+			try {
+				let filePath = url;
+				// 下载远程图片
+				if (/^https?:\/\//i.test(url)) {
+					const dl = await new Promise((resolve, reject) => {
+						uni.downloadFile({
+							url,
+							success: res => {
+								if (res.statusCode === 200 && res.tempFilePath) {
+									resolve(res.tempFilePath);
+								} else {
+									reject(new Error('下载失败'));
+								}
+							},
+							fail: reject
+						});
+					});
+					filePath = dl;
+				}
+
+				// 保存到相册
+				await new Promise((resolve, reject) => {
+					uni.saveImageToPhotosAlbum({
+						filePath,
+						success: resolve,
+						fail: err => reject(err)
+					});
+				});
+
+				uni.showToast({ title: '保存成功', icon: 'success' });
+			} catch (err) {
+				console.error('保存图片失败', err);
+				const msg = (err && err.errMsg) ? String(err.errMsg) : String(err);
+				// 授权未通过或被拒绝
+				if (msg.toLowerCase().includes('authorize') || msg.toLowerCase().includes('auth') || msg.toLowerCase().includes('permission')) {
+					uni.showModal({
+						title: '保存失败',
+						content: '请授予相册权限以保存图片，是否前往设置？',
+						success: res => {
+							if (res.confirm) {
+								uni.openSetting();
+							}
+						}
+					});
+				} else {
+					uni.showToast({ title: '保存失败', icon: 'none' });
+				}
+			}
 		},
 
 		async loadScriptDetail() {
