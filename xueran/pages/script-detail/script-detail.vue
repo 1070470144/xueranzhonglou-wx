@@ -116,29 +116,33 @@
 				</view>
 
 				<!-- 剧本角色展示 -->
-				<view class="character-section">
-					<view class="character-header" @click="toggleCharacterDisplay">
+				<view class="character-section" role="region" aria-label="剧本角色信息">
+					<view class="character-header" @click="toggleCharacterDisplay" role="button" tabindex="0" aria-expanded="{{ showCharacters }}" aria-controls="character-content">
 						<view class="section-title">剧本角色</view>
 						<view class="expand-icon" :class="{ 'expanded': showCharacters }">
 							<text class="icon-text">{{ showCharacters ? '▼' : '▶' }}</text>
 						</view>
 					</view>
-					<view class="character-content" v-if="showCharacters">
+					<view class="character-content" v-if="showCharacters" id="character-content">
 						<view class="character-groups" v-if="hasCharacters">
 							<!-- 镇民 -->
 							<view class="character-group" v-if="characters.townsfolk && characters.townsfolk.length > 0">
-								<view class="group-header" @click="toggleCategory('townsfolk')">
-									<text class="group-title">镇民</text>
-									<text class="group-count">({{ characters.townsfolk.length }})</text>
+								<view class="group-header" @click="toggleCategory('townsfolk')" role="button" tabindex="0" aria-expanded="{{ characterCategoryStates.townsfolk }}" aria-controls="townsfolk-list">
+									<view class="group-title-row">
+										<text class="group-title">镇民</text>
+										<text class="group-count">({{ characters.townsfolk.length }})</text>
+									</view>
 									<view class="category-expand-icon" :class="{ 'expanded': characterCategoryStates.townsfolk }">
 										<text class="icon-text">{{ characterCategoryStates.townsfolk ? '▼' : '▶' }}</text>
 									</view>
 								</view>
-								<view class="character-list" v-if="characterCategoryStates.townsfolk">
+								<view class="character-list" v-if="characterCategoryStates.townsfolk" id="townsfolk-list" role="list">
 									<view
 										class="character-card"
 										v-for="(character, index) in characters.townsfolk"
 										:key="`townsfolk-${index}`"
+										role="listitem"
+										tabindex="0"
 									>
 										<view class="character-icon" v-if="character.icon">
 											<image :src="character.icon" class="icon-image" mode="aspectFit" />
@@ -162,18 +166,22 @@
 
 							<!-- 外来者 -->
 							<view class="character-group" v-if="characters.outsiders && characters.outsiders.length > 0">
-								<view class="group-header" @click="toggleCategory('outsiders')">
-									<text class="group-title">外来者</text>
-									<text class="group-count">({{ characters.outsiders.length }})</text>
+								<view class="group-header" @click="toggleCategory('outsiders')" role="button" tabindex="0" aria-expanded="{{ characterCategoryStates.outsiders }}" aria-controls="outsiders-list">
+									<view class="group-title-row">
+										<text class="group-title">外来者</text>
+										<text class="group-count">({{ characters.outsiders.length }})</text>
+									</view>
 									<view class="category-expand-icon" :class="{ 'expanded': characterCategoryStates.outsiders }">
 										<text class="icon-text">{{ characterCategoryStates.outsiders ? '▼' : '▶' }}</text>
 									</view>
 								</view>
-								<view class="character-list" v-if="characterCategoryStates.outsiders">
+								<view class="character-list" v-if="characterCategoryStates.outsiders" id="outsiders-list" role="list">
 									<view
 										class="character-card"
 										v-for="(character, index) in characters.outsiders"
 										:key="`outsiders-${index}`"
+										role="listitem"
+										tabindex="0"
 									>
 										<view class="character-icon" v-if="character.icon">
 											<image :src="character.icon" class="icon-image" mode="aspectFit" />
@@ -197,18 +205,22 @@
 
 							<!-- 爪牙 -->
 							<view class="character-group" v-if="characters.minions && characters.minions.length > 0">
-								<view class="group-header" @click="toggleCategory('minions')">
-									<text class="group-title">爪牙</text>
-									<text class="group-count">({{ characters.minions.length }})</text>
+								<view class="group-header" @click="toggleCategory('minions')" role="button" tabindex="0" aria-expanded="{{ characterCategoryStates.minions }}" aria-controls="minions-list">
+									<view class="group-title-row">
+										<text class="group-title">爪牙</text>
+										<text class="group-count">({{ characters.minions.length }})</text>
+									</view>
 									<view class="category-expand-icon" :class="{ 'expanded': characterCategoryStates.minions }">
 										<text class="icon-text">{{ characterCategoryStates.minions ? '▼' : '▶' }}</text>
 									</view>
 								</view>
-								<view class="character-list" v-if="characterCategoryStates.minions">
+								<view class="character-list" v-if="characterCategoryStates.minions" id="minions-list" role="list">
 									<view
 										class="character-card"
 										v-for="(character, index) in characters.minions"
 										:key="`minions-${index}`"
+										role="listitem"
+										tabindex="0"
 									>
 										<view class="character-icon" v-if="character.icon">
 											<image :src="character.icon" class="icon-image" mode="aspectFit" />
@@ -232,18 +244,22 @@
 
 							<!-- 恶魔 -->
 							<view class="character-group" v-if="characters.demons && characters.demons.length > 0">
-								<view class="group-header" @click="toggleCategory('demons')">
-									<text class="group-title">恶魔</text>
-									<text class="group-count">({{ characters.demons.length }})</text>
+								<view class="group-header" @click="toggleCategory('demons')" role="button" tabindex="0" aria-expanded="{{ characterCategoryStates.demons }}" aria-controls="demons-list">
+									<view class="group-title-row">
+										<text class="group-title">恶魔</text>
+										<text class="group-count">({{ characters.demons.length }})</text>
+									</view>
 									<view class="category-expand-icon" :class="{ 'expanded': characterCategoryStates.demons }">
 										<text class="icon-text">{{ characterCategoryStates.demons ? '▼' : '▶' }}</text>
 									</view>
 								</view>
-								<view class="character-list" v-if="characterCategoryStates.demons">
+								<view class="character-list" v-if="characterCategoryStates.demons" id="demons-list" role="list">
 									<view
 										class="character-card"
 										v-for="(character, index) in characters.demons"
 										:key="`demons-${index}`"
+										role="listitem"
+										tabindex="0"
 									>
 										<view class="character-icon" v-if="character.icon">
 											<image :src="character.icon" class="icon-image" mode="aspectFit" />
@@ -267,18 +283,22 @@
 
 							<!-- 旅行者 -->
 							<view class="character-group" v-if="characters.travelers && characters.travelers.length > 0">
-								<view class="group-header" @click="toggleCategory('travelers')">
-									<text class="group-title">旅行者</text>
-									<text class="group-count">({{ characters.travelers.length }})</text>
+								<view class="group-header" @click="toggleCategory('travelers')" role="button" tabindex="0" aria-expanded="{{ characterCategoryStates.travelers }}" aria-controls="travelers-list">
+									<view class="group-title-row">
+										<text class="group-title">旅行者</text>
+										<text class="group-count">({{ characters.travelers.length }})</text>
+									</view>
 									<view class="category-expand-icon" :class="{ 'expanded': characterCategoryStates.travelers }">
 										<text class="icon-text">{{ characterCategoryStates.travelers ? '▼' : '▶' }}</text>
 									</view>
 								</view>
-								<view class="character-list" v-if="characterCategoryStates.travelers">
+								<view class="character-list" v-if="characterCategoryStates.travelers" id="travelers-list" role="list">
 									<view
 										class="character-card"
 										v-for="(character, index) in characters.travelers"
 										:key="`travelers-${index}`"
+										role="listitem"
+										tabindex="0"
 									>
 										<view class="character-icon" v-if="character.icon">
 											<image :src="character.icon" class="icon-image" mode="aspectFit" />
@@ -302,18 +322,22 @@
 
 							<!-- 传奇角色 -->
 							<view class="character-group" v-if="characters.fabled && characters.fabled.length > 0">
-								<view class="group-header" @click="toggleCategory('fabled')">
-									<text class="group-title">传奇角色</text>
-									<text class="group-count">({{ characters.fabled.length }})</text>
+								<view class="group-header" @click="toggleCategory('fabled')" role="button" tabindex="0" aria-expanded="{{ characterCategoryStates.fabled }}" aria-controls="fabled-list">
+									<view class="group-title-row">
+										<text class="group-title">传奇角色</text>
+										<text class="group-count">({{ characters.fabled.length }})</text>
+									</view>
 									<view class="category-expand-icon" :class="{ 'expanded': characterCategoryStates.fabled }">
 										<text class="icon-text">{{ characterCategoryStates.fabled ? '▼' : '▶' }}</text>
 									</view>
 								</view>
-								<view class="character-list" v-if="characterCategoryStates.fabled">
+								<view class="character-list" v-if="characterCategoryStates.fabled" id="fabled-list" role="list">
 									<view
 										class="character-card"
 										v-for="(character, index) in characters.fabled"
 										:key="`fabled-${index}`"
+										role="listitem"
+										tabindex="0"
 									>
 										<view class="character-icon" v-if="character.icon">
 											<image :src="character.icon" class="icon-image" mode="aspectFit" />
@@ -337,18 +361,22 @@
 
 							<!-- 其他 -->
 							<view class="character-group" v-if="characters.other && characters.other.length > 0">
-								<view class="group-header" @click="toggleCategory('other')">
-									<text class="group-title">其他</text>
-									<text class="group-count">({{ characters.other.length }})</text>
+								<view class="group-header" @click="toggleCategory('other')" role="button" tabindex="0" aria-expanded="{{ characterCategoryStates.other }}" aria-controls="other-list">
+									<view class="group-title-row">
+										<text class="group-title">其他</text>
+										<text class="group-count">({{ characters.other.length }})</text>
+									</view>
 									<view class="category-expand-icon" :class="{ 'expanded': characterCategoryStates.other }">
 										<text class="icon-text">{{ characterCategoryStates.other ? '▼' : '▶' }}</text>
 									</view>
 								</view>
-								<view class="character-list" v-if="characterCategoryStates.other">
+								<view class="character-list" v-if="characterCategoryStates.other" id="other-list" role="list">
 									<view
 										class="character-card"
 										v-for="(character, index) in characters.other"
 										:key="`other-${index}`"
+										role="listitem"
+										tabindex="0"
 									>
 										<view class="character-icon" v-if="character.icon">
 											<image :src="character.icon" class="icon-image" mode="aspectFit" />
@@ -1177,7 +1205,20 @@ export default {
 	font-size: 32rpx;
 	font-weight: bold;
 	color: #333;
-	margin: 32rpx 0 16rpx 0;
+	margin: 28rpx 0 12rpx 0;
+	position: relative;
+
+	&::before {
+		content: '';
+		display: inline-block;
+		width: 14rpx;
+		height: 14rpx;
+		border-radius: 50%;
+		background: #007AFF;
+		margin-right: 12rpx;
+		vertical-align: middle;
+		box-shadow: 0 2rpx 6rpx rgba(0,122,255,0.18);
+	}
 }
 
 .description-content {
@@ -1420,61 +1461,119 @@ export default {
 
 // 角色展示区域样式
 .character-section {
-	margin-top: 32rpx;
-	border-top: 1rpx solid #e8e8e8;
-	padding-top: 20rpx;
+	margin-top: 20rpx;
+	border-top: 1rpx solid #f0f0f0;
+	padding-top: 12rpx;
+	background-color: #fff;
+	border-radius: 0;
+	margin-left: 0;
+	margin-right: 0;
+	padding-left: 0;
+	padding-right: 0;
+	box-shadow: none;
 }
 
 .character-groups {
 	display: flex;
 	flex-direction: column;
-	gap: 24rpx;
+	gap: 14rpx;
 }
 
 .character-group {
-	margin-bottom: 16rpx;
+	margin-bottom: 8rpx;
+	/* remove surrounding box to match script info */
+	background: transparent;
+	border-radius: 0;
+	box-shadow: none;
+	overflow: visible;
+	border: none;
+	padding: 0;
 }
 
 .group-header {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	margin-bottom: 12rpx;
-	padding: 8rpx 16rpx;
-	background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%);
-	border-radius: 8rpx;
-	border-left: 4rpx solid #007AFF;
+	padding: 8rpx 12rpx;
+	background: transparent;
+	color: #333;
 	cursor: pointer;
+	transition: all 0.15s ease;
+	position: relative;
 
 	&:active {
-		opacity: 0.8;
+		transform: scale(0.995);
+	}
+
+	&::before {
+		/* keep small left accent dot handled in .group-title */
+		content: '';
+		position: absolute;
+		left: 0;
+		top: 0;
+		bottom: 0;
+		width: 0;
+	}
+
+	&:focus {
+		outline: none;
+		box-shadow: none;
+	}
+
+	// 创建一个容器来包含标题和计数，使计数右对齐
+	.group-title-row {
+		display: flex;
+		align-items: center;
+		flex: 1;
+		justify-content: space-between;
+		margin-right: 12rpx;
 	}
 }
 
 .group-title {
 	font-size: 28rpx;
-	font-weight: bold;
+	font-weight: 600;
 	color: #007AFF;
-	margin-right: 8rpx;
+	margin-right: 10rpx;
+	letter-spacing: 0.4rpx;
+
+	&::before {
+		content: '';
+		display: inline-block;
+		width: 8rpx;
+		height: 8rpx;
+		border-radius: 50%;
+		background: #007AFF;
+		margin-right: 8rpx;
+		vertical-align: middle;
+		box-shadow: 0 1rpx 3rpx rgba(0,122,255,0.12);
+	}
 }
 
 .group-count {
-	font-size: 24rpx;
+	font-size: 26rpx;
 	color: #666;
 	font-weight: 500;
+	background-color: #f0f0f0;
+	padding: 4rpx 10rpx;
+	border-radius: 20rpx;
+	backdrop-filter: none;
 }
 
 .category-expand-icon {
-	transition: transform 0.3s ease;
+	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	transform-origin: center;
 
 	&.expanded {
-		transform: rotate(0deg);
+		transform: rotate(180deg) scale(1.1);
 	}
 
 	.icon-text {
-		font-size: 24rpx;
+		font-size: 28rpx;
 		color: #007AFF;
 		font-weight: bold;
+		text-shadow: none;
+		transition: all 0.2s ease;
 	}
 }
 
@@ -1482,145 +1581,223 @@ export default {
 	display: flex;
 	justify-content: space-between;
 	align-items: center;
-	padding: 16rpx 0;
+	padding: 24rpx 0;
 	cursor: pointer;
+	margin-bottom: 16rpx;
+	background-color: transparent;
+	border-radius: 0;
+	padding-left: 0;
+	padding-right: 0;
+	border: none;
+	box-shadow: none;
 
 	&:active {
-		opacity: 0.8;
+		transform: none;
+		box-shadow: none;
+	}
+
+	&:focus {
+		outline: none;
+		box-shadow: none;
 	}
 }
 
+.section-title {
+	font-size: 32rpx;
+	font-weight: bold;
+	color: #333;
+	margin: 32rpx 0 16rpx 0;
+}
+
 .expand-icon {
-	transition: transform 0.3s ease;
+	transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+	transform-origin: center;
 
 	&.expanded {
-		transform: rotate(0deg);
+		transform: rotate(180deg) scale(1.1);
 	}
 
 	.icon-text {
-		font-size: 24rpx;
-		color: #666;
+		font-size: 28rpx;
+		color: #667eea;
 		font-weight: bold;
+		transition: all 0.2s ease;
 	}
 }
 
 .character-content {
-	animation: slideDown 0.3s ease-out;
+	animation: slideDown 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+	padding: 10rpx 10rpx 12rpx 10rpx;
 }
 
 .character-list {
 	display: flex;
 	flex-direction: column;
-	gap: 12rpx;
-	margin-top: 8rpx;
-	padding-left: 8rpx;
+	gap: 10rpx;
 }
 
 .character-card {
 	display: flex;
-	align-items: center;
-	background-color: #f8f8f8;
-	border-radius: 12rpx;
-	padding: 16rpx;
-	border: 1rpx solid #e8e8e8;
-	transition: all 0.2s ease;
+	align-items: flex-start; /* 改为顶部对齐，让icon和名字顶部对齐 */
+	background-color: transparent;
+	border-radius: 0;
+	padding: 8rpx 0;
+	border: none;
+	box-shadow: none;
+	transition: all 0.18s ease;
+	position: relative;
+	overflow: hidden;
+	min-height: 64rpx; /* Minimum touch target */
+
+	&::before {
+		content: '';
+		position: absolute;
+		left: 0;
+		top: 0;
+		bottom: 0;
+		width: 0;
+		opacity: 0;
+		transition: opacity 0.2s ease;
+	}
 
 	&:active {
-		transform: scale(0.98);
-		background-color: #f0f0f0;
+		transform: none;
+	}
+
+	&:hover {
+		box-shadow: none;
+	}
+
+	&:focus {
+		outline: none;
+		box-shadow: none;
 	}
 }
 
 .character-icon {
-	width: 60rpx;
-	height: 60rpx;
-	border-radius: 8rpx;
+	width: 104rpx;
+	height: 104rpx;
+	border-radius: 18rpx;
 	overflow: hidden;
-	margin-right: 16rpx;
+	margin-right: 26rpx;
 	background-color: #fff;
-	border: 1rpx solid #ddd;
+	border: 2rpx solid #e8ecf1;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	flex-shrink: 0;
+	box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
+	transition: all 0.3s ease;
 }
 
 .icon-image {
 	width: 100%;
 	height: 100%;
+	transition: transform 0.3s ease;
+}
+
+.character-card:active .icon-image {
+	transform: scale(1.05);
 }
 
 .character-icon-placeholder {
-	width: 60rpx;
-	height: 60rpx;
-	border-radius: 8rpx;
+	width: 104rpx;
+	height: 104rpx;
+	border-radius: 18rpx;
 	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	margin-right: 16rpx;
+	margin-right: 26rpx;
 	flex-shrink: 0;
-	border: 1rpx solid #ddd;
+	border: 2rpx solid #e8ecf1;
+	box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
+	position: relative;
+	overflow: hidden;
+
+	&::before {
+		content: '';
+		position: absolute;
+		top: -50%;
+		left: -50%;
+		width: 200%;
+		height: 200%;
+		background: linear-gradient(45deg, transparent 30%, rgba(255, 255, 255, 0.08) 50%, transparent 70%);
+		transform: rotate(45deg);
+		transition: all 0.6s ease;
+	}
+
+	&:active::before {
+		animation: shimmer 1.5s ease-in-out;
+	}
 
 	.placeholder-text {
-		font-size: 24rpx;
+		font-size: 32rpx;
 		color: white;
-		font-weight: bold;
+		font-weight: 800;
+		text-shadow: 0 1rpx 2rpx rgba(0, 0, 0, 0.2);
+		z-index: 1;
+		position: relative;
 	}
 }
 
 .character-info {
 	flex: 1;
 	min-width: 0;
+	display: flex;
+	flex-direction: column;
+	justify-content: flex-start; /* 改为顶部对齐，与icon保持一致 */
 }
 
 .character-name {
-	font-size: 32rpx;
-	font-weight: bold;
-	color: #333;
-	margin-bottom: 8rpx;
+	font-size: 28rpx;
+	font-weight: 700;
+	color: #2d3748;
 	line-height: 1.2;
 	word-break: break-word;
+	letter-spacing: 0.2rpx;
+	transition: color 0.3s ease;
+	margin-bottom: 6rpx;
+	margin-top: 2rpx; /* 添加顶部间距，与icon顶部对齐 */
+}
+
+.character-card:active .character-name {
+	color: #667eea;
 }
 
 .character-ability {
-	margin-top: 8rpx;
+	margin-top: 0;
 }
 
 .ability-content {
-	background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-	border-radius: 8rpx;
-	padding: 12rpx 16rpx;
-	border-left: 4rpx solid #007AFF;
-	box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
+	background-color: transparent;
+	border-radius: 0;
+	padding: 8rpx 0;
+	border-left: none;
+	box-shadow: none;
 	position: relative;
-
-	&::before {
-		content: '🎯';
-		position: absolute;
-		top: 8rpx;
-		right: 12rpx;
-		font-size: 20rpx;
-		opacity: 0.6;
-	}
+	transition: all 0.2s ease;
+	border: none;
 }
 
 .ability-text {
-	font-size: 26rpx;
-	color: #444;
-	line-height: 1.6;
+	font-size: 24rpx;
+	color: #4a5568;
+	line-height: 1.5;
 	display: block;
 	margin-bottom: 6rpx;
-	text-align: justify;
+	text-align: left;
 	word-break: break-word;
+	font-weight: 400;
 
 	&:last-child {
 		margin-bottom: 0;
 	}
 
 	&:first-letter {
-		font-weight: 500;
-		color: #007AFF;
+		font-weight: 600;
+		color: #4a5568;
+		font-size: 24rpx;
 	}
 }
 
@@ -1635,12 +1812,76 @@ export default {
 	from {
 		opacity: 0;
 		max-height: 0;
-		transform: translateY(-10rpx);
+		transform: translateY(-20rpx);
 	}
 	to {
 		opacity: 1;
-		max-height: 1000rpx;
+		max-height: 2000rpx;
 		transform: translateY(0);
+	}
+}
+
+@keyframes shimmer {
+	0% {
+		transform: translateX(-100%) translateY(-100%) rotate(45deg);
+	}
+	100% {
+		transform: translateX(100%) translateY(100%) rotate(45deg);
+	}
+}
+
+// 响应式设计
+@media screen and (max-width: 750rpx) {
+	.character-section {
+		margin-left: -8rpx;
+		margin-right: -8rpx;
+		padding-left: 8rpx;
+		padding-right: 8rpx;
+	}
+
+	.character-groups {
+		gap: 20rpx;
+	}
+
+	.group-header {
+		padding: 16rpx 16rpx;
+	}
+
+	.group-title {
+		font-size: 30rpx;
+	}
+
+	.character-card {
+		padding: 16rpx 20rpx;
+		min-height: 80rpx;
+	}
+
+	.character-icon {
+		width: 80rpx;
+		height: 80rpx;
+		margin-right: 20rpx;
+	}
+
+	.character-icon-placeholder {
+		width: 80rpx;
+		height: 80rpx;
+		margin-right: 20rpx;
+	}
+
+	.character-name {
+		font-size: 30rpx;
+	}
+
+	.ability-content {
+		padding: 12rpx 16rpx;
+	}
+}
+
+@media screen and (min-width: 751rpx) {
+	.character-section {
+		max-width: 700rpx;
+		margin-left: auto;
+		margin-right: auto;
 	}
 }
 </style>
