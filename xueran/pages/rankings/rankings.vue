@@ -147,7 +147,7 @@ export default {
 			this.error = null;
 
 			try {
-				const result = await getRankings(this.activeTab, 20);
+				const result = await getRankings(this.activeTab, 50);
 
 				if (result.success) {
 					this.rankings = result.data;
