@@ -1,0 +1,33 @@
+{
+  "bsonType": "object",
+  "required": ["token", "userId", "expireTime"],
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  },
+  "properties": {
+    "_id": {
+      "description": "会话 ID"
+    },
+    "token": {
+      "bsonType": "string",
+      "description": "登录 token"
+    },
+    "userId": {
+      "bsonType": "string",
+      "description": "用户 ID"
+    },
+    "email": {
+      "bsonType": "string",
+      "description": "用户邮箱"
+    },
+    "createTime": {
+      "bsonType": "timestamp"
+    },
+    "expireTime": {
+      "bsonType": "timestamp"
+    }
+  }
+}

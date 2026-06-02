@@ -36,3 +36,26 @@ db.collection('scripts').createIndex({
   name: 'status_update_time_index',
   background: true
 });
+
+db.collection('app-users').createIndex({
+  email: 1
+}, {
+  name: 'app_users_email_unique',
+  unique: true,
+  background: true
+});
+
+db.collection('auth-sessions').createIndex({
+  token: 1
+}, {
+  name: 'auth_sessions_token_unique',
+  unique: true,
+  background: true
+});
+
+db.collection('auth-sessions').createIndex({
+  expireTime: 1
+}, {
+  name: 'auth_sessions_expire_time',
+  background: true
+});

@@ -880,10 +880,8 @@ export default {
 				}
 			} catch (error) {
 				console.error('Copy JSON URL error:', error);
-				uni.showToast({
-					title: '复制失败',
-					icon: 'error'
-				});
+				const message = error && error.message ? error.message : '复制失败';
+				uni.showToast({ title: message, icon: 'none' });
 			} finally {
 				uni.hideLoading();
 			}
