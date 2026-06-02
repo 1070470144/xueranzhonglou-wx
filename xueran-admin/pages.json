@@ -30,6 +30,24 @@
 			}
 		},
 		{
+			"path": "pages/admin/ai/config",
+			"style": {
+				"navigationBarTitleText": "AI 默认配置"
+			}
+		},
+		{
+			"path": "pages/admin/ai/knowledge",
+			"style": {
+				"navigationBarTitleText": "AI 知识库"
+			}
+		},
+		{
+			"path": "pages/admin/ai/records",
+			"style": {
+				"navigationBarTitleText": "AI 问答记录"
+			}
+		},
+		{
 			"path": "uni_modules/uni-id-pages/pages/userinfo/change_pwd/change_pwd",
 			"style": {
 				"navigationBarTitleText": "修改密码"

@@ -1,0 +1,11 @@
+[
+  {
+    "IndexName": "scope_idx",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        { "Name": "scope", "Direction": "1" }
+      ],
+      "MgoIsUnique": true
+    }
+  }
+]

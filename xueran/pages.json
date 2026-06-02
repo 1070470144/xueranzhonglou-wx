@@ -1,68 +1,91 @@
 {
-	"pages": [ //pages数组中第一项表示应用启动页，参考：https://uniapp.dcloud.io/collocation/pages
-		{
-			"path": "pages/script-list/script-list",
-			"style": {
-				"navigationBarTitleText": "展览"
-			}
-		},
-		{
-			"path": "pages/script-detail/script-detail",
-			"style": {
-				"navigationBarTitleText": "剧本详情"
-			}
-		},
-		{
-			"path": "pages/rankings/rankings",
-			"style": {
-				"navigationBarTitleText": "排行榜"
-			}
-		},
-		{
-			"path": "pages/profile/profile",
-			"style": {
-				"navigationBarTitleText": "我的"
-			}
-		},
-		{
-			"path": "pages/submission-guide/submission-guide",
-			"style": {
-				"navigationBarTitleText": "",
-				"navigationStyle": "custom"
-			}
-		},
-		{
-			"path": "pages/login/login",
-			"style": {
-				"navigationBarTitleText": "登录"
-			}
-		}
-	],
-	"globalStyle": {
-		"navigationBarTextStyle": "black",
-		"navigationBarTitleText": "血染钟楼",
-		"navigationBarBackgroundColor": "#F8F8F8",
-		"backgroundColor": "#F8F8F8"
-	},
-	"tabBar": {
-		"color": "#7A7E83",
-		"selectedColor": "#007AFF",
-		"borderStyle": "black",
-		"backgroundColor": "#F8F8F8",
-		"list": [
-			{
-				"pagePath": "pages/script-list/script-list",
-				"text": "展览"
-			},
-			{
-				"pagePath": "pages/rankings/rankings",
-				"text": "排行"
-			},
-			{
-				"pagePath": "pages/profile/profile",
-				"text": "我的"
-			}
-		]
-	},
-	"uniIdRouter": {}
+  "pages": [
+    {
+      "path": "pages/home/home",
+      "style": {
+        "navigationBarTitleText": "首页"
+      }
+    },
+    {
+      "path": "pages/script-list/script-list",
+      "style": {
+        "navigationBarTitleText": "展览"
+      }
+    },
+    {
+      "path": "pages/script-detail/script-detail",
+      "style": {
+        "navigationBarTitleText": "剧本详情"
+      }
+    },
+    {
+      "path": "pages/rankings/rankings",
+      "style": {
+        "navigationBarTitleText": "排行"
+      }
+    },
+    {
+      "path": "pages/profile/profile",
+      "style": {
+        "navigationBarTitleText": "我的"
+      }
+    },
+    {
+      "path": "pages/submission-guide/submission-guide",
+      "style": {
+        "navigationBarTitleText": "",
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/login/login",
+      "style": {
+        "navigationBarTitleText": "登录"
+      }
+    },
+    {
+      "path": "pages/ai-config/ai-config",
+      "style": {
+        "navigationBarTitleText": "AI 配置"
+      }
+    },
+    {
+      "path": "pages/question-records/question-records",
+      "style": {
+        "navigationBarTitleText": "问答记录",
+        "enablePullDownRefresh": true
+      }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "血染钟楼",
+    "navigationBarBackgroundColor": "#F8F8F8",
+    "backgroundColor": "#F8F8F8"
+  },
+  "tabBar": {
+    "color": "#7A7E83",
+    "selectedColor": "#2F261F",
+    "borderStyle": "black",
+    "backgroundColor": "#F8F8F8",
+    "list": [
+      {
+        "pagePath": "pages/home/home",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/script-list/script-list",
+        "text": "展览"
+      },
+      {
+        "pagePath": "pages/rankings/rankings",
+        "text": "排行"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的"
+      }
+    ]
+  },
+  "uniIdRouter": {}
 }

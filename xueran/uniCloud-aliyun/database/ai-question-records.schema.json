@@ -1,0 +1,24 @@
+{
+  "bsonType": "object",
+  "required": ["userId", "question"],
+  "permission": { "read": false, "create": false, "update": false, "delete": false },
+  "properties": {
+    "userId": { "bsonType": "string" },
+    "email": { "bsonType": "string" },
+    "question": { "bsonType": "string" },
+    "answer": { "bsonType": "string" },
+    "analysis": { "bsonType": "string" },
+    "references": { "bsonType": "array" },
+    "scriptId": { "bsonType": "string" },
+    "scriptTitle": { "bsonType": "string" },
+    "scriptJsonSnapshot": { "bsonType": ["object", "array", "string", "null"] },
+    "provider": { "bsonType": "string" },
+    "model": { "bsonType": "string" },
+    "configSource": { "bsonType": "string" },
+    "correctedAnswer": { "bsonType": "string" },
+    "isCorrected": { "bsonType": "bool" },
+    "createTime": { "bsonType": "timestamp" },
+    "updateTime": { "bsonType": "timestamp" }
+  }
+}
+

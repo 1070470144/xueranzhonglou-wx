@@ -1,0 +1,21 @@
+[
+  {
+    "IndexName": "status_update_time_idx",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        { "Name": "status", "Direction": "1" },
+        { "Name": "updateTime", "Direction": "-1" }
+      ],
+      "MgoIsUnique": false
+    }
+  },
+  {
+    "IndexName": "source_url_idx",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        { "Name": "sourceUrl", "Direction": "1" }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

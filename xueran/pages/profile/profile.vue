@@ -34,6 +34,28 @@
         <view style="width: 16rpx; height: 16rpx; margin-left: 18rpx; border-top: 2rpx solid #c7bdb3; border-right: 2rpx solid #c7bdb3; transform: rotate(45deg);"></view>
       </view>
 
+      <view style="display: flex; align-items: center; min-height: 132rpx; padding: 24rpx 28rpx; border-bottom: 1rpx solid #f1e8df; box-sizing: border-box;" @click="goToQuestionRecords">
+        <view style="display: flex; align-items: center; justify-content: center; width: 66rpx; height: 66rpx; margin-right: 24rpx; border-radius: 18rpx; background: #eef5f1; flex-shrink: 0;">
+          <text style="color: #2e6b53; font-size: 34rpx; font-weight: 700;">问</text>
+        </view>
+        <view style="flex: 1; min-width: 0;">
+          <view style="color: #2b2520; font-size: 30rpx; line-height: 1.35; font-weight: 600; margin-bottom: 6rpx;">问答记录</view>
+          <view style="color: #9d9389; font-size: 24rpx; line-height: 1.4;">查询、维护 AI 问答记录</view>
+        </view>
+        <view style="width: 16rpx; height: 16rpx; margin-left: 18rpx; border-top: 2rpx solid #c7bdb3; border-right: 2rpx solid #c7bdb3; transform: rotate(45deg);"></view>
+      </view>
+
+      <view style="display: flex; align-items: center; min-height: 132rpx; padding: 24rpx 28rpx; border-bottom: 1rpx solid #f1e8df; box-sizing: border-box;" @click="goToAiConfig">
+        <view style="display: flex; align-items: center; justify-content: center; width: 66rpx; height: 66rpx; margin-right: 24rpx; border-radius: 18rpx; background: #edf1f8; flex-shrink: 0;">
+          <text style="color: #405c8a; font-size: 34rpx; font-weight: 700;">AI</text>
+        </view>
+        <view style="flex: 1; min-width: 0;">
+          <view style="color: #2b2520; font-size: 30rpx; line-height: 1.35; font-weight: 600; margin-bottom: 6rpx;">AI 配置</view>
+          <view style="color: #9d9389; font-size: 24rpx; line-height: 1.4;">OpenAI、Claude Code、DeepSeek</view>
+        </view>
+        <view style="width: 16rpx; height: 16rpx; margin-left: 18rpx; border-top: 2rpx solid #c7bdb3; border-right: 2rpx solid #c7bdb3; transform: rotate(45deg);"></view>
+      </view>
+
       <view style="display: flex; align-items: center; min-height: 132rpx; padding: 24rpx 28rpx; box-sizing: border-box;">
         <view style="display: flex; align-items: center; justify-content: center; width: 66rpx; height: 66rpx; margin-right: 24rpx; border-radius: 18rpx; background: #f4efe8; flex-shrink: 0;">
           <text style="color: #7d6d5f; font-size: 34rpx; font-weight: 700;">设</text>
@@ -87,6 +109,16 @@ export default {
     goToSubmissionGuide() {
       uni.navigateTo({
         url: '/pages/submission-guide/submission-guide'
+      });
+    },
+    goToQuestionRecords() {
+      uni.navigateTo({
+        url: '/pages/question-records/question-records'
+      });
+    },
+    goToAiConfig() {
+      uni.navigateTo({
+        url: '/pages/ai-config/ai-config'
       });
     }
   }

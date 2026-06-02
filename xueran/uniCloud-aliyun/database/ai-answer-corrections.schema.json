@@ -1,0 +1,12 @@
+{
+  "bsonType": "object",
+  "required": ["recordId", "correctedAnswer"],
+  "permission": { "read": false, "create": false, "update": false, "delete": false },
+  "properties": {
+    "recordId": { "bsonType": "string" },
+    "originalAnswer": { "bsonType": "string" },
+    "correctedAnswer": { "bsonType": "string" },
+    "createTime": { "bsonType": "timestamp" }
+  }
+}
+

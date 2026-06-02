@@ -1,0 +1,17 @@
+{
+  "bsonType": "object",
+  "required": ["userId"],
+  "permission": { "read": false, "create": false, "update": false, "delete": false },
+  "properties": {
+    "userId": { "bsonType": "string" },
+    "email": { "bsonType": "string" },
+    "enabled": { "bsonType": "bool" },
+    "provider": { "bsonType": "string" },
+    "baseUrl": { "bsonType": "string" },
+    "model": { "bsonType": "string" },
+    "apiKey": { "bsonType": "string" },
+    "createTime": { "bsonType": "timestamp" },
+    "updateTime": { "bsonType": "timestamp" }
+  }
+}
+

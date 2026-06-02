@@ -41,6 +41,27 @@ export default {
 	sideBar: { // 左侧菜单
 		// 配置静态菜单列表（放置在用户被授权的菜单列表下边）
 		staticMenu: [{
+			menu_id: "ai",
+			text: 'AI 管理',
+			icon: 'admin-icons-help',
+			url: "",
+			children: [{
+				menu_id: "ai-config",
+				text: '默认配置',
+				icon: 'admin-icons-settings',
+				value: '/pages/admin/ai/config'
+			}, {
+				menu_id: "ai-knowledge",
+				text: '知识库',
+				icon: 'admin-icons-doc',
+				value: '/pages/admin/ai/knowledge'
+			}, {
+				menu_id: "ai-records",
+				text: '问答记录',
+				icon: 'admin-icons-table',
+				value: '/pages/admin/ai/records'
+			}]
+		}, {
 			menu_id: "demo",
 			text: '静态功能演示',
 			icon: 'admin-icons-kaifashili',

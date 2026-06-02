@@ -1,0 +1,17 @@
+{
+  "bsonType": "object",
+  "required": ["scope"],
+  "permission": { "read": false, "create": false, "update": false, "delete": false },
+  "properties": {
+    "scope": { "bsonType": "string" },
+    "enabled": { "bsonType": "bool" },
+    "provider": { "bsonType": "string" },
+    "baseUrl": { "bsonType": "string" },
+    "model": { "bsonType": "string" },
+    "apiKey": { "bsonType": "string" },
+    "temperature": { "bsonType": ["double", "int"] },
+    "createTime": { "bsonType": "timestamp" },
+    "updateTime": { "bsonType": "timestamp" }
+  }
+}
+

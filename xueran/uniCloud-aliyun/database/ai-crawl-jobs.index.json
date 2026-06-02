@@ -1,0 +1,11 @@
+[
+  {
+    "IndexName": "create_time_idx",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        { "Name": "createTime", "Direction": "-1" }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]
