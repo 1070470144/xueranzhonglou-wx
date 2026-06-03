@@ -18,7 +18,7 @@
         </view>
         <view v-if="item.options && item.options.length" class="options">
           <view v-for="option in item.options" :key="option.key" class="option" :class="{ correct: option.key === item.correctAnswer, selected: option.key === item.userAnswer }">
-            <text class="option-key">{{ option.key === 'true' ? '对' : option.key === 'false' ? '错' : option.key }}</text>
+            <text class="option-key">{{ option.key === 'true' ? '对' : option.key === 'false' ? '错' : option.displayKey || option.key }}</text>
             <text>{{ option.text }}</text>
           </view>
         </view>
@@ -63,7 +63,7 @@ export default {
       if (!answer) return '';
       if (item.type === 'judge') return answer === 'true' ? '正确' : '错误';
       const option = (item.options || []).find(option => option.key === answer);
-      return option ? `${answer} ${option.text}` : answer;
+      return option ? `${option.displayKey || answer} ${option.text}` : answer;
     },
     formatDuration(seconds) {
       const value = Number(seconds) || 0;

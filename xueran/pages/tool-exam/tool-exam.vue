@@ -40,7 +40,7 @@
             :class="{ selected: answers[current.id] === option.key }"
             @tap="setAnswer(option.key)"
           >
-            <text class="answer-key">{{ option.key === 'true' ? '对' : option.key === 'false' ? '错' : option.key }}</text>
+            <text class="answer-key">{{ option.key === 'true' ? '对' : option.key === 'false' ? '错' : option.displayKey || option.key }}</text>
             <text>{{ option.text }}</text>
           </view>
         </view>
@@ -141,7 +141,11 @@ export default {
       this.submitting = true;
       this.clearTimer();
       const durationSeconds = Math.floor((Date.now() - this.startedAt) / 1000);
-      const payload = this.questions.map(item => ({ questionId: item.id, answer: this.answers[item.id] || '' }));
+      const payload = this.questions.map(item => ({
+        questionId: item.id,
+        answer: this.answers[item.id] || '',
+        options: item.options || []
+      }));
       uni.showLoading({ title: '交卷中' });
       const result = await submitExam({ level: this.level, scorePerQuestion: this.scorePerQuestion, durationSeconds, answers: payload });
       uni.hideLoading();

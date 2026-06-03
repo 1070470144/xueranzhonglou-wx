@@ -34,7 +34,7 @@
             :class="{ selected: selectedAnswer === option.key }"
             @tap="selectedAnswer = option.key"
           >
-            <text class="answer-key">{{ option.key === 'true' ? '对' : option.key === 'false' ? '错' : option.key }}</text>
+            <text class="answer-key">{{ option.key === 'true' ? '对' : option.key === 'false' ? '错' : option.displayKey || option.key }}</text>
             <text>{{ option.text }}</text>
           </view>
         </view>
@@ -134,7 +134,7 @@ export default {
       if (!question) return answer || '';
       if (question.type === 'judge') return answer === 'true' ? '正确' : '错误';
       const option = (question.options || []).find(item => item.key === answer);
-      return option ? `${answer} ${option.text}` : answer || '';
+      return option ? `${option.displayKey || answer} ${option.text}` : answer || '';
     },
     prev() {
       if (this.currentIndex <= 0) return;

@@ -114,14 +114,45 @@ function buildQuestionDoc(params = {}, userId) {
   };
 }
 
-function publicQuestion(question, favoriteIds = new Set(), includeAnswer = false) {
+function publicOptions(question, randomize = false) {
+  const options = Array.isArray(question.options) ? question.options : [];
+  const list = randomize ? shuffle(options) : options.slice();
+  if ((question.type || 'choice') === 'judge') return list.map(option => ({ ...option }));
+  return list.map((option, index) => ({
+    ...option,
+    displayKey: randomize ? String.fromCharCode(65 + index) : option.key
+  }));
+}
+
+function recordOptions(question, submittedOptions) {
+  const sourceOptions = Array.isArray(question.options) ? question.options : [];
+  const sourceMap = {};
+  sourceOptions.forEach(option => { sourceMap[option.key] = option; });
+  const submitted = Array.isArray(submittedOptions) ? submittedOptions : [];
+  const validSubmitted = submitted
+    .map((option, index) => {
+      const key = cleanText(option && option.key, 4).toUpperCase();
+      const source = sourceMap[key];
+      if (!source) return null;
+      return {
+        key: source.key,
+        text: source.text,
+        displayKey: cleanText(option && option.displayKey, 4) || String.fromCharCode(65 + index)
+      };
+    })
+    .filter(Boolean);
+  if (validSubmitted.length === sourceOptions.length) return validSubmitted;
+  return publicOptions(question, false);
+}
+
+function publicQuestion(question, favoriteIds = new Set(), includeAnswer = false, randomizeOptions = false) {
   const item = {
     id: question._id,
     level: question.level || 1,
     type: question.type || 'choice',
     title: question.title || '',
     images: normalizeImages(question.images),
-    options: Array.isArray(question.options) ? question.options : [],
+    options: publicOptions(question, randomizeOptions),
     explanation: question.explanation || '',
     isFavorite: favoriteIds.has(question._id),
     createTime: question.createTime || 0,
@@ -331,7 +362,7 @@ module.exports = {
     const res = await db.collection(TABLES.questions).where(query).limit(500).get();
     const rows = shuffle(res.data || []).slice(0, limit);
     const favorites = await getFavoriteIdSet(auth.user._id, rows.map(item => item._id));
-    return ok({ list: rows.map(item => publicQuestion(item, favorites, false)) });
+    return ok({ list: rows.map(item => publicQuestion(item, favorites, false, true)) });
   },
 
   async checkPracticeAnswer(params = {}) {
@@ -369,7 +400,7 @@ module.exports = {
       totalScore: rows.length * scorePerQuestion,
       durationSeconds: 3600,
       startedAt: now(),
-      questions: rows.map(item => publicQuestion(item, favorites, false))
+      questions: rows.map(item => publicQuestion(item, favorites, false, true))
     });
   },
 
@@ -399,7 +430,7 @@ module.exports = {
         type: question ? question.type : 'choice',
         level: question ? question.level : level,
         images: question ? normalizeImages(question.images) : [],
-        options: question && Array.isArray(question.options) ? question.options : [],
+        options: question ? recordOptions(question, item.options) : [],
         explanation: question ? question.explanation || '' : '',
         userAnswer,
         correctAnswer,

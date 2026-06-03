@@ -16,7 +16,7 @@
 </template>
 
 <script>
-import { loginWithWeixin } from '@/utils/auth.js';
+import { completeWeixinProfile, loginWithWeixin } from '@/utils/auth.js';
 
 function getWeixinProfile() {
   return new Promise((resolve) => {
@@ -47,9 +47,15 @@ export default {
       if (this.loading) return;
       this.loading = true;
       try {
-        const userInfo = await getWeixinProfile();
-        const result = await loginWithWeixin(userInfo);
+        const result = await loginWithWeixin();
         if (result && result.success) {
+          const user = result.data && result.data.user;
+          if (user && !user.avatarUrl) {
+            const userInfo = await getWeixinProfile();
+            if (userInfo && userInfo.avatarUrl) {
+              await completeWeixinProfile(userInfo);
+            }
+          }
           uni.showToast({ title: '登录成功', icon: 'success' });
           setTimeout(() => {
             if (this.redirect) {

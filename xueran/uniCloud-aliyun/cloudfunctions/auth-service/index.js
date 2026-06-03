@@ -108,6 +108,20 @@ async function getWxSession(code) {
   return body;
 }
 
+function getClientPlatform(context = {}) {
+  return cleanText(context.PLATFORM || context.platform || context.uniPlatform || '', 40).toLowerCase();
+}
+
+function canUseMockLogin(data, context = {}) {
+  if (!(data && data.mock)) return false;
+  const env = typeof process !== 'undefined' && process.env ? process.env : {};
+  if (env.ALLOW_MOCK_LOGIN === 'true') return true;
+  const contextPlatform = getClientPlatform(context);
+  const clientPlatform = cleanText(data.clientPlatform || data.platform, 40).toLowerCase();
+  const platform = contextPlatform || clientPlatform;
+  return platform && !['mp-weixin', 'weixin'].includes(platform);
+}
+
 async function verifyToken(db, token) {
   if (!token) {
     return null;
@@ -186,10 +200,9 @@ async function login(data) {
   return { success: true, data: { token, user: publicUser(user) } };
 }
 
-async function weixinLogin(data) {
+async function weixinLogin(data, context = {}) {
   const code = cleanText(data && data.code, 120);
-  const config = getWxMpConfig();
-  const allowMock = !!(data && data.mock && !config.secret);
+  const allowMock = !code && canUseMockLogin(data, context);
   if (!code && !allowMock) {
     return { success: false, message: '微信登录凭证不能为空' };
   }
@@ -204,28 +217,32 @@ async function weixinLogin(data) {
 
   const result = await db.collection('app-users').where({ wxOpenid: openid }).limit(1).get();
   let user = result.data && result.data[0];
-  const nickname = cleanText(userInfo.nickName || userInfo.nickname, 80) || (user && user.nickname) || `微信用户${openid.slice(-6)}`;
-  const avatarUrl = cleanText(userInfo.avatarUrl, 500) || (user && user.avatarUrl) || '';
+  const wxNickname = cleanText(userInfo.nickName || userInfo.nickname, 80);
+  const wxAvatarUrl = cleanText(userInfo.avatarUrl, 500);
+  const fallbackNickname = `微信用户${openid.slice(-6)}`;
+  const nickname = user
+    ? (user.nickname || wxNickname || fallbackNickname)
+    : (wxNickname || fallbackNickname);
+  const avatarUrl = user
+    ? (user.avatarUrl || wxAvatarUrl || '')
+    : (wxAvatarUrl || '');
 
   if (user && user.status === 'disabled') {
     return { success: false, message: '账号已被禁用' };
   }
 
   if (user) {
-    await db.collection('app-users').doc(user._id).update({
+    const updateData = {
       nickname,
       avatarUrl,
       wxUnionid: unionid || user.wxUnionid || '',
       loginType: 'weixin-mp',
       lastLoginTime: now()
-    });
+    };
+    await db.collection('app-users').doc(user._id).update(updateData);
     user = {
       ...user,
-      nickname,
-      avatarUrl,
-      wxUnionid: unionid || user.wxUnionid || '',
-      loginType: 'weixin-mp',
-      lastLoginTime: now()
+      ...updateData
     };
   } else {
     const userDoc = {
@@ -300,7 +317,7 @@ async function logout(data) {
   return { success: true };
 }
 
-exports.main = async (event) => {
+exports.main = async (event, context = {}) => {
   const { method, params = [] } = event || {};
   try {
     switch (method) {
@@ -309,7 +326,7 @@ exports.main = async (event) => {
       case 'login':
         return await login(params[0] || {});
       case 'weixinLogin':
-        return await weixinLogin(params[0] || {});
+        return await weixinLogin(params[0] || {}, context);
       case 'me':
         return await me(params[0] || {});
       case 'updateProfile':

@@ -74,6 +74,19 @@ function getDevMockOpenid() {
   return openid;
 }
 
+function getClientPlatform() {
+  // #ifdef MP-WEIXIN
+  return 'mp-weixin';
+  // #endif
+  // #ifdef H5
+  return 'h5';
+  // #endif
+  // #ifdef APP-PLUS
+  return 'app-plus';
+  // #endif
+  return 'devtools';
+}
+
 export async function loginWithWeixin(userInfo = {}) {
   let loginRes = null;
   try {
@@ -83,12 +96,20 @@ export async function loginWithWeixin(userInfo = {}) {
   }
   const params = loginRes && loginRes.code
     ? { code: loginRes.code, userInfo }
-    : { mock: true, mockOpenid: getDevMockOpenid(), userInfo };
+    : { mock: true, mockOpenid: getDevMockOpenid(), userInfo, clientPlatform: getClientPlatform() };
   const result = await callAuth('weixinLogin', params);
   if (result && result.success && result.data) {
     setAuthSession(result.data.token, result.data.user);
   }
   return result;
+}
+
+export async function completeWeixinProfile(userInfo = {}) {
+  const currentUser = getCurrentUser() || {};
+  const nickname = userInfo.nickName || userInfo.nickname || currentUser.nickname || '';
+  const avatarUrl = userInfo.avatarUrl || currentUser.avatarUrl || '';
+  if (!nickname || !avatarUrl) return { success: false, message: '微信资料不完整' };
+  return updateProfile({ nickname, avatarUrl });
 }
 
 export async function updateProfile(profile = {}) {
