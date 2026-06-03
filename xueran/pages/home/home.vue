@@ -8,6 +8,16 @@
       </view>
     </view>
 
+    <view v-if="announcements.length" class="announcement-bar slide-up" @click="goAnnouncements">
+      <text class="announcement-label">公告</text>
+      <view class="announcement-window">
+        <view class="announcement-track" :class="{ rolling: announcements.length > 1 || announcementText.length > 18 }">
+          <text class="announcement-text">{{ announcementText }}</text>
+        </view>
+      </view>
+      <text class="announcement-arrow">›</text>
+    </view>
+
     <view v-if="!loggedIn" class="notice slide-up">
       <text>登录后可以提问并保存历史记录。</text>
       <button class="notice-btn" @click="goLogin">去登录</button>
@@ -91,7 +101,7 @@
 
 <script>
 import { isLoggedIn } from '@/utils/auth.js';
-import { askAi, getAiAvailability, getAiScripts } from '@/utils/aiApi.js';
+import { askAi, getAiAvailability, getAiScripts, listAnnouncements } from '@/utils/aiApi.js';
 
 export default {
   data() {
@@ -111,10 +121,14 @@ export default {
       answer: '',
       analysis: '',
       answerSource: '',
-      references: []
+      references: [],
+      announcements: []
     };
   },
   computed: {
+    announcementText() {
+      return this.announcements.map(item => item.title).filter(Boolean).join('   ·   ');
+    },
     showScriptResults() {
       return this.scriptFocused && (this.scriptKeyword.trim().length > 0 || this.scriptSearching);
     },
@@ -124,12 +138,21 @@ export default {
   },
   async onShow() {
     this.loggedIn = isLoggedIn();
+    await this.loadAnnouncements();
     await this.loadAvailability();
   },
   onUnload() {
     if (this.scriptSearchTimer) clearTimeout(this.scriptSearchTimer);
   },
   methods: {
+    async loadAnnouncements() {
+      try {
+        const res = await listAnnouncements({ limit: 5 });
+        this.announcements = res.success && res.data ? (res.data.list || []) : [];
+      } catch (error) {
+        this.announcements = [];
+      }
+    },
     async loadAvailability() {
       this.availabilityLoaded = false;
       try {
@@ -223,6 +246,9 @@ export default {
     },
     goConfig() {
       uni.navigateTo({ url: '/pages/ai-config/ai-config' });
+    },
+    goAnnouncements() {
+      uni.navigateTo({ url: '/pages/announcements/announcements' });
     }
   }
 };
@@ -347,6 +373,62 @@ export default {
 .notice.danger {
   background: #fff7f5;
   color: #a13a2e;
+}
+
+.announcement-bar {
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  margin-bottom: 20rpx;
+  padding: 18rpx 22rpx;
+  border: 1rpx solid #efe5d8;
+  border-radius: 16rpx;
+  background: #fffaf4;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+
+.announcement-label {
+  flex: 0 0 auto;
+  padding: 4rpx 10rpx;
+  border-radius: 8rpx;
+  background: #2f261f;
+  color: #fff;
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.announcement-window {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.announcement-track {
+  display: inline-block;
+  min-width: 100%;
+}
+
+.announcement-track.rolling {
+  animation: announcementRoll 12s linear infinite;
+}
+
+.announcement-text {
+  color: #5f4b3a;
+  font-size: 25rpx;
+  line-height: 1.4;
+}
+
+.announcement-arrow {
+  flex: 0 0 auto;
+  color: #a88a6b;
+  font-size: 36rpx;
+  line-height: 1;
+}
+
+@keyframes announcementRoll {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(-100%); }
 }
 
 .search-panel,

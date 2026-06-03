@@ -18,6 +18,10 @@ export function setAuthSession(token, user) {
   uni.setStorageSync(USER_KEY, user);
 }
 
+export function setCurrentUser(user) {
+  uni.setStorageSync(USER_KEY, user);
+}
+
 export function clearAuthSession() {
   uni.removeStorageSync(TOKEN_KEY);
   uni.removeStorageSync(USER_KEY);
@@ -83,6 +87,15 @@ export async function loginWithWeixin(userInfo = {}) {
   const result = await callAuth('weixinLogin', params);
   if (result && result.success && result.data) {
     setAuthSession(result.data.token, result.data.user);
+  }
+  return result;
+}
+
+export async function updateProfile(profile = {}) {
+  const token = getAuthToken();
+  const result = await callAuth('updateProfile', { ...profile, token });
+  if (result && result.success && result.data && result.data.user) {
+    setCurrentUser(result.data.user);
   }
   return result;
 }

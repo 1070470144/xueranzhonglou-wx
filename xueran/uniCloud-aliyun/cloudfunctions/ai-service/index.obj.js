@@ -8,8 +8,10 @@ const TABLES = {
   adminConfig: 'ai-configs',
   userConfig: 'user-ai-configs',
   knowledge: 'ai-knowledge',
+  corrections: 'ai-answer-corrections',
   records: 'ai-question-records',
-  scripts: 'scripts'
+  scripts: 'scripts',
+  announcements: 'announcements'
 };
 
 function ok(data = {}, message = '操作成功') {
@@ -28,11 +30,123 @@ function cleanText(value, max = 4000) {
   return String(value || '').trim().slice(0, max);
 }
 
+function isEnabled(value) {
+  return value === true || value === 'true' || value === 1 || value === '1';
+}
+
+function isActiveAnnouncement(item, time = now()) {
+  if (!item || item.status !== 'published') return false;
+  if (item.startTime && Number(item.startTime) > time) return false;
+  if (item.endTime && Number(item.endTime) < time) return false;
+  return true;
+}
+
+function publicAnnouncement(item, detail = false) {
+  if (!item) return null;
+  const doc = {
+    _id: item._id,
+    title: item.title || '',
+    summary: item.summary || '',
+    type: item.type || 'notice',
+    pinned: !!item.pinned,
+    priority: Number(item.priority || 0),
+    publishTime: item.publishTime || item.createTime || item.updateTime || 0,
+    updateTime: item.updateTime || 0
+  };
+  if (detail) doc.content = item.content || '';
+  return doc;
+}
+
+async function getActiveAnnouncements(limit = 20) {
+  const res = await db.collection(TABLES.announcements)
+    .where({ status: 'published' })
+    .orderBy('updateTime', 'desc')
+    .limit(Math.min(50, Math.max(1, Number(limit || 20))))
+    .get();
+  return (res.data || [])
+    .filter(item => isActiveAnnouncement(item))
+    .sort((a, b) => {
+      if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;
+      const priorityDiff = Number(b.priority || 0) - Number(a.priority || 0);
+      if (priorityDiff) return priorityDiff;
+      return Number(b.publishTime || b.createTime || b.updateTime || 0) - Number(a.publishTime || a.createTime || a.updateTime || 0);
+    });
+}
+
+function normalizeText(value) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/[\s\r\n\t`~!@#$%^&*()_+\-=\[\]{};:'"\\|,.<>/?，。！？；：“”‘’（）【】《》、]/g, '')
+    .trim();
+}
+
+function tokenize(value) {
+  const words = String(value || '').toLowerCase().match(/[a-z0-9]+|[\u4e00-\u9fa5]{2,}/g) || [];
+  const pieces = [];
+  words.forEach(word => {
+    pieces.push(word);
+    if (/^[\u4e00-\u9fa5]+$/.test(word) && word.length > 3) {
+      for (let index = 0; index <= word.length - 2; index += 1) pieces.push(word.slice(index, index + 2));
+    }
+  });
+  return Array.from(new Set(pieces.filter(item => item.length >= 2))).slice(0, 40);
+}
+
+function scoreCorrection(correction, question, script) {
+  const normalizedQuestion = normalizeText(question);
+  const normalizedCorrectionQuestion = normalizeText(correction.question || correction.title || '');
+  if (normalizedQuestion && normalizedQuestion === normalizedCorrectionQuestion) return 100;
+  if (normalizedCorrectionQuestion && normalizedQuestion.includes(normalizedCorrectionQuestion)) return 96;
+  if (normalizedQuestion && normalizedCorrectionQuestion.includes(normalizedQuestion)) return 94;
+
+  const queryTokens = tokenize([question, script && script.title].filter(Boolean).join(' '));
+  const correctionTokens = tokenize([
+    correction.question,
+    correction.correctedAnswer,
+    correction.scriptTitle,
+    Array.isArray(correction.keywords) ? correction.keywords.join(' ') : ''
+  ].filter(Boolean).join(' '));
+  if (!queryTokens.length || !correctionTokens.length) return 0;
+  const correctionSet = new Set(correctionTokens);
+  const hit = queryTokens.filter(token => correctionSet.has(token)).length;
+  return Math.round((hit / queryTokens.length) * 90);
+}
+
+async function searchCorrections(question, script) {
+  const res = await db.collection(TABLES.corrections).orderBy('updateTime', 'desc').limit(80).get();
+  const scriptId = script && script._id ? String(script._id) : '';
+  const scriptTitle = script && script.title ? String(script.title) : '';
+  return (res.data || [])
+    .filter(item => item && item.enabled !== false)
+    .filter(item => {
+      if (!item.scriptId && !item.scriptTitle) return true;
+      return (scriptId && item.scriptId === scriptId) || (scriptTitle && item.scriptTitle === scriptTitle);
+    })
+    .map(item => ({ ...item, score: scoreCorrection(item, question, script) }))
+    .filter(item => item.score >= 35)
+    .sort((a, b) => (b.score - a.score) || ((b.priority || 0) - (a.priority || 0)))
+    .slice(0, 3);
+}
+
+function correctionPromptPrefix(corrections) {
+  if (!corrections || !corrections.length) return '';
+  const refs = corrections.map((item, index) => [
+    `【管理员修正${index + 1}】${item.question || item.title || ''}`,
+    item.scriptTitle ? `适用板子：${item.scriptTitle}` : '适用范围：通用',
+    `正确答案：${item.correctedAnswer || ''}`
+  ].join('\n')).join('\n\n');
+  return [
+    '管理员修正知识优先级最高。只要管理员修正与用户问题相关，必须以管理员修正为准；如果百科知识或模型推理与修正冲突，以修正为准。',
+    refs,
+    ''
+  ].filter(Boolean).join('\n');
+}
+
 function publicConfig(config) {
   if (!config) return null;
   const maskedKey = config.apiKey ? `${String(config.apiKey).slice(0, 6)}***${String(config.apiKey).slice(-4)}` : '';
   return {
-    enabled: !!config.enabled,
+    enabled: isEnabled(config.enabled),
     provider: config.provider || 'openai-compatible',
     baseUrl: config.baseUrl || '',
     model: config.model || '',
@@ -64,12 +178,12 @@ async function getUserConfig(userId) {
 
 async function resolveAiConfig(userId) {
   const userConfig = await getUserConfig(userId);
-  if (userConfig && userConfig.enabled && userConfig.apiKey && userConfig.baseUrl && userConfig.model) {
+  if (userConfig && isEnabled(userConfig.enabled) && userConfig.apiKey && userConfig.baseUrl && userConfig.model) {
     return { source: 'user', config: userConfig };
   }
 
   const adminConfig = await getAdminConfig();
-  if (adminConfig && adminConfig.enabled && adminConfig.apiKey && adminConfig.baseUrl && adminConfig.model) {
+  if (adminConfig && isEnabled(adminConfig.enabled) && adminConfig.apiKey && adminConfig.baseUrl && adminConfig.model) {
     return { source: 'admin', config: adminConfig };
   }
 
@@ -184,7 +298,7 @@ function scriptContext(script) {
   ].join('\n'), 6000);
 }
 
-function buildPrompt({ question, script, knowledge }) {
+function buildPrompt({ question, script, knowledge, corrections = [] }) {
   const refs = knowledge.map((item, index) => `【知识${index + 1}】${item.title}\n${knowledgeContext(item, question)}`).join('\n\n');
   const board = script ? `\n\n【指定板子】\n${scriptContext(script)}` : '';
   return [
@@ -292,6 +406,20 @@ async function callAi(config, prompt) {
 }
 
 module.exports = {
+  async listAnnouncements(params = {}) {
+    const limit = Math.min(20, Math.max(1, Number(params.limit || 10)));
+    const list = await getActiveAnnouncements(limit);
+    return ok({ list: list.slice(0, limit).map(item => publicAnnouncement(item)) });
+  },
+
+  async getAnnouncement(params = {}) {
+    if (!params.id) return fail('missing announcement id');
+    const res = await db.collection(TABLES.announcements).doc(params.id).get();
+    const item = res.data && res.data[0];
+    if (!isActiveAnnouncement(item)) return fail('announcement not found');
+    return ok({ item: publicAnnouncement(item, true) });
+  },
+
   async getAvailability(params = {}) {
     const auth = await verifyToken(params.token);
     if (!auth) {
@@ -319,7 +447,7 @@ module.exports = {
     const doc = {
       userId: auth.user._id,
       email: auth.user.email,
-      enabled: !!input.enabled,
+      enabled: isEnabled(input.enabled),
       provider: cleanText(input.provider || 'openai-compatible', 60),
       baseUrl: cleanText(input.baseUrl || '', 300),
       model: cleanText(input.model || '', 120),
@@ -379,8 +507,41 @@ module.exports = {
     if (!resolved) return fail('AI 未配置，请先配置个人 AI 或等待管理员开启默认 AI');
 
     const script = await getScript(params.scriptId);
+    const corrections = await searchCorrections(question, script);
+    const directCorrection = corrections.find(item => item.score >= 94);
+    if (directCorrection) {
+      const record = {
+        userId: auth.user._id,
+        email: auth.user.email,
+        question,
+        answer: directCorrection.correctedAnswer,
+        analysis: '命中管理员修正知识，已按修正答案直接回答。',
+        references: [{ id: directCorrection._id, title: directCorrection.question || '管理员修正', sourceUrl: `ai-correction:${directCorrection.recordId || directCorrection._id}` }],
+        correctionReferences: [{ id: directCorrection._id, question: directCorrection.question || '', score: directCorrection.score }],
+        scriptId: script ? script._id : '',
+        scriptTitle: script ? script.title : '',
+        scriptJsonSnapshot: script ? script.content : null,
+        provider: 'admin-correction',
+        model: 'admin-correction',
+        configSource: 'correction',
+        isCorrected: false,
+        usedCorrectionIds: [directCorrection._id],
+        correctionMatched: true,
+        createTime: now(),
+        updateTime: now()
+      };
+      const addResult = await db.collection(TABLES.records).add(record);
+      return ok({
+        recordId: addResult.id,
+        answer: record.answer,
+        analysis: record.analysis,
+        references: record.references,
+        configSource: record.configSource
+      });
+    }
     const knowledge = await searchKnowledge(question, script);
-    const prompt = buildPrompt({ question, script, knowledge });
+    const promptQuestion = corrections.length ? `${correctionPromptPrefix(corrections)}\n用户原始问题：${question}` : question;
+    const prompt = buildPrompt({ question: promptQuestion, script, knowledge, corrections });
     const aiResult = await callAi(resolved.config, prompt);
     const record = {
       userId: auth.user._id,
@@ -389,6 +550,7 @@ module.exports = {
       answer: aiResult.answer,
       analysis: aiResult.analysis,
       references: knowledge.map(item => ({ id: item.id, title: item.title, sourceUrl: item.sourceUrl })),
+      correctionReferences: corrections.map(item => ({ id: item._id, question: item.question || '', score: item.score })),
       scriptId: script ? script._id : '',
       scriptTitle: script ? script.title : '',
       scriptJsonSnapshot: script ? script.content : null,
@@ -396,6 +558,8 @@ module.exports = {
       model: resolved.config.model,
       configSource: resolved.source,
       isCorrected: false,
+      usedCorrectionIds: corrections.map(item => item._id),
+      correctionMatched: corrections.length > 0,
       createTime: now(),
       updateTime: now()
     };

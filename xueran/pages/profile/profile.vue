@@ -23,17 +23,6 @@
     </view>
 
     <view class="feature-list">
-      <view class="feature-item" @click="goToSubmissionGuide">
-        <view class="feature-icon blue-soft">
-          <text class="feature-icon-text">稿</text>
-        </view>
-        <view class="feature-content">
-          <view class="feature-title">投稿须知</view>
-          <view class="feature-desc">了解投稿规则和要求</view>
-        </view>
-        <view class="arrow"></view>
-      </view>
-
       <view class="feature-item" @click="goToQuestionRecords">
         <view class="feature-icon green-soft">
           <text class="feature-icon-text">问</text>
@@ -100,7 +89,7 @@
         <view class="arrow"></view>
       </view>
 
-      <view class="feature-item last">
+      <view class="feature-item last" @click="goToProfileSettings">
         <view class="feature-icon gray-soft">
           <text class="feature-icon-text">设</text>
         </view>
@@ -150,11 +139,6 @@ export default {
         }
       });
     },
-    goToSubmissionGuide() {
-      uni.navigateTo({
-        url: '/pages/submission-guide/submission-guide'
-      });
-    },
     goToQuestionRecords() {
       uni.navigateTo({
         url: '/pages/question-records/question-records'
@@ -183,6 +167,15 @@ export default {
     goToExamRecords() {
       uni.navigateTo({
         url: '/pages/exam-records/exam-records'
+      });
+    },
+    goToProfileSettings() {
+      if (!this.user) {
+        this.goToLogin();
+        return;
+      }
+      uni.navigateTo({
+        url: '/pages/profile-settings/profile-settings'
       });
     }
   }

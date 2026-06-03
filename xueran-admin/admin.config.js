@@ -41,6 +41,17 @@ export default {
 	sideBar: { // 左侧菜单
 		// 配置静态菜单列表（放置在用户被授权的菜单列表下边）
 		staticMenu: [{
+			menu_id: "announcements",
+			text: '公告管理',
+			icon: 'admin-icons-notification',
+			url: "",
+			children: [{
+				menu_id: "announcements-list",
+				text: '公告列表',
+				icon: 'admin-icons-doc',
+				value: '/pages/admin/announcements/list'
+			}]
+		}, {
 			menu_id: "scripts",
 			text: '剧本管理',
 			icon: 'admin-icons-table',
@@ -71,6 +82,11 @@ export default {
 				text: '问答记录',
 				icon: 'admin-icons-table',
 				value: '/pages/admin/ai/records'
+			}, {
+				menu_id: "ai-corrections",
+				text: '知识修正',
+				icon: 'admin-icons-doc',
+				value: '/pages/admin/ai/corrections'
 			}]
 		}, {
 			menu_id: "demo",

@@ -1,8 +1,14 @@
 <template>
   <view class="page">
     <view class="toolbar">
-      <input v-model="keyword" class="search" placeholder="搜索题干" confirm-type="search" @confirm="reload" />
-      <button class="add-btn" @tap="openForm()">新增</button>
+      <view class="search-box">
+        <input v-model="keyword" class="search-input" placeholder="搜索题干" confirm-type="search" @confirm="reload" />
+        <button class="small-btn" @tap="reload">查询</button>
+      </view>
+      <view class="tool-row">
+        <button class="small-btn" @tap="openImport">导入</button>
+        <button class="small-btn primary" @tap="openQuestion()">新增</button>
+      </view>
     </view>
 
     <view class="filters">
@@ -11,73 +17,59 @@
       <view class="chip" :class="{ active: filterLevel === 2 }" @tap="setLevel(2)">2星</view>
     </view>
 
-    <view v-if="showForm" class="panel">
-      <view class="panel-title">{{ form.id ? '编辑题目' : '新增题目' }}</view>
-      <view class="row two">
-        <picker :range="levelOptions" range-key="label" :value="form.level - 1" @change="form.level = Number(levelOptions[$event.detail.value].value)">
-          <view class="picker">{{ form.level }}星</view>
-        </picker>
-        <picker :range="typeOptions" range-key="label" :value="form.type === 'judge' ? 1 : 0" @change="onTypeChange">
-          <view class="picker">{{ form.type === 'judge' ? '判断题' : '选择题' }}</view>
-        </picker>
+    <view class="list-head">
+      <view>
+        <text class="section-title">模拟考配置</text>
+        <text class="count-text">{{ total }} 条</text>
       </view>
-      <textarea v-model="form.title" class="textarea" placeholder="输入题干" maxlength="1000" />
-
-      <view class="image-grid">
-        <view v-for="(image, index) in form.images" :key="image" class="image-item">
-          <image :src="image" class="picked-image" mode="aspectFill" />
-          <view class="remove-image" @tap="removeImage(index)">x</view>
-        </view>
-        <view v-if="form.images.length < 3" class="add-image" @tap="chooseImages">+</view>
+      <view class="head-actions">
+        <button class="tip-btn" @tap="showTip">!</button>
+        <button v-if="!selectMode" class="text-btn" :disabled="!items.length" @tap="toggleSelectMode">批量管理</button>
       </view>
+    </view>
 
-      <view v-if="form.type === 'choice'" class="options">
-        <view v-for="(option, index) in form.options" :key="option.key" class="option-row">
-          <text class="option-key">{{ option.key }}</text>
-          <input v-model="option.text" class="option-input" :placeholder="'选项 ' + option.key" />
-        </view>
-      </view>
-
-      <picker v-if="form.type === 'choice'" :range="answerOptions" :value="answerIndex" @change="form.answer = answerOptions[$event.detail.value]">
-        <view class="picker answer">答案：{{ form.answer || '请选择' }}</view>
-      </picker>
-      <view v-else class="filters compact">
-        <view class="chip" :class="{ active: form.answer === 'true' }" @tap="form.answer = 'true'">正确</view>
-        <view class="chip" :class="{ active: form.answer === 'false' }" @tap="form.answer = 'false'">错误</view>
-      </view>
-
-      <textarea v-model="form.explanation" class="textarea small" placeholder="解析，可选" maxlength="1000" />
-      <view class="form-actions">
-        <button class="ghost-btn" @tap="closeForm">取消</button>
-        <button class="primary-btn" :loading="saving" @tap="saveQuestion">保存</button>
+    <view v-if="selectMode" class="batch-bar">
+      <text class="count-text">已选 {{ selectedCount }} 条</text>
+      <view class="batch-actions">
+        <button class="text-btn" @tap="toggleAll">{{ allSelected ? '取消全选' : '全选' }}</button>
+        <button class="danger-mini" :disabled="!selectedCount || batchDeleting" @tap="confirmBatchDelete">删除选中</button>
+        <button class="text-btn" @tap="toggleSelectMode">取消</button>
       </view>
     </view>
 
     <view v-if="items.length" class="list">
-      <view v-for="item in items" :key="item.id" class="card">
-        <view class="card-head">
-          <view class="tags"><text>{{ item.level }}星</text><text>{{ item.type === 'judge' ? '判断' : '选择' }}</text></view>
-          <view class="answer">答案：{{ formatAnswer(item) }}</view>
+      <view v-for="item in items" :key="item.id" class="record-item" :class="{ selected: isSelected(item) }" @tap="handleItemTap(item)">
+        <view v-if="selectMode" class="selector" :class="{ checked: isSelected(item) }">
+          <text v-if="isSelected(item)">✓</text>
         </view>
-        <view class="title">{{ item.title }}</view>
-        <view v-if="item.images && item.images.length" class="thumbs">
-          <image v-for="image in item.images" :key="image" :src="image" mode="aspectFill" />
-        </view>
-        <view class="actions">
-          <button class="ghost-btn" @tap="openForm(item)">编辑</button>
-          <button class="danger-btn" @tap="confirmDelete(item)">删除</button>
+        <view class="card-body">
+          <view class="card-head">
+            <view class="tags">
+              <text>{{ item.level }}星</text>
+              <text>{{ item.type === 'judge' ? '判断' : '选择' }}</text>
+            </view>
+            <view class="answer">答案：{{ formatAnswer(item) }}</view>
+          </view>
+          <view class="record-question">{{ item.title }}</view>
+          <view v-if="item.images && item.images.length" class="thumbs">
+            <image v-for="image in item.images" :key="image" :src="image" mode="aspectFill" @tap.stop="previewImage(image, item.images)" />
+          </view>
+          <view v-if="item.explanation" class="record-answer">解析：{{ item.explanation }}</view>
+          <view class="record-meta">{{ formatTime(item.updateTime || item.createTime) }}</view>
+          <view v-if="!selectMode" class="actions">
+            <button class="ghost-btn" @tap.stop="openQuestion(item)">编辑</button>
+            <button class="danger-btn" @tap.stop="confirmDelete(item)">删除</button>
+          </view>
         </view>
       </view>
     </view>
     <view v-else-if="!loading" class="empty">暂无题目</view>
-    <view class="footer">{{ loading ? '加载中...' : (noMore ? '没有更多了' : '') }}</view>
+    <view class="footer">{{ loading ? '加载中...' : (noMore && items.length ? '没有更多了' : '') }}</view>
   </view>
 </template>
 
 <script>
-import { getExamQuestions, saveExamQuestion, deleteExamQuestion } from '@/utils/examApi.js';
-
-const defaultOptions = () => ['A', 'B', 'C', 'D'].map(key => ({ key, text: '' }));
+import { getExamQuestions, deleteExamQuestion, deleteExamQuestions } from '@/utils/examApi.js';
 
 export default {
   data() {
@@ -87,25 +79,27 @@ export default {
       items: [],
       page: 1,
       pageSize: 10,
+      total: 0,
       loading: false,
       noMore: false,
-      showForm: false,
-      saving: false,
-      levelOptions: [{ label: '1星', value: 1 }, { label: '2星', value: 2 }],
-      typeOptions: [{ label: '选择题', value: 'choice' }, { label: '判断题', value: 'judge' }],
-      form: this.emptyForm()
+      selectMode: false,
+      selectedIds: [],
+      batchDeleting: false
     };
   },
   computed: {
-    answerOptions() {
-      return this.form.options.map(item => item.key);
+    selectedCount() {
+      return this.selectedIds.length;
     },
-    answerIndex() {
-      return Math.max(0, this.answerOptions.indexOf(this.form.answer));
+    allSelected() {
+      return !!this.items.length && this.items.every(item => this.selectedIds.includes(item.id));
     }
   },
   onLoad() {
     this.load({ page: 1 });
+  },
+  onShow() {
+    if (this.page > 1 || this.items.length) this.reload();
   },
   onPullDownRefresh() {
     this.reload();
@@ -114,10 +108,8 @@ export default {
     if (!this.loading && !this.noMore) this.load({ page: this.page + 1, append: true });
   },
   methods: {
-    emptyForm() {
-      return { id: '', level: 1, type: 'choice', title: '', images: [], options: defaultOptions(), answer: 'A', explanation: '' };
-    },
     setLevel(level) {
+      if (this.filterLevel === level) return;
       this.filterLevel = level;
       this.reload();
     },
@@ -134,69 +126,63 @@ export default {
         const list = data.list || [];
         this.items = append ? this.items.concat(list) : list;
         this.page = page;
+        this.total = Number(data.total || 0);
         this.noMore = data.total ? page * this.pageSize >= data.total : list.length < this.pageSize;
+        this.syncSelectedIds();
       } else {
         uni.showToast({ title: result.message || '加载失败', icon: 'none' });
       }
       this.loading = false;
       uni.stopPullDownRefresh();
     },
-    openForm(item) {
-      this.form = item ? {
-        id: item.id,
-        level: item.level,
-        type: item.type,
-        title: item.title,
-        images: (item.images || []).slice(),
-        options: item.type === 'judge' ? defaultOptions() : (item.options || defaultOptions()).map(option => ({ ...option })),
-        answer: item.answer || (item.type === 'judge' ? 'true' : 'A'),
-        explanation: item.explanation || ''
-      } : this.emptyForm();
-      this.showForm = true;
+    openQuestion(item) {
+      const query = item && item.id ? `?id=${item.id}` : '';
+      uni.navigateTo({ url: `/pages/exam-question-form/exam-question-form${query}` });
     },
-    closeForm() {
-      this.showForm = false;
-      this.form = this.emptyForm();
+    openImport() {
+      uni.navigateTo({ url: '/pages/exam-question-import/exam-question-import' });
     },
-    onTypeChange(e) {
-      const type = this.typeOptions[e.detail.value].value;
-      this.form.type = type;
-      this.form.answer = type === 'judge' ? 'true' : 'A';
+    toggleSelectMode() {
+      this.selectMode = !this.selectMode;
+      this.selectedIds = [];
     },
-    chooseImages() {
-      uni.chooseImage({
-        count: 3 - this.form.images.length,
-        sizeType: ['compressed'],
-        sourceType: ['album', 'camera'],
-        success: async res => {
-          uni.showLoading({ title: '上传中' });
-          try {
-            for (const file of res.tempFilePaths || []) {
-              const suffix = (file.match(/\.[a-zA-Z0-9]+$/) || ['.jpg'])[0];
-              const cloudPath = `exam-question/${Date.now()}-${Math.random().toString(36).slice(2)}${suffix}`;
-              const uploaded = await uniCloud.uploadFile({ filePath: file, cloudPath });
-              const url = uploaded.fileID || uploaded.fileId || uploaded.url;
-              if (url) this.form.images.push(url);
-            }
-          } finally {
-            uni.hideLoading();
-          }
-        }
-      });
-    },
-    removeImage(index) {
-      this.form.images.splice(index, 1);
-    },
-    async saveQuestion() {
-      if (this.saving) return;
-      this.saving = true;
-      const result = await saveExamQuestion(this.form);
-      this.saving = false;
-      uni.showToast({ title: result.message || (result.success ? '保存成功' : '保存失败'), icon: result.success ? 'success' : 'none' });
-      if (result.success) {
-        this.closeForm();
-        this.reload();
+    handleItemTap(item) {
+      if (this.selectMode) {
+        this.toggleItem(item);
       }
+    },
+    toggleItem(item) {
+      const id = item && item.id;
+      if (!id) return;
+      const index = this.selectedIds.indexOf(id);
+      if (index >= 0) {
+        this.selectedIds.splice(index, 1);
+      } else {
+        this.selectedIds.push(id);
+      }
+    },
+    toggleAll() {
+      if (this.allSelected) {
+        this.selectedIds = [];
+        return;
+      }
+      this.selectedIds = this.items.map(item => item.id).filter(Boolean);
+    },
+    isSelected(item) {
+      return !!item && this.selectedIds.includes(item.id);
+    },
+    syncSelectedIds() {
+      const visibleIds = new Set(this.items.map(item => item.id));
+      this.selectedIds = this.selectedIds.filter(id => visibleIds.has(id));
+      if (!this.items.length) this.selectMode = false;
+    },
+    showTip() {
+      uni.showModal({
+        title: '题库说明',
+        content: '本题库不提供任何题目内容，只提供工具。你可以输入自己的题目，根据自己的题目考试。',
+        showCancel: false,
+        confirmText: '知道了'
+      });
     },
     confirmDelete(item) {
       uni.showModal({
@@ -212,51 +198,85 @@ export default {
         }
       });
     },
+    confirmBatchDelete() {
+      if (!this.selectedCount || this.batchDeleting) return;
+      uni.showModal({
+        title: '批量删除',
+        content: `确定删除选中的 ${this.selectedCount} 道题吗？`,
+        confirmText: '删除',
+        confirmColor: '#b42318',
+        success: async res => {
+          if (!res.confirm) return;
+          this.batchDeleting = true;
+          const result = await deleteExamQuestions(this.selectedIds);
+          this.batchDeleting = false;
+          uni.showToast({ title: result.message || '已删除', icon: result.success ? 'success' : 'none' });
+          if (result.success) {
+            this.selectMode = false;
+            this.selectedIds = [];
+            this.reload();
+          }
+        }
+      });
+    },
+    previewImage(current, urls) {
+      uni.previewImage({ current, urls });
+    },
     formatAnswer(item) {
       if (item.type === 'judge') return item.answer === 'true' ? '正确' : '错误';
       return item.answer;
+    },
+    formatTime(value) {
+      if (!value) return '';
+      const date = new Date(value);
+      const pad = n => String(n).padStart(2, '0');
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
     }
   }
 };
 </script>
 
 <style scoped>
-.page { min-height: 100vh; padding: 20rpx; box-sizing: border-box; background: #f8f8f8; color: #2f261f; }
-.toolbar { display: flex; gap: 14rpx; margin-bottom: 18rpx; }
-.search { flex: 1; height: 78rpx; padding: 0 22rpx; border-radius: 12rpx; background: #fff; border: 1rpx solid #ebe6df; box-sizing: border-box; }
+.page { min-height: 100vh; padding: 24rpx 24rpx 56rpx; box-sizing: border-box; background: #f6f2ec; color: #241f1a; }
 button { margin: 0; }
 button::after { border: 0; }
-.add-btn, .primary-btn { color: #fff; background: #007aff; border-radius: 12rpx; font-size: 28rpx; }
-.add-btn { width: 132rpx; height: 78rpx; line-height: 78rpx; }
+.toolbar { padding: 20rpx; margin-bottom: 18rpx; border: 1rpx solid #e5d8c8; border-radius: 22rpx; background: #fffaf4; box-shadow: 0 12rpx 36rpx rgba(72, 45, 22, 0.08); }
+.search-box { display: flex; align-items: center; gap: 14rpx; }
+.search-input { flex: 1; height: 72rpx; padding: 0 22rpx; border: 1rpx solid #e2d2bf; border-radius: 16rpx; background: #fffdf9; box-sizing: border-box; font-size: 26rpx; color: #241f1a; }
+.tool-row { display: flex; gap: 14rpx; margin-top: 16rpx; }
+.small-btn { min-width: 128rpx; height: 72rpx; line-height: 72rpx; padding: 0 22rpx; border: 1rpx solid #e2d2bf; border-radius: 16rpx; background: #fffaf4; color: #4a3624; font-size: 26rpx; }
+.small-btn.primary { background: #5d4037; border-color: #5d4037; color: #fffaf4; }
 .filters { display: flex; gap: 12rpx; margin-bottom: 18rpx; }
-.filters.compact { margin-top: 14rpx; }
-.chip { padding: 14rpx 24rpx; border-radius: 12rpx; background: #fff; border: 1rpx solid #ebe6df; color: #6f6258; font-size: 26rpx; }
-.chip.active { color: #007aff; background: #eef6ff; border-color: #007aff; }
-.panel, .card { padding: 22rpx; margin-bottom: 18rpx; border: 1rpx solid #ebe6df; border-radius: 16rpx; background: #fff; }
-.panel-title { margin-bottom: 16rpx; font-size: 32rpx; font-weight: 700; }
-.row.two { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12rpx; margin-bottom: 14rpx; }
-.picker { height: 74rpx; line-height: 74rpx; padding: 0 20rpx; border-radius: 12rpx; background: #faf9f7; border: 1rpx solid #ebe6df; font-size: 26rpx; }
-.picker.answer { margin-top: 14rpx; }
-.textarea { width: 100%; min-height: 160rpx; padding: 18rpx; border-radius: 12rpx; background: #fafafa; border: 1rpx solid #ebe6df; box-sizing: border-box; font-size: 26rpx; }
-.textarea.small { min-height: 110rpx; margin-top: 14rpx; }
-.image-grid { display: flex; flex-wrap: wrap; gap: 14rpx; margin: 14rpx 0; }
-.image-item, .add-image { position: relative; width: 136rpx; height: 136rpx; border-radius: 12rpx; overflow: hidden; }
-.picked-image { width: 100%; height: 100%; }
-.remove-image { position: absolute; right: 8rpx; top: 8rpx; width: 34rpx; height: 34rpx; line-height: 32rpx; text-align: center; border-radius: 50%; color: #fff; background: rgba(0,0,0,.55); }
-.add-image { display: flex; align-items: center; justify-content: center; border: 2rpx dashed #d8d1c9; color: #8c8178; font-size: 44rpx; background: #faf9f7; }
-.option-row { display: flex; align-items: center; gap: 12rpx; margin-bottom: 12rpx; }
-.option-key { width: 52rpx; height: 52rpx; line-height: 52rpx; text-align: center; border-radius: 50%; background: #eef6ff; color: #007aff; font-weight: 700; }
-.option-input { flex: 1; height: 68rpx; padding: 0 18rpx; border-radius: 12rpx; background: #fafafa; border: 1rpx solid #ebe6df; }
-.form-actions, .actions { display: flex; gap: 12rpx; margin-top: 18rpx; }
-.ghost-btn, .danger-btn, .primary-btn { flex: 1; height: 72rpx; line-height: 72rpx; font-size: 26rpx; border-radius: 12rpx; }
-.ghost-btn { color: #4b4038; background: #f5f2ee; }
-.danger-btn { color: #b42318; background: #fff0ed; }
+.chip { padding: 14rpx 24rpx; border: 1rpx solid #e2d2bf; border-radius: 16rpx; background: #fffaf4; color: #6f6258; font-size: 26rpx; }
+.chip.active { color: #5d4037; background: #efe3d4; border-color: #c8a98d; font-weight: 700; }
+.list-head { display: flex; align-items: center; justify-content: space-between; gap: 16rpx; margin: 22rpx 0 14rpx; }
+.head-actions { display: flex; align-items: center; gap: 12rpx; flex-shrink: 0; }
+.section-title { margin-right: 12rpx; font-size: 32rpx; line-height: 1.3; font-weight: 700; color: #241f1a; }
+.count-text { font-size: 24rpx; color: #8a7a68; }
+.tip-btn { width: 58rpx; height: 58rpx; line-height: 58rpx; padding: 0; border: 1rpx solid #d8c3ad; border-radius: 50%; background: #fffdf9; color: #8a5a34; font-size: 30rpx; font-weight: 800; }
+.text-btn { height: 58rpx; line-height: 58rpx; padding: 0 18rpx; border: 1rpx solid #e2d2bf; border-radius: 14rpx; background: #fffaf4; color: #4a3624; font-size: 24rpx; }
+.text-btn[disabled] { opacity: 0.45; }
+.batch-bar { display: flex; align-items: center; justify-content: space-between; gap: 14rpx; padding: 18rpx 20rpx; margin-bottom: 16rpx; border: 1rpx solid #e5d8c8; border-radius: 20rpx; background: #fffaf4; box-shadow: 0 12rpx 36rpx rgba(72, 45, 22, 0.08); }
+.batch-actions { display: flex; align-items: center; gap: 10rpx; }
+.danger-mini { height: 58rpx; line-height: 58rpx; padding: 0 18rpx; border: 1rpx solid #f3c5bd; border-radius: 14rpx; background: #fff7f5; color: #b42318; font-size: 24rpx; }
+.danger-mini[disabled] { opacity: 0.45; }
+.record-item { display: flex; gap: 18rpx; padding: 22rpx; margin-bottom: 16rpx; border: 1rpx solid #e5d8c8; border-radius: 22rpx; background: #fffaf4; box-shadow: 0 12rpx 36rpx rgba(72, 45, 22, 0.08); box-sizing: border-box; }
+.record-item.selected { border-color: #b88c67; background: #fff6ec; }
+.selector { flex: 0 0 38rpx; width: 38rpx; height: 38rpx; margin-top: 4rpx; border: 2rpx solid #c9b7a3; border-radius: 50%; box-sizing: border-box; text-align: center; line-height: 34rpx; color: #fff; font-size: 24rpx; }
+.selector.checked { background: #5d4037; border-color: #5d4037; }
+.card-body { flex: 1; min-width: 0; }
 .card-head { display: flex; justify-content: space-between; gap: 12rpx; margin-bottom: 12rpx; }
-.tags { display: flex; gap: 8rpx; }
-.tags text { padding: 6rpx 12rpx; border-radius: 8rpx; background: #f5f2ee; color: #6f6258; font-size: 22rpx; }
-.answer { color: #0f766e; font-size: 24rpx; }
-.title { font-size: 30rpx; line-height: 1.45; font-weight: 600; }
-.thumbs { display: flex; gap: 10rpx; margin-top: 14rpx; }
-.thumbs image { width: 96rpx; height: 96rpx; border-radius: 10rpx; }
-.empty, .footer { padding: 40rpx 0; text-align: center; color: #8c8178; font-size: 26rpx; }
+.tags { display: flex; gap: 8rpx; flex-wrap: wrap; }
+.tags text { padding: 6rpx 12rpx; border-radius: 10rpx; background: #f2e8dc; color: #6f6258; font-size: 22rpx; }
+.answer { flex-shrink: 0; color: #0f766e; font-size: 24rpx; }
+.record-question { font-size: 28rpx; line-height: 1.45; font-weight: 700; color: #241f1a; word-break: break-all; }
+.record-answer { display: -webkit-box; margin-top: 12rpx; overflow: hidden; color: #6f6258; font-size: 25rpx; line-height: 1.5; text-overflow: ellipsis; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.record-meta { margin-top: 12rpx; color: #8a7a68; font-size: 22rpx; }
+.thumbs { display: flex; flex-wrap: wrap; gap: 10rpx; margin-top: 14rpx; }
+.thumbs image { width: 96rpx; height: 96rpx; border-radius: 10rpx; background: #eadccd; }
+.actions { display: flex; gap: 12rpx; margin-top: 18rpx; }
+.ghost-btn, .danger-btn { flex: 1; height: 70rpx; line-height: 70rpx; border-radius: 14rpx; font-size: 26rpx; }
+.ghost-btn { border: 1rpx solid #e2d2bf; background: #fffdf9; color: #4a3624; }
+.danger-btn { border: 1rpx solid #f3c5bd; background: #fff7f5; color: #b42318; }
+.empty, .footer { padding: 40rpx 0; text-align: center; color: #8a7a68; font-size: 26rpx; }
 </style>

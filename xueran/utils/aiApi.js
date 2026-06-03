@@ -47,3 +47,11 @@ export async function saveUserAiConfig(config) {
 export async function getAiScripts(params = {}) {
   return normalize(await aiService.listScripts(params));
 }
+
+export async function listAnnouncements(params = {}) {
+  return normalize(await aiService.listAnnouncements(params));
+}
+
+export async function getAnnouncement(id) {
+  return normalize(await aiService.getAnnouncement({ id }));
+}

@@ -57,6 +57,12 @@
       }
     },
     {
+      "path": "pages/profile-settings/profile-settings",
+      "style": {
+        "navigationBarTitleText": "设置"
+      }
+    },
+    {
       "path": "pages/submission-guide/submission-guide",
       "style": {
         "navigationBarTitleText": "",
@@ -73,6 +79,19 @@
       "path": "pages/ai-config/ai-config",
       "style": {
         "navigationBarTitleText": "AI 配置"
+      }
+    },
+    {
+      "path": "pages/announcements/announcements",
+      "style": {
+        "navigationBarTitleText": "公告中心",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/announcement-detail/announcement-detail",
+      "style": {
+        "navigationBarTitleText": "公告详情"
       }
     },
     {
@@ -110,10 +129,28 @@
       }
     },
     {
+      "path": "pages/exam-question-form/exam-question-form",
+      "style": {
+        "navigationBarTitleText": "题目配置"
+      }
+    },
+    {
+      "path": "pages/exam-question-import/exam-question-import",
+      "style": {
+        "navigationBarTitleText": "导入题目"
+      }
+    },
+    {
       "path": "pages/exam-records/exam-records",
       "style": {
         "navigationBarTitleText": "模拟考记录",
         "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/exam-record-detail/exam-record-detail",
+      "style": {
+        "navigationBarTitleText": "考试详情"
       }
     }
   ],

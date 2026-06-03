@@ -5,14 +5,17 @@
       <button class="search-btn" @tap="reload">搜索</button>
     </view>
     <view v-if="items.length" class="list">
-      <view v-for="item in items" :key="item._id" class="card">
+      <view v-for="item in items" :key="item._id" class="card" @tap="openDetail(item)">
         <view class="card-head">
           <view class="score">{{ item.score }}/{{ item.totalScore }}</view>
           <view class="level">{{ item.level }}星</view>
         </view>
         <view class="meta">{{ item.questionCount }}题 · 正确 {{ item.correctCount }} · 错误 {{ item.wrongCount }} · 用时 {{ formatDuration(item.durationSeconds) }}</view>
         <view class="time">{{ formatTime(item.createTime) }}</view>
-        <button class="delete-btn" @tap="confirmDelete(item)">删除</button>
+        <view class="card-actions">
+          <button class="detail-btn" @tap.stop="openDetail(item)">详情</button>
+          <button class="delete-btn" @tap.stop="confirmDelete(item)">删除</button>
+        </view>
       </view>
     </view>
     <view v-else-if="!loading" class="empty">暂无考试记录</view>
@@ -65,6 +68,9 @@ export default {
         }
       });
     },
+    openDetail(item) {
+      uni.navigateTo({ url: `/pages/exam-record-detail/exam-record-detail?id=${item._id}` });
+    },
     formatDuration(seconds) {
       const value = Number(seconds) || 0;
       const m = Math.floor(value / 60);
@@ -94,6 +100,9 @@ button::after { border: 0; }
 .level { padding: 8rpx 14rpx; border-radius: 10rpx; color: #0f766e; background: #ecfdf3; font-size: 24rpx; }
 .meta { color: #4b4038; font-size: 26rpx; line-height: 1.5; }
 .time { margin-top: 8rpx; color: #8c8178; font-size: 24rpx; }
-.delete-btn { height: 68rpx; line-height: 68rpx; margin-top: 16rpx; border-radius: 12rpx; color: #b42318; background: #fff0ed; font-size: 26rpx; }
+.card-actions { display: flex; gap: 12rpx; margin-top: 16rpx; }
+.detail-btn, .delete-btn { flex: 1; height: 68rpx; line-height: 68rpx; border-radius: 12rpx; font-size: 26rpx; }
+.detail-btn { color: #007aff; background: #eef6ff; }
+.delete-btn { color: #b42318; background: #fff0ed; }
 .empty, .footer { padding: 42rpx 0; color: #8c8178; font-size: 26rpx; text-align: center; }
 </style>

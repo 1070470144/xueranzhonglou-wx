@@ -89,6 +89,31 @@ function normalizeAnswer(type, answer) {
   return text.toUpperCase();
 }
 
+function buildQuestionDoc(params = {}, userId) {
+  const type = toQuestionType(params.type);
+  const title = cleanText(params.title, 1000);
+  const rawAnswer = params.answer === false ? 'false' : cleanText(params.answer, 40);
+  const answer = normalizeAnswer(type, rawAnswer);
+  const options = normalizeOptions(type, params.options);
+  if (!title) return { error: '请输入题干' };
+  if (!rawAnswer) return { error: '请输入答案' };
+  if (type === 'choice' && !options.some(item => item.key === answer)) return { error: '选择题答案必须匹配选项' };
+  return {
+    doc: {
+      userId,
+      level: toLevel(params.level),
+      type,
+      title,
+      images: normalizeImages(params.images),
+      options,
+      answer,
+      explanation: cleanText(params.explanation, 1000),
+      status: 'active',
+      updateTime: now()
+    }
+  };
+}
+
 function publicQuestion(question, favoriteIds = new Set(), includeAnswer = false) {
   const item = {
     id: question._id,
@@ -167,29 +192,20 @@ module.exports = {
     });
   },
 
+  async getQuestion(params = {}) {
+    const auth = await verifyToken(params.token);
+    if (!auth) return fail('请先登录');
+    const question = await getOwnedQuestion(params.id, auth.user._id);
+    if (!question) return fail('题目不存在');
+    return ok({ item: publicQuestion(question, new Set(), true) });
+  },
+
   async saveQuestion(params = {}) {
     const auth = await verifyToken(params.token);
     if (!auth) return fail('请先登录');
-    const type = toQuestionType(params.type);
-    const title = cleanText(params.title, 1000);
-    const answer = normalizeAnswer(type, params.answer);
-    const options = normalizeOptions(type, params.options);
-    if (!title) return fail('请输入题干');
-    if (!answer) return fail('请输入答案');
-    if (type === 'choice' && !options.some(item => item.key === answer)) return fail('选择题答案必须匹配选项');
-
-    const doc = {
-      userId: auth.user._id,
-      level: toLevel(params.level),
-      type,
-      title,
-      images: normalizeImages(params.images),
-      options,
-      answer,
-      explanation: cleanText(params.explanation, 1000),
-      status: 'active',
-      updateTime: now()
-    };
+    const built = buildQuestionDoc(params, auth.user._id);
+    if (built.error) return fail(built.error);
+    const doc = built.doc;
 
     const id = cleanText(params.id, 80);
     if (id) {
@@ -202,6 +218,26 @@ module.exports = {
     doc.createTime = now();
     const result = await db.collection(TABLES.questions).add(doc);
     return ok({ id: result.id }, '新增成功');
+  },
+
+  async importQuestions(params = {}) {
+    const auth = await verifyToken(params.token);
+    if (!auth) return fail('请先登录');
+    const questions = Array.isArray(params.questions) ? params.questions.slice(0, 200) : [];
+    if (!questions.length) return fail('请提供题目 JSON 数组');
+    const failed = [];
+    let imported = 0;
+    for (let i = 0; i < questions.length; i++) {
+      const built = buildQuestionDoc(questions[i], auth.user._id);
+      if (built.error) {
+        failed.push({ index: i + 1, message: built.error });
+        continue;
+      }
+      built.doc.createTime = now();
+      await db.collection(TABLES.questions).add(built.doc);
+      imported += 1;
+    }
+    return ok({ imported, failed }, failed.length ? '部分导入成功' : '导入成功');
   },
 
   async deleteQuestion(params = {}) {
@@ -217,6 +253,34 @@ module.exports = {
       await db.collection(TABLES.favorites).doc(fav._id).remove();
     }
     return ok({}, '删除成功');
+  },
+
+  async deleteQuestions(params = {}) {
+    const auth = await verifyToken(params.token);
+    if (!auth) return fail('请先登录');
+    const ids = Array.isArray(params.ids)
+      ? params.ids.map(id => cleanText(id, 80)).filter(Boolean).slice(0, 100)
+      : [];
+    if (!ids.length) return fail('请选择要删除的题目');
+
+    const res = await db.collection(TABLES.questions)
+      .where({ userId: auth.user._id, _id: db.command.in(ids) })
+      .get();
+    const ownedIds = (res.data || []).map(item => item._id);
+    for (const id of ownedIds) {
+      await db.collection(TABLES.questions).doc(id).remove();
+    }
+
+    if (ownedIds.length) {
+      const favRes = await db.collection(TABLES.favorites)
+        .where({ userId: auth.user._id, questionId: db.command.in(ownedIds) })
+        .get();
+      for (const fav of favRes.data || []) {
+        await db.collection(TABLES.favorites).doc(fav._id).remove();
+      }
+    }
+
+    return ok({ deleted: ownedIds.length }, '删除成功');
   },
 
   async toggleFavorite(params = {}) {
@@ -254,7 +318,22 @@ module.exports = {
     const res = await db.collection(TABLES.questions).where(query).limit(500).get();
     const rows = shuffle(res.data || []).slice(0, limit);
     const favorites = await getFavoriteIdSet(auth.user._id, rows.map(item => item._id));
-    return ok({ list: rows.map(item => publicQuestion(item, favorites, true)) });
+    return ok({ list: rows.map(item => publicQuestion(item, favorites, false)) });
+  },
+
+  async checkPracticeAnswer(params = {}) {
+    const auth = await verifyToken(params.token);
+    if (!auth) return fail('请先登录');
+    const question = await getOwnedQuestion(params.questionId || params.id, auth.user._id);
+    if (!question || question.status !== 'active') return fail('题目不存在');
+    const userAnswer = normalizeAnswer(question.type, params.answer);
+    const isCorrect = userAnswer === question.answer;
+    return ok({
+      isCorrect,
+      userAnswer,
+      correctAnswer: question.answer,
+      explanation: question.explanation || ''
+    });
   },
 
   async createExam(params = {}) {
@@ -305,6 +384,10 @@ module.exports = {
         questionId: item.questionId,
         title: question ? question.title : '',
         type: question ? question.type : 'choice',
+        level: question ? question.level : level,
+        images: question ? normalizeImages(question.images) : [],
+        options: question && Array.isArray(question.options) ? question.options : [],
+        explanation: question ? question.explanation || '' : '',
         userAnswer,
         correctAnswer,
         isCorrect,
@@ -351,6 +434,16 @@ module.exports = {
       .get();
     const count = await db.collection(TABLES.records).where(query).count();
     return ok({ list: res.data || [], total: count.total || 0, page, pageSize });
+  },
+
+  async getRecord(params = {}) {
+    const auth = await verifyToken(params.token);
+    if (!auth) return fail('请先登录');
+    const id = cleanText(params.id, 80);
+    const res = await db.collection(TABLES.records).doc(id).get();
+    const record = res.data && res.data[0];
+    if (!record || record.userId !== auth.user._id) return fail('记录不存在');
+    return ok({ record });
   },
 
   async deleteRecord(params = {}) {

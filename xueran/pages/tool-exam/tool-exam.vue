@@ -47,7 +47,7 @@
         <view class="actions">
           <button class="ghost-btn" :disabled="currentIndex === 0" @tap="currentIndex--">上一题</button>
           <button class="ghost-btn" v-if="currentIndex < questions.length - 1" @tap="currentIndex++">下一题</button>
-          <button class="primary-btn" v-else @tap="confirmSubmit">交卷</button>
+          <button class="primary-btn" v-else :loading="submitting" :disabled="submitting" @tap="confirmSubmit">{{ submitting ? '交卷中' : '交卷' }}</button>
         </view>
       </view>
     </view>
@@ -70,7 +70,8 @@ export default {
       answers: {},
       remainingSeconds: 3600,
       startedAt: 0,
-      timer: null
+      timer: null,
+      submitting: false
     };
   },
   computed: {
@@ -128,9 +129,16 @@ export default {
       uni.previewImage({ current, urls: urls || [] });
     },
     confirmSubmit() {
-      uni.showModal({ title: '交卷', content: '确定提交本次考试吗？', success: res => { if (res.confirm) this.doSubmit(); } });
+      if (this.submitting) return;
+      const unanswered = this.questions.filter(item => !this.answers[item.id]).length;
+      const content = unanswered > 0
+        ? `还有 ${unanswered} 道题未作答，确定提交本次考试吗？`
+        : '确定提交本次考试吗？';
+      uni.showModal({ title: '交卷', content, success: res => { if (res.confirm) this.doSubmit(); } });
     },
     async doSubmit() {
+      if (this.submitting) return;
+      this.submitting = true;
       this.clearTimer();
       const durationSeconds = Math.floor((Date.now() - this.startedAt) / 1000);
       const payload = this.questions.map(item => ({ questionId: item.id, answer: this.answers[item.id] || '' }));
@@ -138,6 +146,8 @@ export default {
       const result = await submitExam({ level: this.level, scorePerQuestion: this.scorePerQuestion, durationSeconds, answers: payload });
       uni.hideLoading();
       if (!result.success) {
+        this.submitting = false;
+        if (this.examStarted && this.remainingSeconds > 0) this.startTimer();
         uni.showToast({ title: result.message || '交卷失败', icon: 'none' });
         return;
       }
@@ -149,6 +159,7 @@ export default {
         success: () => {
           this.examStarted = false;
           this.questions = [];
+          this.submitting = false;
         }
       });
     }

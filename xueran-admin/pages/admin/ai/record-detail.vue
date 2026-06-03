@@ -3,7 +3,7 @@
     <view class="detail-header">
       <view>
         <text class="detail-title">问答详情</text>
-        <text class="detail-subtitle">{{ getUserName(record) }} · {{ record.scriptTitle || '通用问题' }}</text>
+        <text class="detail-subtitle">{{ getUserName(record) }} / {{ record.scriptTitle || '通用问题' }}</text>
       </view>
       <button class="uni-button" size="mini" type="default" @click="goBack">返回</button>
     </view>
@@ -46,7 +46,8 @@
 
         <view class="block-title">修正答案</view>
         <textarea class="textarea" v-model="correctedAnswer" placeholder="如果 AI 答案不准确，在这里写入正确版本" />
-        <button class="uni-button save-button" type="primary" :disabled="saving" @click="saveCorrection">保存修正</button>
+        <view class="correction-hint">保存后会写入“知识修正”，后续相同或强相似问题会优先使用该答案。</view>
+        <button class="uni-button save-button" type="primary" :disabled="saving" @click="saveCorrection">保存修正并生效</button>
       </view>
     </view>
   </view>
@@ -95,10 +96,14 @@ export default {
     },
     async saveCorrection() {
       if (!this.record || !this.record._id) return;
+      if (!this.correctedAnswer.trim()) {
+        uni.showToast({ title: '请填写修正答案', icon: 'none' });
+        return;
+      }
       this.saving = true;
       try {
         const res = await correctAnswer({ recordId: this.record._id, correctedAnswer: this.correctedAnswer });
-        uni.showToast({ title: res.success ? '已修正' : (res.message || '保存失败'), icon: res.success ? 'success' : 'none' });
+        uni.showToast({ title: res.success ? '修正已生效' : (res.message || '保存失败'), icon: res.success ? 'success' : 'none' });
         if (res.success) await this.loadDetail();
       } finally {
         this.saving = false;
@@ -129,21 +134,18 @@ export default {
   gap: 16px;
   margin-bottom: 16px;
 }
-
 .detail-title {
   display: block;
   font-size: 20px;
   font-weight: 600;
   color: #303133;
 }
-
 .detail-subtitle {
   display: block;
   margin-top: 6px;
   font-size: 13px;
   color: #909399;
 }
-
 .loading-panel,
 .error-panel {
   display: flex;
@@ -157,39 +159,32 @@ export default {
   border-radius: 6px;
   color: #909399;
 }
-
 .error-text {
   color: #f56c6c;
 }
-
 .detail-grid {
   display: grid;
   grid-template-columns: 300px minmax(0, 1fr);
   gap: 16px;
 }
-
 .detail-card {
   background: #fff;
   border: 1px solid #ebeef5;
   border-radius: 6px;
 }
-
 .meta-card {
   align-self: start;
   padding: 16px;
 }
-
 .meta-item + .meta-item {
   margin-top: 14px;
 }
-
 .meta-label {
   display: block;
   margin-bottom: 6px;
   font-size: 12px;
   color: #909399;
 }
-
 .meta-value {
   display: block;
   font-size: 14px;
@@ -197,11 +192,9 @@ export default {
   color: #303133;
   word-break: break-all;
 }
-
 .content-card {
   padding: 18px;
 }
-
 .block-title {
   margin-top: 18px;
   margin-bottom: 8px;
@@ -209,25 +202,20 @@ export default {
   font-weight: 600;
   color: #606266;
 }
-
 .block-title:first-child {
   margin-top: 0;
 }
-
 .content-text {
   line-height: 1.7;
   color: #303133;
   word-break: break-word;
 }
-
 .question-text {
   font-weight: 600;
 }
-
 .pre-text {
   white-space: pre-wrap;
 }
-
 .textarea {
   width: 100%;
   min-height: 220px;
@@ -237,12 +225,16 @@ export default {
   border-radius: 4px;
   line-height: 1.6;
 }
-
+.correction-hint {
+  margin-top: 8px;
+  color: #909399;
+  font-size: 12px;
+  line-height: 1.5;
+}
 .save-button {
   width: 100%;
   margin-top: 12px;
 }
-
 @media screen and (max-width: 960px) {
   .detail-grid {
     grid-template-columns: 1fr;

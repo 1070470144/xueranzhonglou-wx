@@ -71,3 +71,43 @@ export async function getQuestionRecord(id) {
 export async function correctAnswer(params) {
   return normalize(await aiAdminService.correctAnswer(params));
 }
+
+export async function listCorrections(params) {
+  return normalize(await aiAdminService.listCorrections(params));
+}
+
+export async function getCorrection(id) {
+  return normalize(await aiAdminService.getCorrection(id));
+}
+
+export async function saveCorrection(item) {
+  return normalize(await aiAdminService.saveCorrection(item));
+}
+
+export async function toggleCorrection(params) {
+  return normalize(await aiAdminService.toggleCorrection(params));
+}
+
+export async function deleteCorrection(id) {
+  return normalize(await aiAdminService.deleteCorrection(id));
+}
+
+export async function listAnnouncements(params) {
+  return normalize(await aiAdminService.listAnnouncements(params));
+}
+
+export async function getAnnouncement(id) {
+  return normalize(await aiAdminService.getAnnouncement(id));
+}
+
+export async function saveAnnouncement(item) {
+  return normalize(await aiAdminService.saveAnnouncement(item));
+}
+
+export async function deleteAnnouncement(id) {
+  return normalize(await aiAdminService.deleteAnnouncement(id));
+}
+
+export async function updateAnnouncementStatus(params) {
+  return normalize(await aiAdminService.updateAnnouncementStatus(params));
+}

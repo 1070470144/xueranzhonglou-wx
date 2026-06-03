@@ -7,7 +7,8 @@ const TABLES = {
   knowledge: 'ai-knowledge',
   records: 'ai-question-records',
   corrections: 'ai-answer-corrections',
-  crawlJobs: 'ai-crawl-jobs'
+  crawlJobs: 'ai-crawl-jobs',
+  announcements: 'announcements'
 };
 
 const WIKI_HOME = 'https://clocktower-wiki.gstonegames.com/';
@@ -68,6 +69,37 @@ function cleanText(value, max = 100000) {
   return String(value || '').trim().slice(0, max);
 }
 
+function isEnabled(value) {
+  return value === true || value === 'true' || value === 1 || value === '1';
+}
+
+function normalizeAnnouncementStatus(status) {
+  return ['draft', 'published', 'offline'].includes(status) ? status : 'draft';
+}
+
+function normalizeAnnouncementType(type) {
+  return ['notice', 'update', 'maintenance', 'important'].includes(type) ? type : 'notice';
+}
+
+function normalizeTime(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const time = Number(value);
+  return Number.isFinite(time) && time > 0 ? time : null;
+}
+
+function buildCorrectionKeywords(record, correctedAnswer) {
+  const text = [record.question, record.scriptTitle, correctedAnswer].filter(Boolean).join(' ');
+  const words = text.toLowerCase().match(/[a-z0-9]+|[\u4e00-\u9fa5]{2,}/g) || [];
+  const pieces = [];
+  words.forEach(word => {
+    pieces.push(word);
+    if (/^[\u4e00-\u9fa5]+$/.test(word) && word.length > 3) {
+      for (let index = 0; index <= word.length - 2; index += 1) pieces.push(word.slice(index, index + 2));
+    }
+  });
+  return Array.from(new Set(pieces.filter(item => item.length >= 2))).slice(0, 30);
+}
+
 function positiveInt(value, defaultValue, maxValue) {
   const raw = value && typeof value === 'object' ? (value.current || value.value) : value;
   const number = Number(raw);
@@ -87,7 +119,7 @@ function publicConfig(config) {
     };
   }
   return {
-    enabled: !!config.enabled,
+    enabled: isEnabled(config.enabled),
     provider: config.provider || 'openai-compatible',
     baseUrl: config.baseUrl || '',
     model: config.model || '',
@@ -390,6 +422,79 @@ async function crawlRoleInternal(params = {}) {
 }
 
 module.exports = {
+  async listAnnouncements(params = {}) {
+    const page = positiveInt(params.page, 1);
+    const pageSize = positiveInt(params.pageSize, 20, 100);
+    const keyword = cleanText(params.keyword || '', 100);
+    const query = {};
+    if (params.status) query.status = params.status;
+    if (params.type) query.type = params.type;
+    if (keyword) {
+      query.$or = [
+        { title: { $regex: keyword, $options: 'i' } },
+        { summary: { $regex: keyword, $options: 'i' } },
+        { content: { $regex: keyword, $options: 'i' } }
+      ];
+    }
+    const skip = (page - 1) * pageSize;
+    const res = await db.collection(TABLES.announcements).where(query).orderBy('updateTime', 'desc').skip(skip).limit(pageSize).get();
+    const count = await db.collection(TABLES.announcements).where(query).count();
+    return ok({ list: res.data || [], total: count.total || 0, page, pageSize });
+  },
+
+  async getAnnouncement(id) {
+    if (!id) return fail('missing announcement id');
+    const res = await db.collection(TABLES.announcements).doc(id).get();
+    const item = res.data && res.data[0];
+    if (!item) return fail('announcement not found');
+    return ok({ item });
+  },
+
+  async saveAnnouncement(item = {}) {
+    const doc = {
+      title: cleanText(item.title, 120),
+      summary: cleanText(item.summary, 300),
+      content: cleanText(item.content, 20000),
+      type: normalizeAnnouncementType(item.type),
+      status: normalizeAnnouncementStatus(item.status),
+      pinned: item.pinned === true || item.pinned === 'true' || item.pinned === 1 || item.pinned === '1',
+      priority: Number(item.priority || 0),
+      startTime: normalizeTime(item.startTime),
+      endTime: normalizeTime(item.endTime),
+      updateTime: now()
+    };
+    if (!doc.title) return fail('title is required');
+    if (!doc.summary) doc.summary = cleanText(doc.content, 120);
+    if (!doc.content) return fail('content is required');
+    if (doc.status === 'published' && !item.publishTime) doc.publishTime = now();
+    else if (item.publishTime) doc.publishTime = normalizeTime(item.publishTime);
+    if (doc.startTime && doc.endTime && doc.startTime > doc.endTime) return fail('start time cannot be later than end time');
+
+    if (item._id) {
+      await db.collection(TABLES.announcements).doc(item._id).update(doc);
+      return ok({ id: item._id }, 'saved');
+    }
+    doc.createTime = now();
+    if (!doc.publishTime && doc.status === 'published') doc.publishTime = doc.createTime;
+    const res = await db.collection(TABLES.announcements).add(doc);
+    return ok({ id: res.id }, 'created');
+  },
+
+  async deleteAnnouncement(id) {
+    if (!id) return fail('missing announcement id');
+    await db.collection(TABLES.announcements).doc(id).remove();
+    return ok({}, 'deleted');
+  },
+
+  async updateAnnouncementStatus(params = {}) {
+    if (!params.id) return fail('missing announcement id');
+    const status = normalizeAnnouncementStatus(params.status);
+    const doc = { status, updateTime: now() };
+    if (status === 'published') doc.publishTime = now();
+    await db.collection(TABLES.announcements).doc(params.id).update(doc);
+    return ok({}, 'saved');
+  },
+
   async getDefaultConfig() {
     const res = await db.collection(TABLES.config).where({ scope: 'default' }).limit(1).get();
     return ok({ config: publicConfig(res.data && res.data[0]) });
@@ -400,7 +505,7 @@ module.exports = {
     const existedConfig = existed.data && existed.data[0];
     const doc = {
       scope: 'default',
-      enabled: !!config.enabled,
+      enabled: isEnabled(config.enabled),
       provider: cleanText(config.provider || 'openai-compatible', 60),
       baseUrl: cleanText(config.baseUrl || '', 300),
       model: cleanText(config.model || '', 120),
@@ -637,12 +742,30 @@ module.exports = {
       isCorrected: true,
       updateTime: now()
     });
-    await db.collection(TABLES.corrections).add({
+    const correctionDoc = {
       recordId,
+      sourceRecordId: recordId,
+      question: cleanText(record.question, 1000),
       originalAnswer: record.answer || '',
       correctedAnswer,
-      createTime: now()
-    });
+      analysis: cleanText(record.analysis, 1000),
+      userId: record.userId || record.user_id || record.uid || '',
+      email: record.email || '',
+      scriptId: record.scriptId || '',
+      scriptTitle: record.scriptTitle || '',
+      scope: record.scriptId || record.scriptTitle ? 'script' : 'global',
+      keywords: buildCorrectionKeywords(record, correctedAnswer),
+      priority: 100,
+      enabled: true,
+      createTime: now(),
+      updateTime: now()
+    };
+    const existedCorrection = await db.collection(TABLES.corrections).where({ recordId }).limit(1).get();
+    if (existedCorrection.data && existedCorrection.data[0]) {
+      await db.collection(TABLES.corrections).doc(existedCorrection.data[0]._id).update(correctionDoc);
+    } else {
+      await db.collection(TABLES.corrections).add(correctionDoc);
+    }
     await upsertKnowledge({
       title: `问答修正：${cleanText(record.question, 80)}`,
       content: [
@@ -655,6 +778,79 @@ module.exports = {
       sourceUrl: `ai-correction:${recordId}`
     });
     return ok({}, '修正成功');
+  },
+
+  async listCorrections(params = {}) {
+    const page = positiveInt(params.page, 1);
+    const pageSize = positiveInt(params.pageSize, 20, 100);
+    const keyword = cleanText(params.keyword || '', 100);
+    const query = {};
+    if (params.enabled === true || params.enabled === false) query.enabled = params.enabled;
+    if (keyword) {
+      query.$or = [
+        { question: { $regex: keyword, $options: 'i' } },
+        { correctedAnswer: { $regex: keyword, $options: 'i' } },
+        { scriptTitle: { $regex: keyword, $options: 'i' } },
+        { email: { $regex: keyword, $options: 'i' } }
+      ];
+    }
+    const skip = (page - 1) * pageSize;
+    const res = await db.collection(TABLES.corrections).where(query).orderBy('updateTime', 'desc').skip(skip).limit(pageSize).get();
+    const count = await db.collection(TABLES.corrections).where(query).count();
+    return ok({ list: res.data || [], total: count.total || 0, page, pageSize });
+  },
+
+  async getCorrection(id) {
+    if (!id) return fail('missing correction id');
+    const res = await db.collection(TABLES.corrections).doc(id).get();
+    const item = res.data && res.data[0];
+    if (!item) return fail('correction not found');
+    return ok({ item });
+  },
+
+  async saveCorrection(item = {}) {
+    const id = item._id;
+    const doc = {
+      question: cleanText(item.question, 1000),
+      correctedAnswer: cleanText(item.correctedAnswer, 10000),
+      scriptId: cleanText(item.scriptId || '', 100),
+      scriptTitle: cleanText(item.scriptTitle || '', 200),
+      scope: item.scriptId || item.scriptTitle ? 'script' : 'global',
+      keywords: Array.isArray(item.keywords) ? item.keywords.map(keyword => cleanText(keyword, 80)).filter(Boolean).slice(0, 30) : [],
+      priority: Number(item.priority || 100),
+      enabled: item.enabled !== false,
+      updateTime: now()
+    };
+    if (!doc.question || !doc.correctedAnswer) return fail('question and corrected answer are required');
+    if (!doc.keywords.length) doc.keywords = buildCorrectionKeywords({ question: doc.question, scriptTitle: doc.scriptTitle }, doc.correctedAnswer);
+    if (id) {
+      await db.collection(TABLES.corrections).doc(id).update(doc);
+      return ok({ id }, 'saved');
+    }
+    doc.recordId = cleanText(item.recordId || '', 100);
+    doc.sourceRecordId = cleanText(item.sourceRecordId || item.recordId || '', 100);
+    doc.originalAnswer = cleanText(item.originalAnswer || '', 10000);
+    doc.analysis = cleanText(item.analysis || '', 1000);
+    doc.userId = cleanText(item.userId || '', 100);
+    doc.email = cleanText(item.email || '', 200);
+    doc.createTime = now();
+    const res = await db.collection(TABLES.corrections).add(doc);
+    return ok({ id: res.id }, 'created');
+  },
+
+  async toggleCorrection(params = {}) {
+    if (!params.id) return fail('missing correction id');
+    await db.collection(TABLES.corrections).doc(params.id).update({
+      enabled: params.enabled !== false,
+      updateTime: now()
+    });
+    return ok({}, 'saved');
+  },
+
+  async deleteCorrection(id) {
+    if (!id) return fail('missing correction id');
+    await db.collection(TABLES.corrections).doc(id).remove();
+    return ok({}, 'deleted');
   },
 
   async listCrawlJobs(params = {}) {

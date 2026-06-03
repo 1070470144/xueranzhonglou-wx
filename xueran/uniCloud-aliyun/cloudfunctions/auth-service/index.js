@@ -257,6 +257,34 @@ async function me(data) {
   return { success: true, data: { user: publicUser(auth.user) } };
 }
 
+async function updateProfile(data) {
+  const db = uniCloud.database();
+  const auth = await verifyToken(db, data && data.token);
+  if (!auth) {
+    return { success: false, message: '登录已失效' };
+  }
+
+  const nickname = cleanText(data && data.nickname, 80);
+  const avatarUrl = cleanText(data && data.avatarUrl, 500);
+  if (!nickname) {
+    return { success: false, message: '请输入用户名' };
+  }
+
+  const updateData = {
+    nickname,
+    avatarUrl,
+    updateTime: now()
+  };
+  await db.collection('app-users').doc(auth.user._id).update(updateData);
+  return {
+    success: true,
+    message: '保存成功',
+    data: {
+      user: publicUser({ ...auth.user, ...updateData })
+    }
+  };
+}
+
 async function logout(data) {
   const token = data && data.token;
   if (!token) {
@@ -283,6 +311,8 @@ exports.main = async (event) => {
         return await weixinLogin(params[0] || {});
       case 'me':
         return await me(params[0] || {});
+      case 'updateProfile':
+        return await updateProfile(params[0] || {});
       case 'logout':
         return await logout(params[0] || {});
       default:

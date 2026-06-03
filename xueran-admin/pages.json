@@ -48,6 +48,12 @@
 			}
 		},
 		{
+			"path": "pages/admin/ai/corrections",
+			"style": {
+				"navigationBarTitleText": "AI 知识修正"
+			}
+		},
+		{
 			"path": "pages/admin/ai/record-detail",
 			"style": {
 				"navigationBarTitleText": "问答详情",
@@ -65,6 +71,12 @@
 			"style": {
 				"navigationBarTitleText": "编辑剧本",
 				"navigationStyle": "default"
+			}
+		},
+		{
+			"path": "pages/admin/announcements/list",
+			"style": {
+				"navigationBarTitleText": "公告管理"
 			}
 		},
 		{

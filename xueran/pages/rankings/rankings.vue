@@ -1,6 +1,15 @@
 <template>
   <view class="page">
     <view class="tool-list">
+      <view class="tool-item" @tap="openTool('/pages/announcements/announcements')">
+        <view class="tool-icon notice">告</view>
+        <view class="tool-main">
+          <text class="tool-title">公告中心</text>
+          <text class="tool-desc">查看平台公告、更新说明和维护通知</text>
+        </view>
+        <text class="arrow">›</text>
+      </view>
+
       <view class="tool-item" @tap="openTool('/pages/tool-upload/tool-upload')">
         <view class="tool-icon upload">上</view>
         <view class="tool-main">
@@ -105,6 +114,11 @@ export default {
 .tool-icon.practice {
   color: #0f766e;
   background: #ecfdf3;
+}
+
+.tool-icon.notice {
+  color: #7c2d12;
+  background: #fff7ed;
 }
 
 .tool-main {

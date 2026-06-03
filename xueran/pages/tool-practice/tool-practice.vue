@@ -38,10 +38,14 @@
             <text>{{ option.text }}</text>
           </view>
         </view>
-        <view v-if="checked" class="result" :class="{ ok: resultCorrect }">{{ resultCorrect ? '回答正确' : '回答错误' }}</view>
+        <view v-if="checked" class="result" :class="{ ok: resultCorrect }">
+          <view>{{ resultCorrect ? '回答正确' : '回答错误' }}</view>
+          <view class="result-line">正确答案：{{ formatAnswer(checkResult.correctAnswer, current) }}</view>
+          <view v-if="checkResult.explanation" class="result-explain">{{ checkResult.explanation }}</view>
+        </view>
         <view class="actions">
           <button class="ghost-btn" :disabled="currentIndex === 0" @tap="prev">上一题</button>
-          <button class="primary-btn" v-if="!checked" @tap="checkAnswer">确认</button>
+          <button class="primary-btn" v-if="!checked" :loading="checking" @tap="checkAnswer">确认</button>
           <button class="primary-btn" v-else @tap="next">{{ currentIndex >= questions.length - 1 ? '完成' : '下一题' }}</button>
         </view>
       </view>
@@ -52,7 +56,7 @@
 </template>
 
 <script>
-import { getPracticeQuestions, toggleExamQuestionFavorite } from '@/utils/examApi.js';
+import { getPracticeQuestions, checkPracticeAnswer, toggleExamQuestionFavorite } from '@/utils/examApi.js';
 
 export default {
   data() {
@@ -64,7 +68,9 @@ export default {
       currentIndex: 0,
       selectedAnswer: '',
       checked: false,
-      resultCorrect: false
+      checking: false,
+      resultCorrect: false,
+      checkResult: {}
     };
   },
   computed: {
@@ -87,12 +93,14 @@ export default {
       this.currentIndex = 0;
       this.selectedAnswer = '';
       this.checked = false;
+      this.checkResult = {};
     },
     reset() {
       this.started = false;
       this.questions = [];
       this.selectedAnswer = '';
       this.checked = false;
+      this.checkResult = {};
     },
     previewImage(current, urls) {
       uni.previewImage({
@@ -105,19 +113,35 @@ export default {
       if (result.success) question.isFavorite = result.data.isFavorite;
       uni.showToast({ title: result.message || '操作完成', icon: result.success ? 'success' : 'none' });
     },
-    checkAnswer() {
+    async checkAnswer() {
+      if (this.checking) return;
       if (!this.selectedAnswer) {
         uni.showToast({ title: '请选择答案', icon: 'none' });
         return;
       }
-      this.resultCorrect = this.selectedAnswer === this.current.answer;
+      this.checking = true;
+      const result = await checkPracticeAnswer({ questionId: this.current.id, answer: this.selectedAnswer });
+      this.checking = false;
+      if (!result.success) {
+        uni.showToast({ title: result.message || '判题失败', icon: 'none' });
+        return;
+      }
+      this.checkResult = result.data || {};
+      this.resultCorrect = !!this.checkResult.isCorrect;
       this.checked = true;
+    },
+    formatAnswer(answer, question) {
+      if (!question) return answer || '';
+      if (question.type === 'judge') return answer === 'true' ? '正确' : '错误';
+      const option = (question.options || []).find(item => item.key === answer);
+      return option ? `${answer} ${option.text}` : answer || '';
     },
     prev() {
       if (this.currentIndex <= 0) return;
       this.currentIndex -= 1;
       this.selectedAnswer = '';
       this.checked = false;
+      this.checkResult = {};
     },
     next() {
       if (this.currentIndex >= this.questions.length - 1) {
@@ -127,6 +151,7 @@ export default {
       this.currentIndex += 1;
       this.selectedAnswer = '';
       this.checked = false;
+      this.checkResult = {};
     }
   }
 };
@@ -157,6 +182,8 @@ button::after { border: 0; }
 .answer-key { width: 48rpx; height: 48rpx; line-height: 48rpx; text-align: center; border-radius: 50%; background: #fff; color: #007aff; font-weight: 700; }
 .result { margin-top: 18rpx; padding: 16rpx; border-radius: 12rpx; background: #fff0ed; color: #b42318; text-align: center; }
 .result.ok { background: #ecfdf3; color: #0f766e; }
+.result-line { margin-top: 10rpx; font-size: 26rpx; }
+.result-explain { margin-top: 10rpx; color: #4b4038; font-size: 26rpx; line-height: 1.5; text-align: left; }
 .actions { display: flex; gap: 12rpx; margin-top: 24rpx; }
 .ghost-btn, .primary-btn { flex: 1; height: 78rpx; line-height: 78rpx; border-radius: 12rpx; font-size: 28rpx; }
 .ghost-btn { background: #f5f2ee; color: #4b4038; }

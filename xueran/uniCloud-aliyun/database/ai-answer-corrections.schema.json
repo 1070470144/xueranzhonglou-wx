@@ -4,9 +4,20 @@
   "permission": { "read": false, "create": false, "update": false, "delete": false },
   "properties": {
     "recordId": { "bsonType": "string" },
+    "sourceRecordId": { "bsonType": "string" },
+    "question": { "bsonType": "string" },
     "originalAnswer": { "bsonType": "string" },
     "correctedAnswer": { "bsonType": "string" },
-    "createTime": { "bsonType": "timestamp" }
+    "analysis": { "bsonType": "string" },
+    "userId": { "bsonType": "string" },
+    "email": { "bsonType": "string" },
+    "scriptId": { "bsonType": "string" },
+    "scriptTitle": { "bsonType": "string" },
+    "scope": { "bsonType": "string" },
+    "keywords": { "bsonType": "array" },
+    "priority": { "bsonType": "int" },
+    "enabled": { "bsonType": "bool" },
+    "createTime": { "bsonType": "timestamp" },
+    "updateTime": { "bsonType": "timestamp" }
   }
 }
-
