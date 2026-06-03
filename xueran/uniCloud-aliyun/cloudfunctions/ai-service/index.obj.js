@@ -226,6 +226,46 @@ function buildKeywords(question, script) {
     .slice(0, 12)));
 }
 
+function escapeRegExp(value) {
+  return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function buildRoleCandidates(question) {
+  const text = cleanText(question, 120);
+  if (!text) return [];
+  const normalized = text.replace(/[\s,，。.!！?？:：;；、()（）《》【】\[\]"'“”]/g, ' ');
+  const candidates = [];
+
+  [
+    /(.+?)的(?:能力|技能|效果|作用|信息|玩法|规则|阵营|类型|英文名?)(?:是(?:什么|啥))?$/,
+    /(.+?)(?:能力|技能|效果|作用)(?:是(?:什么|啥))?$/,
+    /(.+?)(?:是什么|是啥)$/
+  ].forEach(pattern => {
+    const match = normalized.match(pattern);
+    if (match && match[1]) candidates.push(match[1]);
+  });
+
+  buildKeywords(question, null).forEach(keyword => candidates.push(keyword));
+  return Array.from(new Set(candidates
+    .map(item => item.replace(/^(请问|问一下|我想知道|想知道|角色|关于)/, '').trim())
+    .filter(item => item.length >= 2 && item.length <= 20)));
+}
+
+function normalizeKnowledgeItem(item) {
+  return {
+    id: item._id,
+    title: item.title || '未命名知识',
+    type: item.type || '',
+    roleType: item.roleType || '',
+    englishName: item.englishName || '',
+    scripts: Array.isArray(item.scripts) ? item.scripts : [],
+    abilityTypes: Array.isArray(item.abilityTypes) ? item.abilityTypes : [],
+    sections: Array.isArray(item.sections) ? item.sections : [],
+    content: cleanText(item.content, 1600),
+    sourceUrl: item.sourceUrl || ''
+  };
+}
+
 async function getScript(scriptId) {
   if (!scriptId) return null;
   const res = await db.collection(TABLES.scripts).doc(scriptId).get();
@@ -243,20 +283,56 @@ async function getOwnedRecord(recordId, userId) {
 
 async function searchKnowledge(question, script) {
   const keywords = buildKeywords(question, script);
+  const roleCandidates = buildRoleCandidates(question);
+  const byId = new Map();
   let list = [];
+
+  if (roleCandidates.length) {
+    const exactOrs = roleCandidates.slice(0, 4).map(keyword => ({
+      title: { $regex: `^${escapeRegExp(keyword)}$`, $options: 'i' }
+    }));
+    const exactRes = await db.collection(TABLES.knowledge)
+      .where({ status: 'active', $or: exactOrs })
+      .limit(6)
+      .get();
+    (exactRes.data || []).forEach(item => byId.set(item._id, item));
+
+    const fuzzyOrs = [];
+    roleCandidates.slice(0, 4).forEach(keyword => {
+      const escaped = escapeRegExp(keyword);
+      fuzzyOrs.push({ title: { $regex: escaped, $options: 'i' } });
+      fuzzyOrs.push({ searchText: { $regex: escaped, $options: 'i' } });
+      fuzzyOrs.push({ content: { $regex: escaped, $options: 'i' } });
+    });
+    const fuzzyRes = await db.collection(TABLES.knowledge)
+      .where({ status: 'active', $or: fuzzyOrs })
+      .limit(6)
+      .get();
+    (fuzzyRes.data || []).forEach(item => byId.set(item._id, item));
+  }
 
   if (keywords.length) {
     const ors = [];
     keywords.slice(0, 6).forEach(keyword => {
-      ors.push({ title: { $regex: keyword, $options: 'i' } });
-      ors.push({ searchText: { $regex: keyword, $options: 'i' } });
+      const escaped = escapeRegExp(keyword);
+      ors.push({ title: { $regex: escaped, $options: 'i' } });
+      ors.push({ searchText: { $regex: escaped, $options: 'i' } });
+      ors.push({ content: { $regex: escaped, $options: 'i' } });
     });
     const res = await db.collection(TABLES.knowledge)
       .where({ status: 'active', $or: ors })
       .limit(6)
       .get();
-    list = res.data || [];
+    (res.data || []).forEach(item => byId.set(item._id, item));
   }
+
+  list = Array.from(byId.values()).sort((a, b) => {
+    const aTitle = String(a.title || '');
+    const bTitle = String(b.title || '');
+    const aExact = roleCandidates.some(keyword => aTitle === keyword) ? 1 : 0;
+    const bExact = roleCandidates.some(keyword => bTitle === keyword) ? 1 : 0;
+    return bExact - aExact;
+  }).slice(0, 6);
 
   if (!list.length) {
     const res = await db.collection(TABLES.knowledge)
@@ -267,18 +343,12 @@ async function searchKnowledge(question, script) {
     list = res.data || [];
   }
 
-  return list.map(item => ({
-    id: item._id,
-    title: item.title || '未命名知识',
-    type: item.type || '',
-    roleType: item.roleType || '',
-    englishName: item.englishName || '',
-    scripts: Array.isArray(item.scripts) ? item.scripts : [],
-    abilityTypes: Array.isArray(item.abilityTypes) ? item.abilityTypes : [],
-    sections: Array.isArray(item.sections) ? item.sections : [],
-    content: cleanText(item.content, 1600),
-    sourceUrl: item.sourceUrl || ''
-  }));
+  return list.map(normalizeKnowledgeItem);
+}
+
+function sectionMatches(section, key, titlePattern) {
+  if (!section) return false;
+  return section.key === key || titlePattern.test(String(section.title || ''));
 }
 
 function pickKnowledgeSections(item, question) {
@@ -292,8 +362,18 @@ function pickKnowledgeSections(item, question) {
   if (/伪装| bluff|假跳/.test(text)) wanted.push('bluffing', 'ability', 'role_info');
   if (/类型|英文|剧本|阵营|类别/.test(text)) wanted.push('role_info', 'ability');
   const keys = wanted.length ? Array.from(new Set(wanted)) : ['ability', 'intro', 'rules', 'how_to_run', 'role_info'];
+  const titlePatterns = {
+    ability: /能力|技能|效果|作用/,
+    intro: /简介|介绍|概述/,
+    role_info: /角色|信息|类型|阵营|英文|剧本/,
+    how_to_run: /运作|操作|说书|夜晚|唤醒/,
+    reminders: /提醒|标记|提示/,
+    rules: /规则|互动|冲突|相克|判定/,
+    tips: /技巧|玩法|建议/,
+    bluffing: /伪装|假跳|bluff/i
+  };
   const picked = keys
-    .map(key => sections.find(section => section.key === key))
+    .map(key => sections.find(section => sectionMatches(section, key, titlePatterns[key] || /$a/)))
     .filter(Boolean)
     .slice(0, 3);
   if (!picked.length) return cleanText(item.content, 900);
