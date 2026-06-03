@@ -3,12 +3,9 @@
     <!-- 面板头部 -->
     <view class="panel-header">
       <view class="header-content">
-        <view class="header-icon">
-          <text class="icon-text">📁</text>
-        </view>
         <view class="header-info">
           <text class="title">批量上传剧本</text>
-          <text class="subtitle">支持选择文件夹或多个JSON文件进行批量上传</text>
+          <text class="subtitle">支持选择文件夹或多个 JSON 文件进行批量上传</text>
         </view>
       </view>
     </view>
@@ -21,14 +18,14 @@
       <view class="file-selection-area">
         <view class="selection-options">
           <view class="option-card" @click="triggerFolderInput">
-            <view class="option-icon">📂</view>
+            <view class="option-icon">文件夹</view>
             <view class="option-content">
               <text class="option-title">选择文件夹</text>
               <text class="option-desc">推荐方式，支持递归扫描子目录</text>
             </view>
           </view>
           <view class="option-card" @click="triggerFileInput">
-            <view class="option-icon">📄</view>
+            <view class="option-icon">文件</view>
             <view class="option-content">
               <text class="option-title">选择文件</text>
               <text class="option-desc">手动选择多个JSON文件</text>
@@ -37,7 +34,7 @@
         </view>
 
         <!-- 隐藏的文件输入 -->
-        <input id="bulk-file-input" ref="fileInput" type="file" multiple accept=".json,.zip" @change="onFilesChange" style="display:none" />
+        <input id="bulk-file-input" ref="fileInput" type="file" multiple accept=".json" @change="onFilesChange" style="display:none" />
         <input id="bulk-folder-input" ref="folderInput" type="file" webkitdirectory directory multiple @change="onFilesChange" style="display:none" />
 
         <!-- 文件信息显示 -->
@@ -87,7 +84,7 @@
               <view class="file-cell file-tags">
                 <view class="tags-container">
                   <text v-if="item.extractedMeta && item.extractedMeta.tag" class="tag-chip">{{ item.extractedMeta.tag }}</text>
-                  <text v-if="!item.extractedMeta || !item.extractedMeta.tags || item.extractedMeta.tags.length === 0" class="no-tags">无标签</text>
+                  <text v-else class="no-tags">无标签</text>
                 </view>
               </view>
               <view class="file-cell file-status">
@@ -260,7 +257,7 @@ export default {
         tags: [],
         status: 'active'
       },
-      isUploading: false
+      uploadPending: false
     }
   },
   computed: {
@@ -268,13 +265,13 @@ export default {
       return this.manifest ? this.manifest.length : 0
     },
     canStartUpload() {
-      return this.manifest.length > 0 && !this.isUploading && this.jobStatus !== 'running'
+      return this.manifest.length > 0 && !this.isUploading
     },
     totalProcessed() {
       return this.successCount + this.failCount
     },
     isUploading() {
-      return this.jobStatus === 'running'
+      return this.uploadPending || this.jobStatus === 'running'
     }
   },
   methods: {
@@ -395,37 +392,41 @@ export default {
                   const path = f.path || f.tempFilePath || f
                   const fileName = (f.name || ('' + path).split('/').pop()) || 'unknown'
                   let content = null
-                  // try to read local file content if fs available
+                  // try to read file content from the returned object first
                   try {
-                    const fs = uni.getFileSystemManager && uni.getFileSystemManager()
-                    if (fs && typeof fs.readFile === 'function') {
-                      const txt = fs.readFile({
-                        filePath: path,
-                        encoding: 'utf8',
-                        success: resFs => {
-                          return resFs.data
-                        },
-                        fail: () => null
+                    if (typeof f.text === 'function') {
+                      content = await f.text()
+                    } else if (typeof FileReader !== 'undefined' && typeof Blob !== 'undefined' && f instanceof Blob) {
+                      content = await new Promise((resolve, reject) => {
+                        const reader = new FileReader()
+                        reader.onload = () => resolve(reader.result)
+                        reader.onerror = reject
+                        reader.readAsText(f)
                       })
-                      // fs.readFile with callbacks - try sync if available
-                      if (txt && txt.data !== undefined) {
-                        content = txt.data
-                      } else {
-                        // fallback: try synchronous read if exists
-                        if (fs.readFileSync) {
-                          try {
-                            content = fs.readFileSync(path, 'utf8')
-                          } catch (e) {
-                            content = null
-                          }
-                        }
+                    } else {
+                      const fs = uni.getFileSystemManager && uni.getFileSystemManager()
+                      if (fs && typeof fs.readFileSync === 'function' && path) {
+                        content = fs.readFileSync(path, 'utf8')
                       }
                     }
                   } catch (e) {
+                    console.warn('read file content failed', e)
                     content = null
                   }
-                  // push manifest entry (content may be null; server should handle tempFile path if supported)
-                  this.manifest.push({ fileName, content, tempPath: path })
+                  if (!content) {
+                    uni.showToast({ title: `${fileName} 读取失败`, icon: 'none' })
+                    continue
+                  }
+                  let extractedMeta = null
+                  try {
+                    const parsed = JSON.parse(content)
+                    extractedMeta = this.extractMetadata(parsed, fileName)
+                  } catch (err) {
+                    uni.showToast({ title: `${fileName} 不是有效 JSON`, icon: 'none' })
+                    continue
+                  }
+                  // push manifest entry with normalized content and metadata
+                  this.manifest.push({ fileName, content, extractedMeta, tempPath: path })
                 }
               } catch (e) {
                 console.warn('chooseFile success handler error', e)
@@ -626,7 +627,7 @@ export default {
         return
       }
       try {
-        this.isUploading = true
+        this.uploadPending = true
         uni.showLoading({ title: '创建作业...' })
         // Deduplicate manifest by (relativePath + fileName) to avoid duplicate uploads
         const seen = new Set()
@@ -662,12 +663,12 @@ export default {
           this.pollJob()
           uni.showToast({ title: '作业已创建', icon: 'success' })
         } else {
-          this.isUploading = false
+          this.uploadPending = false
           uni.showToast({ title: result.message || '作业创建失败', icon: 'none' })
         }
       } catch (err) {
         uni.hideLoading()
-        this.isUploading = false
+        this.uploadPending = false
         console.error('startUpload error', err)
         uni.showToast({ title: '上传失败', icon: 'none' })
       }
@@ -687,7 +688,7 @@ export default {
             if (['completed','failed'].includes(this.jobStatus)) {
               clearInterval(this.pollTimer)
               this.pollTimer = null
-              this.isUploading = false
+              this.uploadPending = false
 
               // Show detailed completion summary
               this.showCompletionSummary(rr.data)
@@ -704,7 +705,13 @@ export default {
         const r = await uniCloud.callFunction({ name: 'bulkUpload', data: { action: 'getJobErrors', jobId: this.jobId } })
         const rr = (r && r.result) ? r.result : r
         if (rr && rr.code === 0 && rr.data && rr.data.errors) {
-          const csv = rr.data.errors.map(e => `${e.fileName},"${(e.error || '').replace(/"/g,'""')}"`).join('\n')
+          const csvHeader = 'fileName,errorType,error\n'
+          const csvBody = rr.data.errors.map(e => [
+            this.escapeCsvCell(e.fileName),
+            this.escapeCsvCell(e.errorType || 'unknown_error'),
+            this.escapeCsvCell(e.error || '')
+          ].join(',')).join('\n')
+          const csv = csvHeader + csvBody
           // create blob and download (H5)
           if (typeof window !== 'undefined' && window.URL && window.Blob) {
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -794,6 +801,10 @@ export default {
       }
       return labels[errorType] || errorType
     },
+    escapeCsvCell(value) {
+      const text = value === undefined || value === null ? '' : String(value)
+      return `"${text.replace(/"/g, '""')}"`
+    },
     // UI: open preview modal for item index
     openPreview(index) {
       if (index === undefined || index === null) return
@@ -807,7 +818,6 @@ export default {
         tag: (item.extractedMeta && item.extractedMeta.tag) ? item.extractedMeta.tag : '',
         status: (item.extractedMeta && item.extractedMeta.status) || 'active'
       }
-      this.newTag = ''
       this.previewVisible = true
     },
     savePreview() {
@@ -823,16 +833,6 @@ export default {
       this.manifest.splice(this.previewIndex, 1, item)
       this.previewVisible = false
       this.previewIndex = -1
-    },
-    // Tag management methods
-    addTag() {
-      if (this.newTag.trim() && !this.previewModel.tags.includes(this.newTag.trim())) {
-        this.previewModel.tags.push(this.newTag.trim())
-        this.newTag = ''
-      }
-    },
-    removeTag(index) {
-      this.previewModel.tags.splice(index, 1)
     },
     // Validation methods with caching for performance
     validateMetadata(item) {
@@ -855,7 +855,7 @@ export default {
       if (!item.extractedMeta.title || item.extractedMeta.title.trim() === '') {
         issues.push('缺少标题')
       }
-      if (!item.extractedMeta.tags || item.extractedMeta.tags.length === 0) {
+      if (!item.extractedMeta.tag) {
         issues.push('缺少标签')
       }
 
@@ -918,16 +918,17 @@ export default {
 /* 主容器 */
 .bulk-upload-container {
   background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
   overflow: hidden;
 }
 
 /* 面板头部 */
 .panel-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 20px;
-  color: white;
+  background: #fff;
+  padding: 16px 20px;
+  color: #303133;
+  border-bottom: 1px solid #ebeef5;
 }
 
 .header-content {
@@ -936,47 +937,35 @@ export default {
   gap: 16px;
 }
 
-.header-icon {
-  width: 48px;
-  height: 48px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.icon-text {
-  font-size: 24px;
-}
-
 .header-info {
   flex: 1;
 }
 
 .title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   margin-bottom: 4px;
   display: block;
+  color: #303133;
 }
 
 .subtitle {
-  font-size: 14px;
-  opacity: 0.8;
+  font-size: 13px;
+  color: #909399;
   display: block;
 }
 
 /* 区域标题 */
 .section-title {
-  padding: 16px 20px 8px 20px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 14px 20px;
+  border-bottom: 1px solid #ebeef5;
+  background: #fafafa;
 }
 
 .section-title-text {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
-  color: #262626;
+  color: #303133;
   display: block;
 }
 
@@ -1004,28 +993,37 @@ export default {
 
 .option-card {
   flex: 1;
-  background: #fafafa;
-  border: 2px dashed #d9d9d9;
-  border-radius: 8px;
-  padding: 20px;
-  text-align: center;
+  background: #fff;
+  border: 1px dashed #dcdfe6;
+  border-radius: 4px;
+  padding: 16px;
+  text-align: left;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
 .option-card:hover {
-  border-color: #1890ff;
-  background: #f0f8ff;
+  border-color: #409eff;
+  background: #f5f7fa;
 }
 
 .option-icon {
-  font-size: 32px;
-  margin-bottom: 12px;
+  min-width: 54px;
+  height: 30px;
+  line-height: 30px;
+  text-align: center;
+  background: #ecf5ff;
+  color: #409eff;
+  border-radius: 4px;
+  font-size: 13px;
   display: block;
 }
 
 .option-content {
-  text-align: center;
+  text-align: left;
 }
 
 .option-title {
@@ -1044,10 +1042,10 @@ export default {
 
 .file-info {
   margin-top: 16px;
-  padding: 12px;
-  background: #f6ffed;
-  border: 1px solid #b7eb8f;
-  border-radius: 6px;
+  padding: 10px 12px;
+  background: #f5f7fa;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
 }
 
 .file-stats {
@@ -1056,7 +1054,7 @@ export default {
 
 .stats-text {
   font-size: 14px;
-  color: #52c41a;
+  color: #606266;
   font-weight: 500;
 }
 
@@ -1071,11 +1069,13 @@ export default {
 
 .file-list-header {
   display: flex;
-  padding: 12px 0;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 10px 0;
+  background: #f5f7fa;
+  border: 1px solid #ebeef5;
+  border-bottom: none;
   font-size: 12px;
-  color: #8c8c8c;
-  font-weight: 500;
+  color: #606266;
+  font-weight: 600;
 }
 
 .header-cell {
@@ -1382,18 +1382,23 @@ export default {
 }
 
 .file-list-body {
-  max-height: 300px;
+  max-height: 420px;
   overflow-y: auto;
+  border: 1px solid #ebeef5;
 }
 
 .file-item {
-  border-bottom: 1px solid #f5f5f5;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.file-item:last-child {
+  border-bottom: none;
 }
 
 .file-row {
   display: flex;
   align-items: center;
-  padding: 12px 0;
+  padding: 10px 0;
   transition: background-color 0.2s ease;
 }
 

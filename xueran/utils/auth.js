@@ -50,6 +50,43 @@ export async function registerWithEmail(email, password) {
   return result;
 }
 
+function uniLogin(provider = 'weixin') {
+  return new Promise((resolve, reject) => {
+    uni.login({
+      provider,
+      success: resolve,
+      fail: reject
+    });
+  });
+}
+
+function getDevMockOpenid() {
+  const key = 'xueran_dev_mock_openid';
+  let openid = uni.getStorageSync(key);
+  if (!openid) {
+    openid = `dev_${Date.now()}_${Math.random().toString(16).slice(2, 10)}`;
+    uni.setStorageSync(key, openid);
+  }
+  return openid;
+}
+
+export async function loginWithWeixin(userInfo = {}) {
+  let loginRes = null;
+  try {
+    loginRes = await uniLogin('weixin');
+  } catch (error) {
+    loginRes = null;
+  }
+  const params = loginRes && loginRes.code
+    ? { code: loginRes.code, userInfo }
+    : { mock: true, mockOpenid: getDevMockOpenid(), userInfo };
+  const result = await callAuth('weixinLogin', params);
+  if (result && result.success && result.data) {
+    setAuthSession(result.data.token, result.data.user);
+  }
+  return result;
+}
+
 export async function logout() {
   const token = getAuthToken();
   try {

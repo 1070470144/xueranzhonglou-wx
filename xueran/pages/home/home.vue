@@ -1,6 +1,6 @@
 <template>
-  <view class="page">
-    <view class="hero">
+  <view class="page fade-in">
+    <view class="hero slide-down">
       <view>
         <text class="eyebrow">AI 助手</text>
         <view class="title">询问血染钟楼</view>
@@ -8,17 +8,17 @@
       </view>
     </view>
 
-    <view v-if="!loggedIn" class="notice">
+    <view v-if="!loggedIn" class="notice slide-up">
       <text>登录后可以提问并保存历史记录。</text>
       <button class="notice-btn" @click="goLogin">去登录</button>
     </view>
 
-    <view v-else-if="availabilityLoaded && !available" class="notice danger">
+    <view v-else-if="availabilityLoaded && !available" class="notice danger slide-up">
       <text>{{ availabilityMessage }}</text>
       <button class="notice-btn" @click="goConfig">配置 AI</button>
     </view>
 
-    <view class="search-panel">
+    <view class="search-panel slide-up">
       <view class="field-label">搜索剧本</view>
       <view class="script-search">
         <input
@@ -51,7 +51,7 @@
       </view>
     </view>
 
-    <view class="composer">
+    <view class="composer slide-up">
       <textarea
         v-model="question"
         class="composer-input"
@@ -68,7 +68,7 @@
       </view>
     </view>
 
-    <view v-if="answer" class="answer-card">
+    <view v-if="answer" class="answer-card slide-up">
       <view class="answer-head">
         <text class="answer-title">回答</text>
         <text class="answer-source">{{ answerSource }}</text>
@@ -229,37 +229,92 @@ export default {
 </script>
 
 <style scoped>
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20rpx);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  0% {
+    opacity: 0;
+    transform: translateY(-20rpx);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30rpx);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-in {
+  opacity: 0;
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+.slide-down {
+  opacity: 0;
+  animation: slideDown 0.5s ease-out 0.1s forwards;
+}
+
+.slide-up {
+  opacity: 0;
+  animation: slideUp 0.5s ease-out forwards;
+}
+
 .page {
   min-height: 100vh;
   box-sizing: border-box;
-  padding: 28rpx 24rpx 56rpx;
-  background: #f6f2ec;
-  color: #241f1a;
+  padding: 20rpx 20rpx 56rpx;
+  background: #f8f8f8;
+  color: #333;
 }
 
 .hero {
   display: flex;
   justify-content: space-between;
   gap: 20rpx;
-  padding: 28rpx 0 22rpx;
+  margin-bottom: 20rpx;
+  padding: 28rpx 24rpx;
+  border-bottom: 1rpx solid #e5e5e5;
+  border-radius: 16rpx;
+  background: #fff;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
 }
 
 .eyebrow {
   font-size: 24rpx;
-  color: #8a6d4a;
+  color: #007AFF;
+  font-weight: 600;
 }
 
 .title {
   margin-top: 8rpx;
-  font-size: 46rpx;
+  font-size: 40rpx;
   font-weight: 700;
   line-height: 1.18;
+  color: #333;
 }
 
 .subtitle {
   margin-top: 12rpx;
   max-width: 560rpx;
-  color: #74685b;
+  color: #666;
   font-size: 26rpx;
   line-height: 1.55;
 }
@@ -269,10 +324,9 @@ export default {
   padding: 0 22rpx;
   height: 60rpx;
   line-height: 60rpx;
-  border-radius: 30rpx;
-  border: 1rpx solid #d8cbbd;
-  background: #fffaf4;
-  color: #4a3624;
+  border-radius: 16rpx;
+  background: #007AFF;
+  color: #fff;
   font-size: 24rpx;
 }
 
@@ -281,18 +335,17 @@ export default {
   align-items: center;
   justify-content: space-between;
   gap: 18rpx;
-  margin: 10rpx 0 22rpx;
-  padding: 20rpx;
-  border-radius: 18rpx;
-  background: #fffaf4;
-  border: 1rpx solid #eadfce;
-  color: #6f5b44;
+  margin-bottom: 20rpx;
+  padding: 20rpx 24rpx;
+  border-radius: 16rpx;
+  background: #fff;
+  color: #666;
   font-size: 25rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
 }
 
 .notice.danger {
-  background: #fff4f2;
-  border-color: #f1c4ba;
+  background: #fff7f5;
   color: #a13a2e;
 }
 
@@ -301,10 +354,9 @@ export default {
 .answer-card {
   box-sizing: border-box;
   width: 100%;
-  border: 1rpx solid #e5d8c8;
-  border-radius: 22rpx;
-  background: #fffaf4;
-  box-shadow: 0 12rpx 36rpx rgba(72, 45, 22, 0.08);
+  border-radius: 16rpx;
+  background: #fff;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
 }
 
 .search-panel {
@@ -314,13 +366,12 @@ export default {
 .composer {
   margin-top: 20rpx;
   padding: 20rpx;
-  border-radius: 30rpx;
-  background: #fffdf9;
 }
 
 .field-label {
-  color: #7d6b58;
+  color: #333;
   font-size: 24rpx;
+  font-weight: 700;
   margin-bottom: 12rpx;
 }
 
@@ -335,10 +386,12 @@ export default {
   box-sizing: border-box;
   height: 76rpx;
   padding: 0 22rpx;
-  border-radius: 18rpx;
-  background: #f4eadf;
-  color: #241f1a;
+  border: 1rpx solid #ddd;
+  border-radius: 25rpx;
+  background: #f8f8f8;
+  color: #333;
   font-size: 27rpx;
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
 }
 
 .script-reset {
@@ -346,18 +399,18 @@ export default {
   padding: 0 22rpx;
   height: 64rpx;
   line-height: 64rpx;
-  border-radius: 32rpx;
-  background: #2f261f;
-  color: #fffaf4;
+  border-radius: 16rpx;
+  background: #f0f0f0;
+  color: #666;
   font-size: 24rpx;
 }
 
 .selected-scope {
   margin-top: 18rpx;
   padding: 18rpx 20rpx;
-  border-radius: 18rpx;
-  background: #fffdf9;
-  border: 1rpx solid #eadfce;
+  border-radius: 16rpx;
+  background: rgba(0, 122, 255, 0.06);
+  border-left: 6rpx solid #007AFF;
 }
 
 .selected-title,
@@ -369,7 +422,7 @@ export default {
 
 .selected-title,
 .result-title {
-  color: #2d241d;
+  color: #333;
   font-size: 29rpx;
   font-weight: 600;
 }
@@ -377,24 +430,24 @@ export default {
 .selected-desc,
 .result-desc {
   margin-top: 6rpx;
-  color: #8a7a68;
+  color: #666;
   font-size: 23rpx;
   line-height: 1.35;
 }
 
 .script-results {
   margin-top: 16rpx;
-  border-radius: 18rpx;
+  border-radius: 16rpx;
   overflow: hidden;
-  border: 1rpx solid #eadfce;
-  background: #fffdf9;
+  border: 1rpx solid #e5e5e5;
+  background: #fff;
 }
 
 .script-result {
   box-sizing: border-box;
   width: 100%;
   padding: 18rpx 20rpx;
-  border-bottom: 1rpx solid #f0e6da;
+  border-bottom: 1rpx solid #e5e5e5;
 }
 
 .script-result:last-child {
@@ -403,7 +456,7 @@ export default {
 
 .result-empty {
   padding: 22rpx;
-  color: #8a7a68;
+  color: #999;
   font-size: 25rpx;
   text-align: center;
 }
@@ -413,7 +466,7 @@ export default {
   width: 100%;
   min-height: 150rpx;
   padding: 6rpx 4rpx 18rpx;
-  color: #241f1a;
+  color: #333;
   font-size: 28rpx;
   line-height: 1.55;
 }
@@ -431,7 +484,7 @@ export default {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #7d6b58;
+  color: #666;
   font-size: 24rpx;
 }
 
@@ -443,15 +496,15 @@ export default {
   height: 68rpx;
   line-height: 68rpx;
   border-radius: 50%;
-  background: #2f261f;
-  color: #fffaf4;
+  background: #007AFF;
+  color: #fff;
   font-size: 34rpx;
   font-weight: 600;
 }
 
 .send-btn[disabled] {
-  background: #b8aa9c;
-  color: #fffaf4;
+  background: #c8c8c8;
+  color: #fff;
 }
 
 .answer-card {
@@ -469,10 +522,11 @@ export default {
 .answer-title {
   font-size: 32rpx;
   font-weight: 700;
+  color: #333;
 }
 
 .answer-source {
-  color: #8a7a68;
+  color: #999;
   font-size: 22rpx;
 }
 
@@ -480,7 +534,7 @@ export default {
 .analysis-text {
   display: block;
   margin-top: 18rpx;
-  color: #342b23;
+  color: #333;
   font-size: 28rpx;
   line-height: 1.65;
   white-space: pre-wrap;
@@ -490,13 +544,13 @@ export default {
   margin-top: 22rpx;
   padding: 18rpx;
   border-radius: 16rpx;
-  background: #f4eadf;
+  background: #f8f8f8;
 }
 
 .analysis-label,
 .refs-title {
   display: block;
-  color: #7a6043;
+  color: #007AFF;
   font-size: 23rpx;
   font-weight: 600;
 }
@@ -507,7 +561,7 @@ export default {
 
 .ref-item {
   margin-top: 10rpx;
-  color: #6d604f;
+  color: #666;
   font-size: 24rpx;
 }
 

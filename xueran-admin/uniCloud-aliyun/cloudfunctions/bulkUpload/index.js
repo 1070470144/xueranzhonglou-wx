@@ -127,10 +127,11 @@ exports.main = async (event, context) => {
                 if (fileEntry.extractedMeta.description && fileEntry.extractedMeta.description.trim()) {
                   extractionStats.descriptionExtracted++
                 }
-                if (fileEntry.extractedMeta.tags && fileEntry.extractedMeta.tags.length > 0) {
+                const tagValue = fileEntry.extractedMeta.tag || (Array.isArray(fileEntry.extractedMeta.tags) ? fileEntry.extractedMeta.tags[0] : fileEntry.extractedMeta.tags)
+                if (tagValue) {
                   extractionStats.tagsExtracted++
                   // Check if default "娱乐" tag was applied
-                  if (fileEntry.extractedMeta.tags.includes('娱乐')) {
+                  if (tagValue === '娱乐') {
                     extractionStats.defaultTagsApplied++
                   }
                 }
@@ -245,7 +246,12 @@ exports.main = async (event, context) => {
       const jobId = event.jobId
       if (!jobId) return createResponse(-1, 'jobId required')
       const res = await db.collection('bulkUploadErrors').where({ jobId }).get()
-      const errors = (res && res.data) ? res.data.map(e => ({ fileName: e.fileName, error: e.error })) : []
+      const errors = (res && res.data) ? res.data.map(e => ({
+        fileName: e.fileName,
+        error: e.error,
+        errorType: e.errorType || 'unknown_error',
+        errorCode: e.errorCode ?? null
+      })) : []
       return createResponse(0, 'ok', { jobId, errors })
     }
 

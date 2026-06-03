@@ -65,8 +65,11 @@
 						<text class="version">{{ script.version || 'v1.0' }}</text>
 					</view>
 					<view class="script-stats">
+						<view class="favorite-section" :class="{ active: script.isFavorited }" @click.stop="toggleFavorite(script)">
+							<text class="favorite-icon">{{ script.isFavorited ? '★' : '☆' }}</text>
+						</view>
 						<view class="like-section" @click.stop="toggleLike(script)">
-							<text class="like-icon">{{ script.isLiked ? '❤️' : '🤍' }}</text>
+							<text class="like-icon">{{ script.isLiked ? '♥' : '♡' }}</text>
 							<text class="like-count">{{ script.likes }}</text>
 						</view>
 					</view>
@@ -98,7 +101,8 @@
 </template>
 
 <script>
-import { likeScript, unlikeScript, initScriptsLikeStatus } from '@/utils/api.js';
+import { likeScript, unlikeScript, favoriteScript, unfavoriteScript, initScriptsLikeStatus } from '@/utils/api.js';
+import { getAuthToken } from '@/utils/auth.js';
 
 export default {
 	data() {
@@ -211,54 +215,61 @@ export default {
 			});
 		},
 		async toggleLike(script) {
-			// 添加点赞动画
+			if (script.likePending) return;
+			script.likePending = true;
 			script.likeAnimating = true;
-			setTimeout(() => {
-				script.likeAnimating = false;
-			}, 300);
-
-			const wasLiked = script.isLiked;
-			const newLikedState = !wasLiked;
+			const oldLikedState = !!script.isLiked;
+			const oldLikes = Number(script.likes) || 0;
+			const newLikedState = !script.isLiked;
+			script.isLiked = newLikedState;
+			script.likes = newLikedState ? oldLikes + 1 : Math.max(0, oldLikes - 1);
 
 			try {
-				let result;
-				if (newLikedState) {
-					// 点赞
-					result = await likeScript(script.id);
-					if (result.success) {
-						script.likes++;
-					}
-				} else {
-					// 取消点赞
-					result = await unlikeScript(script.id);
-					if (result.success) {
-						script.likes = Math.max(0, script.likes - 1);
-					}
-				}
+				const result = newLikedState ? await likeScript(script.id) : await unlikeScript(script.id);
 
 				if (result.success) {
-					script.isLiked = newLikedState;
-					uni.showToast({
-						title: result.message,
-						icon: 'success'
-					});
+					if (typeof result.likes === 'number') {
+						script.likes = result.likes;
+					}
+					this.clearCache();
 				} else {
-					uni.showToast({
-						title: result.message,
-						icon: 'none'
-					});
+					script.isLiked = oldLikedState;
+					script.likes = oldLikes;
+					uni.showToast({ title: result.message, icon: 'none' });
 				}
 			} catch (error) {
 				console.error('点赞操作失败:', error);
-				uni.showToast({
-					title: '操作失败，请重试',
-					icon: 'none'
-				});
+				script.isLiked = oldLikedState;
+				script.likes = oldLikes;
+				uni.showToast({ title: '操作失败，请重试', icon: 'none' });
 			} finally {
-				// 无论成功失败，都停止动画
+				script.likePending = false;
 				setTimeout(() => {
 					script.likeAnimating = false;
 				}, 300);
+			}
+		},
+		async toggleFavorite(script) {
+			if (script.favoritePending) return;
+			script.favoritePending = true;
+			const oldFavoriteState = !!script.isFavorited;
+			const newFavoriteState = !script.isFavorited;
+			script.isFavorited = newFavoriteState;
+
+			try {
+				const result = newFavoriteState ? await favoriteScript(script.id) : await unfavoriteScript(script.id);
+				if (result.success) {
+					this.clearCache();
+				} else {
+					script.isFavorited = oldFavoriteState;
+					uni.showToast({ title: result.message, icon: 'none' });
+				}
+			} catch (error) {
+				console.error('收藏操作失败:', error);
+				script.isFavorited = oldFavoriteState;
+				uni.showToast({ title: '操作失败，请重试', icon: 'none' });
+			} finally {
+				script.favoritePending = false;
 			}
 		},
 		// 缓存管理方法
@@ -374,12 +385,17 @@ export default {
 						data: {
 							page,
 							pageSize: this.pageSize,
-							q
+							q,
+							token: getAuthToken()
 						}
 					});
 					return (res && res.result) ? res.result : res;
 				});
-				const rawList = (result && result.data) ? result.data : [];
+                if (!result || result.code !== 0) {
+                    throw new Error((result && (result.errMsg || result.message)) || 'listScripts returned invalid result');
+                }
+
+                const rawList = Array.isArray(result.data) ? result.data : [];
 				const processedList = [];
 				for (let i = 0; i < rawList.length; i++) {
 					const item = rawList[i];
@@ -416,9 +432,12 @@ export default {
 						item.usageCount = item.usageCount || 0;
 
 						// 版本字段默认值
-						item.version = item.version || '1.0.0';
+                        item.version = item.version || '1.0.0';
+                        item.likes = Number(item.likes) || 0;
+                        item.title = item.title || '未命名剧本';
+                        item.author = item.author || '未知作者';
 
-						processedList.push(item);
+                        processedList.push(item);
 					} catch (itemErr) {
 						// 单条数据处理失败，记录并跳过该条，继续处理余下数据
 						console.error('process script item error', itemErr, item && item.id ? item.id : i);
@@ -665,14 +684,16 @@ export default {
 }
 
 .script-grid {
-	display: grid;
-	grid-template-columns: repeat(2, 1fr);
-	gap: 20rpx;
-	padding: 20rpx;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    padding: 20rpx;
 }
 
 .script-item {
-	background-color: #fff;
+    width: calc(50% - 10rpx);
+    margin-bottom: 20rpx;
+    background-color: #fff;
 	border-radius: 16rpx;
 	box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
 	overflow: hidden;
@@ -766,11 +787,15 @@ export default {
 .script-stats {
 	display: flex;
 	justify-content: flex-end;
+	align-items: center;
+	gap: 10rpx;
 }
 
-.like-section {
+.like-section,
+.favorite-section {
 	display: flex;
 	align-items: center;
+	justify-content: center;
 	cursor: pointer;
 	padding: 6rpx 12rpx;
 	border-radius: 16rpx;
@@ -782,6 +807,29 @@ export default {
 		transform: scale(0.9);
 		transition-duration: 0.1s;
 	}
+}
+
+.favorite-section {
+	width: 50rpx;
+	height: 42rpx;
+	padding: 0;
+	background-color: #fff;
+	border-color: #d6d6d6;
+}
+
+.favorite-section.active {
+	background-color: #fff7ed;
+	border-color: #f59e0b;
+}
+
+.favorite-icon {
+	font-size: 28rpx;
+	color: #8a8a8a;
+	line-height: 1;
+}
+
+.favorite-section.active .favorite-icon {
+	color: #f59e0b;
 }
 
 .like-icon {

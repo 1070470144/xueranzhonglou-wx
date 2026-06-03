@@ -41,6 +41,17 @@ export default {
 	sideBar: { // 左侧菜单
 		// 配置静态菜单列表（放置在用户被授权的菜单列表下边）
 		staticMenu: [{
+			menu_id: "scripts",
+			text: '剧本管理',
+			icon: 'admin-icons-table',
+			url: "",
+			children: [{
+				menu_id: "scripts-list",
+				text: '剧本列表',
+				icon: 'admin-icons-table',
+				value: '/pages/admin/scripts/list'
+			}]
+		}, {
 			menu_id: "ai",
 			text: 'AI 管理',
 			icon: 'admin-icons-help',

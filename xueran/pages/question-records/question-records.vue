@@ -65,7 +65,7 @@
         <text class="count-text">{{ total }} 条</text>
       </view>
 
-      <view v-if="loading" class="empty">加载中...</view>
+      <view v-if="loading && !records.length" class="empty">加载中...</view>
       <view v-else-if="!records.length" class="empty">暂无记录</view>
       <view v-else class="record-list">
         <view v-for="item in records" :key="item._id" class="record-item" @click="openRecord(item)">
@@ -78,7 +78,8 @@
         </view>
       </view>
 
-      <button v-if="hasMore && !loading" class="load-more" @click="loadMore">加载更多</button>
+      <view v-if="loading && records.length" class="end-text">加载更多记录...</view>
+      <view v-else-if="records.length && hasMore" class="end-text">上滑加载更多</view>
       <view v-else-if="records.length" class="end-text">已显示全部记录</view>
     </view>
   </view>
@@ -116,6 +117,9 @@ export default {
   },
   onPullDownRefresh() {
     this.loadRecords(true).finally(() => uni.stopPullDownRefresh());
+  },
+  onReachBottom() {
+    this.loadMore();
   },
   methods: {
     async loadRecords(reset = false) {
@@ -243,8 +247,7 @@ export default {
 }
 
 .small-btn,
-.text-btn,
-.load-more {
+.text-btn {
   margin: 0;
   padding: 0 22rpx;
   height: 72rpx;
@@ -385,11 +388,6 @@ export default {
   background: #fff7f5;
   color: #b42318;
   border: 1rpx solid #f3c5bd;
-}
-
-.load-more {
-  width: 100%;
-  margin-top: 18rpx;
 }
 
 button::after {

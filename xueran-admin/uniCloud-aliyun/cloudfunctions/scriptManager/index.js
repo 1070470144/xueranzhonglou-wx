@@ -55,8 +55,23 @@ const validateScriptData = (data, isUpdate = false) => {
   }
 
   // 可选字段验证
-  if (data.status && !['active', 'inactive'].includes(data.status)) {
-    errors.push('状态必须是 active 或 inactive 之一')
+  if (data.status && !['active', 'inactive', 'published', 'pending', 'rejected'].includes(data.status)) {
+    errors.push('状态必须是 active、inactive、published、pending 或 rejected 之一')
+  }
+  if (data.source && !['user_upload', 'admin_upload', 'system_seed'].includes(data.source)) {
+    errors.push('来源必须是 user_upload、admin_upload 或 system_seed 之一')
+  }
+  if (data.reviewStatus && !['pending', 'approved', 'rejected'].includes(data.reviewStatus)) {
+    errors.push('审核状态必须是 pending、approved 或 rejected 之一')
+  }
+  if (data.reviewReason !== undefined && (typeof data.reviewReason !== 'string' || data.reviewReason.length > 200)) {
+    errors.push('拒绝原因必须是200字符以内的字符串')
+  }
+  if (data.ownerUserId !== undefined && data.ownerUserId !== null && typeof data.ownerUserId !== 'string') {
+    errors.push('ownerUserId 必须为空或字符串')
+  }
+  if (data.ownerNickname !== undefined && (typeof data.ownerNickname !== 'string' || data.ownerNickname.length > 100)) {
+    errors.push('上传用户昵称必须是100字符以内的字符串')
   }
   // Only accept single tag string
   if (data.tag && (typeof data.tag !== 'string' || !['推理', '娱乐'].includes(data.tag))) {
@@ -124,6 +139,8 @@ exports.main = async (event, context) => {
         return await handleCreate(params)
       case 'update':
         return await handleUpdate(params)
+      case 'review':
+        return await handleReview(params)
       case 'delete':
         return await handleDelete(params)
       case 'upload':
@@ -148,7 +165,9 @@ async function handleList(params) {
     pageSize = 20,
     keyword,
     status,
-    category
+    category,
+    source,
+    reviewStatus
   } = params
 
   // 确保分页参数是数字类型
@@ -158,7 +177,7 @@ async function handleList(params) {
   // 构建查询条件（组合 keyword 与 status，避免互相覆盖）
   const query = {}
 
-  if (status || category || keyword) {
+  if (status || category || keyword || source || reviewStatus) {
     const conditions = []
 
     if (status) {
@@ -172,6 +191,14 @@ async function handleList(params) {
 
     if (category) {
       conditions.push({ category })
+    }
+
+    if (source) {
+      conditions.push({ source })
+    }
+
+    if (reviewStatus) {
+      conditions.push({ reviewStatus })
     }
 
     if (keyword) {
@@ -240,7 +267,13 @@ async function handleCreate(params) {
     ...params,
     // 统一使用 tag 字段
     tag: params.tag || '娱乐',
-    status: params.status || 'active',
+    ownerUserId: params.ownerUserId === undefined ? null : params.ownerUserId,
+    ownerNickname: params.ownerNickname || '官方',
+    source: params.source || 'admin_upload',
+    status: params.status || 'published',
+    visibility: params.visibility || 'public',
+    reviewStatus: params.reviewStatus || 'approved',
+    reviewReason: params.reviewReason || '',
     createTime: now,
     updateTime: now
   }
@@ -284,6 +317,59 @@ async function handleUpdate(params) {
   return createResponse(0, '更新成功')
 }
 
+// 审核待审核剧本
+async function handleReview(params) {
+  const { id, reviewAction, reason = '' } = params
+
+  if (!id) {
+    return createErrorResponse('剧本ID不能为空')
+  }
+  if (!['approve', 'reject'].includes(reviewAction)) {
+    return createErrorResponse('审核动作无效')
+  }
+
+  const existingScript = await scriptsCollection.doc(id).get()
+  if (existingScript.data.length === 0) {
+    return createErrorResponse('剧本不存在', 404)
+  }
+
+  const script = existingScript.data[0]
+  const currentReviewState = script.reviewStatus || script.status
+  if (currentReviewState !== 'pending') {
+    return createErrorResponse('只有待审核的剧本可以执行审核操作')
+  }
+
+  const now = new Date()
+  if (reviewAction === 'approve') {
+    await scriptsCollection.doc(id).update({
+      status: 'published',
+      reviewStatus: 'approved',
+      reviewReason: '',
+      visibility: script.visibility || 'public',
+      updateTime: now
+    })
+    return createResponse(0, '审核通过')
+  }
+
+  const reviewReason = String(reason || '').trim()
+  if (!reviewReason) {
+    return createErrorResponse('拒绝原因不能为空')
+  }
+  if (reviewReason.length > 200) {
+    return createErrorResponse('拒绝原因不能超过200字')
+  }
+
+  await scriptsCollection.doc(id).update({
+    status: 'rejected',
+    reviewStatus: 'rejected',
+    reviewReason,
+    visibility: script.visibility || 'public',
+    updateTime: now
+  })
+
+  return createResponse(0, '审核拒绝')
+}
+
 // 删除剧本
 async function handleDelete(params) {
   const { id } = params
@@ -307,6 +393,9 @@ async function handleDelete(params) {
 // 上传剧本文件
 async function handleUpload(params) {
   const { filePath, title, author, description, tag, category, content, imageFileIds = [], thumbnails = [] } = params
+  const status = params.status || 'published'
+  const reviewStatus = params.reviewStatus || (status === 'pending' ? 'pending' : status === 'rejected' ? 'rejected' : 'approved')
+  const reviewReason = params.reviewReason || ''
 
   // 基础参数验证
   if (!filePath) {
@@ -324,6 +413,18 @@ async function handleUpload(params) {
   // 验证标签
   if (tag && (typeof tag !== 'string' || !['推理', '娱乐'].includes(tag))) {
     return createErrorResponse('标签必须是字符串，只能是"推理"或"娱乐"')
+  }
+
+  if (!['active', 'inactive', 'published', 'pending', 'rejected'].includes(status)) {
+    return createErrorResponse('状态必须是 active、inactive、published、pending 或 rejected 之一')
+  }
+
+  if (!['pending', 'approved', 'rejected'].includes(reviewStatus)) {
+    return createErrorResponse('审核状态必须是 pending、approved 或 rejected 之一')
+  }
+
+  if (reviewReason && (typeof reviewReason !== 'string' || reviewReason.length > 200)) {
+    return createErrorResponse('拒绝原因不能超过200字')
   }
 
   try {
@@ -380,7 +481,13 @@ async function handleUpload(params) {
       fileUrl: uploadResult.fileURL || uploadResult.tempFileURL,
       fileSize: uploadResult.size || 0,
       mimeType: uploadResult.mimeType || 'application/octet-stream',
-      status: 'active',
+      ownerUserId: null,
+      ownerNickname: '官方',
+      source: 'admin_upload',
+      status,
+      visibility: 'public',
+      reviewStatus,
+      reviewReason,
       tag: tag || '娱乐', // 统一使用 tag 字段
       category: category ? category.trim() : undefined,
       description: description ? description.trim() : undefined,

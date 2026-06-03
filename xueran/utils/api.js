@@ -1,134 +1,219 @@
-/**
- * 小程序端API工具函数
- */
+import { getAuthToken, requireLogin } from '@/utils/auth.js';
 
-// 点赞状态本地存储键前缀
-const LIKE_STATUS_KEY_PREFIX = 'script_like_';
-
-/**
- * 获取剧本的点赞状态（本地存储）
- * @param {string} scriptId - 剧本ID
- * @returns {boolean} 是否已点赞
- */
-export function getLikeStatus(scriptId) {
-  try {
-    const key = LIKE_STATUS_KEY_PREFIX + scriptId;
-    return uni.getStorageSync(key) || false;
-  } catch (e) {
-    console.warn('获取点赞状态失败:', e);
-    return false;
-  }
+function normalizeResult(res) {
+  return res && res.result ? res.result : res;
 }
 
-/**
- * 设置剧本的点赞状态（本地存储）
- * @param {string} scriptId - 剧本ID
- * @param {boolean} isLiked - 是否已点赞
- */
-export function setLikeStatus(scriptId, isLiked) {
-  try {
-    const key = LIKE_STATUS_KEY_PREFIX + scriptId;
-    if (isLiked) {
-      uni.setStorageSync(key, true);
-    } else {
-      uni.removeStorageSync(key);
+function getServerMessage(result, fallback) {
+  return (result && (result.message || result.errMsg || (result.data && result.data.message))) || fallback;
+}
+
+async function callScriptService(method, params) {
+  const res = await uniCloud.callFunction({
+    name: 'script-service',
+    data: {
+      method,
+      params: [params]
     }
-  } catch (e) {
-    console.warn('设置点赞状态失败:', e);
-  }
+  });
+  return normalizeResult(res);
 }
 
-/**
- * 点赞剧本
- * @param {string} scriptId - 剧本ID
- * @returns {Promise<Object>} API响应
- */
+function requireToken(redirectUrl) {
+  const token = getAuthToken();
+  if (!token) {
+    requireLogin(redirectUrl);
+    return '';
+  }
+  return token;
+}
+
 export async function likeScript(scriptId) {
-  try {
-    // 小程序必须调用本项目内的云对象 script-service
-    const res = await uniCloud.callFunction({
-      name: 'script-service',
-      data: {
-        method: 'likeScript',
-        params: [{ scriptId, action: 'like' }]
-      }
-    });
-    const result = (res && res.result) ? res.result : res;
+  const token = requireToken('/pages/script-list/script-list');
+  if (!token) {
+    return { success: false, message: '请先登录后点赞' };
+  }
 
+  try {
+    const result = await callScriptService('likeScript', { token, scriptId, action: 'like' });
     if (result && result.success) {
-      setLikeStatus(scriptId, true);
-      const msg = (result.data && result.data.message) || result.message || '点赞成功';
-      return { success: true, message: msg };
-    } else {
-      const serverMsg = result && (result.message || result.errMsg || (result.data && result.data.message));
-      return { success: false, message: serverMsg || '点赞失败' };
+      return {
+        success: true,
+        message: getServerMessage(result, '点赞成功'),
+        likes: result.data && result.data.likes
+      };
     }
+    return { success: false, message: getServerMessage(result, '点赞失败') };
   } catch (error) {
-    try {
-      const short = error && (error.message || (error.result && error.result.errMsg)) || String(error);
-      console.error('点赞API调用失败:', short);
-    } catch (e) {
-      console.error('点赞API调用失败: (unknown error)');
-    }
-    const userMsg = error && (error.message || (error.result && (error.result.errMsg || error.result.message))) || '网络错误，请重试';
-    return { success: false, message: userMsg };
+    console.error('likeScript failed:', error);
+    return { success: false, message: '网络错误，请重试' };
   }
 }
 
-/**
- * 取消点赞剧本
- * @param {string} scriptId - 剧本ID
- * @returns {Promise<Object>} API响应
- */
 export async function unlikeScript(scriptId) {
-  try {
-    // 小程序必须调用本项目内的云对象 script-service
-    const res = await uniCloud.callFunction({
-      name: 'script-service',
-      data: {
-        method: 'likeScript',
-        params: [{ scriptId, action: 'unlike' }]
-      }
-    });
-    const result = (res && res.result) ? res.result : res;
+  const token = requireToken('/pages/script-list/script-list');
+  if (!token) {
+    return { success: false, message: '请先登录后操作' };
+  }
 
+  try {
+    const result = await callScriptService('likeScript', { token, scriptId, action: 'unlike' });
     if (result && result.success) {
-      setLikeStatus(scriptId, false);
-      const msg = (result.data && result.data.message) || result.message || '取消点赞成功';
-      return { success: true, message: msg };
-    } else {
-      const serverMsg = result && (result.message || result.errMsg || (result.data && result.data.message));
-      return { success: false, message: serverMsg || '取消点赞失败' };
+      return {
+        success: true,
+        message: getServerMessage(result, '已取消点赞'),
+        likes: result.data && result.data.likes
+      };
     }
+    return { success: false, message: getServerMessage(result, '取消点赞失败') };
   } catch (error) {
-    try {
-      const short = error && (error.message || (error.result && error.result.errMsg)) || String(error);
-      console.error('取消点赞API调用失败:', short);
-    } catch (e) {
-      console.error('取消点赞API调用失败: (unknown error)');
-    }
-    const userMsg = error && (error.message || (error.result && (error.result.errMsg || error.result.message))) || '网络错误，请重试';
-    return { success: false, message: userMsg };
+    console.error('unlikeScript failed:', error);
+    return { success: false, message: '网络错误，请重试' };
   }
 }
 
-/**
- * 初始化剧本的点赞状态
- * @param {Object} script - 剧本对象
- * @returns {Object} 添加了isLiked属性的剧本对象
- */
-export function initScriptLikeStatus(script) {
-  if (script && script.id) {
-    script.isLiked = getLikeStatus(script.id);
+export async function favoriteScript(scriptId) {
+  const token = requireToken('/pages/script-list/script-list');
+  if (!token) {
+    return { success: false, message: '请先登录后收藏' };
   }
+
+  try {
+    const result = await callScriptService('favoriteScript', { token, scriptId, action: 'favorite' });
+    if (result && result.success) {
+      return { success: true, message: getServerMessage(result, '收藏成功') };
+    }
+    return { success: false, message: getServerMessage(result, '收藏失败') };
+  } catch (error) {
+    console.error('favoriteScript failed:', error);
+    return { success: false, message: '网络错误，请重试' };
+  }
+}
+
+export async function unfavoriteScript(scriptId) {
+  const token = requireToken('/pages/script-list/script-list');
+  if (!token) {
+    return { success: false, message: '请先登录后操作' };
+  }
+
+  try {
+    const result = await callScriptService('favoriteScript', { token, scriptId, action: 'unfavorite' });
+    if (result && result.success) {
+      return { success: true, message: getServerMessage(result, '已取消收藏') };
+    }
+    return { success: false, message: getServerMessage(result, '取消收藏失败') };
+  } catch (error) {
+    console.error('unfavoriteScript failed:', error);
+    return { success: false, message: '网络错误，请重试' };
+  }
+}
+
+export async function getFavoriteScripts({ page = 1, pageSize = 10, q = '' } = {}) {
+  const token = requireToken('/pages/favorites/favorites');
+  if (!token) {
+    return { success: false, message: '请先登录后查看收藏', data: { list: [], total: 0, page, pageSize } };
+  }
+
+  try {
+    const result = await callScriptService('getFavoriteScripts', { token, page, pageSize, q });
+    if (result && result.success) {
+      return result;
+    }
+    return {
+      success: false,
+      message: getServerMessage(result, '加载收藏失败'),
+      data: { list: [], total: 0, page, pageSize }
+    };
+  } catch (error) {
+    console.error('getFavoriteScripts failed:', error);
+    return { success: false, message: '网络错误，请重试', data: { list: [], total: 0, page, pageSize } };
+  }
+}
+
+export async function uploadUserScript({ jsonData, images = [] } = {}) {
+  const token = requireToken('/pages/rankings/rankings');
+  if (!token) {
+    return { success: false, message: '请先登录后上传' };
+  }
+
+  try {
+    const result = await callScriptService('userUploadScript', { token, jsonData, images });
+    if (result && result.success) {
+      return result;
+    }
+    return { success: false, message: getServerMessage(result, '上传失败') };
+  } catch (error) {
+    console.error('uploadUserScript failed:', error);
+    return { success: false, message: '网络错误，请重试' };
+  }
+}
+
+export async function getMyUploadedScripts({ page = 1, pageSize = 10, q = '' } = {}) {
+  const token = requireToken('/pages/my-uploads/my-uploads');
+  if (!token) {
+    return { success: false, message: '请先登录后查看', data: { list: [], total: 0, page, pageSize } };
+  }
+
+  try {
+    const result = await callScriptService('getMyUploadedScripts', { token, page, pageSize, q });
+    if (result && result.success) {
+      return result;
+    }
+    return {
+      success: false,
+      message: getServerMessage(result, '加载我的上传失败'),
+      data: { list: [], total: 0, page, pageSize }
+    };
+  } catch (error) {
+    console.error('getMyUploadedScripts failed:', error);
+    return { success: false, message: '网络错误，请重试', data: { list: [], total: 0, page, pageSize } };
+  }
+}
+
+export async function getMyUploadedScriptDetail(scriptId) {
+  const token = requireToken('/pages/my-uploads/my-uploads');
+  if (!token) {
+    return { success: false, message: '请先登录后查看' };
+  }
+
+  try {
+    const result = await callScriptService('getMyUploadedScriptDetail', { token, scriptId });
+    if (result && result.success) {
+      return result;
+    }
+    return { success: false, message: getServerMessage(result, '加载上传详情失败') };
+  } catch (error) {
+    console.error('getMyUploadedScriptDetail failed:', error);
+    return { success: false, message: '网络错误，请重试' };
+  }
+}
+
+export async function deleteMyUploadedScript(scriptId) {
+  const token = requireToken('/pages/my-uploads/my-uploads');
+  if (!token) {
+    return { success: false, message: '请先登录后操作' };
+  }
+
+  try {
+    const result = await callScriptService('deleteMyUploadedScript', { token, scriptId });
+    if (result && result.success) {
+      return result;
+    }
+    return { success: false, message: getServerMessage(result, '删除上传失败') };
+  } catch (error) {
+    console.error('deleteMyUploadedScript failed:', error);
+    return { success: false, message: '网络错误，请重试' };
+  }
+}
+
+export function initScriptLikeStatus(script) {
+  if (!script) return script;
+  script.isLiked = !!script.isLiked;
+  script.isFavorited = !!script.isFavorited;
+  script.likes = Number(script.likes) || 0;
   return script;
 }
 
-/**
- * 批量初始化剧本列表的点赞状态
- * @param {Array} scripts - 剧本数组
- * @returns {Array} 添加了isLiked属性的剧本数组
- */
 export function initScriptsLikeStatus(scripts) {
   if (Array.isArray(scripts)) {
     return scripts.map(script => initScriptLikeStatus(script));

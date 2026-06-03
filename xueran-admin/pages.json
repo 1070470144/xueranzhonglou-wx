@@ -48,6 +48,26 @@
 			}
 		},
 		{
+			"path": "pages/admin/scripts/list",
+			"style": {
+				"navigationBarTitleText": "剧本管理"
+			}
+		},
+		{
+			"path": "pages/admin/scripts/edit",
+			"style": {
+				"navigationBarTitleText": "编辑剧本",
+				"navigationStyle": "default"
+			}
+		},
+		{
+			"path": "pages/admin/scripts/bulk-upload",
+			"style": {
+				"navigationBarTitleText": "批量上传",
+				"navigationStyle": "default"
+			}
+		},
+		{
 			"path": "uni_modules/uni-id-pages/pages/userinfo/change_pwd/change_pwd",
 			"style": {
 				"navigationBarTitleText": "修改密码"
@@ -417,26 +437,6 @@
 					"style": {
 						"navigationBarTitleText": "粘性",
 						"enablePullDownRefresh": false
-					}
-				},
-				{
-					"path": "../../pages/admin/scripts/list",
-					"style": {
-						"navigationBarTitleText": "剧本管理"
-					}
-				},
-				{
-					"path": "../../pages/admin/scripts/edit",
-					"style": {
-						"navigationBarTitleText": "编辑剧本",
-						"navigationStyle": "default"
-					}
-				},
-				{
-					"path": "../../pages/admin/scripts/bulk-upload",
-					"style": {
-						"navigationBarTitleText": "批量上传",
-						"navigationStyle": "default"
 					}
 				},
 				{

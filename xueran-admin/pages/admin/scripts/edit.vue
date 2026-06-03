@@ -24,6 +24,15 @@
         />
       </uni-forms-item>
 
+      <uni-forms-item name="status" label="状态" required>
+        <uni-data-picker
+          v-model="formData.status"
+          :localdata="statusOptions"
+          placeholder="请选择剧本状态"
+          clearIcon="false"
+        />
+      </uni-forms-item>
+
       <uni-forms-item name="description" label="简介">
         <uni-easyinput
           type="textarea"
@@ -155,6 +164,7 @@ export default {
 				usageCount: 0,
 				likes: 0,
 				tag: '娱乐',
+				status: 'published',
 				jsonFile: null,
 				images: []
 			},
@@ -198,11 +208,32 @@ export default {
 							}
 						}
 					}]
+				},
+				status: {
+					rules: [{
+						required: true,
+						errorMessage: '请选择剧本状态'
+					}, {
+						validateFunction: function(rule, value, data, callback) {
+							const validStatuses = ['inactive', 'published', 'pending', 'rejected'];
+							if (!validStatuses.includes(value)) {
+								callback('状态只能选择已上架、待审核、已拒绝或已下架')
+							} else {
+								callback()
+							}
+						}
+					}]
 				}
 			},
 			tagOptions: [
 				{ value: '推理', text: '推理' },
 				{ value: '娱乐', text: '娱乐' }
+			],
+			statusOptions: [
+				{ value: 'published', text: '已上架' },
+				{ value: 'pending', text: '待审核' },
+				{ value: 'rejected', text: '已拒绝' },
+				{ value: 'inactive', text: '已下架' }
 			]
 		}
 	},
@@ -220,6 +251,23 @@ export default {
 		}
 	},
 	methods: {
+		getReviewFieldsByStatus(status) {
+			if (status === 'pending') {
+				return { reviewStatus: 'pending', reviewReason: '' };
+			}
+			if (status === 'rejected') {
+				return { reviewStatus: 'rejected' };
+			}
+			if (status === 'published' || status === 'active') {
+				return { reviewStatus: 'approved', reviewReason: '' };
+			}
+			return {};
+		},
+
+		normalizeStatusForForm(status) {
+			return status === 'active' ? 'published' : (status || 'published');
+		},
+
 		// 触发表单提交
 		submitForm() {
 			this.$refs.form.submit();
@@ -246,8 +294,10 @@ export default {
 					difficulty: formValue.difficulty,
 					usageCount: formValue.usageCount || 0,
 					tag: formValue.tag || '娱乐',
+					status: this.normalizeStatusForForm(formValue.status),
 					likes: formValue.likes || 0
 				};
+				const reviewFields = this.getReviewFieldsByStatus(payload.status);
 				// normalize image entries to support various uploader return shapes (fileId, fileID, url, path, string)
 				const normalizedImages = (formValue.images || []).map(img => {
 					if (!img) return null;
@@ -297,6 +347,8 @@ export default {
 							description: payload.description,
 							content: jsonContentForSend || '',
 							tag: payload.tag,
+							status: payload.status,
+							...reviewFields,
 							images: normalizedImages.map(img => ({
 								fileId: img.fileId || img.fileID,
 								url: img.url || img.fileId || img.fileID
@@ -318,7 +370,10 @@ export default {
 								title: payload.title,
 								content: jsonContentForSend || '',
 								author: payload.author,
+								status: payload.status,
+								...reviewFields,
 								description: payload.description,
+								tag: payload.tag,
 								tags: payload.tag ? [payload.tag] : []
 								,
 								usageCount: payload.usageCount,
@@ -334,8 +389,10 @@ export default {
 								title: payload.title,
 								content: jsonContentForSend || '',
 								author: payload.author,
-								status: 'active',
+								status: payload.status,
+								...reviewFields,
 								description: payload.description,
+								tag: payload.tag,
 								tags: payload.tag ? [payload.tag] : [],
 								images: normalizedImages.map(img => ({
 									fileId: img.fileId || img.fileID,
@@ -583,6 +640,7 @@ export default {
 						usageCount: script.usageCount || 0,
 						likes: script.likes || 0,
 						tag: script.tag || '娱乐',
+						status: this.normalizeStatusForForm(script.status),
 						jsonFile: normalizedJson,
 						images: normalizedImages,
 						jsonContent: parsedJsonContent

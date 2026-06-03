@@ -7,8 +7,16 @@
 				<button class="uni-button hide-on-phone" type="default" size="mini" @click="handleSearch">搜索</button>
 				<select class="uni-select" v-model="statusFilter" @change="handleFilterChange">
 					<option value="">全部状态</option>
-				<option value="active">激活</option>
-				<option value="inactive">未激活</option>
+					<option value="published">已上架</option>
+					<option value="pending">待审核</option>
+					<option value="rejected">已拒绝</option>
+					<option value="inactive">已下架</option>
+				</select>
+				<select class="uni-select" v-model="sourceFilter" @change="handleFilterChange">
+					<option value="">全部来源</option>
+					<option value="user_upload">用户上传</option>
+					<option value="admin_upload">后台上传</option>
+					<option value="system_seed">系统数据</option>
 				</select>
 				<button class="uni-button" type="primary" size="mini" @click="navigateTo('./bulk-upload')">批量上传</button>
 				<button class="uni-button" type="primary" size="mini" @click="navigateTo('./edit')">新增剧本</button>
@@ -36,6 +44,9 @@
 						<uni-th align="center">剧本标题</uni-th>
 						<uni-th align="center">作者</uni-th>
 						<uni-th align="center">状态</uni-th>
+						<uni-th align="center">来源</uni-th>
+						<uni-th align="center">上传用户</uni-th>
+						<uni-th align="center">拒绝原因</uni-th>
 						<uni-th align="center">标签</uni-th>
 						<uni-th align="center">封面</uni-th>
 						<uni-th align="center">使用次数</uni-th>
@@ -48,11 +59,28 @@
 						<uni-td align="center">{{ item.title }}</uni-td>
 						<uni-td align="center">{{ item.author }}</uni-td>
 						<uni-td align="center">
+							<button
+								v-if="isPendingState(item)"
+								class="status-review-button"
+								size="mini"
+								@click="openPreview(item)">待审核</button>
 							<uni-tag
-								:type="getStatusType(item.status)"
+								v-else
+								:type="getScriptStateType(item)"
 								inverted
 								size="small"
-								:text="getStatusText(item.status)" />
+								:text="getScriptStateText(item)" />
+						</uni-td>
+						<uni-td align="center">{{ getSourceText(item.source) }}</uni-td>
+						<uni-td align="center">
+							<view class="owner-cell">
+								<text>{{ getOwnerName(item) }}</text>
+								<text v-if="item.ownerUserId" class="owner-id">{{ item.ownerUserId }}</text>
+							</view>
+						</uni-td>
+						<uni-td align="center">
+							<text v-if="shouldShowReviewReason(item)" class="review-reason">{{ item.reviewReason }}</text>
+							<text v-else class="muted-text">-</text>
 						</uni-td>
 						<uni-td align="center">
 							<view class="tags-container">
@@ -84,6 +112,9 @@
 						</uni-td>
 						<uni-td align="center">
 							<view class="uni-group">
+								<button v-if="canReview(item)" @click="handleReview(item, 'approve')" class="uni-button" size="mini" type="primary">通过</button>
+								<button v-if="canReview(item)" @click="handleReview(item, 'reject')" class="uni-button" size="mini" type="warn">拒绝</button>
+								<button @click="openPreview(item)" class="uni-button" size="mini" type="default">查看</button>
 								<button @click="navigateTo('./edit?id=' + item._id)" class="uni-button" size="mini" type="primary">编辑</button>
 								<button @click="handleDelete(item._id)" class="uni-button" size="mini" type="warn">删除</button>
 							</view>
@@ -110,6 +141,42 @@
 				</view>
 			</view>
 		</view>
+
+		<view v-if="previewVisible" class="preview-mask" @click="closePreview">
+			<view class="preview-panel" @click.stop>
+				<view class="preview-header">
+					<view>
+						<text class="preview-title">{{ previewItem.title || '剧本详情' }}</text>
+						<text class="preview-subtitle">{{ previewItem.author || '-' }} · {{ getSourceText(previewItem.source) }}</text>
+					</view>
+					<button class="uni-button" size="mini" type="default" @click="closePreview">关闭</button>
+				</view>
+				<scroll-view scroll-y class="preview-body">
+					<view class="preview-grid">
+						<view class="preview-field">
+							<text class="field-label">标题</text>
+							<text class="field-value">{{ previewItem.title || '-' }}</text>
+						</view>
+						<view class="preview-field">
+							<text class="field-label">作者</text>
+							<text class="field-value">{{ previewItem.author || '-' }}</text>
+						</view>
+						<view class="preview-field">
+							<text class="field-label">状态</text>
+							<text class="field-value">{{ getScriptStateText(previewItem) }}</text>
+						</view>
+						<view class="preview-field preview-field-full">
+							<text class="field-label">简介</text>
+							<text class="field-value">{{ previewItem.description || '-' }}</text>
+						</view>
+						<view class="preview-field preview-field-full">
+							<text class="field-label">JSON / 内容摘要</text>
+							<text class="json-text">{{ previewContent }}</text>
+						</view>
+					</view>
+				</scroll-view>
+			</view>
+		</view>
 		<!-- #ifndef H5 -->
 		<fix-window />
 		<!-- #endif -->
@@ -117,7 +184,7 @@
 </template>
 
 <script>
-import { getScriptList, deleteScript } from '@/utils/scriptApi.js'
+import { getScriptList, deleteScript, reviewScript } from '@/utils/scriptApi.js'
 
 export default {
 	data() {
@@ -128,7 +195,10 @@ export default {
 			totalCount: 0,
 			searchKeyword: '',
 			statusFilter: '',
+			sourceFilter: '',
 			selectedScripts: [],
+			previewVisible: false,
+			previewItem: {},
 
 			loading: false,
 			error: null
@@ -138,6 +208,18 @@ export default {
 	computed: {
 		totalPages() {
 			return Math.ceil(this.totalCount / this.pageSize)
+		},
+		previewContent() {
+			const item = this.previewItem || {}
+			const content = item.content || item.jsonContent || item.rawJson || item.rawData || ''
+			if (!content) return '-'
+
+			try {
+				const parsed = typeof content === 'string' ? JSON.parse(content) : content
+				return JSON.stringify(parsed, null, 2)
+			} catch (error) {
+				return typeof content === 'string' ? content : JSON.stringify(content, null, 2)
+			}
 		}
 	},
 
@@ -166,7 +248,8 @@ export default {
 					page: this.currentPage,
 					pageSize: this.pageSize,
 					keyword: this.searchKeyword || undefined,
-					status: this.statusFilter || undefined
+					status: this.statusFilter || undefined,
+					source: this.sourceFilter || undefined
 				}
 
 				const response = await getScriptList(params)
@@ -195,13 +278,15 @@ export default {
 			await this.loadScripts()
 		},
 
-		async handlePageChange(page) {
-			this.currentPage = page
+		async handlePageChange(event) {
+			const page = typeof event === 'number' ? event : event && (event.current || event.detail?.current)
+			this.currentPage = page || 1
 			await this.loadScripts()
 		},
 
-		async handlePageSizeChange(size) {
-			this.pageSize = size
+		async handlePageSizeChange(event) {
+			const size = typeof event === 'number' ? event : event && (event.pageSize || event.detail?.pageSize)
+			this.pageSize = size || this.pageSize
 			this.currentPage = 1 // 重置到第一页
 			await this.loadScripts()
 		},
@@ -246,6 +331,51 @@ export default {
 			}
 
 			this.selectedScripts = ids
+		},
+
+		canReview(item) {
+			return this.isPendingState(item)
+		},
+
+		async handleReview(item, action) {
+			if (!item || !item._id) return
+
+			let reason = ''
+			if (action === 'reject') {
+				const inputRes = await uni.showModal({
+					title: '拒绝原因',
+					editable: true,
+					placeholderText: '请输入拒绝原因',
+					showCancel: true,
+					confirmText: '拒绝'
+				})
+				if (!inputRes.confirm) return
+				reason = String(inputRes.content || '').trim()
+				if (!reason) {
+					uni.showToast({ title: '拒绝原因不能为空', icon: 'none' })
+					return
+				}
+				if (reason.length > 200) {
+					uni.showToast({ title: '拒绝原因不能超过200字', icon: 'none' })
+					return
+				}
+			} else {
+				const modalRes = await uni.showModal({
+					title: '确认通过',
+					content: '通过后该剧本会显示在小程序展览列表中。',
+					showCancel: true,
+					confirmText: '通过'
+				})
+				if (!modalRes.confirm) return
+			}
+
+			const response = await reviewScript(item._id, action, reason)
+			if (response.success) {
+				uni.showToast({ title: action === 'approve' ? '已通过' : '已拒绝', icon: 'success' })
+				await this.loadScripts()
+				return
+			}
+			uni.showToast({ title: response.message || '审核失败', icon: 'none' })
 		},
 
 		async handleDelete(scriptId) {
@@ -356,22 +486,56 @@ export default {
 			}
 		},
 
-		getStatusType(status) {
-			const s = status || 'active'
-			const typeMap = {
-				'active': 'success',
-				'inactive': 'default'
-			}
-			return typeMap[s] || 'default'
+		getScriptStateType(item) {
+			if (this.isPendingState(item)) return 'warning'
+			if (item && item.source === 'user_upload' && (item.reviewStatus || item.status) === 'rejected') return 'error'
+
+			const status = (item && item.status) || 'active'
+			if (status === 'published' || status === 'active') return 'success'
+			if (status === 'inactive') return 'default'
+			if (status === 'rejected') return 'error'
+			return 'warning'
 		},
 
-		getStatusText(status) {
-			const s = status || 'active'
+		getScriptStateText(item) {
+			if (!item) return '-'
+			if (this.isPendingState(item)) return '待审核'
+			if (item.source === 'user_upload' && (item.reviewStatus || item.status) === 'rejected') return '已拒绝'
+
+			const status = item.status || 'active'
+			if (status === 'published' || status === 'active') return '已上架'
+			if (status === 'inactive') return '已下架'
+			if (status === 'rejected') return '已拒绝'
+			return '未上架'
+		},
+
+		getSourceText(source) {
 			const textMap = {
-				'active': '激活',
-				'inactive': '未激活'
+				'user_upload': '用户上传',
+				'admin_upload': '后台上传',
+				'system_seed': '系统数据'
 			}
-			return textMap[s] || s
+			return textMap[source] || '官方'
+		},
+
+		getOwnerName(item) {
+			if (!item) return '-'
+			if (item.ownerNickname) return item.ownerNickname
+			if (item.ownerUserId) return '用户上传'
+			return '官方'
+		},
+
+		isPendingState(item) {
+			return !!(item && (item.reviewStatus || item.status) === 'pending')
+		},
+
+		shouldShowReviewReason(item) {
+			return !!(
+				item &&
+				item.source === 'user_upload' &&
+				(item.reviewStatus || item.status) === 'rejected' &&
+				item.reviewReason
+			)
 		},
 
 		formatFileSize(bytes) {
@@ -456,6 +620,16 @@ export default {
 			return item.fileUrl || item.fileId || item.fileID || null
 		},
 
+		openPreview(item) {
+			this.previewItem = item || {}
+			this.previewVisible = true
+		},
+
+		closePreview() {
+			this.previewVisible = false
+			this.previewItem = {}
+		},
+
 		navigateTo(url, isTab = false) {
 			if (isTab) {
 				uni.switchTab({ url })
@@ -496,6 +670,26 @@ export default {
 	justify-content: center;
 }
 
+.owner-cell {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 4px;
+	max-width: 160px;
+}
+
+.owner-id {
+	max-width: 150px;
+	font-size: 12px;
+	line-height: 1.4;
+	color: #8c8c8c;
+	word-break: break-all;
+}
+
+.muted-text {
+	color: #999;
+}
+
 .uni-pagination-box {
 	margin-top: 20px;
 	padding: 16px;
@@ -525,6 +719,121 @@ export default {
 	text-align: center;
 	line-height: 60px;
 	border: 1px dashed #ddd;
+	border-radius: 4px;
+}
+
+.review-reason {
+	max-width: 180px;
+	font-size: 12px;
+	line-height: 1.4;
+	color: #c45656;
+	word-break: break-all;
+}
+
+.status-review-button {
+	height: 24px;
+	line-height: 22px;
+	padding: 0 10px;
+	font-size: 12px;
+	color: #b26a00;
+	background: #fff7e6;
+	border: 1px solid #ffd591;
+	border-radius: 4px;
+}
+
+.preview-mask {
+	position: fixed;
+	z-index: 999;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	left: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	background: rgba(0, 0, 0, 0.35);
+}
+
+.preview-panel {
+	width: min(920px, 92vw);
+	max-height: 86vh;
+	background: #fff;
+	border-radius: 6px;
+	box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+	overflow: hidden;
+}
+
+.preview-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 18px 20px;
+	border-bottom: 1px solid #ebeef5;
+	background: #fafafa;
+}
+
+.preview-title {
+	display: block;
+	font-size: 18px;
+	font-weight: 600;
+	color: #303133;
+}
+
+.preview-subtitle {
+	display: block;
+	margin-top: 6px;
+	font-size: 13px;
+	color: #909399;
+}
+
+.preview-body {
+	max-height: calc(86vh - 76px);
+	padding: 20px;
+	box-sizing: border-box;
+}
+
+.preview-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 14px;
+}
+
+.preview-field {
+	padding: 12px;
+	border: 1px solid #ebeef5;
+	border-radius: 4px;
+	background: #fff;
+}
+
+.preview-field-full {
+	grid-column: 1 / -1;
+}
+
+.field-label {
+	display: block;
+	margin-bottom: 8px;
+	font-size: 12px;
+	color: #909399;
+}
+
+.field-value,
+.json-text {
+	display: block;
+	font-size: 14px;
+	line-height: 1.6;
+	color: #303133;
+	word-break: break-word;
+	white-space: pre-wrap;
+}
+
+.json-text {
+	font-family: Consolas, Monaco, monospace;
+	font-size: 12px;
+	max-height: 360px;
+	overflow: auto;
+	padding: 12px;
+	background: #f7f8fa;
 	border-radius: 4px;
 }
 </style>

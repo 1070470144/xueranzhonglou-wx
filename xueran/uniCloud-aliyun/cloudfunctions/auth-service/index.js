@@ -4,6 +4,7 @@ const crypto = require('crypto');
 
 const TOKEN_TTL = 30 * 24 * 60 * 60 * 1000;
 const PASSWORD_SALT_BYTES = 16;
+const DEFAULT_WX_MP_APPID = 'wx507ffa5fa6ed62f6';
 
 function now() {
   return Date.now();
@@ -11,6 +12,10 @@ function now() {
 
 function normalizeEmail(email) {
   return String(email || '').trim().toLowerCase();
+}
+
+function cleanText(value, max = 300) {
+  return String(value || '').trim().slice(0, max);
 }
 
 function makeId(prefix) {
@@ -49,8 +54,10 @@ function verifyPassword(password, storedHash) {
 function publicUser(user) {
   return {
     id: user._id,
-    email: user.email,
-    nickname: user.nickname || user.email,
+    email: user.email || '',
+    nickname: user.nickname || user.email || '微信用户',
+    avatarUrl: user.avatarUrl || '',
+    loginType: user.loginType || (user.wxOpenid ? 'weixin-mp' : 'email'),
     registerTime: user.registerTime
   };
 }
@@ -60,12 +67,44 @@ async function createSession(db, user) {
   const session = {
     token,
     userId: user._id,
-    email: user.email,
+    email: user.email || '',
     createTime: now(),
     expireTime: now() + TOKEN_TTL
   };
   await db.collection('auth-sessions').add(session);
   return token;
+}
+
+function getWxMpConfig() {
+  const env = typeof process !== 'undefined' && process.env ? process.env : {};
+  return {
+    appid: env.WX_MP_APPID || env.WEIXIN_MP_APPID || DEFAULT_WX_MP_APPID,
+    secret: env.WX_MP_APP_SECRET || env.WEIXIN_MP_APPSECRET || env.WEIXIN_MP_APP_SECRET || ''
+  };
+}
+
+async function getWxSession(code) {
+  const config = getWxMpConfig();
+  if (!config.appid || !config.secret) {
+    throw new Error('微信小程序 AppSecret 未配置');
+  }
+
+  const response = await uniCloud.httpclient.request('https://api.weixin.qq.com/sns/jscode2session', {
+    method: 'GET',
+    dataType: 'json',
+    timeout: 10000,
+    data: {
+      appid: config.appid,
+      secret: config.secret,
+      js_code: code,
+      grant_type: 'authorization_code'
+    }
+  });
+  const body = response.data || {};
+  if (!body.openid) {
+    throw new Error(body.errmsg || '微信登录凭证校验失败');
+  }
+  return body;
 }
 
 async function verifyToken(db, token) {
@@ -146,6 +185,69 @@ async function login(data) {
   return { success: true, data: { token, user: publicUser(user) } };
 }
 
+async function weixinLogin(data) {
+  const code = cleanText(data && data.code, 120);
+  const config = getWxMpConfig();
+  const allowMock = !!(data && data.mock && !config.secret);
+  if (!code && !allowMock) {
+    return { success: false, message: '微信登录凭证不能为空' };
+  }
+
+  const wxSession = allowMock
+    ? { openid: `mock_${cleanText(data.mockOpenid, 120) || 'hbuilderx'}` }
+    : await getWxSession(code);
+  const openid = cleanText(wxSession.openid, 120);
+  const unionid = cleanText(wxSession.unionid, 120);
+  const userInfo = (data && data.userInfo) || {};
+  const db = uniCloud.database();
+
+  const result = await db.collection('app-users').where({ wxOpenid: openid }).limit(1).get();
+  let user = result.data && result.data[0];
+  const nickname = cleanText(userInfo.nickName || userInfo.nickname, 80) || (user && user.nickname) || `微信用户${openid.slice(-6)}`;
+  const avatarUrl = cleanText(userInfo.avatarUrl, 500) || (user && user.avatarUrl) || '';
+
+  if (user && user.status === 'disabled') {
+    return { success: false, message: '账号已被禁用' };
+  }
+
+  if (user) {
+    await db.collection('app-users').doc(user._id).update({
+      nickname,
+      avatarUrl,
+      wxUnionid: unionid || user.wxUnionid || '',
+      loginType: 'weixin-mp',
+      lastLoginTime: now()
+    });
+    user = {
+      ...user,
+      nickname,
+      avatarUrl,
+      wxUnionid: unionid || user.wxUnionid || '',
+      loginType: 'weixin-mp',
+      lastLoginTime: now()
+    };
+  } else {
+    const userDoc = {
+      email: '',
+      nickname,
+      avatarUrl,
+      passwordHash: '',
+      wxOpenid: openid,
+      wxUnionid: unionid,
+      loginType: 'weixin-mp',
+      status: 'active',
+      registerTime: now(),
+      lastLoginTime: now()
+    };
+    const addResult = await db.collection('app-users').add(userDoc);
+    userDoc._id = addResult.id;
+    user = userDoc;
+  }
+
+  const token = await createSession(db, user);
+  return { success: true, data: { token, user: publicUser(user) } };
+}
+
 async function me(data) {
   const db = uniCloud.database();
   const auth = await verifyToken(db, data && data.token);
@@ -177,6 +279,8 @@ exports.main = async (event) => {
         return await register(params[0] || {});
       case 'login':
         return await login(params[0] || {});
+      case 'weixinLogin':
+        return await weixinLogin(params[0] || {});
       case 'me':
         return await me(params[0] || {});
       case 'logout':

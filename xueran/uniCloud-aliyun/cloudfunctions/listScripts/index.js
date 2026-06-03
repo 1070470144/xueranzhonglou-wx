@@ -2,15 +2,35 @@
 const db = uniCloud.database();
 const collectionName = 'scripts';
 
+async function verifyAppUser(token) {
+  if (!token) return null;
+
+  const sessionRes = await db.collection('auth-sessions')
+    .where({ token })
+    .limit(1)
+    .get();
+  const session = sessionRes.data && sessionRes.data[0];
+  if (!session || (session.expireTime && session.expireTime <= Date.now())) {
+    return null;
+  }
+
+  const userRes = await db.collection('app-users').doc(session.userId).get();
+  const user = userRes.data && userRes.data[0];
+  if (!user || user.status === 'disabled') return null;
+  return user;
+}
+
 /**
  * listScripts cloud function
- * event: { page, pageSize, q, sortBy }
+ * event: { page, pageSize, q, sortBy, status }
  */
 exports.main = async (event, context) => {
-  const { page = 1, pageSize = 12, q = '', sortBy = 'createdAt' } = event || {};
+  const { page = 1, pageSize = 12, q = '', sortBy = 'createTime', status = 'public', token = '' } = event || {};
   const pageNum = Math.max(1, parseInt(page, 10) || 1);
   const limit = Math.max(1, parseInt(pageSize, 10) || 12);
   const skip = (pageNum - 1) * limit;
+  const allowedSortFields = ['createTime', 'updateTime', 'createdAt', 'likes', 'usageCount'];
+  const sortField = allowedSortFields.includes(sortBy) ? sortBy : 'createTime';
 
   // 调试日志：记录搜索参数
   console.log('=== listScripts Debug Start ===');
@@ -20,7 +40,13 @@ exports.main = async (event, context) => {
 
   const coll = db.collection(collectionName);
   const where = {};
-  let sortByField = sortBy; // 默认排序字段
+  let sortByField = sortField;
+
+  if (status === 'public') {
+    where.status = db.command.in(['active', 'published']);
+  } else if (status && status !== 'all') {
+    where.status = status;
+  }
 
   if (q && q.trim()) {
     const searchTerm = q.trim();
@@ -71,6 +97,10 @@ exports.main = async (event, context) => {
         images: true,
         _id: true,
         createdAt: true,
+        createTime: true,
+        updateTime: true,
+        thumbnail: true,
+        thumbnails: true,
 
         // 新增管理端字段支持
         status: true,
@@ -162,21 +192,9 @@ exports.main = async (event, context) => {
           }
         }
 
-        // 时间字段验证
-        if (item.createTime && !(item.createTime instanceof Date)) {
-          try {
-            item.createTime = new Date(item.createTime);
-          } catch (e) {
-            item.createTime = new Date();
-          }
-        }
-        if (item.updateTime && !(item.updateTime instanceof Date)) {
-          try {
-            item.updateTime = new Date(item.updateTime);
-          } catch (e) {
-            item.updateTime = item.createTime || new Date();
-          }
-        }
+        item.createTime = item.createTime || item.createdAt || item.updateTime || Date.now();
+        item.updateTime = item.updateTime || item.createTime;
+        item.createdAt = item.createdAt || item.createTime;
 
         return item;
       } catch (validationError) {
@@ -237,6 +255,42 @@ exports.main = async (event, context) => {
 
         return scoreB - scoreA; // 相关度高的排前面
       });
+    }
+
+    const user = await verifyAppUser(token);
+    if (user && data.length > 0) {
+      const scriptIds = data.map(item => item.id).filter(Boolean);
+      const likedIds = new Set();
+      const favoritedIds = new Set();
+
+      const [likeResult, favoriteResult] = await Promise.all([
+        db.collection('script-likes')
+          .where({ userId: user._id, scriptId: db.command.in(scriptIds) })
+          .get(),
+        db.collection('script-favorites')
+          .where({ userId: user._id, scriptId: db.command.in(scriptIds) })
+          .get()
+      ]);
+
+      for (const row of likeResult.data || []) {
+        likedIds.add(row.scriptId);
+      }
+
+      for (const row of favoriteResult.data || []) {
+        favoritedIds.add(row.scriptId);
+      }
+
+      data = data.map(item => ({
+        ...item,
+        isLiked: likedIds.has(item.id),
+        isFavorited: favoritedIds.has(item.id)
+      }));
+    } else {
+      data = data.map(item => ({
+        ...item,
+        isLiked: false,
+        isFavorited: false
+      }));
     }
 
     return { code: 0, data, total };

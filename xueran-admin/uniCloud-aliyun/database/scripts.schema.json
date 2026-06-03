@@ -64,8 +64,43 @@
     "status": {
       "bsonType": "string",
       "title": "剧本状态",
-      "enum": ["active", "inactive"],
-      "description": "剧本状态：active(激活)、inactive(未激活)"
+      "enum": ["active", "inactive", "published", "pending", "rejected"],
+      "description": "剧本状态：active(激活)、inactive(未激活)、published(已发布)、pending(待审核)、rejected(已拒绝)"
+    },
+    "ownerUserId": {
+      "bsonType": ["string", "null"],
+      "title": "上传用户ID",
+      "description": "用户上传时为用户ID，官方/后台数据为空"
+    },
+    "ownerNickname": {
+      "bsonType": "string",
+      "title": "上传用户昵称",
+      "maxLength": 100,
+      "description": "用户昵称或官方"
+    },
+    "source": {
+      "bsonType": "string",
+      "title": "剧本来源",
+      "enum": ["user_upload", "admin_upload", "system_seed"],
+      "description": "剧本来源：用户上传、后台上传或系统初始化"
+    },
+    "visibility": {
+      "bsonType": "string",
+      "title": "可见性",
+      "enum": ["public"],
+      "description": "当前统一为公开可见"
+    },
+    "reviewStatus": {
+      "bsonType": "string",
+      "title": "审核状态",
+      "enum": ["pending", "approved", "rejected"],
+      "description": "审核状态：待审核、已通过、已拒绝"
+    },
+    "reviewReason": {
+      "bsonType": "string",
+      "title": "拒绝原因",
+      "maxLength": 200,
+      "description": "审核拒绝时填写，最多200字"
     },
     "tags": {
       "bsonType": "array",

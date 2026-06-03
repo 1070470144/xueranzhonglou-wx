@@ -50,6 +50,8 @@ function handleApiError(error) {
  * @param {number} params.pageSize - 每页数量 (默认: 20)
  * @param {string} params.keyword - 搜索关键词
  * @param {string} params.status - 状态筛选
+ * @param {string} params.source - 来源筛选
+ * @param {string} params.reviewStatus - 审核状态筛选
  * @param {string} params.category - 分类筛选
  * @returns {Promise<Object>} API响应
  */
@@ -63,6 +65,8 @@ export async function getScriptList(params = {}) {
         pageSize: params.pageSize || 20,
         keyword: params.keyword,
         status: params.status,
+        source: params.source,
+        reviewStatus: params.reviewStatus,
         category: params.category
       }
     })
@@ -168,6 +172,52 @@ export async function updateScript(scriptId, updateData) {
   }
 }
 
+export async function reviewScript(scriptId, action, reason = '') {
+  if (!scriptId || !['approve', 'reject'].includes(action)) {
+    return {
+      success: false,
+      data: null,
+      message: '审核参数无效',
+      code: -1
+    }
+  }
+
+  const reviewReason = String(reason || '').trim()
+  if (action === 'reject') {
+    if (!reviewReason) {
+      return {
+        success: false,
+        data: null,
+        message: '拒绝原因不能为空',
+        code: -1
+      }
+    }
+    if (reviewReason.length > 200) {
+      return {
+        success: false,
+        data: null,
+        message: '拒绝原因不能超过200字',
+        code: -1
+      }
+    }
+  }
+
+  try {
+    const result = await uniCloud.callFunction({
+      name: SCRIPT_MANAGER,
+      data: {
+        action: 'review',
+        id: scriptId,
+        reviewAction: action,
+        reason: reviewReason
+      }
+    })
+    return handleApiResponse(result)
+  } catch (error) {
+    return handleApiError(error)
+  }
+}
+
 /**
  * 删除剧本
  * @param {string} scriptId - 剧本ID
@@ -245,6 +295,7 @@ export default {
   getScriptDetail,
   createScript,
   updateScript,
+  reviewScript,
   deleteScript,
   uploadScript,
   uploadScriptFile

@@ -21,7 +21,21 @@
     {
       "path": "pages/rankings/rankings",
       "style": {
-        "navigationBarTitleText": "排行"
+        "navigationBarTitleText": "工具"
+      }
+    },
+    {
+      "path": "pages/tool-upload/tool-upload",
+      "style": {
+        "navigationBarTitleText": "上传剧本",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/tool-rankings/tool-rankings",
+      "style": {
+        "navigationBarTitleText": "排行",
+        "enablePullDownRefresh": true
       }
     },
     {
@@ -55,6 +69,26 @@
         "navigationBarTitleText": "问答记录",
         "enablePullDownRefresh": true
       }
+    },
+    {
+      "path": "pages/favorites/favorites",
+      "style": {
+        "navigationBarTitleText": "我的收藏",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/my-uploads/my-uploads",
+      "style": {
+        "navigationBarTitleText": "我的上传",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/my-upload-detail/my-upload-detail",
+      "style": {
+        "navigationBarTitleText": "上传详情"
+      }
     }
   ],
   "globalStyle": {
@@ -79,7 +113,7 @@
       },
       {
         "pagePath": "pages/rankings/rankings",
-        "text": "排行"
+        "text": "工具"
       },
       {
         "pagePath": "pages/profile/profile",

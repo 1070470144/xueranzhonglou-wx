@@ -1,6 +1,6 @@
 {
   "bsonType": "object",
-  "required": ["email", "passwordHash", "status"],
+  "required": ["status"],
   "permission": {
     "read": false,
     "create": false,
@@ -19,9 +19,26 @@
       "bsonType": "string",
       "description": "昵称"
     },
+    "avatarUrl": {
+      "bsonType": "string",
+      "description": "微信头像"
+    },
     "passwordHash": {
       "bsonType": "string",
       "description": "密码哈希"
+    },
+    "wxOpenid": {
+      "bsonType": "string",
+      "description": "微信小程序 openid"
+    },
+    "wxUnionid": {
+      "bsonType": "string",
+      "description": "微信 unionid"
+    },
+    "loginType": {
+      "bsonType": "string",
+      "enum": ["email", "weixin-mp"],
+      "description": "登录方式"
     },
     "status": {
       "bsonType": "string",
