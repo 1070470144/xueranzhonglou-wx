@@ -87,6 +87,11 @@ function normalizeTime(value) {
   return Number.isFinite(time) && time > 0 ? time : null;
 }
 
+function normalizePriority(value) {
+  const number = Number(value || 0);
+  return Number.isFinite(number) ? number : 0;
+}
+
 function buildCorrectionKeywords(record, correctedAnswer) {
   const text = [record.question, record.scriptTitle, correctedAnswer].filter(Boolean).join(' ');
   const words = text.toLowerCase().match(/[a-z0-9]+|[\u4e00-\u9fa5]{2,}/g) || [];
@@ -458,7 +463,7 @@ module.exports = {
       type: normalizeAnnouncementType(item.type),
       status: normalizeAnnouncementStatus(item.status),
       pinned: item.pinned === true || item.pinned === 'true' || item.pinned === 1 || item.pinned === '1',
-      priority: Number(item.priority || 0),
+      priority: normalizePriority(item.priority),
       startTime: normalizeTime(item.startTime),
       endTime: normalizeTime(item.endTime),
       updateTime: now()
@@ -489,8 +494,18 @@ module.exports = {
   async updateAnnouncementStatus(params = {}) {
     if (!params.id) return fail('missing announcement id');
     const status = normalizeAnnouncementStatus(params.status);
+    const existed = await db.collection(TABLES.announcements).doc(params.id).get();
+    const item = existed.data && existed.data[0];
+    if (!item) return fail('announcement not found');
+    if (status === 'published') {
+      if (!cleanText(item.title, 120)) return fail('title is required');
+      if (!cleanText(item.content, 20000)) return fail('content is required');
+      const startTime = normalizeTime(item.startTime);
+      const endTime = normalizeTime(item.endTime);
+      if (startTime && endTime && startTime > endTime) return fail('start time cannot be later than end time');
+    }
     const doc = { status, updateTime: now() };
-    if (status === 'published') doc.publishTime = now();
+    if (status === 'published') doc.publishTime = item.publishTime || now();
     await db.collection(TABLES.announcements).doc(params.id).update(doc);
     return ok({}, 'saved');
   },

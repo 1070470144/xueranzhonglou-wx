@@ -48,6 +48,7 @@ export default {
       uni.showToast({ title: result.message || '导入完成', icon: result.success ? 'success' : 'none' });
       if (!result.success) return;
       this.importResult = { imported: result.data.imported || 0, failed: result.data.failed || [] };
+      if (this.importResult.imported) uni.setStorageSync('exam_questions_dirty', 1);
       if (!this.importResult.failed.length) {
         setTimeout(() => this.goBack(), 600);
       }

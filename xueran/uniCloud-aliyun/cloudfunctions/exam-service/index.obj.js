@@ -131,6 +131,21 @@ function publicQuestion(question, favoriteIds = new Set(), includeAnswer = false
   return item;
 }
 
+function publicRecordSummary(record) {
+  return {
+    _id: record._id,
+    level: record.level || 1,
+    questionCount: record.questionCount || 0,
+    scorePerQuestion: record.scorePerQuestion || 0,
+    totalScore: record.totalScore || 0,
+    score: record.score || 0,
+    correctCount: record.correctCount || 0,
+    wrongCount: record.wrongCount || 0,
+    durationSeconds: record.durationSeconds || 0,
+    createTime: record.createTime || 0
+  };
+}
+
 async function getOwnedQuestion(id, userId) {
   const questionId = cleanText(id, 80);
   if (!questionId) return null;
@@ -182,10 +197,8 @@ module.exports = {
       .limit(pageSize)
       .get();
     const count = await db.collection(TABLES.questions).where(query).count();
-    const ids = (res.data || []).map(item => item._id);
-    const favorites = await getFavoriteIdSet(auth.user._id, ids);
     return ok({
-      list: (res.data || []).map(item => publicQuestion(item, favorites, true)),
+      list: (res.data || []).map(item => publicQuestion(item, new Set(), true)),
       total: count.total || 0,
       page,
       pageSize
@@ -433,7 +446,7 @@ module.exports = {
       .limit(pageSize)
       .get();
     const count = await db.collection(TABLES.records).where(query).count();
-    return ok({ list: res.data || [], total: count.total || 0, page, pageSize });
+    return ok({ list: (res.data || []).map(publicRecordSummary), total: count.total || 0, page, pageSize });
   },
 
   async getRecord(params = {}) {

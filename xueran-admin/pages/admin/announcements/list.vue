@@ -124,7 +124,7 @@
           </view>
           <view class="form-row form-row-top">
             <text class="label">正文</text>
-            <textarea class="textarea" v-model="form.content" placeholder="公告正文" />
+            <textarea class="textarea" v-model="form.content" placeholder="公告正文"></textarea>
           </view>
         </scroll-view>
         <view class="editor-foot">
@@ -211,11 +211,16 @@ export default {
       this.editorVisible = false;
     },
     async save() {
+      const validation = this.validateForm();
+      if (!validation.success) {
+        uni.showToast({ title: validation.message, icon: 'none' });
+        return;
+      }
       const payload = {
         ...this.form,
         startTime: this.parseDateTime(this.form.startTimeText),
         endTime: this.parseDateTime(this.form.endTimeText),
-        priority: Number(this.form.priority || 0)
+        priority: this.normalizePriority(this.form.priority)
       };
       this.saving = true;
       try {
@@ -283,6 +288,26 @@ export default {
       const normalized = String(value).trim().replace(/-/g, '/');
       const time = new Date(normalized).getTime();
       return Number.isFinite(time) ? time : null;
+    },
+    isValidDateTime(value) {
+      if (!value) return true;
+      return this.parseDateTime(value) !== null;
+    },
+    normalizePriority(value) {
+      const number = Number(value || 0);
+      return Number.isFinite(number) ? number : 0;
+    },
+    validateForm() {
+      const title = String(this.form.title || '').trim();
+      const content = String(this.form.content || '').trim();
+      if (!title) return { success: false, message: '请填写公告标题' };
+      if (!content) return { success: false, message: '请填写公告正文' };
+      if (!this.isValidDateTime(this.form.startTimeText)) return { success: false, message: '开始时间格式不正确' };
+      if (!this.isValidDateTime(this.form.endTimeText)) return { success: false, message: '结束时间格式不正确' };
+      const startTime = this.parseDateTime(this.form.startTimeText);
+      const endTime = this.parseDateTime(this.form.endTimeText);
+      if (startTime && endTime && startTime > endTime) return { success: false, message: '开始时间不能晚于结束时间' };
+      return { success: true };
     }
   }
 };

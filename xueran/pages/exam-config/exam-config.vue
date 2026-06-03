@@ -99,7 +99,10 @@ export default {
     this.load({ page: 1 });
   },
   onShow() {
-    if (this.page > 1 || this.items.length) this.reload();
+    if (uni.getStorageSync('exam_questions_dirty')) {
+      uni.removeStorageSync('exam_questions_dirty');
+      this.reload();
+    }
   },
   onPullDownRefresh() {
     this.reload();

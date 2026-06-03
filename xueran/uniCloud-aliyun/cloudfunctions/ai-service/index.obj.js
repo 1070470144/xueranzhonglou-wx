@@ -58,10 +58,11 @@ function publicAnnouncement(item, detail = false) {
 }
 
 async function getActiveAnnouncements(limit = 20) {
+  const finalLimit = Math.min(20, Math.max(1, Number(limit || 20)));
   const res = await db.collection(TABLES.announcements)
     .where({ status: 'published' })
     .orderBy('updateTime', 'desc')
-    .limit(Math.min(50, Math.max(1, Number(limit || 20))))
+    .limit(50)
     .get();
   return (res.data || [])
     .filter(item => isActiveAnnouncement(item))
@@ -70,7 +71,8 @@ async function getActiveAnnouncements(limit = 20) {
       const priorityDiff = Number(b.priority || 0) - Number(a.priority || 0);
       if (priorityDiff) return priorityDiff;
       return Number(b.publishTime || b.createTime || b.updateTime || 0) - Number(a.publishTime || a.createTime || a.updateTime || 0);
-    });
+    })
+    .slice(0, finalLimit);
 }
 
 function normalizeText(value) {

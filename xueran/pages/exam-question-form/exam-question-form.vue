@@ -141,7 +141,10 @@ export default {
       const result = await saveExamQuestion(this.form);
       this.saving = false;
       uni.showToast({ title: result.message || (result.success ? '保存成功' : '保存失败'), icon: result.success ? 'success' : 'none' });
-      if (result.success) this.goBack();
+      if (result.success) {
+        uni.setStorageSync('exam_questions_dirty', 1);
+        this.goBack();
+      }
     },
     goBack() {
       uni.navigateBack();
