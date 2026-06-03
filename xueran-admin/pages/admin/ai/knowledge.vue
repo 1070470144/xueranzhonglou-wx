@@ -20,7 +20,6 @@
         </select>
         <button class="uni-button" size="mini" @click="search">搜索</button>
         <button class="uni-button" size="mini" @click="openCrawl">抓取知识</button>
-        <button class="uni-button" type="primary" size="mini" @click="newItem">新增知识</button>
         <button class="uni-button" type="warn" size="mini" :disabled="!selectedIds.length" @click="batchRemove">批量删除</button>
       </view>
     </view>
@@ -107,12 +106,26 @@
           </view>
 
           <view v-if="crawlMode === 'rule'">
-            <view class="rule-list">
-              <label class="rule-item" v-for="rule in fixedRules" :key="rule.key">
-                <checkbox :checked="selectedRules.includes(rule.key)" @click="toggleRule(rule.key)" />
-                <text>{{ rule.label }}</text>
-              </label>
-            </view>
+            <checkbox-group @change="onRuleChange">
+              <view class="rule-section">
+                <view class="rule-section-title">固定规则</view>
+                <view class="rule-list rule-list-basic">
+                  <label class="rule-item" v-for="rule in fixedRules" :key="rule.key">
+                    <checkbox :value="rule.key" :checked="selectedRules.includes(rule.key)" />
+                    <text>{{ rule.label }}</text>
+                  </label>
+                </view>
+              </view>
+              <view class="rule-section">
+                <view class="rule-section-title">角色能力类别</view>
+                <view class="rule-list rule-list-ability">
+                  <label class="rule-item" v-for="rule in abilityRules" :key="rule.key">
+                    <checkbox :value="rule.key" :checked="selectedRules.includes(rule.key)" />
+                    <text>{{ rule.label }}</text>
+                  </label>
+                </view>
+              </view>
+            </checkbox-group>
           </view>
 
           <view class="crawl-result" v-if="crawlResult">
@@ -183,10 +196,10 @@
         </view>
       </view>
 
-      <view class="sub-page" v-if="pageMode === 'edit' || pageMode === 'new'">
+      <view class="sub-page" v-if="pageMode === 'edit'">
         <view class="sub-header">
           <view>
-            <view class="sub-title">{{ form._id ? '编辑知识' : '新增知识' }}</view>
+            <view class="sub-title">编辑知识</view>
             <view class="sub-desc">保存后会同步更新检索文本，供小程序 AI 问答使用</view>
           </view>
           <view class="uni-button-group sub-actions">
@@ -285,9 +298,41 @@ export default {
         { key: 'rules_summary', label: '规则概要' },
         { key: 'important_details', label: '重要细节' },
         { key: 'terms', label: '术语汇总' },
-        { key: 'jinxes', label: '相克规则' },
         { key: 'storyteller_advice', label: '给说书人的建议' },
-        { key: 'ability_overview', label: '角色能力类别总览' }
+        { key: 'jinxes', label: '相克规则' }
+      ],
+      abilityRules: [
+        { key: 'ability_visit_storyteller', label: '拜访说书人' },
+        { key: 'ability_protection', label: '保护' },
+        { key: 'ability_expose_role', label: '暴露角色' },
+        { key: 'ability_continuous_detection', label: '持续检测型能力' },
+        { key: 'ability_execution', label: '处决' },
+        { key: 'ability_extra_death', label: '额外死亡' },
+        { key: 'ability_madness', label: '疯狂' },
+        { key: 'ability_resurrection', label: '复活' },
+        { key: 'ability_change_target', label: '更换选择目标' },
+        { key: 'ability_public_trigger', label: '公开触发能力' },
+        { key: 'ability_gain_ability', label: '获得能力' },
+        { key: 'ability_info', label: '获取信息' },
+        { key: 'ability_interaction_interference', label: '互动干扰' },
+        { key: 'ability_retrospective', label: '回溯型能力' },
+        { key: 'ability_entry', label: '进场能力' },
+        { key: 'ability_role_change', label: '角色变化' },
+        { key: 'ability_neighboring', label: '邻近' },
+        { key: 'ability_immune_death', label: '免死' },
+        { key: 'ability_effect_interference', label: '能力效果干扰' },
+        { key: 'ability_cognition_override', label: '认知覆盖' },
+        { key: 'ability_setup_adjustment', label: '设置调整' },
+        { key: 'ability_dead_ability_retained', label: '死后能力保留' },
+        { key: 'ability_death_trigger', label: '死亡触发能力' },
+        { key: 'ability_special_win_loss', label: '特殊胜利失败条件' },
+        { key: 'ability_nomination', label: '提名' },
+        { key: 'ability_vote', label: '投票' },
+        { key: 'ability_limited_use', label: '限次能力' },
+        { key: 'ability_influence', label: '影响' },
+        { key: 'ability_alignment_change', label: '阵营转变' },
+        { key: 'ability_poisoned', label: '中毒' },
+        { key: 'ability_drunk', label: '醉酒' }
       ],
       selectedRules: [],
       crawlResult: ''
@@ -306,7 +351,7 @@ export default {
       if (this.crawlMode === 'role') return !this.roleForm.roleName;
       if (this.crawlMode === 'batch') return !this.batchRoleText;
       if (this.crawlMode === 'url') return !this.urlForm.url;
-      if (this.crawlMode === 'rule') return !this.selectedRules.length;
+      if (this.crawlMode === 'rule') return false;
       return false;
     }
   },
@@ -351,10 +396,9 @@ export default {
     toggleAll() {
       this.selectedIds = this.isAllSelected ? [] : this.list.map(item => item._id);
     },
-    toggleRule(key) {
-      this.selectedRules = this.selectedRules.includes(key)
-        ? this.selectedRules.filter(item => item !== key)
-        : this.selectedRules.concat(key);
+    onRuleChange(event) {
+      const values = event && event.detail && Array.isArray(event.detail.value) ? event.detail.value : [];
+      this.selectedRules = values;
     },
     backToList() {
       this.pageMode = 'list';
@@ -367,10 +411,6 @@ export default {
       if (this.crawlMode === 'batch') return this.crawlRoleBatch();
       if (this.crawlMode === 'url') return this.crawlUrl();
       if (this.crawlMode === 'rule') return this.crawlRules();
-    },
-    newItem() {
-      this.form = emptyForm();
-      this.pageMode = 'new';
     },
     async viewItem(item) {
       const res = await getKnowledgeDetail(item._id);
@@ -466,15 +506,32 @@ export default {
       }
     },
     async crawlRules() {
+      if (!this.selectedRules.length) {
+        this.toast('请先选择要抓取的规则');
+        return;
+      }
       this.crawling = true;
       const results = [];
       try {
         for (const key of this.selectedRules) {
-          const res = await crawlFixedRule({ key });
-          results.push(res.message || key);
+          try {
+            const res = await crawlFixedRule({ key });
+            results.push((res.success ? '成功：' : '失败：') + (res.message || key));
+          } catch (error) {
+            results.push('失败：' + key + '，' + (error.message || String(error)));
+          }
         }
-        this.crawlResult = results.join(' / ');
-        this.toast('规则抓取完成');
+        this.crawlResult = results.join('\n');
+        const hasSuccess = results.some(item => item.indexOf('成功：') === 0);
+        const hasFailed = results.some(item => item.indexOf('失败：') === 0);
+        this.toast(hasSuccess ? '规则抓取完成' : '规则抓取失败');
+        if (hasFailed) {
+          uni.showModal({
+            title: hasSuccess ? '部分抓取失败' : '抓取失败',
+            content: this.crawlResult.slice(0, 800),
+            showCancel: false
+          });
+        }
         await this.load();
       } finally {
         this.crawling = false;
@@ -729,10 +786,31 @@ export default {
   gap: 8px;
   margin-bottom: 12px;
 }
+.rule-section {
+  margin-bottom: 22px;
+}
+.rule-section-title {
+  margin-bottom: 10px;
+  color: #303133;
+  font-size: 15px;
+  font-weight: 600;
+}
+.rule-list-basic {
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
+}
+.rule-list-ability {
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
+}
 .rule-item {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-height: 36px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  background: #fff;
   color: #303133;
   font-size: 14px;
 }
@@ -756,6 +834,10 @@ export default {
   .detail-summary,
   .meta-grid {
     grid-template-columns: 1fr;
+  }
+  .rule-list-basic,
+  .rule-list-ability {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
   .table-actions {
     flex-wrap: wrap;

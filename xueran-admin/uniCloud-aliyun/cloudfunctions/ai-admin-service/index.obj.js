@@ -19,7 +19,37 @@ const FIXED_RULE_PAGES = {
   terms: { title: '术语汇总', type: 'term', category: '术语' },
   jinxes: { title: '相克规则', type: 'rule', category: '相克规则' },
   storyteller_advice: { title: '给说书人的建议', type: 'rule', category: '说书人' },
-  ability_overview: { title: '角色能力类别总览', type: 'rule', category: '角色能力' }
+  ability_visit_storyteller: { title: '拜访说书人', type: 'rule', category: '角色能力类别' },
+  ability_protection: { title: '保护', type: 'rule', category: '角色能力类别' },
+  ability_expose_role: { title: '暴露角色', type: 'rule', category: '角色能力类别' },
+  ability_continuous_detection: { title: '持续检测型能力', type: 'rule', category: '角色能力类别' },
+  ability_execution: { title: '处决', type: 'rule', category: '角色能力类别' },
+  ability_extra_death: { title: '额外死亡', type: 'rule', category: '角色能力类别' },
+  ability_madness: { title: '疯狂', type: 'rule', category: '角色能力类别' },
+  ability_resurrection: { title: '复活', type: 'rule', category: '角色能力类别' },
+  ability_change_target: { title: '更换选择目标', type: 'rule', category: '角色能力类别' },
+  ability_public_trigger: { title: '公开触发能力', type: 'rule', category: '角色能力类别' },
+  ability_gain_ability: { title: '获得能力', type: 'rule', category: '角色能力类别' },
+  ability_info: { title: '获取信息', type: 'rule', category: '角色能力类别' },
+  ability_interaction_interference: { title: '互动干扰', type: 'rule', category: '角色能力类别' },
+  ability_retrospective: { title: '回溯型能力', type: 'rule', category: '角色能力类别' },
+  ability_entry: { title: '进场能力', type: 'rule', category: '角色能力类别' },
+  ability_role_change: { title: '角色变化', type: 'rule', category: '角色能力类别' },
+  ability_neighboring: { title: '邻近', type: 'rule', category: '角色能力类别' },
+  ability_immune_death: { title: '免死', type: 'rule', category: '角色能力类别' },
+  ability_effect_interference: { title: '能力效果干扰', type: 'rule', category: '角色能力类别' },
+  ability_cognition_override: { title: '认知覆盖', type: 'rule', category: '角色能力类别' },
+  ability_setup_adjustment: { title: '设置调整', type: 'rule', category: '角色能力类别' },
+  ability_dead_ability_retained: { title: '死后能力保留', type: 'rule', category: '角色能力类别' },
+  ability_death_trigger: { title: '死亡触发能力', type: 'rule', category: '角色能力类别' },
+  ability_special_win_loss: { title: '特殊胜利失败条件', type: 'rule', category: '角色能力类别' },
+  ability_nomination: { title: '提名', type: 'rule', category: '角色能力类别' },
+  ability_vote: { title: '投票', type: 'rule', category: '角色能力类别' },
+  ability_limited_use: { title: '限次能力', type: 'rule', category: '角色能力类别' },
+  ability_influence: { title: '影响', type: 'rule', category: '角色能力类别' },
+  ability_alignment_change: { title: '阵营转变', type: 'rule', category: '角色能力类别' },
+  ability_poisoned: { title: '中毒', type: 'rule', category: '角色能力类别' },
+  ability_drunk: { title: '醉酒', type: 'rule', category: '角色能力类别' }
 };
 
 function ok(data = {}, message = '操作成功') {
@@ -326,8 +356,10 @@ async function crawlWikiPageInternal(params = {}) {
   if (!url) return fail('missing url');
   const item = await getWikiPage(url);
   if (!item.title || item.content.length <= 80) return fail('page content is empty or too short');
+  const title = cleanText(params.title || item.title, 200);
   const id = await upsertKnowledge({
     ...item,
+    title,
     type: params.type || 'other',
     category: params.category || 'wiki',
     roleType: params.roleType || '',
@@ -516,11 +548,20 @@ module.exports = {
     const key = cleanText(params.key || '', 80);
     const rule = FIXED_RULE_PAGES[key];
     if (!rule) return fail('unknown rule key');
-    return crawlWikiPageInternal({
-      url: wikiUrlByTitle(rule.title),
-      type: rule.type,
-      category: rule.category
-    });
+    try {
+      const res = await crawlWikiPageInternal({
+        url: wikiUrlByTitle(rule.title),
+        title: rule.title,
+        type: rule.type,
+        category: rule.category,
+        tags: ['fixed-rule', key]
+      });
+      return res.success ? ok(res.data, `saved rule: ${rule.title}`) : res;
+    } catch (error) {
+      const message = error.message || String(error);
+      const reason = message.includes('wiki page forbidden') ? '页面不存在或不可抓取' : message;
+      return fail(`crawl rule failed: ${rule.title}，${reason}`);
+    }
   },
 
   async recrawlKnowledge(id) {

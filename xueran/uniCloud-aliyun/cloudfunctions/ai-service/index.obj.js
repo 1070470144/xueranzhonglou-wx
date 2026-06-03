@@ -188,8 +188,11 @@ function buildPrompt({ question, script, knowledge }) {
   const refs = knowledge.map((item, index) => `【知识${index + 1}】${item.title}\n${knowledgeContext(item, question)}`).join('\n\n');
   const board = script ? `\n\n【指定板子】\n${scriptContext(script)}` : '';
   return [
-    '你是血染钟楼问答助手。只能基于提供的知识和板子内容回答；如果依据不足，要明确说明不确定。',
-    '输出必须是 JSON，格式：{"answer":"...","analysis":"..."}。analysis 必须非常简短，不超过 80 个中文字符。',
+    '你是血染钟楼问答助手。请优先基于提供的百科知识和板子内容回答。',
+    '如果知识库没有直接写明结论，但提供了角色能力、规则、阵营、夜晚行动、信息来源或板子内容，你可以据此做合理推理。推理必须贴合已给材料，不能编造未提供的角色、规则或剧本事实。',
+    '回答必须先给结论，再给依据和推断。能确定时，第一句话直接给出确切答案。不能唯一确定时，先列出多个明确候选答案，并为每个候选给出正确可能性百分比；百分比应基于已给材料的相对支持度，合计尽量为 100%。',
+    '回答时要区分“明确依据”和“合理推断”：有直接依据就说明依据；没有直接依据但可以推理时，说明推理链路和不确定点；完全没有相关依据时，也要给出“无法判断”的结论，并说明缺少哪些关键信息。',
+    '输出必须是 JSON，格式：{"answer":"...","analysis":"..."}。answer 用自然语言按“结论/候选答案、依据、推断、不确定点”的顺序组织；analysis 用一句话概括确定性，不超过 80 个中文字符。',
     '不要输出 Markdown 代码块。',
     `\n【百科知识】\n${refs || '暂无匹配知识'}`,
     board,
@@ -345,14 +348,24 @@ module.exports = {
     const page = Math.max(1, Number(params.page || 1));
     const pageSize = Math.min(100, Math.max(1, Number(params.pageSize || 50)));
     const skip = (page - 1) * pageSize;
+    const keyword = cleanText(params.q || params.keyword, 80);
+    const where = {};
+    if (keyword) {
+      where.$or = [
+        { title: { $regex: keyword, $options: 'i' } },
+        { author: { $regex: keyword, $options: 'i' } },
+        { description: { $regex: keyword, $options: 'i' } }
+      ];
+    }
     const res = await db.collection(TABLES.scripts)
+      .where(where)
       .field({ title: true, author: true, description: true, status: true })
       .orderBy('createTime', 'desc')
       .skip(skip)
       .limit(pageSize)
       .get();
     const list = (res.data || []).filter(item => item.status !== 'inactive' && item.status !== 'disabled');
-    const count = await db.collection(TABLES.scripts).count();
+    const count = await db.collection(TABLES.scripts).where(where).count();
     return ok({ list, total: count.total || 0, page, pageSize });
   },
 

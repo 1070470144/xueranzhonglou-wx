@@ -18,30 +18,54 @@
       <button class="notice-btn" @click="goConfig">配置 AI</button>
     </view>
 
-    <view class="panel">
-      <view class="field-label">提问范围</view>
-      <picker :range="scriptOptions" range-key="title" :value="scriptIndex" @change="onScriptChange">
-        <view class="picker-value">
-          <view>
-            <text class="picker-title">{{ selectedScriptTitle }}</text>
-            <text class="picker-desc">{{ selectedScriptDesc }}</text>
-          </view>
-          <text class="picker-arrow">›</text>
+    <view class="search-panel">
+      <view class="field-label">搜索剧本</view>
+      <view class="script-search">
+        <input
+          v-model="scriptKeyword"
+          class="script-input"
+          placeholder="搜索展览里的剧本"
+          confirm-type="search"
+          @input="onScriptKeywordInput"
+          @confirm="searchScripts"
+          @focus="scriptFocused = true"
+        />
+        <button v-if="selectedScript.id" class="script-reset" @click="resetScript">清除</button>
+      </view>
+      <view v-if="selectedScript.id" class="selected-scope">
+        <text class="selected-title">{{ selectedScript.title }}</text>
+        <text class="selected-desc">{{ selectedScript.description || '围绕该范围回答' }}</text>
+      </view>
+      <view v-if="showScriptResults" class="script-results">
+        <view
+          v-for="item in scriptResults"
+          :key="item.id"
+          class="script-result"
+          @click="selectScript(item)"
+        >
+          <text class="result-title">{{ item.title }}</text>
+          <text class="result-desc">{{ item.description || item.author || '暂无简介' }}</text>
         </view>
-      </picker>
+        <view v-if="scriptSearching" class="result-empty">搜索中...</view>
+        <view v-else-if="scriptKeyword.trim() && !scriptResults.length" class="result-empty">未找到匹配剧本</view>
+      </view>
+    </view>
 
-      <view class="field-label question-label">你的问题</view>
+    <view class="composer">
       <textarea
         v-model="question"
-        class="question-input"
+        class="composer-input"
         maxlength="1000"
-        placeholder="例如：这个板子适合新手吗？洗衣妇第一晚应该怎么判断信息？"
+        placeholder="你的问题"
         auto-height
       />
-
-      <button class="ask-btn" :disabled="asking || !canAsk" @click="submitQuestion">
-        {{ asking ? '回答中...' : '发送问题' }}
-      </button>
+      <view class="composer-foot">
+        <text v-if="selectedScript.id" class="composer-scope">{{ selectedScript.title }}</text>
+        <text v-else class="composer-scope"></text>
+        <button class="send-btn" :disabled="asking || !canAsk" @click="submitQuestion">
+          {{ asking ? '...' : '↑' }}
+        </button>
+      </view>
     </view>
 
     <view v-if="answer" class="answer-card">
@@ -76,8 +100,12 @@ export default {
       availabilityLoaded: false,
       available: false,
       availabilityMessage: 'AI 暂不可用',
-      scripts: [],
-      scriptIndex: 0,
+      selectedScript: { id: '', title: '', description: '' },
+      scriptKeyword: '',
+      scriptResults: [],
+      scriptSearching: false,
+      scriptFocused: false,
+      scriptSearchTimer: null,
       question: '',
       asking: false,
       answer: '',
@@ -87,17 +115,8 @@ export default {
     };
   },
   computed: {
-    scriptOptions() {
-      return [{ id: '', title: '通用血染问题', description: '不限定具体板子' }].concat(this.scripts);
-    },
-    selectedScript() {
-      return this.scriptOptions[this.scriptIndex] || this.scriptOptions[0];
-    },
-    selectedScriptTitle() {
-      return this.selectedScript.title;
-    },
-    selectedScriptDesc() {
-      return this.selectedScript.description || '围绕该范围回答';
+    showScriptResults() {
+      return this.scriptFocused && (this.scriptKeyword.trim().length > 0 || this.scriptSearching);
     },
     canAsk() {
       return this.loggedIn && this.available && this.question.trim().length > 0;
@@ -105,7 +124,10 @@ export default {
   },
   async onShow() {
     this.loggedIn = isLoggedIn();
-    await Promise.all([this.loadAvailability(), this.loadScripts()]);
+    await this.loadAvailability();
+  },
+  onUnload() {
+    if (this.scriptSearchTimer) clearTimeout(this.scriptSearchTimer);
   },
   methods: {
     async loadAvailability() {
@@ -121,18 +143,49 @@ export default {
         this.availabilityLoaded = true;
       }
     },
-    async loadScripts() {
-      const res = await getAiScripts({ page: 1, pageSize: 80 });
-      if (res.success && res.data) {
-        this.scripts = (res.data.list || []).map(item => ({
-          id: item._id || item.id,
-          title: item.title || '未命名板子',
-          description: item.description || item.author || ''
-        }));
+    onScriptKeywordInput() {
+      if (this.scriptSearchTimer) clearTimeout(this.scriptSearchTimer);
+      this.scriptSearchTimer = setTimeout(() => {
+        this.searchScripts();
+      }, 300);
+    },
+    async searchScripts() {
+      const keyword = this.scriptKeyword.trim();
+      if (!keyword) {
+        this.scriptResults = [];
+        this.scriptSearching = false;
+        return;
+      }
+      this.scriptSearching = true;
+      try {
+        const res = await getAiScripts({ page: 1, pageSize: 8, q: keyword });
+        if (res.success && res.data) {
+          this.scriptResults = (res.data.list || []).map(item => ({
+            id: item._id || item.id,
+            title: item.title || '未命名剧本',
+            author: item.author || '',
+            description: item.description || item.author || ''
+          }));
+        } else {
+          this.scriptResults = [];
+        }
+      } catch (error) {
+        this.scriptResults = [];
+      } finally {
+        this.scriptSearching = false;
       }
     },
-    onScriptChange(event) {
-      this.scriptIndex = Number(event.detail.value || 0);
+    selectScript(item) {
+      this.selectedScript = item;
+      this.scriptKeyword = '';
+      this.scriptResults = [];
+      this.scriptFocused = false;
+    },
+    resetScript() {
+      this.selectedScript = { id: '', title: '', description: '' };
+      this.scriptKeyword = '';
+      this.scriptResults = [];
+      this.scriptFocused = false;
     },
     async submitQuestion() {
       if (!this.loggedIn) {
@@ -243,7 +296,8 @@ export default {
   color: #a13a2e;
 }
 
-.panel,
+.search-panel,
+.composer,
 .answer-card {
   box-sizing: border-box;
   width: 100%;
@@ -253,8 +307,15 @@ export default {
   box-shadow: 0 12rpx 36rpx rgba(72, 45, 22, 0.08);
 }
 
-.panel {
+.search-panel {
   padding: 24rpx;
+}
+
+.composer {
+  margin-top: 20rpx;
+  padding: 20rpx;
+  border-radius: 30rpx;
+  background: #fffdf9;
 }
 
 .field-label {
@@ -263,70 +324,132 @@ export default {
   margin-bottom: 12rpx;
 }
 
-.question-label {
-  margin-top: 24rpx;
-}
-
-.picker-value {
+.script-search {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 18rpx;
-  min-height: 92rpx;
-  padding: 18rpx 20rpx;
-  border-radius: 16rpx;
-  background: #f4eadf;
 }
 
-.picker-title,
-.picker-desc {
+.script-input {
+  flex: 1;
+  box-sizing: border-box;
+  height: 76rpx;
+  padding: 0 22rpx;
+  border-radius: 18rpx;
+  background: #f4eadf;
+  color: #241f1a;
+  font-size: 27rpx;
+}
+
+.script-reset {
+  margin: 0;
+  padding: 0 22rpx;
+  height: 64rpx;
+  line-height: 64rpx;
+  border-radius: 32rpx;
+  background: #2f261f;
+  color: #fffaf4;
+  font-size: 24rpx;
+}
+
+.selected-scope {
+  margin-top: 18rpx;
+  padding: 18rpx 20rpx;
+  border-radius: 18rpx;
+  background: #fffdf9;
+  border: 1rpx solid #eadfce;
+}
+
+.selected-title,
+.selected-desc,
+.result-title,
+.result-desc {
   display: block;
 }
 
-.picker-title {
+.selected-title,
+.result-title {
   color: #2d241d;
   font-size: 29rpx;
   font-weight: 600;
 }
 
-.picker-desc {
+.selected-desc,
+.result-desc {
   margin-top: 6rpx;
   color: #8a7a68;
   font-size: 23rpx;
   line-height: 1.35;
 }
 
-.picker-arrow {
-  color: #8b765e;
-  font-size: 44rpx;
+.script-results {
+  margin-top: 16rpx;
+  border-radius: 18rpx;
+  overflow: hidden;
+  border: 1rpx solid #eadfce;
+  background: #fffdf9;
 }
 
-.question-input {
+.script-result {
   box-sizing: border-box;
   width: 100%;
-  min-height: 190rpx;
-  padding: 20rpx;
-  border-radius: 16rpx;
-  border: 1rpx solid #e2d2bf;
-  background: #fffdf9;
+  padding: 18rpx 20rpx;
+  border-bottom: 1rpx solid #f0e6da;
+}
+
+.script-result:last-child {
+  border-bottom: 0;
+}
+
+.result-empty {
+  padding: 22rpx;
+  color: #8a7a68;
+  font-size: 25rpx;
+  text-align: center;
+}
+
+.composer-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 150rpx;
+  padding: 6rpx 4rpx 18rpx;
   color: #241f1a;
   font-size: 28rpx;
   line-height: 1.55;
 }
 
-.ask-btn {
-  margin-top: 24rpx;
-  width: 100%;
-  height: 88rpx;
-  line-height: 88rpx;
-  border-radius: 44rpx;
+.composer-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+}
+
+.composer-scope {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #7d6b58;
+  font-size: 24rpx;
+}
+
+.send-btn {
+  flex: 0 0 68rpx;
+  margin: 0;
+  padding: 0;
+  width: 68rpx;
+  height: 68rpx;
+  line-height: 68rpx;
+  border-radius: 50%;
   background: #2f261f;
   color: #fffaf4;
-  font-size: 30rpx;
+  font-size: 34rpx;
   font-weight: 600;
 }
 
-.ask-btn[disabled] {
+.send-btn[disabled] {
   background: #b8aa9c;
   color: #fffaf4;
 }
