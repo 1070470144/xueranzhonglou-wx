@@ -103,6 +103,13 @@
 import { isLoggedIn } from '@/utils/auth.js';
 import { askAi, getAiAvailability, getAiScripts, listAnnouncements } from '@/utils/aiApi.js';
 
+const HOME_CACHE_TTL = 60 * 1000;
+const homeCache = {
+  announcements: [],
+  availability: null,
+  loadedAt: 0
+};
+
 export default {
   data() {
     return {
@@ -136,32 +143,64 @@ export default {
       return this.loggedIn && this.available && this.question.trim().length > 0;
     }
   },
-  async onShow() {
+  onShow() {
     this.loggedIn = isLoggedIn();
-    await this.loadAnnouncements();
-    await this.loadAvailability();
+    this.hydrateHomeCache();
+    this.refreshHomeData();
   },
   onUnload() {
     if (this.scriptSearchTimer) clearTimeout(this.scriptSearchTimer);
   },
   methods: {
+    hydrateHomeCache() {
+      if (homeCache.announcements.length) {
+        this.announcements = homeCache.announcements;
+      }
+      if (homeCache.availability) {
+        this.available = homeCache.availability.available;
+        this.availabilityMessage = homeCache.availability.message;
+        this.availabilityLoaded = true;
+      }
+    },
+    refreshHomeData() {
+      const hasRequiredCache = !this.loggedIn || !!homeCache.availability;
+      const cacheFresh = hasRequiredCache && Date.now() - homeCache.loadedAt < HOME_CACHE_TTL;
+      if (cacheFresh) return;
+
+      const tasks = [this.loadAnnouncements()];
+      if (this.loggedIn) {
+        tasks.push(this.loadAvailability());
+      }
+      Promise.all(tasks).finally(() => {
+        homeCache.loadedAt = Date.now();
+      });
+    },
     async loadAnnouncements() {
       try {
         const res = await listAnnouncements({ limit: 5 });
-        this.announcements = res.success && res.data ? (res.data.list || []) : [];
+        if (res.success && res.data) {
+          this.announcements = res.data.list || [];
+          homeCache.announcements = this.announcements;
+        }
       } catch (error) {
-        this.announcements = [];
+        if (!this.announcements.length) this.announcements = [];
       }
     },
     async loadAvailability() {
-      this.availabilityLoaded = false;
+      if (!homeCache.availability) this.availabilityLoaded = false;
       try {
         const res = await getAiAvailability();
         this.available = !!(res.success && res.data && res.data.available);
         this.availabilityMessage = (res.data && res.data.message) || res.message || 'AI 暂不可用';
+        homeCache.availability = {
+          available: this.available,
+          message: this.availabilityMessage
+        };
       } catch (error) {
-        this.available = false;
-        this.availabilityMessage = 'AI 服务连接失败';
+        if (!homeCache.availability) {
+          this.available = false;
+          this.availabilityMessage = 'AI 服务连接失败';
+        }
       } finally {
         this.availabilityLoaded = true;
       }

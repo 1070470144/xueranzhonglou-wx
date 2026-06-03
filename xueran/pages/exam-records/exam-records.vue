@@ -26,14 +26,43 @@
 <script>
 import { getExamRecords, deleteExamRecord } from '@/utils/examApi.js';
 
+const RECORDS_CACHE_TTL = 60 * 1000;
+const recordsCache = {
+  keyword: '',
+  items: [],
+  page: 1,
+  noMore: false,
+  loadedAt: 0
+};
+
 export default {
   data() {
     return { keyword: '', items: [], page: 1, pageSize: 10, loading: false, noMore: false };
   },
-  onLoad() { this.load({ page: 1 }); },
+  onLoad() {
+    this.hydrateCache();
+    if (!this.isCacheFresh()) this.load({ page: 1 });
+  },
   onPullDownRefresh() { this.reload(); },
   onReachBottom() { if (!this.loading && !this.noMore) this.load({ page: this.page + 1, append: true }); },
   methods: {
+    hydrateCache() {
+      if (!recordsCache.loadedAt) return;
+      this.keyword = recordsCache.keyword;
+      this.items = recordsCache.items;
+      this.page = recordsCache.page;
+      this.noMore = recordsCache.noMore;
+    },
+    isCacheFresh() {
+      return recordsCache.loadedAt && Date.now() - recordsCache.loadedAt < RECORDS_CACHE_TTL;
+    },
+    saveCache() {
+      recordsCache.keyword = this.keyword;
+      recordsCache.items = this.items;
+      recordsCache.page = this.page;
+      recordsCache.noMore = this.noMore;
+      recordsCache.loadedAt = Date.now();
+    },
     reload() {
       this.noMore = false;
       this.load({ page: 1 });
@@ -48,6 +77,7 @@ export default {
         this.items = append ? this.items.concat(list) : list;
         this.page = page;
         this.noMore = data.total ? page * this.pageSize >= data.total : list.length < this.pageSize;
+        this.saveCache();
       } else {
         uni.showToast({ title: result.message || '加载失败', icon: 'none' });
       }
@@ -64,7 +94,10 @@ export default {
           if (!res.confirm) return;
           const result = await deleteExamRecord(item._id);
           uni.showToast({ title: result.message || '已删除', icon: result.success ? 'success' : 'none' });
-          if (result.success) this.items = this.items.filter(record => record._id !== item._id);
+          if (result.success) {
+            this.items = this.items.filter(record => record._id !== item._id);
+            this.saveCache();
+          }
         }
       });
     },

@@ -5,6 +5,7 @@ const crypto = require('crypto');
 const TOKEN_TTL = 30 * 24 * 60 * 60 * 1000;
 const PASSWORD_SALT_BYTES = 16;
 const DEFAULT_WX_MP_APPID = 'wx507ffa5fa6ed62f6';
+const DEFAULT_WX_MP_APP_SECRET = '3120fbf8d3b758d78d7bbfb1fa95d832';
 
 function now() {
   return Date.now();
@@ -79,7 +80,7 @@ function getWxMpConfig() {
   const env = typeof process !== 'undefined' && process.env ? process.env : {};
   return {
     appid: env.WX_MP_APPID || env.WEIXIN_MP_APPID || DEFAULT_WX_MP_APPID,
-    secret: env.WX_MP_APP_SECRET || env.WEIXIN_MP_APPSECRET || env.WEIXIN_MP_APP_SECRET || ''
+    secret: env.WX_MP_APP_SECRET || env.WEIXIN_MP_APPSECRET || env.WEIXIN_MP_APP_SECRET || DEFAULT_WX_MP_APP_SECRET
   };
 }
 

@@ -1,6 +1,6 @@
 <template>
-  <view class="container fade-in">
-    <view class="search-bar slide-down">
+  <view class="container">
+    <view class="search-bar">
       <view class="search-input-container">
         <input
           v-model="keyword"
@@ -28,10 +28,9 @@
 
     <view v-else-if="items.length > 0" class="script-grid">
       <view
-        v-for="(script, index) in items"
+        v-for="script in items"
         :key="script.id"
-        class="script-item slide-up"
-        :style="{ animationDelay: index * 0.04 + 's' }"
+        class="script-item"
         @click="goToDetail(script)"
       >
         <view class="script-cover">
@@ -74,6 +73,15 @@
 <script>
 import { getFavoriteScripts, unfavoriteScript } from '@/utils/api.js';
 
+const FAVORITES_CACHE_TTL = 60 * 1000;
+const favoritesCache = {
+  keyword: '',
+  items: [],
+  page: 1,
+  noMore: false,
+  loadedAt: 0
+};
+
 export default {
   data() {
     return {
@@ -88,9 +96,26 @@ export default {
     };
   },
   onLoad() {
-    this.loadFavorites({ page: 1, append: false });
+    this.hydrateCache();
+    if (!this.isCacheFresh()) this.loadFavorites({ page: 1, append: false });
   },
   methods: {
+    hydrateCache() {
+      this.keyword = favoritesCache.keyword || '';
+      this.items = favoritesCache.items.slice();
+      this.page = favoritesCache.page || 1;
+      this.noMore = !!favoritesCache.noMore;
+    },
+    isCacheFresh() {
+      return favoritesCache.loadedAt && Date.now() - favoritesCache.loadedAt < FAVORITES_CACHE_TTL;
+    },
+    saveCache() {
+      favoritesCache.keyword = this.keyword;
+      favoritesCache.items = this.items.slice();
+      favoritesCache.page = this.page;
+      favoritesCache.noMore = this.noMore;
+      favoritesCache.loadedAt = Date.now();
+    },
     onSearchInput() {
       if (this.searchTimer) clearTimeout(this.searchTimer);
       this.searchTimer = setTimeout(() => {
@@ -130,6 +155,7 @@ export default {
         this.items = append ? this.items.concat(list) : list;
         this.page = page;
         this.noMore = data.total ? page * this.pageSize >= data.total : list.length < this.pageSize;
+        this.saveCache();
       } catch (error) {
         console.error('load favorites failed:', error);
         this.error = '加载失败，点击重试';
@@ -148,17 +174,20 @@ export default {
       script.favoritePending = true;
       const oldItems = this.items.slice();
       this.items = this.items.filter(item => item.id !== script.id);
+      this.saveCache();
 
       try {
         const result = await unfavoriteScript(script.id);
         if (!result || !result.success) {
           this.items = oldItems;
+          this.saveCache();
           uni.showToast({ title: (result && result.message) || '取消收藏失败', icon: 'none' });
           return;
         }
       } catch (error) {
         console.error('cancel favorite failed:', error);
         this.items = oldItems;
+        this.saveCache();
         uni.showToast({ title: '操作失败，请重试', icon: 'none' });
       } finally {
         script.favoritePending = false;
@@ -197,16 +226,6 @@ export default {
   padding: 20rpx;
   box-sizing: border-box;
   background: #f8f8f8;
-}
-
-.fade-in {
-  opacity: 0;
-  animation: fadeIn 0.6s ease-out forwards;
-}
-
-.slide-down {
-  opacity: 0;
-  animation: slideDown 0.5s ease-out 0.1s forwards;
 }
 
 .search-bar {
@@ -263,8 +282,6 @@ export default {
   border-radius: 16rpx;
   background: #fff;
   box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
-  opacity: 0;
-  animation: slideUp 0.5s ease-out forwards;
 }
 
 .script-cover {

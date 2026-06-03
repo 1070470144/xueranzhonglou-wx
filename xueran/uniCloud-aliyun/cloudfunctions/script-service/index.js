@@ -443,6 +443,25 @@ async function favoriteScript(data) {
   }
 }
 
+function buildFavoriteListItem(script, favorite, likedIds) {
+  const id = script._id || script.id
+  const images = Array.isArray(script.thumbnails) && script.thumbnails.length
+    ? script.thumbnails
+    : (script.images || (script.thumbnail ? [script.thumbnail] : []))
+  return {
+    id,
+    title: script.title || '未命名剧本',
+    author: script.author || '未知作者',
+    version: script.version || '1.0.0',
+    description: script.description || '',
+    images: normalizeUploadImages(images),
+    likes: Number(script.likes) || 0,
+    isLiked: likedIds.has(id),
+    isFavorited: true,
+    favoriteTime: favorite && favorite.createTime
+  }
+}
+
 async function getFavoriteScripts(data) {
   const { token, page = 1, pageSize = 10, q = '' } = data || {}
   const pageNum = Math.max(1, parseInt(page, 10) || 1)
@@ -490,6 +509,7 @@ async function getFavoriteScripts(data) {
       const [scriptsResult, likeResult] = await Promise.all([
         db.collection('scripts')
           .where({ _id: db.command.in(scriptIds) })
+          .field({ title: true, author: true, version: true, description: true, thumbnails: true, thumbnail: true, images: true, likes: true })
           .get(),
         db.collection('script-likes')
           .where({ userId: user._id, scriptId: db.command.in(scriptIds) })
@@ -503,10 +523,7 @@ async function getFavoriteScripts(data) {
           const script = scriptMap.get(scriptId)
           if (!script) return null
           const favorite = favoriteByScriptId.get(scriptId)
-          script.favoriteTime = favorite && favorite.createTime
-          script.isFavorited = true
-          script.isLiked = likedIds.has(scriptId)
-          return normalizeScript(script)
+          return buildFavoriteListItem(script, favorite, likedIds)
         })
         .filter(Boolean)
     }
@@ -670,12 +687,26 @@ async function getMyUploadedScripts(data) {
 
     const whereCondition = { ownerUserId: user._id, source: 'user_upload' }
     const collection = db.collection('scripts')
+    const listFields = {
+      title: true,
+      author: true,
+      status: true,
+      reviewStatus: true,
+      reviewReason: true,
+      source: true,
+      images: true,
+      thumbnails: true,
+      description: true,
+      createTime: true,
+      updateTime: true
+    }
     let total = 0
     let rows = []
 
     if (keyword) {
       const result = await collection
         .where(whereCondition)
+        .field(listFields)
         .orderBy('createTime', 'desc')
         .limit(200)
         .get()
@@ -692,6 +723,7 @@ async function getMyUploadedScripts(data) {
       total = totalResult.total || 0
       const result = await collection
         .where(whereCondition)
+        .field(listFields)
         .orderBy('createTime', 'desc')
         .skip((pageNum - 1) * limit)
         .limit(limit)

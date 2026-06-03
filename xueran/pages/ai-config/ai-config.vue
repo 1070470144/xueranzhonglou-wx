@@ -47,6 +47,12 @@
 import { requireLogin } from '@/utils/auth.js';
 import { getUserAiConfig, saveUserAiConfig } from '@/utils/aiApi.js';
 
+const AI_CONFIG_CACHE_TTL = 60 * 1000;
+const aiConfigCache = {
+  config: null,
+  loadedAt: 0
+};
+
 export default {
   data() {
     return {
@@ -91,18 +97,34 @@ export default {
   },
   async onLoad() {
     if (!requireLogin('/pages/ai-config/ai-config')) return;
-    await this.loadConfig();
+    this.hydrateCache();
+    if (!this.isCacheFresh()) await this.loadConfig();
   },
   methods: {
+    hydrateCache() {
+      if (!aiConfigCache.config) return;
+      this.applyConfig(aiConfigCache.config);
+    },
+    isCacheFresh() {
+      return aiConfigCache.loadedAt && Date.now() - aiConfigCache.loadedAt < AI_CONFIG_CACHE_TTL;
+    },
+    applyConfig(config) {
+      this.form = {
+        ...this.form,
+        ...config
+      };
+      const index = this.providers.findIndex(item => item.value === this.form.provider);
+      this.providerIndex = index >= 0 ? index : 0;
+    },
+    saveCache(config) {
+      aiConfigCache.config = { ...config };
+      aiConfigCache.loadedAt = Date.now();
+    },
     async loadConfig() {
       const res = await getUserAiConfig();
       if (res.success && res.data && res.data.config) {
-        this.form = {
-          ...this.form,
-          ...res.data.config
-        };
-        const index = this.providers.findIndex(item => item.value === this.form.provider);
-        this.providerIndex = index >= 0 ? index : 0;
+        this.applyConfig(res.data.config);
+        this.saveCache(this.form);
       }
     },
     onProviderChange(event) {
@@ -120,6 +142,7 @@ export default {
       this.saving = true;
       try {
         const res = await saveUserAiConfig(this.form);
+        if (res.success) this.saveCache(this.form);
         uni.showToast({ title: res.success ? '已保存' : (res.message || '保存失败'), icon: res.success ? 'success' : 'none' });
       } finally {
         this.saving = false;

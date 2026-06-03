@@ -1,6 +1,6 @@
 <template>
-  <view class="container fade-in">
-    <view class="search-bar slide-down">
+  <view class="container">
+    <view class="search-bar">
       <view class="search-input-container">
         <input
           v-model="keyword"
@@ -26,10 +26,9 @@
 
     <view v-else-if="items.length > 0" class="upload-list">
       <view
-        v-for="(item, index) in items"
+        v-for="item in items"
         :key="item.id"
-        class="upload-item slide-up"
-        :style="{ animationDelay: index * 0.04 + 's' }"
+        class="upload-item"
       >
         <view class="item-head">
           <view class="item-main">
@@ -66,6 +65,15 @@
 <script>
 import { deleteMyUploadedScript, getMyUploadedScripts } from '@/utils/api.js';
 
+const UPLOADS_CACHE_TTL = 60 * 1000;
+const uploadsCache = {
+  keyword: '',
+  items: [],
+  page: 1,
+  noMore: false,
+  loadedAt: 0
+};
+
 export default {
   data() {
     return {
@@ -80,9 +88,26 @@ export default {
     };
   },
   onLoad() {
-    this.loadUploads({ page: 1, append: false });
+    this.hydrateCache();
+    if (!this.isCacheFresh()) this.loadUploads({ page: 1, append: false });
   },
   methods: {
+    hydrateCache() {
+      this.keyword = uploadsCache.keyword || '';
+      this.items = uploadsCache.items.slice();
+      this.page = uploadsCache.page || 1;
+      this.noMore = !!uploadsCache.noMore;
+    },
+    isCacheFresh() {
+      return uploadsCache.loadedAt && Date.now() - uploadsCache.loadedAt < UPLOADS_CACHE_TTL;
+    },
+    saveCache() {
+      uploadsCache.keyword = this.keyword;
+      uploadsCache.items = this.items.slice();
+      uploadsCache.page = this.page;
+      uploadsCache.noMore = this.noMore;
+      uploadsCache.loadedAt = Date.now();
+    },
     onSearchInput() {
       if (this.searchTimer) clearTimeout(this.searchTimer);
       this.searchTimer = setTimeout(() => {
@@ -122,6 +147,7 @@ export default {
         this.items = append ? this.items.concat(list) : list;
         this.page = page;
         this.noMore = data.total ? page * this.pageSize >= data.total : list.length < this.pageSize;
+        this.saveCache();
       } catch (error) {
         console.error('load my uploads failed:', error);
         this.error = '加载失败，点击重试';
@@ -151,11 +177,13 @@ export default {
       item.deletePending = true;
       const oldItems = this.items.slice();
       this.items = this.items.filter(script => script.id !== item.id);
+      this.saveCache();
 
       try {
         const result = await deleteMyUploadedScript(item.id);
         if (!result || !result.success) {
           this.items = oldItems;
+          this.saveCache();
           uni.showToast({ title: (result && result.message) || '删除失败', icon: 'none' });
           return;
         }
@@ -163,6 +191,7 @@ export default {
       } catch (error) {
         console.error('delete my upload failed:', error);
         this.items = oldItems;
+        this.saveCache();
         uni.showToast({ title: '删除失败，请重试', icon: 'none' });
       } finally {
         item.deletePending = false;
@@ -218,16 +247,6 @@ export default {
   background: #f8f8f8;
 }
 
-.fade-in {
-  opacity: 0;
-  animation: fadeIn 0.6s ease-out forwards;
-}
-
-.slide-down {
-  opacity: 0;
-  animation: slideDown 0.5s ease-out 0.1s forwards;
-}
-
 .search-bar {
   margin-bottom: 20rpx;
 }
@@ -280,8 +299,6 @@ export default {
   border-radius: 16rpx;
   background: #fff;
   box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
-  opacity: 0;
-  animation: slideUp 0.5s ease-out forwards;
 }
 
 .item-head {

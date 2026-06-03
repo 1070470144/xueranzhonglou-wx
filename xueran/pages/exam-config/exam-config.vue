@@ -71,6 +71,17 @@
 <script>
 import { getExamQuestions, deleteExamQuestion, deleteExamQuestions } from '@/utils/examApi.js';
 
+const CONFIG_CACHE_TTL = 60 * 1000;
+const configCache = {
+  keyword: '',
+  filterLevel: 0,
+  items: [],
+  page: 1,
+  total: 0,
+  noMore: false,
+  loadedAt: 0
+};
+
 export default {
   data() {
     return {
@@ -96,7 +107,8 @@ export default {
     }
   },
   onLoad() {
-    this.load({ page: 1 });
+    this.hydrateCache();
+    if (!this.isCacheFresh()) this.load({ page: 1 });
   },
   onShow() {
     if (uni.getStorageSync('exam_questions_dirty')) {
@@ -111,6 +123,27 @@ export default {
     if (!this.loading && !this.noMore) this.load({ page: this.page + 1, append: true });
   },
   methods: {
+    hydrateCache() {
+      if (!configCache.loadedAt) return;
+      this.keyword = configCache.keyword;
+      this.filterLevel = configCache.filterLevel;
+      this.items = configCache.items;
+      this.page = configCache.page;
+      this.total = configCache.total;
+      this.noMore = configCache.noMore;
+    },
+    isCacheFresh() {
+      return configCache.loadedAt && Date.now() - configCache.loadedAt < CONFIG_CACHE_TTL;
+    },
+    saveCache() {
+      configCache.keyword = this.keyword;
+      configCache.filterLevel = this.filterLevel;
+      configCache.items = this.items;
+      configCache.page = this.page;
+      configCache.total = this.total;
+      configCache.noMore = this.noMore;
+      configCache.loadedAt = Date.now();
+    },
     setLevel(level) {
       if (this.filterLevel === level) return;
       this.filterLevel = level;
@@ -132,6 +165,7 @@ export default {
         this.total = Number(data.total || 0);
         this.noMore = data.total ? page * this.pageSize >= data.total : list.length < this.pageSize;
         this.syncSelectedIds();
+        this.saveCache();
       } else {
         uni.showToast({ title: result.message || '加载失败', icon: 'none' });
       }
