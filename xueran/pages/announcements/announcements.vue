@@ -72,13 +72,15 @@ export default {
 .page {
   min-height: 100vh;
   box-sizing: border-box;
-  padding: 28rpx 24rpx 56rpx;
-  background: #f8f8f8;
-  color: #2f261f;
+  padding: 64rpx 44rpx 56rpx;
+  background: #ffffff;
+  color: #1f2329;
 }
 
 .header {
-  margin-bottom: 22rpx;
+  padding-bottom: 42rpx;
+  margin-bottom: 10rpx;
+  border-bottom: 1rpx solid #edf0f2;
 }
 
 .title,
@@ -90,27 +92,27 @@ export default {
 }
 
 .title {
-  font-size: 40rpx;
+  color: #1f2329;
+  font-size: 42rpx;
+  line-height: 1.28;
   font-weight: 800;
 }
 
 .subtitle {
-  margin-top: 8rpx;
-  color: #8c8178;
-  font-size: 24rpx;
+  margin-top: 12rpx;
+  color: #646a73;
+  font-size: 26rpx;
 }
 
 .list {
   display: flex;
   flex-direction: column;
-  gap: 18rpx;
 }
 
 .notice-card {
-  padding: 24rpx;
-  border: 1rpx solid #ebe6df;
-  border-radius: 16rpx;
-  background: #fff;
+  padding: 28rpx 0;
+  border-bottom: 1rpx solid #edf0f2;
+  background: #ffffff;
   box-sizing: border-box;
 }
 
@@ -129,18 +131,18 @@ export default {
   font-weight: 700;
 }
 
-.type.notice { color: #1d4ed8; background: #eff6ff; }
-.type.update { color: #047857; background: #ecfdf5; }
+.type.notice { color: #1f8f4d; background: #f0f9f4; }
+.type.update { color: #1f8f4d; background: #f0f9f4; }
 .type.maintenance { color: #92400e; background: #fffbeb; }
 .type.important { color: #b42318; background: #fff0ed; }
 
 .pinned {
-  color: #5f4b3a;
-  background: #f6eee7;
+  color: #1f8f4d;
+  background: #f0f9f4;
 }
 
 .notice-title {
-  color: #2f261f;
+  color: #1f2329;
   font-size: 31rpx;
   font-weight: 800;
   line-height: 1.35;
@@ -148,20 +150,20 @@ export default {
 
 .notice-summary {
   margin-top: 10rpx;
-  color: #6f6258;
+  color: #646a73;
   font-size: 25rpx;
   line-height: 1.55;
 }
 
 .notice-time {
   margin-top: 14rpx;
-  color: #b8aea5;
+  color: #8f959e;
   font-size: 22rpx;
 }
 
 .state {
   padding: 60rpx 0;
-  color: #8c8178;
+  color: #8f959e;
   font-size: 26rpx;
   text-align: center;
 }

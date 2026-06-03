@@ -153,14 +153,15 @@ export default {
 
 .container {
 	min-height: 100vh;
-	background-color: #f8f8f8;
+	background-color: #ffffff;
+	color: #1f2329;
 	opacity: 0;
 	animation: fadeIn 0.6s ease-out forwards;
 }
 
 .header {
 	background-color: #fff;
-	box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.1);
+	border-bottom: 1rpx solid #edf0f2;
 	transform: translateY(-20rpx);
 	opacity: 0;
 	animation: slideDown 0.5s ease-out 0.2s forwards;
@@ -180,25 +181,25 @@ export default {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	border-radius: 50%;
-	background-color: #f8f8f8;
+	border-radius: 10rpx;
+	background-color: #f0f9f4;
 	transition: background-color 0.2s;
 
 	&:active {
-		background-color: #e8e8e8;
+		background-color: #d9f0e3;
 	}
 }
 
 .back-icon {
 	font-size: 32rpx;
-	color: #333;
+	color: #1f2329;
 	font-weight: bold;
 }
 
 .title {
 	font-size: 32rpx;
 	font-weight: bold;
-	color: #333;
+	color: #1f2329;
 	flex: 1;
 	text-align: center;
 }
@@ -208,15 +209,14 @@ export default {
 }
 
 .content {
-	padding: 30rpx 20rpx;
+	padding: 30rpx 44rpx;
 	min-height: calc(100vh - 88rpx);
 }
 
 .text-content {
 	background-color: #fff;
-	border-radius: 16rpx;
-	padding: 40rpx 30rpx;
-	box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+	border-radius: 0;
+	padding: 24rpx 0;
 	transform: translateY(30rpx);
 	opacity: 0;
 	animation: slideUp 0.6s ease-out 0.4s forwards;
@@ -229,7 +229,7 @@ export default {
 	&-text {
 		font-size: 28rpx;
 		line-height: 1.6;
-		color: #555;
+		color: #646a73;
 		text-align: justify;
 		display: block;
 	}
@@ -242,7 +242,7 @@ export default {
 	.list-title {
 		font-size: 30rpx;
 		font-weight: 500;
-		color: #333;
+		color: #1f2329;
 		margin-bottom: 24rpx;
 		line-height: 1.4;
 	}
@@ -256,7 +256,7 @@ export default {
 
 		.item-number, .item-bullet {
 			font-size: 28rpx;
-			color: #666;
+			color: #1f8f4d;
 			margin-right: 16rpx;
 			flex-shrink: 0;
 			line-height: 1.6;
@@ -266,7 +266,7 @@ export default {
 		.item-text {
 			font-size: 28rpx;
 			line-height: 1.6;
-			color: #555;
+			color: #646a73;
 			flex: 1;
 			text-align: justify;
 		}
@@ -275,36 +275,36 @@ export default {
 
 // 联系方式样式
 .contact-section {
-	background-color: #f8f9fa;
-	border-radius: 12rpx;
+	background-color: #f0f9f4;
+	border-radius: 10rpx;
 	padding: 32rpx 24rpx;
 	text-align: center;
 	margin-top: 16rpx;
-	border: 2rpx solid #e9ecef;
+	border: 1rpx solid #d9f0e3;
 	transition: all 0.3s ease;
 
 	&:active {
-		background-color: #e9ecef;
+		background-color: #d9f0e3;
 		transform: scale(0.98);
 	}
 
 	.contact-title {
 		font-size: 30rpx;
 		font-weight: 500;
-		color: #333;
+		color: #1f2329;
 		margin-bottom: 16rpx;
 		line-height: 1.4;
 	}
 
 	.contact-content {
 		font-size: 28rpx;
-		color: #007AFF;
+		color: #1f8f4d;
 		text-decoration: underline;
 		line-height: 1.6;
 		transition: color 0.2s ease;
 
 		&:active {
-			color: #0056CC;
+			color: #20b15a;
 		}
 	}
 }

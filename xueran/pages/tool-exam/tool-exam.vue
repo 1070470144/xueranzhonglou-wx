@@ -172,29 +172,29 @@ export default {
 </script>
 
 <style scoped>
-.page { min-height: 100vh; padding: 24rpx; box-sizing: border-box; background: #f8f8f8; color: #2f261f; }
-.panel { padding: 24rpx; border-radius: 16rpx; border: 1rpx solid #ebe6df; background: #fff; }
-.title { margin-bottom: 24rpx; font-size: 36rpx; font-weight: 700; }
-.field-label { margin: 20rpx 0 10rpx; color: #4b4038; font-size: 26rpx; font-weight: 600; }
+.page { min-height: 100vh; padding: 64rpx 44rpx 56rpx; box-sizing: border-box; background: #ffffff; color: #1f2329; }
+.panel { background: #ffffff; }
+.title { padding-bottom: 42rpx; margin-bottom: 34rpx; border-bottom: 1rpx solid #edf0f2; color: #1f2329; font-size: 42rpx; line-height: 1.28; font-weight: 800; }
+.field-label { margin: 22rpx 0 12rpx; color: #646a73; font-size: 26rpx; font-weight: 600; }
 .segments { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12rpx; }
-.segment { height: 72rpx; line-height: 72rpx; text-align: center; border-radius: 12rpx; border: 1rpx solid #ebe6df; background: #faf9f7; }
-.segment.active { color: #007aff; border-color: #007aff; background: #eef6ff; }
-.input { height: 76rpx; padding: 0 20rpx; border-radius: 12rpx; border: 1rpx solid #ebe6df; background: #fafafa; box-sizing: border-box; }
-.hint { margin: 20rpx 0; color: #8c8178; font-size: 24rpx; }
+.segment { height: 72rpx; line-height: 72rpx; text-align: center; border-radius: 10rpx; border: 1rpx solid #dfe2e6; background: #ffffff; color: #646a73; }
+.segment.active { color: #1f8f4d; border-color: #d9f0e3; background: #f0f9f4; font-weight: 700; }
+.input { height: 76rpx; padding: 0 20rpx; border-radius: 10rpx; border: 1rpx solid #dfe2e6; background: #ffffff; color: #1f2329; box-sizing: border-box; }
+.hint { margin: 20rpx 0; color: #8f959e; font-size: 24rpx; }
 button { margin: 0; }
 button::after { border: 0; }
-.primary-btn, .ghost-btn { height: 78rpx; line-height: 78rpx; border-radius: 12rpx; font-size: 28rpx; }
-.primary-btn { flex: 1; color: #fff; background: #007aff; }
-.ghost-btn { flex: 1; color: #4b4038; background: #f5f2ee; }
+.primary-btn, .ghost-btn { height: 78rpx; line-height: 78rpx; border-radius: 10rpx; font-size: 28rpx; }
+.primary-btn { flex: 1; color: #ffffff; background: #20b15a; }
+.ghost-btn { flex: 1; color: #1f2329; background: #ffffff; border: 1rpx solid #dfe2e6; }
 .exam-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18rpx; font-size: 30rpx; font-weight: 700; }
 .timer { color: #b42318; }
-.badge { display: inline-block; margin-bottom: 16rpx; padding: 8rpx 14rpx; border-radius: 10rpx; color: #007aff; background: #eef6ff; font-size: 24rpx; }
+.badge { display: inline-block; margin-bottom: 16rpx; padding: 8rpx 14rpx; border-radius: 8rpx; color: #1f8f4d; background: #f0f9f4; font-size: 24rpx; }
 .question-title { font-size: 32rpx; line-height: 1.5; font-weight: 700; }
 .images { display: flex; gap: 12rpx; margin-top: 16rpx; }
-.images image { width: 150rpx; height: 150rpx; border-radius: 12rpx; }
+.images image { width: 150rpx; height: 150rpx; border-radius: 10rpx; }
 .answers { display: flex; flex-direction: column; gap: 14rpx; margin-top: 24rpx; }
-.answer-item { display: flex; align-items: center; gap: 14rpx; padding: 20rpx; border-radius: 12rpx; border: 1rpx solid #ebe6df; background: #fafafa; font-size: 28rpx; }
-.answer-item.selected { border-color: #007aff; background: #eef6ff; }
-.answer-key { width: 48rpx; height: 48rpx; line-height: 48rpx; text-align: center; border-radius: 50%; background: #fff; color: #007aff; font-weight: 700; }
+.answer-item { display: flex; align-items: center; gap: 14rpx; padding: 20rpx; border-radius: 10rpx; border: 1rpx solid #dfe2e6; background: #ffffff; font-size: 28rpx; }
+.answer-item.selected { border-color: #d9f0e3; background: #f0f9f4; }
+.answer-key { width: 48rpx; height: 48rpx; line-height: 48rpx; text-align: center; border-radius: 50%; background: #f0f9f4; color: #1f8f4d; font-weight: 700; }
 .actions { display: flex; gap: 12rpx; margin-top: 24rpx; }
 </style>

@@ -24,7 +24,7 @@
 
     <view class="feature-list">
       <view class="feature-item" @click="goToQuestionRecords">
-        <view class="feature-icon green-soft">
+        <view class="feature-icon">
           <text class="feature-icon-text">问</text>
         </view>
         <view class="feature-content">
@@ -35,7 +35,7 @@
       </view>
 
       <view class="feature-item" @click="goToFavorites">
-        <view class="feature-icon amber-soft">
+        <view class="feature-icon">
           <text class="feature-icon-text">藏</text>
         </view>
         <view class="feature-content">
@@ -46,7 +46,7 @@
       </view>
 
       <view class="feature-item" @click="goToMyUploads">
-        <view class="feature-icon teal-soft">
+        <view class="feature-icon">
           <text class="feature-icon-text">传</text>
         </view>
         <view class="feature-content">
@@ -57,7 +57,7 @@
       </view>
 
       <view class="feature-item" @click="goToAiConfig">
-        <view class="feature-icon purple-soft">
+        <view class="feature-icon">
           <text class="feature-icon-text">AI</text>
         </view>
         <view class="feature-content">
@@ -68,7 +68,7 @@
       </view>
 
       <view class="feature-item" @click="goToExamConfig">
-        <view class="feature-icon blue-soft">
+        <view class="feature-icon">
           <text class="feature-icon-text">题</text>
         </view>
         <view class="feature-content">
@@ -79,7 +79,7 @@
       </view>
 
       <view class="feature-item" @click="goToExamRecords">
-        <view class="feature-icon green-soft">
+        <view class="feature-icon">
           <text class="feature-icon-text">绩</text>
         </view>
         <view class="feature-content">
@@ -90,7 +90,7 @@
       </view>
 
       <view class="feature-item last" @click="goToProfileSettings">
-        <view class="feature-icon gray-soft">
+        <view class="feature-icon">
           <text class="feature-icon-text">设</text>
         </view>
         <view class="feature-content">
@@ -183,58 +183,30 @@ export default {
 </script>
 
 <style scoped>
-@keyframes fadeIn {
-  0% {
-    opacity: 0;
-    transform: translateY(20rpx);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideDown {
-  0% {
-    opacity: 0;
-    transform: translateY(-20rpx);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
 .container {
   width: 100%;
   min-height: 100vh;
   box-sizing: border-box;
   overflow-x: hidden;
-  padding: 20rpx 20rpx 56rpx;
-  background: #f8f8f8;
+  padding: 64rpx 44rpx 56rpx;
+  background: #ffffff;
+  color: #1f2329;
 }
 
 .fade-in {
-  opacity: 0;
-  animation: fadeIn 0.6s ease-out forwards;
+  opacity: 1;
 }
 
 .slide-down {
-  opacity: 0;
-  animation: slideDown 0.5s ease-out 0.1s forwards;
-}
-
-.profile-card,
-.feature-list {
-  box-sizing: border-box;
-  width: 100%;
-  border-radius: 16rpx;
-  background: #fff;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+  opacity: 1;
 }
 
 .profile-card {
-  padding: 28rpx 24rpx;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 24rpx 0 42rpx;
+  border-bottom: 1rpx solid #edf0f2;
+  background: #ffffff;
 }
 
 .profile-main,
@@ -247,13 +219,14 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 116rpx;
-  height: 116rpx;
-  margin-right: 24rpx;
-  border-radius: 16rpx;
+  width: 104rpx;
+  height: 104rpx;
+  margin-right: 26rpx;
+  border-radius: 12rpx;
   overflow: hidden;
-  background: #f0f0f0;
+  background: #f0f9f4;
   flex-shrink: 0;
+  border: 1rpx solid #d9f0e3;
 }
 
 .avatar {
@@ -262,8 +235,8 @@ export default {
 }
 
 .avatar-text {
-  color: #007AFF;
-  font-size: 40rpx;
+  color: #1f8f4d;
+  font-size: 42rpx;
   font-weight: 700;
 }
 
@@ -274,61 +247,61 @@ export default {
 }
 
 .profile-name {
-  margin-bottom: 8rpx;
-  color: #333;
-  font-size: 38rpx;
-  line-height: 1.35;
-  font-weight: 700;
+  margin-bottom: 10rpx;
+  color: #1f2329;
+  font-size: 42rpx;
+  line-height: 1.28;
+  font-weight: 800;
   word-break: break-all;
 }
 
 .profile-desc {
-  color: #666;
-  font-size: 26rpx;
-  line-height: 1.45;
+  color: #646a73;
+  font-size: 27rpx;
+  line-height: 1.5;
 }
 
 .login-badge {
   height: 64rpx;
   line-height: 64rpx;
-  padding: 0 28rpx;
-  border-radius: 16rpx;
-  color: #fff;
+  padding: 0 30rpx;
+  border-radius: 10rpx;
+  color: #ffffff;
   font-size: 28rpx;
   font-weight: 700;
-  background: #007AFF;
+  background: #20b15a;
 }
 
 .login-tip {
-  margin-top: 24rpx;
-  padding: 18rpx 22rpx;
-  border-radius: 16rpx;
-  color: #666;
+  margin-top: 26rpx;
+  color: #8f959e;
   font-size: 24rpx;
-  line-height: 1.45;
-  background: #f8f8f8;
+  line-height: 1.55;
 }
 
 .section-head {
   display: flex;
   align-items: center;
-  margin: 34rpx 8rpx 16rpx;
+  margin: 56rpx 0 10rpx;
 }
 
 .section-title {
-  color: #333;
-  font-size: 30rpx;
+  color: #1f2329;
+  font-size: 28rpx;
   font-weight: 700;
 }
 
 .feature-list {
+  box-sizing: border-box;
+  width: 100%;
   overflow: hidden;
+  background: #ffffff;
 }
 
 .feature-item {
-  min-height: 132rpx;
-  padding: 24rpx;
-  border-bottom: 1rpx solid #e5e5e5;
+  min-height: 118rpx;
+  padding: 28rpx 0;
+  border-bottom: 1rpx solid #edf0f2;
   box-sizing: border-box;
 }
 
@@ -340,103 +313,61 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 66rpx;
-  height: 66rpx;
+  width: 48rpx;
+  height: 48rpx;
   margin-right: 24rpx;
-  border-radius: 16rpx;
+  border-radius: 8rpx;
+  background: #f0f9f4;
   flex-shrink: 0;
 }
 
 .feature-icon-text {
-  font-size: 32rpx;
+  font-size: 24rpx;
   font-weight: 700;
-  color: #007AFF;
-}
-
-.blue-soft {
-  background: rgba(0, 122, 255, 0.08);
-}
-
-.green-soft {
-  background: rgba(52, 199, 89, 0.1);
-}
-
-.green-soft .feature-icon-text {
-  color: #2e7d32;
-}
-
-.purple-soft {
-  background: rgba(88, 86, 214, 0.1);
-}
-
-.purple-soft .feature-icon-text {
-  color: #5856d6;
-}
-
-.amber-soft {
-  background: rgba(245, 158, 11, 0.12);
-}
-
-.amber-soft .feature-icon-text {
-  color: #b45309;
-}
-
-.teal-soft {
-  background: rgba(20, 184, 166, 0.12);
-}
-
-.teal-soft .feature-icon-text {
-  color: #0f766e;
-}
-
-.gray-soft {
-  background: #f0f0f0;
-}
-
-.gray-soft .feature-icon-text {
-  color: #666;
+  color: #1f8f4d;
 }
 
 .feature-title {
-  margin-bottom: 6rpx;
-  color: #333;
+  margin-bottom: 8rpx;
+  color: #1f2329;
   font-size: 30rpx;
   line-height: 1.35;
   font-weight: 600;
 }
 
 .feature-desc {
-  color: #666;
+  color: #8f959e;
   font-size: 24rpx;
-  line-height: 1.4;
+  line-height: 1.45;
 }
 
 .arrow {
-  width: 16rpx;
-  height: 16rpx;
+  width: 14rpx;
+  height: 14rpx;
   margin-left: 18rpx;
-  border-top: 2rpx solid #c8c8c8;
-  border-right: 2rpx solid #c8c8c8;
+  border-top: 2rpx solid #c9cdd4;
+  border-right: 2rpx solid #c9cdd4;
   transform: rotate(45deg);
 }
 
 .logout-wrap {
-  margin-top: 36rpx;
+  margin-top: 56rpx;
 }
 
 .logout-btn {
   height: 88rpx;
   line-height: 88rpx;
-  border-radius: 16rpx;
-  color: #b42318;
+  border-radius: 10rpx;
+  border: 1rpx solid #dfe2e6;
+  color: #1f2329;
   font-size: 30rpx;
   font-weight: 700;
-  background: #fff7f5;
+  background: #ffffff;
 }
 
 .logout-tip {
-  margin-top: 16rpx;
-  color: #b42318;
+  margin-top: 18rpx;
+  color: #8f959e;
   font-size: 24rpx;
   line-height: 1.4;
   text-align: center;

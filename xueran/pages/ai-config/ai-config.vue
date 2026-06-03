@@ -167,35 +167,35 @@ export default {
 .page {
   min-height: 100vh;
   box-sizing: border-box;
-  padding: 34rpx 24rpx 60rpx;
-  background: #f6f2ec;
-  color: #241f1a;
+  padding: 64rpx 44rpx 60rpx;
+  background: #ffffff;
+  color: #1f2329;
 }
 
 .header {
-  padding: 12rpx 0 28rpx;
+  padding: 0 0 42rpx;
+  border-bottom: 1rpx solid #edf0f2;
 }
 
 .title {
-  font-size: 44rpx;
-  font-weight: 700;
+  color: #1f2329;
+  font-size: 42rpx;
+  line-height: 1.28;
+  font-weight: 800;
 }
 
 .subtitle {
-  margin-top: 12rpx;
-  color: #74685b;
-  font-size: 26rpx;
-  line-height: 1.55;
+  margin-top: 14rpx;
+  color: #646a73;
+  font-size: 27rpx;
+  line-height: 1.5;
 }
 
 .card {
   box-sizing: border-box;
   width: 100%;
-  padding: 26rpx;
-  border-radius: 22rpx;
-  background: #fffaf4;
-  border: 1rpx solid #e5d8c8;
-  box-shadow: 0 12rpx 36rpx rgba(72, 45, 22, 0.08);
+  padding-top: 34rpx;
+  background: #ffffff;
 }
 
 .row {
@@ -207,17 +207,18 @@ export default {
 
 .switch-row {
   padding-bottom: 22rpx;
-  border-bottom: 1rpx solid #eadfce;
+  border-bottom: 1rpx solid #edf0f2;
 }
 
 .label-main {
+  color: #1f2329;
   font-size: 30rpx;
   font-weight: 600;
 }
 
 .hint {
   margin-top: 6rpx;
-  color: #8a7a68;
+  color: #8f959e;
   font-size: 24rpx;
 }
 
@@ -228,7 +229,7 @@ export default {
 .label {
   display: block;
   margin-bottom: 10rpx;
-  color: #7d6b58;
+  color: #646a73;
   font-size: 24rpx;
 }
 
@@ -237,10 +238,10 @@ export default {
   width: 100%;
   height: 82rpx;
   padding: 0 20rpx;
-  border-radius: 16rpx;
-  border: 1rpx solid #e2d2bf;
-  background: #fffdf9;
-  color: #241f1a;
+  border-radius: 10rpx;
+  border: 1rpx solid #dfe2e6;
+  background: #ffffff;
+  color: #1f2329;
   font-size: 27rpx;
 }
 
@@ -253,16 +254,16 @@ export default {
   width: 100%;
   height: 88rpx;
   line-height: 88rpx;
-  border-radius: 44rpx;
-  background: #2f261f;
-  color: #fffaf4;
+  border-radius: 10rpx;
+  background: #20b15a;
+  color: #ffffff;
   font-size: 30rpx;
   font-weight: 600;
 }
 
 .tip {
   margin-top: 22rpx;
-  color: #8a7a68;
+  color: #8f959e;
   font-size: 24rpx;
   line-height: 1.5;
 }

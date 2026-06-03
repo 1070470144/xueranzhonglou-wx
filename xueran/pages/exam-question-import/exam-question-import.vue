@@ -61,16 +61,16 @@ export default {
 </script>
 
 <style scoped>
-.page { min-height: 100vh; padding: 20rpx; box-sizing: border-box; background: #f8f8f8; color: #2f261f; }
-.panel { padding: 22rpx; border: 1rpx solid #ebe6df; border-radius: 16rpx; background: #fff; }
-.textarea { width: 100%; min-height: 360rpx; padding: 18rpx; border-radius: 12rpx; background: #fafafa; border: 1rpx solid #ebe6df; box-sizing: border-box; font-size: 26rpx; }
-.hint { margin-top: 14rpx; color: #8c8178; font-size: 24rpx; line-height: 1.5; }
-.result { margin-top: 16rpx; color: #0f766e; font-size: 28rpx; }
+.page { min-height: 100vh; padding: 64rpx 44rpx 56rpx; box-sizing: border-box; background: #ffffff; color: #1f2329; }
+.panel { background: #ffffff; }
+.textarea { width: 100%; min-height: 360rpx; padding: 18rpx; border-radius: 10rpx; background: #ffffff; border: 1rpx solid #dfe2e6; box-sizing: border-box; color: #1f2329; font-size: 26rpx; }
+.hint { margin-top: 14rpx; color: #8f959e; font-size: 24rpx; line-height: 1.5; }
+.result { margin-top: 16rpx; color: #1f8f4d; font-size: 28rpx; }
 .failed-list { margin-top: 12rpx; color: #b42318; font-size: 24rpx; line-height: 1.6; }
 .form-actions { display: flex; gap: 12rpx; margin-top: 22rpx; }
-.ghost-btn, .primary-btn { flex: 1; height: 72rpx; line-height: 72rpx; font-size: 26rpx; border-radius: 12rpx; }
-.ghost-btn { color: #4b4038; background: #f5f2ee; }
-.primary-btn { color: #fff; background: #007aff; }
+.ghost-btn, .primary-btn { flex: 1; height: 72rpx; line-height: 72rpx; font-size: 26rpx; border-radius: 10rpx; }
+.ghost-btn { color: #1f2329; background: #ffffff; border: 1rpx solid #dfe2e6; }
+.primary-btn { color: #ffffff; background: #20b15a; }
 button { margin: 0; }
 button::after { border: 0; }
 </style>

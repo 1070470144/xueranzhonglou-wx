@@ -125,8 +125,8 @@ export default {
 <style lang="scss" scoped>
 .page {
   height: 100vh;
-  background: #f8f8f8;
-  color: #2f261f;
+  background: #ffffff;
+  color: #1f2329;
 }
 
 .rank-tabs {
@@ -140,17 +140,18 @@ export default {
   height: 64rpx;
   line-height: 64rpx;
   text-align: center;
-  border-radius: 12rpx;
+  border-radius: 10rpx;
   background: #ffffff;
-  color: #7a6f66;
+  color: #646a73;
   font-size: 26rpx;
-  border: 1rpx solid #ebe6df;
+  border: 1rpx solid #dfe2e6;
 }
 
 .rank-tab.active {
-  background: #2f261f;
-  color: #ffffff;
-  border-color: #2f261f;
+  background: #f0f9f4;
+  color: #1f8f4d;
+  border-color: #d9f0e3;
+  font-weight: 700;
 }
 
 .content {
@@ -167,11 +168,9 @@ export default {
   display: flex;
   align-items: center;
   min-height: 148rpx;
-  padding: 20rpx;
-  margin-bottom: 16rpx;
+  padding: 28rpx 0;
   background: #ffffff;
-  border: 1rpx solid #ebe6df;
-  border-radius: 16rpx;
+  border-bottom: 1rpx solid #edf0f2;
 }
 
 .rank-number {
@@ -183,8 +182,8 @@ export default {
   margin-right: 18rpx;
   font-size: 28rpx;
   font-weight: 700;
-  color: #6c5f55;
-  background: #f0ece8;
+  color: #1f8f4d;
+  background: #f0f9f4;
 }
 
 .rank-number.gold { background: #f4c542; color: #ffffff; }
@@ -194,9 +193,9 @@ export default {
 .script-cover {
   width: 104rpx;
   height: 104rpx;
-  border-radius: 12rpx;
+  border-radius: 10rpx;
   overflow: hidden;
-  background: #f4f1ed;
+  background: #f5f6f7;
   margin-right: 18rpx;
 }
 
@@ -211,7 +210,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #a69a90;
+  color: #8f959e;
   font-size: 22rpx;
 }
 
@@ -226,13 +225,13 @@ export default {
 .script-title {
   font-size: 30rpx;
   font-weight: 700;
-  color: #2f261f;
+  color: #1f2329;
   line-height: 1.35;
 }
 
 .script-meta {
   font-size: 24rpx;
-  color: #8c8178;
+  color: #646a73;
 }
 
 .rank-value {
@@ -245,18 +244,18 @@ export default {
 .value-text {
   font-size: 34rpx;
   font-weight: 700;
-  color: #007aff;
+  color: #1f8f4d;
 }
 
 .value-label {
   font-size: 22rpx;
-  color: #9b9188;
+  color: #8f959e;
 }
 
 .state-panel {
   padding: 48rpx 0;
   text-align: center;
-  color: #8c8178;
+  color: #8f959e;
   font-size: 26rpx;
 }
 
@@ -265,9 +264,9 @@ export default {
   height: 56rpx;
   line-height: 56rpx;
   margin: 18rpx auto 0;
-  color: #007aff;
-  background: #eef6ff;
-  border-radius: 12rpx;
+  color: #1f8f4d;
+  background: #f0f9f4;
+  border-radius: 10rpx;
   font-size: 24rpx;
 }
 </style>

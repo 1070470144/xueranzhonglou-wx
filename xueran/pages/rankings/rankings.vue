@@ -63,25 +63,23 @@ export default {
 .page {
   min-height: 100vh;
   box-sizing: border-box;
-  padding: 28rpx 24rpx;
-  background: #f8f8f8;
-  color: #2f261f;
+  padding: 64rpx 44rpx 56rpx;
+  background: #ffffff;
+  color: #1f2329;
 }
 
 .tool-list {
   display: flex;
   flex-direction: column;
-  gap: 18rpx;
 }
 
 .tool-item {
   display: flex;
   align-items: center;
   min-height: 132rpx;
-  padding: 22rpx 24rpx;
+  padding: 28rpx 0;
   background: #ffffff;
-  border: 1rpx solid #ebe6df;
-  border-radius: 16rpx;
+  border-bottom: 1rpx solid #edf0f2;
   box-sizing: border-box;
 }
 
@@ -90,35 +88,19 @@ export default {
   height: 72rpx;
   line-height: 72rpx;
   margin-right: 20rpx;
-  border-radius: 16rpx;
+  border-radius: 10rpx;
   text-align: center;
   font-size: 26rpx;
   font-weight: 700;
 }
 
-.tool-icon.upload {
-  color: #007aff;
-  background: #eef6ff;
-}
-
-.tool-icon.rank {
-  color: #8a5a00;
-  background: #fff4d8;
-}
-
-.tool-icon.exam {
-  color: #b42318;
-  background: #fff0ed;
-}
-
-.tool-icon.practice {
-  color: #0f766e;
-  background: #ecfdf3;
-}
-
+.tool-icon.upload,
+.tool-icon.rank,
+.tool-icon.exam,
+.tool-icon.practice,
 .tool-icon.notice {
-  color: #7c2d12;
-  background: #fff7ed;
+  color: #1f8f4d;
+  background: #f0f9f4;
 }
 
 .tool-main {
@@ -132,18 +114,18 @@ export default {
 .tool-title {
   font-size: 32rpx;
   font-weight: 700;
-  color: #2f261f;
+  color: #1f2329;
 }
 
 .tool-desc {
   font-size: 24rpx;
-  color: #8c8178;
+  color: #8f959e;
   line-height: 1.45;
 }
 
 .arrow {
   margin-left: 16rpx;
-  color: #b8aea5;
+  color: #c9cdd4;
   font-size: 48rpx;
   line-height: 1;
 }

@@ -1,20 +1,23 @@
 <template>
   <view class="page">
     <view class="panel">
+      <view class="title">设置</view>
+
+      <view class="field-label">头像</view>
       <view class="avatar-row">
         <image :src="avatarUrl || '/static/default-avatar.png'" class="avatar" mode="aspectFill" />
         <view class="avatar-actions">
-          <button class="small-btn primary" open-type="chooseAvatar" @chooseavatar="onChooseWechatAvatar">微信头像</button>
-          <button class="small-btn" @tap="chooseLocalAvatar">相册选择</button>
+          <button class="ghost-btn" open-type="chooseAvatar" @chooseavatar="onChooseWechatAvatar">微信头像</button>
+          <button class="ghost-btn" @tap="chooseLocalAvatar">相册选择</button>
         </view>
       </view>
 
       <view class="form-row">
-        <view class="label">用户名</view>
+        <view class="field-label">用户名</view>
         <input v-model="nickname" class="input" type="nickname" maxlength="80" placeholder="请输入用户名" />
       </view>
 
-      <button class="save-btn" :loading="saving" @tap="save">保存</button>
+      <button class="primary-btn" :loading="saving" :disabled="saving" @tap="save">{{ saving ? '保存中' : '保存' }}</button>
     </view>
   </view>
 </template>
@@ -96,17 +99,19 @@ export default {
 </script>
 
 <style scoped>
-.page { min-height: 100vh; padding: 24rpx; box-sizing: border-box; background: #f6f2ec; color: #241f1a; }
+.page { min-height: 100vh; padding: 64rpx 44rpx 56rpx; box-sizing: border-box; background: #ffffff; color: #1f2329; }
+.panel { background: #ffffff; }
+.title { padding-bottom: 42rpx; margin-bottom: 34rpx; border-bottom: 1rpx solid #edf0f2; color: #1f2329; font-size: 42rpx; line-height: 1.28; font-weight: 800; }
+.field-label { margin: 22rpx 0 12rpx; color: #646a73; font-size: 26rpx; font-weight: 600; }
+.avatar-row { display: flex; align-items: center; gap: 18rpx; margin-bottom: 8rpx; }
+.avatar { width: 132rpx; height: 132rpx; border-radius: 12rpx; background: #f0f9f4; border: 1rpx solid #d9f0e3; flex-shrink: 0; }
+.avatar-actions { display: grid; grid-template-columns: repeat(2, 1fr); flex: 1; gap: 12rpx; }
+.form-row { margin-bottom: 24rpx; }
+.input { height: 76rpx; padding: 0 20rpx; border-radius: 10rpx; border: 1rpx solid #dfe2e6; background: #ffffff; box-sizing: border-box; color: #1f2329; font-size: 28rpx; }
 button { margin: 0; }
 button::after { border: 0; }
-.panel { padding: 24rpx; border: 1rpx solid #e5d8c8; border-radius: 22rpx; background: #fffaf4; box-shadow: 0 12rpx 36rpx rgba(72, 45, 22, 0.08); }
-.avatar-row { display: flex; align-items: center; gap: 24rpx; padding-bottom: 24rpx; margin-bottom: 22rpx; border-bottom: 1rpx solid #eadccd; }
-.avatar { width: 132rpx; height: 132rpx; border-radius: 22rpx; background: #eadccd; flex-shrink: 0; }
-.avatar-actions { display: flex; flex: 1; gap: 14rpx; }
-.small-btn { flex: 1; height: 72rpx; line-height: 72rpx; padding: 0 14rpx; border: 1rpx solid #e2d2bf; border-radius: 16rpx; background: #fffdf9; color: #4a3624; font-size: 26rpx; }
-.small-btn.primary { background: #5d4037; border-color: #5d4037; color: #fffaf4; }
-.form-row { margin-bottom: 32rpx; }
-.label { margin-bottom: 12rpx; color: #4a3624; font-size: 26rpx; font-weight: 700; }
-.input { height: 82rpx; padding: 0 22rpx; border: 1rpx solid #e2d2bf; border-radius: 16rpx; background: #fffdf9; box-sizing: border-box; color: #241f1a; font-size: 28rpx; }
-.save-btn { height: 84rpx; line-height: 84rpx; border-radius: 16rpx; background: #5d4037; color: #fffaf4; font-size: 30rpx; font-weight: 700; }
+.primary-btn, .ghost-btn { height: 78rpx; line-height: 78rpx; border-radius: 10rpx; font-size: 28rpx; }
+.primary-btn { width: 100%; color: #ffffff; background: #20b15a; }
+.primary-btn[disabled] { opacity: 0.7; }
+.ghost-btn { color: #1f8f4d; background: #f0f9f4; border: 1rpx solid #d9f0e3; }
 </style>

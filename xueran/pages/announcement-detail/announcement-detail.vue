@@ -63,16 +63,13 @@ export default {
 .page {
   min-height: 100vh;
   box-sizing: border-box;
-  padding: 28rpx 24rpx 64rpx;
-  background: #f8f8f8;
-  color: #2f261f;
+  padding: 64rpx 44rpx 64rpx;
+  background: #ffffff;
+  color: #1f2329;
 }
 
 .detail {
-  padding: 30rpx 26rpx;
-  border: 1rpx solid #ebe6df;
-  border-radius: 16rpx;
-  background: #fff;
+  background: #ffffff;
 }
 
 .meta-row {
@@ -90,14 +87,14 @@ export default {
   font-weight: 700;
 }
 
-.type.notice { color: #1d4ed8; background: #eff6ff; }
-.type.update { color: #047857; background: #ecfdf5; }
+.type.notice { color: #1f8f4d; background: #f0f9f4; }
+.type.update { color: #1f8f4d; background: #f0f9f4; }
 .type.maintenance { color: #92400e; background: #fffbeb; }
 .type.important { color: #b42318; background: #fff0ed; }
 
 .pinned {
-  color: #5f4b3a;
-  background: #f6eee7;
+  color: #1f8f4d;
+  background: #f0f9f4;
 }
 
 .title,
@@ -108,6 +105,7 @@ export default {
 }
 
 .title {
+  color: #1f2329;
   font-size: 38rpx;
   font-weight: 800;
   line-height: 1.35;
@@ -115,23 +113,23 @@ export default {
 
 .time {
   margin-top: 12rpx;
-  color: #b8aea5;
+  color: #8f959e;
   font-size: 23rpx;
 }
 
 .summary {
   margin-top: 24rpx;
   padding: 18rpx 20rpx;
-  border-radius: 14rpx;
-  background: #fffaf4;
-  color: #6f6258;
+  border-radius: 10rpx;
+  background: #f5f6f7;
+  color: #646a73;
   font-size: 26rpx;
   line-height: 1.55;
 }
 
 .content {
   margin-top: 28rpx;
-  color: #2f261f;
+  color: #1f2329;
   font-size: 29rpx;
   line-height: 1.75;
   white-space: pre-wrap;
@@ -139,7 +137,7 @@ export default {
 
 .state {
   padding: 80rpx 0;
-  color: #8c8178;
+  color: #8f959e;
   font-size: 26rpx;
   text-align: center;
 }

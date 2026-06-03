@@ -66,7 +66,7 @@
         v-model="question"
         class="composer-input"
         maxlength="1000"
-        placeholder="你的问题"
+        placeholder="向血染钟楼提问..."
         auto-height
       />
       <view class="composer-foot">
@@ -464,26 +464,24 @@ export default {
 .page {
   min-height: 100vh;
   box-sizing: border-box;
-  padding: 20rpx 20rpx 56rpx;
-  background: #f8f8f8;
-  color: #333;
+  padding: 64rpx 44rpx 56rpx;
+  background: #ffffff;
+  color: #1f2329;
 }
 
 .hero {
   display: flex;
   justify-content: space-between;
   gap: 20rpx;
-  margin-bottom: 20rpx;
-  padding: 28rpx 24rpx;
-  border-bottom: 1rpx solid #e5e5e5;
-  border-radius: 16rpx;
+  margin-bottom: 28rpx;
+  padding: 0 0 42rpx;
+  border-bottom: 1rpx solid #edf0f2;
   background: #fff;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
 }
 
 .eyebrow {
   font-size: 24rpx;
-  color: #007AFF;
+  color: #1f8f4d;
   font-weight: 600;
 }
 
@@ -492,13 +490,13 @@ export default {
   font-size: 40rpx;
   font-weight: 700;
   line-height: 1.18;
-  color: #333;
+  color: #1f2329;
 }
 
 .subtitle {
   margin-top: 12rpx;
   max-width: 560rpx;
-  color: #666;
+  color: #646a73;
   font-size: 26rpx;
   line-height: 1.55;
 }
@@ -508,8 +506,8 @@ export default {
   padding: 0 22rpx;
   height: 60rpx;
   line-height: 60rpx;
-  border-radius: 16rpx;
-  background: #007AFF;
+  border-radius: 10rpx;
+  background: #20b15a;
   color: #fff;
   font-size: 24rpx;
 }
@@ -521,11 +519,11 @@ export default {
   gap: 18rpx;
   margin-bottom: 20rpx;
   padding: 20rpx 24rpx;
-  border-radius: 16rpx;
+  border-radius: 10rpx;
   background: #fff;
-  color: #666;
+  color: #646a73;
   font-size: 25rpx;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+  border: 1rpx solid #edf0f2;
 }
 
 .notice.danger {
@@ -539,18 +537,17 @@ export default {
   gap: 14rpx;
   margin-bottom: 20rpx;
   padding: 18rpx 22rpx;
-  border: 1rpx solid #efe5d8;
-  border-radius: 16rpx;
-  background: #fffaf4;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+  border: 1rpx solid #edf0f2;
+  border-radius: 10rpx;
+  background: #ffffff;
 }
 
 .announcement-label {
   flex: 0 0 auto;
   padding: 4rpx 10rpx;
   border-radius: 8rpx;
-  background: #2f261f;
-  color: #fff;
+  background: #f0f9f4;
+  color: #1f8f4d;
   font-size: 22rpx;
   font-weight: 700;
 }
@@ -572,14 +569,14 @@ export default {
 }
 
 .announcement-text {
-  color: #5f4b3a;
+  color: #646a73;
   font-size: 25rpx;
   line-height: 1.4;
 }
 
 .announcement-arrow {
   flex: 0 0 auto;
-  color: #a88a6b;
+  color: #c9cdd4;
   font-size: 36rpx;
   line-height: 1;
 }
@@ -594,63 +591,72 @@ export default {
 .answer-card {
   box-sizing: border-box;
   width: 100%;
-  border-radius: 16rpx;
+  border-radius: 10rpx;
   background: #fff;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
 }
 
 .search-panel {
-  padding: 24rpx;
+  padding: 0;
+  margin-top: 8rpx;
+  margin-bottom: 24rpx;
 }
 
 .composer {
-  margin-top: 20rpx;
-  padding: 20rpx;
+  margin-top: 24rpx;
+  padding: 18rpx;
+  border: 2rpx solid #dfe2e6;
+  border-radius: 28rpx;
+  background: #ffffff;
 }
 
 .field-label {
-  color: #333;
+  color: #1f2329;
   font-size: 24rpx;
   font-weight: 700;
-  margin-bottom: 12rpx;
+  margin-bottom: 14rpx;
+  padding-left: 2rpx;
 }
 
 .script-search {
   display: flex;
   align-items: center;
-  gap: 18rpx;
+  gap: 12rpx;
+  min-height: 88rpx;
+  padding: 0 12rpx 0 22rpx;
+  border: 1rpx solid #dfe2e6;
+  border-radius: 16rpx;
+  background: #ffffff;
 }
 
 .script-input {
   flex: 1;
   box-sizing: border-box;
-  height: 76rpx;
-  padding: 0 22rpx;
-  border: 1rpx solid #ddd;
-  border-radius: 25rpx;
-  background: #f8f8f8;
-  color: #333;
+  height: 88rpx;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #1f2329;
   font-size: 27rpx;
-  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
 }
 
 .script-reset {
   margin: 0;
-  padding: 0 22rpx;
-  height: 64rpx;
-  line-height: 64rpx;
-  border-radius: 16rpx;
-  background: #f0f0f0;
-  color: #666;
+  padding: 0 20rpx;
+  height: 56rpx;
+  line-height: 56rpx;
+  border-radius: 28rpx;
+  background: #f0f9f4;
+  color: #1f8f4d;
   font-size: 24rpx;
 }
 
 .selected-scope {
   margin-top: 18rpx;
   padding: 18rpx 20rpx;
-  border-radius: 16rpx;
-  background: rgba(0, 122, 255, 0.06);
-  border-left: 6rpx solid #007AFF;
+  border-radius: 10rpx;
+  background: #f0f9f4;
+  border-left: 6rpx solid #20b15a;
 }
 
 .selected-title,
@@ -662,7 +668,7 @@ export default {
 
 .selected-title,
 .result-title {
-  color: #333;
+  color: #1f2329;
   font-size: 29rpx;
   font-weight: 600;
 }
@@ -670,7 +676,7 @@ export default {
 .selected-desc,
 .result-desc {
   margin-top: 6rpx;
-  color: #666;
+  color: #646a73;
   font-size: 23rpx;
   line-height: 1.35;
 }
@@ -679,7 +685,7 @@ export default {
   margin-top: 16rpx;
   border-radius: 16rpx;
   overflow: hidden;
-  border: 1rpx solid #e5e5e5;
+  border: 1rpx solid #edf0f2;
   background: #fff;
 }
 
@@ -687,7 +693,7 @@ export default {
   box-sizing: border-box;
   width: 100%;
   padding: 18rpx 20rpx;
-  border-bottom: 1rpx solid #e5e5e5;
+  border-bottom: 1rpx solid #edf0f2;
 }
 
 .script-result:last-child {
@@ -696,7 +702,7 @@ export default {
 
 .result-empty {
   padding: 22rpx;
-  color: #999;
+  color: #8f959e;
   font-size: 25rpx;
   text-align: center;
 }
@@ -704,11 +710,14 @@ export default {
 .composer-input {
   box-sizing: border-box;
   width: 100%;
-  min-height: 150rpx;
-  padding: 6rpx 4rpx 18rpx;
-  color: #333;
+  min-height: 172rpx;
+  padding: 18rpx 20rpx 10rpx;
+  border: 0;
+  border-radius: 20rpx;
+  background: transparent;
+  color: #1f2329;
   font-size: 28rpx;
-  line-height: 1.55;
+  line-height: 1.6;
 }
 
 .composer-foot {
@@ -716,6 +725,9 @@ export default {
   align-items: center;
   justify-content: space-between;
   gap: 18rpx;
+  margin-top: 8rpx;
+  padding: 8rpx 8rpx 4rpx 18rpx;
+  border-top: 1rpx solid #edf0f2;
 }
 
 .generating-status {
@@ -723,7 +735,7 @@ export default {
   align-items: center;
   gap: 12rpx;
   margin-top: 14rpx;
-  color: #666;
+  color: #646a73;
   font-size: 24rpx;
 }
 
@@ -731,7 +743,7 @@ export default {
   width: 14rpx;
   height: 14rpx;
   border-radius: 50%;
-  background: #007AFF;
+  background: #20b15a;
   animation: pulse 1s ease-in-out infinite;
 }
 
@@ -750,26 +762,26 @@ export default {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  color: #666;
+  color: #8f959e;
   font-size: 24rpx;
 }
 
 .send-btn {
-  flex: 0 0 68rpx;
+  flex: 0 0 64rpx;
   margin: 0;
   padding: 0;
-  width: 68rpx;
-  height: 68rpx;
-  line-height: 68rpx;
+  width: 64rpx;
+  height: 64rpx;
+  line-height: 64rpx;
   border-radius: 50%;
-  background: #007AFF;
+  background: #1f2329;
   color: #fff;
-  font-size: 34rpx;
+  font-size: 32rpx;
   font-weight: 600;
 }
 
 .send-btn[disabled] {
-  background: #c8c8c8;
+  background: #d9dde2;
   color: #fff;
 }
 
@@ -788,11 +800,11 @@ export default {
 .answer-title {
   font-size: 32rpx;
   font-weight: 700;
-  color: #333;
+  color: #1f2329;
 }
 
 .answer-source {
-  color: #999;
+  color: #8f959e;
   font-size: 22rpx;
 }
 
@@ -800,7 +812,7 @@ export default {
 .analysis-text {
   display: block;
   margin-top: 18rpx;
-  color: #333;
+  color: #1f2329;
   font-size: 28rpx;
   line-height: 1.65;
   white-space: pre-wrap;
@@ -809,14 +821,14 @@ export default {
 .analysis-box {
   margin-top: 22rpx;
   padding: 18rpx;
-  border-radius: 16rpx;
-  background: #f8f8f8;
+  border-radius: 10rpx;
+  background: #f5f6f7;
 }
 
 .analysis-label,
 .refs-title {
   display: block;
-  color: #007AFF;
+  color: #1f8f4d;
   font-size: 23rpx;
   font-weight: 600;
 }
@@ -827,7 +839,7 @@ export default {
 
 .ref-item {
   margin-top: 10rpx;
-  color: #666;
+  color: #646a73;
   font-size: 24rpx;
 }
 

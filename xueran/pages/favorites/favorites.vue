@@ -238,13 +238,16 @@ export default {
 
 .container {
   min-height: 100vh;
-  padding: 20rpx;
+  padding: 64rpx 44rpx 56rpx;
   box-sizing: border-box;
-  background: #f8f8f8;
+  background: #ffffff;
+  color: #1f2329;
 }
 
 .search-bar {
-  margin-bottom: 20rpx;
+  padding-bottom: 34rpx;
+  margin-bottom: 24rpx;
+  border-bottom: 1rpx solid #edf0f2;
 }
 
 .search-input-container {
@@ -257,13 +260,12 @@ export default {
   flex: 1;
   height: 76rpx;
   padding: 0 64rpx 0 24rpx;
-  border: 1rpx solid #ddd;
-  border-radius: 16rpx;
+  border: 1rpx solid #dfe2e6;
+  border-radius: 10rpx;
   box-sizing: border-box;
-  color: #333;
+  color: #1f2329;
   font-size: 28rpx;
-  background: #fff;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+  background: #ffffff;
 }
 
 .search-clear {
@@ -275,11 +277,11 @@ export default {
   width: 34rpx;
   height: 34rpx;
   border-radius: 50%;
-  background: #e5e5e5;
+  background: #f0f9f4;
 }
 
 .clear-icon {
-  color: #666;
+  color: #1f8f4d;
   font-size: 26rpx;
   line-height: 1;
 }
@@ -294,14 +296,14 @@ export default {
   width: calc(50% - 10rpx);
   margin-bottom: 20rpx;
   overflow: hidden;
-  border-radius: 16rpx;
-  background: #fff;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+  border-radius: 10rpx;
+  background: #ffffff;
+  border: 1rpx solid #edf0f2;
 }
 
 .script-cover {
   height: 200rpx;
-  background: #f0f0f0;
+  background: #f5f6f7;
 }
 
 .cover-image {
@@ -314,11 +316,11 @@ export default {
   align-items: center;
   justify-content: center;
   height: 100%;
-  background: #e9edf3;
+  background: #f5f6f7;
 }
 
 .no-image-text {
-  color: #666;
+  color: #8f959e;
   font-size: 24rpx;
 }
 
@@ -331,7 +333,7 @@ export default {
 }
 
 .script-title {
-  color: #333;
+  color: #1f2329;
   font-size: 28rpx;
   font-weight: 700;
   line-height: 1.3;
@@ -351,7 +353,7 @@ export default {
 .author {
   flex: 1;
   min-width: 0;
-  color: #666;
+  color: #646a73;
   font-size: 22rpx;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -362,9 +364,9 @@ export default {
   margin-left: 8rpx;
   padding: 2rpx 8rpx;
   border-radius: 8rpx;
-  color: #666;
+  color: #646a73;
   font-size: 20rpx;
-  background: #f0f0f0;
+  background: #f0f9f4;
 }
 
 .favorite-state {
@@ -374,14 +376,14 @@ export default {
 }
 
 .favorite-mark {
-  color: #f59e0b;
+  color: #1f8f4d;
   font-size: 26rpx;
   line-height: 1;
 }
 
 .favorite-text {
   margin-left: 6rpx;
-  color: #666;
+  color: #646a73;
   font-size: 22rpx;
 }
 
@@ -392,7 +394,7 @@ export default {
   width: 120rpx;
   height: 44rpx;
   border: 1rpx solid #f3c5bd;
-  border-radius: 14rpx;
+  border-radius: 10rpx;
   background: #fff7f5;
 }
 
@@ -412,20 +414,20 @@ export default {
 }
 
 .empty-title {
-  color: #333;
+  color: #1f2329;
   font-size: 32rpx;
   font-weight: 700;
 }
 
 .empty-desc {
   margin-top: 12rpx;
-  color: #666;
+  color: #8f959e;
   font-size: 26rpx;
 }
 
 .list-footer {
   padding: 24rpx 0;
-  color: #999;
+  color: #8f959e;
   font-size: 26rpx;
   text-align: center;
 }
@@ -434,13 +436,11 @@ export default {
   color: #b42318;
 }
 
-.skeleton {
-  box-shadow: none;
-}
+.skeleton { border-color: #edf0f2; }
 
 .skeleton-cover,
 .skeleton-line {
-  background: linear-gradient(90deg, #eee 0%, #f5f5f5 50%, #eee 100%);
+  background: linear-gradient(90deg, #edf0f2 0%, #f5f6f7 50%, #edf0f2 100%);
 }
 
 .skeleton-line {

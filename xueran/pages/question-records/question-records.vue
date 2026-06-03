@@ -227,23 +227,21 @@ export default {
 .page {
   min-height: 100vh;
   box-sizing: border-box;
-  padding: 24rpx 24rpx 56rpx;
-  background: #f6f2ec;
-  color: #241f1a;
+  padding: 64rpx 44rpx 56rpx;
+  background: #ffffff;
+  color: #1f2329;
 }
 
 .toolbar,
 .detail,
 .record-item {
   box-sizing: border-box;
-  border: 1rpx solid #e5d8c8;
-  border-radius: 22rpx;
-  background: #fffaf4;
-  box-shadow: 0 12rpx 36rpx rgba(72, 45, 22, 0.08);
+  background: #ffffff;
 }
 
 .toolbar {
-  padding: 20rpx;
+  padding: 0 0 34rpx;
+  border-bottom: 1rpx solid #edf0f2;
 }
 
 .search-box {
@@ -257,10 +255,10 @@ export default {
   width: 100%;
   height: 72rpx;
   padding: 0 20rpx;
-  border-radius: 16rpx;
-  border: 1rpx solid #e2d2bf;
-  background: #fffdf9;
-  color: #241f1a;
+  border-radius: 10rpx;
+  border: 1rpx solid #dfe2e6;
+  background: #ffffff;
+  color: #1f2329;
   font-size: 26rpx;
 }
 
@@ -270,10 +268,10 @@ export default {
   padding: 0 22rpx;
   height: 72rpx;
   line-height: 72rpx;
-  border-radius: 16rpx;
-  border: 1rpx solid #d8cbbd;
-  background: #fffaf4;
-  color: #4a3624;
+  border-radius: 10rpx;
+  border: 1rpx solid #d9f0e3;
+  background: #f0f9f4;
+  color: #1f8f4d;
   font-size: 26rpx;
 }
 
@@ -292,11 +290,11 @@ export default {
 }
 
 .list-head {
-  margin: 30rpx 8rpx 16rpx;
+  margin: 42rpx 0 16rpx;
 }
 
 .section-title {
-  color: #2d241d;
+  color: #1f2329;
   font-size: 32rpx;
   font-weight: 700;
 }
@@ -304,7 +302,7 @@ export default {
 .count-text,
 .end-text,
 .empty {
-  color: #8a7a68;
+  color: #8f959e;
   font-size: 24rpx;
 }
 
@@ -315,12 +313,12 @@ export default {
 }
 
 .record-item {
-  margin-bottom: 16rpx;
-  padding: 22rpx;
+  padding: 28rpx 0;
+  border-bottom: 1rpx solid #edf0f2;
 }
 
 .record-question {
-  color: #2d241d;
+  color: #1f2329;
   font-size: 28rpx;
   font-weight: 600;
   line-height: 1.45;
@@ -328,7 +326,7 @@ export default {
 
 .record-answer {
   margin-top: 10rpx;
-  color: #6d604f;
+  color: #646a73;
   font-size: 25rpx;
   line-height: 1.5;
   overflow: hidden;
@@ -339,13 +337,12 @@ export default {
 
 .record-meta {
   margin-top: 12rpx;
-  color: #9b8a77;
+  color: #8f959e;
   font-size: 22rpx;
 }
 
 .detail {
-  margin-top: 20rpx;
-  padding: 24rpx;
+  padding-top: 8rpx;
 }
 
 .detail-block {
@@ -355,13 +352,13 @@ export default {
 .field-label {
   display: block;
   margin-bottom: 12rpx;
-  color: #7d6b58;
+  color: #8f959e;
   font-size: 24rpx;
 }
 
 .detail-text {
   display: block;
-  color: #342b23;
+  color: #1f2329;
   font-size: 28rpx;
   line-height: 1.65;
   white-space: pre-wrap;
@@ -374,8 +371,8 @@ export default {
 .meta-panel {
   margin-top: 24rpx;
   padding: 18rpx 20rpx;
-  border-radius: 16rpx;
-  background: #f4eadf;
+  border-radius: 10rpx;
+  background: #f5f6f7;
 }
 
 .meta-row {
@@ -384,7 +381,7 @@ export default {
   justify-content: space-between;
   gap: 18rpx;
   padding: 8rpx 0;
-  color: #7a6043;
+  color: #646a73;
   font-size: 24rpx;
 }
 
@@ -396,7 +393,7 @@ export default {
   margin: 0;
   height: 84rpx;
   line-height: 84rpx;
-  border-radius: 18rpx;
+  border-radius: 10rpx;
   font-size: 29rpx;
   font-weight: 700;
 }

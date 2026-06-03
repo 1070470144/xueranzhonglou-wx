@@ -257,13 +257,16 @@ export default {
 
 .container {
   min-height: 100vh;
-  padding: 20rpx;
+  padding: 64rpx 44rpx 56rpx;
   box-sizing: border-box;
-  background: #f8f8f8;
+  background: #ffffff;
+  color: #1f2329;
 }
 
 .search-bar {
-  margin-bottom: 20rpx;
+  padding-bottom: 34rpx;
+  margin-bottom: 24rpx;
+  border-bottom: 1rpx solid #edf0f2;
 }
 
 .search-input-container {
@@ -276,13 +279,12 @@ export default {
   flex: 1;
   height: 76rpx;
   padding: 0 64rpx 0 24rpx;
-  border: 1rpx solid #ddd;
-  border-radius: 16rpx;
+  border: 1rpx solid #dfe2e6;
+  border-radius: 10rpx;
   box-sizing: border-box;
-  color: #333;
+  color: #1f2329;
   font-size: 28rpx;
-  background: #fff;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+  background: #ffffff;
 }
 
 .search-clear {
@@ -294,11 +296,11 @@ export default {
   width: 34rpx;
   height: 34rpx;
   border-radius: 50%;
-  background: #e5e5e5;
+  background: #f0f9f4;
 }
 
 .clear-icon {
-  color: #666;
+  color: #1f8f4d;
   font-size: 24rpx;
   line-height: 1;
 }
@@ -306,14 +308,12 @@ export default {
 .upload-list {
   display: flex;
   flex-direction: column;
-  gap: 20rpx;
 }
 
 .upload-item {
-  padding: 24rpx;
-  border-radius: 16rpx;
-  background: #fff;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+  padding: 28rpx 0;
+  border-bottom: 1rpx solid #edf0f2;
+  background: #ffffff;
 }
 
 .item-head {
@@ -327,7 +327,7 @@ export default {
 }
 
 .item-title {
-  color: #333;
+  color: #1f2329;
   font-size: 30rpx;
   font-weight: 700;
   line-height: 1.35;
@@ -336,7 +336,7 @@ export default {
 
 .item-meta {
   margin-top: 8rpx;
-  color: #666;
+  color: #646a73;
   font-size: 24rpx;
   line-height: 1.4;
 }
@@ -350,13 +350,13 @@ export default {
 }
 
 .status-tag.pending {
-  color: #9a6a00;
-  background: #fff6da;
+  color: #8f6a00;
+  background: #fff8e1;
 }
 
 .status-tag.approved {
-  color: #0f7d45;
-  background: #e9f8ef;
+  color: #1f8f4d;
+  background: #f0f9f4;
 }
 
 .status-tag.rejected {
@@ -367,7 +367,7 @@ export default {
 .reject-reason {
   margin-top: 16rpx;
   padding: 16rpx;
-  border-radius: 12rpx;
+  border-radius: 10rpx;
   background: #fff5f5;
   color: #9a1b16;
   font-size: 24rpx;
@@ -386,18 +386,20 @@ export default {
   height: 56rpx;
   line-height: 56rpx;
   margin: 0;
-  border-radius: 14rpx;
+  border-radius: 10rpx;
   font-size: 24rpx;
 }
 
 .action-btn.view {
-  color: #007aff;
-  background: #eef6ff;
+  color: #1f8f4d;
+  background: #f0f9f4;
+  border: 1rpx solid #d9f0e3;
 }
 
 .action-btn.delete {
   color: #b42318;
   background: #fff7f5;
+  border: 1rpx solid #f3c5bd;
 }
 
 .empty-state {
@@ -406,20 +408,20 @@ export default {
 }
 
 .empty-title {
-  color: #333;
+  color: #1f2329;
   font-size: 32rpx;
   font-weight: 700;
 }
 
 .empty-desc {
   margin-top: 12rpx;
-  color: #666;
+  color: #8f959e;
   font-size: 26rpx;
 }
 
 .list-footer {
   padding: 24rpx 0;
-  color: #999;
+  color: #8f959e;
   font-size: 26rpx;
   text-align: center;
 }
@@ -428,15 +430,13 @@ export default {
   color: #b42318;
 }
 
-.skeleton {
-  box-shadow: none;
-}
+.skeleton { border-bottom-color: #edf0f2; }
 
 .skeleton-line {
   height: 28rpx;
   margin-bottom: 18rpx;
   border-radius: 6rpx;
-  background: linear-gradient(90deg, #eee 0%, #f5f5f5 50%, #eee 100%);
+  background: linear-gradient(90deg, #edf0f2 0%, #f5f6f7 50%, #edf0f2 100%);
 }
 
 .skeleton-line.title {

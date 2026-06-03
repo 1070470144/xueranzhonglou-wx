@@ -119,9 +119,9 @@ export default {
 .page {
   height: 100vh;
   box-sizing: border-box;
-  padding: 20rpx;
-  background: #f8f8f8;
-  color: #333;
+  padding: 64rpx 44rpx 56rpx;
+  background: #ffffff;
+  color: #1f2329;
 }
 
 .detail-wrap {
@@ -130,11 +130,9 @@ export default {
 
 .header-card,
 .section {
-  margin-bottom: 20rpx;
-  padding: 24rpx;
-  border-radius: 16rpx;
+  padding: 28rpx 0;
+  border-bottom: 1rpx solid #edf0f2;
   background: #fff;
-  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
   box-sizing: border-box;
 }
 
@@ -146,7 +144,7 @@ export default {
 .title {
   flex: 1;
   min-width: 0;
-  color: #333;
+  color: #1f2329;
   font-size: 36rpx;
   font-weight: 700;
   line-height: 1.35;
@@ -156,7 +154,7 @@ export default {
 .author {
   display: block;
   margin-top: 12rpx;
-  color: #666;
+  color: #646a73;
   font-size: 26rpx;
 }
 
@@ -174,8 +172,8 @@ export default {
 }
 
 .status-tag.approved {
-  color: #0f7d45;
-  background: #e9f8ef;
+  color: #1f8f4d;
+  background: #f0f9f4;
 }
 
 .status-tag.rejected {
@@ -192,20 +190,20 @@ export default {
 .cover-image {
   width: 214rpx;
   height: 160rpx;
-  border-radius: 16rpx;
-  background: #eee;
+  border-radius: 10rpx;
+  background: #f5f6f7;
 }
 
 .section-title {
   display: block;
   margin-bottom: 14rpx;
-  color: #333;
+  color: #1f2329;
   font-size: 30rpx;
   font-weight: 700;
 }
 
 .section-content {
-  color: #555;
+  color: #646a73;
   font-size: 26rpx;
   line-height: 1.6;
   word-break: break-all;
@@ -223,7 +221,7 @@ export default {
   display: flex;
   justify-content: space-between;
   padding: 14rpx 0;
-  border-bottom: 1rpx solid #f0f0f0;
+  border-bottom: 1rpx solid #edf0f2;
 }
 
 .info-row:last-child {
@@ -231,12 +229,12 @@ export default {
 }
 
 .info-label {
-  color: #666;
+  color: #8f959e;
   font-size: 26rpx;
 }
 
 .info-value {
-  color: #333;
+  color: #1f2329;
   font-size: 26rpx;
   font-weight: 600;
 }
@@ -244,18 +242,18 @@ export default {
 .json-preview {
   display: block;
   padding: 18rpx;
-  border-radius: 12rpx;
-  color: #333;
+  border-radius: 10rpx;
+  color: #1f2329;
   font-size: 22rpx;
   line-height: 1.55;
   word-break: break-all;
   white-space: pre-wrap;
-  background: #f6f6f6;
+  background: #f5f6f7;
 }
 
 .state-text {
   padding: 120rpx 0;
-  color: #666;
+  color: #8f959e;
   font-size: 28rpx;
   text-align: center;
 }

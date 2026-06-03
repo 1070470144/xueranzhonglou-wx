@@ -609,13 +609,16 @@ export default {
 }
 
 .container {
-	padding: 20rpx;
+	min-height: 100vh;
+	padding: 64rpx 44rpx 56rpx;
+	background: #ffffff;
+	color: #1f2329;
 	opacity: 0;
 	animation: fadeIn 0.6s ease-out forwards;
 }
 
 .search-bar {
-	margin-bottom: 20rpx;
+	margin-bottom: 28rpx;
 	transform: translateY(-20rpx);
 	opacity: 0;
 	animation: slideDown 0.5s ease-out 0.2s forwards;
@@ -628,20 +631,17 @@ export default {
 }
 
 .search-input {
-	border: 1rpx solid #ddd;
-	border-radius: 25rpx;
-	padding: 16rpx 60rpx 16rpx 24rpx;
+	border: 1rpx solid #dfe2e6;
+	border-radius: 10rpx;
+	padding: 18rpx 60rpx 18rpx 24rpx;
 	font-size: 28rpx;
-	background-color: #f8f8f8;
+	background-color: #ffffff;
 	transition: all 0.3s ease;
-	box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.05);
 	flex: 1;
 
 	&:focus {
-		border-color: #007AFF;
-		background-color: #fff;
-		box-shadow: 0 4rpx 16rpx rgba(0, 122, 255, 0.15);
-		transform: scale(1.02);
+		border-color: #20b15a;
+		background-color: #ffffff;
 	}
 }
 
@@ -653,20 +653,20 @@ export default {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background-color: #ddd;
+	background-color: #f0f9f4;
 	border-radius: 50%;
 	cursor: pointer;
 	transition: all 0.2s ease;
 
 	&:active {
-		background-color: #ccc;
+		background-color: #d9f0e3;
 		transform: scale(0.9);
 	}
 }
 
 .clear-icon {
 	font-size: 24rpx;
-	color: #666;
+	color: #1f8f4d;
 	line-height: 1;
 }
 
@@ -680,22 +680,22 @@ export default {
 
 .loading-text {
 	font-size: 24rpx;
-	color: #007AFF;
+	color: #1f8f4d;
 }
 
 .script-grid {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
-    padding: 20rpx;
+	padding: 0;
 }
 
 .script-item {
     width: calc(50% - 10rpx);
     margin-bottom: 20rpx;
     background-color: #fff;
-	border-radius: 16rpx;
-	box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.08);
+	border: 1rpx solid #edf0f2;
+	border-radius: 10rpx;
 	overflow: hidden;
 	transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 	transform: translateY(30rpx);
@@ -705,7 +705,7 @@ export default {
 
 	&:hover {
 		transform: translateY(-4rpx);
-		box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.12);
+		border-color: #d9f0e3;
 	}
 
 	&:active {
@@ -717,7 +717,7 @@ export default {
 .script-cover {
 	position: relative;
 	height: 200rpx;
-	background-color: #f8f8f8;
+	background-color: #f7f8fa;
 }
 
 .cover-image {
@@ -731,12 +731,12 @@ export default {
 	align-items: center;
 	justify-content: center;
 	height: 100%;
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	background: #f0f9f4;
 	border-radius: 12rpx 12rpx 0 0;
 }
 
 .no-image-text {
-	color: rgba(255, 255, 255, 0.8);
+	color: #1f8f4d;
 	font-size: 24rpx;
 }
 
@@ -751,7 +751,7 @@ export default {
 .script-title {
 	font-size: 28rpx;
 	font-weight: bold;
-	color: #333;
+	color: #1f2329;
 	line-height: 1.3;
 	display: -webkit-box;
 	-webkit-line-clamp: 2;
@@ -770,7 +770,7 @@ export default {
 
 .author, .version {
 	font-size: 22rpx;
-	color: #666;
+	color: #646a73;
 }
 
 .author {
@@ -779,7 +779,7 @@ export default {
 
 .version {
 	font-size: 20rpx;
-	background-color: #f0f0f0;
+	background-color: #f7f8fa;
 	padding: 2rpx 8rpx;
 	border-radius: 8rpx;
 }
@@ -799,9 +799,9 @@ export default {
 	cursor: pointer;
 	padding: 6rpx 12rpx;
 	border-radius: 16rpx;
-	background-color: #f8f8f8;
+	background-color: #ffffff;
 	transition: all 0.3s ease;
-	border: 1rpx solid #e8e8e8;
+	border: 1rpx solid #edf0f2;
 
 	&:active {
 		transform: scale(0.9);
@@ -814,22 +814,22 @@ export default {
 	height: 42rpx;
 	padding: 0;
 	background-color: #fff;
-	border-color: #d6d6d6;
+	border-color: #edf0f2;
 }
 
 .favorite-section.active {
-	background-color: #fff7ed;
-	border-color: #f59e0b;
+	background-color: #f0f9f4;
+	border-color: #d9f0e3;
 }
 
 .favorite-icon {
 	font-size: 28rpx;
-	color: #8a8a8a;
+	color: #8f959e;
 	line-height: 1;
 }
 
 .favorite-section.active .favorite-icon {
-	color: #f59e0b;
+	color: #1f8f4d;
 }
 
 .like-icon {
@@ -840,7 +840,7 @@ export default {
 
 .like-count {
 	font-size: 22rpx;
-	color: #666;
+	color: #646a73;
 	font-weight: 500;
 }
 
@@ -886,18 +886,18 @@ export default {
 }
 
 .suggestion-text {
-	color: #666;
+	color: #646a73;
 	font-size: 24rpx;
 }
 
 .suggestion-item {
-	color: #007AFF;
+	color: #1f8f4d;
 	font-size: 24rpx;
 	text-decoration: underline;
 	cursor: pointer;
 
 	&:active {
-		color: #0056CC;
+		color: #20b15a;
 	}
 }
 </style>

@@ -298,17 +298,16 @@ export default {
 .page {
   height: 100vh;
   box-sizing: border-box;
-  padding: 20rpx 24rpx 36rpx;
-  background: #f8f8f8;
-  color: #2f261f;
+  padding: 64rpx 44rpx 56rpx;
+  background: #ffffff;
+  color: #1f2329;
 }
 
 .section {
   background: #ffffff;
-  border: 1rpx solid #ebe6df;
-  border-radius: 16rpx;
-  padding: 24rpx;
-  margin-bottom: 20rpx;
+  border-bottom: 1rpx solid #edf0f2;
+  padding: 28rpx 0;
+  margin-bottom: 0;
 }
 
 .section-head {
@@ -320,14 +319,14 @@ export default {
 .section-title {
   font-size: 34rpx;
   font-weight: 700;
-  color: #2f261f;
+  color: #1f2329;
   line-height: 1.35;
 }
 
 .section-subtitle {
   margin-top: 6rpx;
   font-size: 24rpx;
-  color: #8c8178;
+  color: #8f959e;
   line-height: 1.45;
 }
 
@@ -339,7 +338,7 @@ export default {
   display: block;
   margin-bottom: 12rpx;
   font-size: 26rpx;
-  color: #4b4038;
+  color: #646a73;
   font-weight: 600;
 }
 
@@ -353,7 +352,7 @@ export default {
 .add-image {
   width: 150rpx;
   height: 150rpx;
-  border-radius: 12rpx;
+  border-radius: 10rpx;
   overflow: hidden;
   position: relative;
 }
@@ -382,9 +381,9 @@ export default {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  border: 2rpx dashed #d8d1c9;
-  background: #faf9f7;
-  color: #8c8178;
+  border: 2rpx dashed #d9f0e3;
+  background: #f0f9f4;
+  color: #1f8f4d;
 }
 
 .add-mark {
@@ -400,15 +399,16 @@ export default {
 .plain-btn,
 .submit-btn {
   margin: 0;
-  border-radius: 12rpx;
+  border-radius: 10rpx;
   font-size: 28rpx;
 }
 
 .plain-btn {
   height: 76rpx;
   line-height: 76rpx;
-  color: #007aff;
-  background: #eef6ff;
+  color: #1f8f4d;
+  background: #f0f9f4;
+  border: 1rpx solid #d9f0e3;
 }
 
 .file-status {
@@ -417,8 +417,8 @@ export default {
   align-items: center;
   margin-top: 14rpx;
   padding: 16rpx;
-  border-radius: 12rpx;
-  background: #f8f8f8;
+  border-radius: 10rpx;
+  background: #f5f6f7;
 }
 
 .type-segment {
@@ -431,29 +431,29 @@ export default {
   height: 72rpx;
   line-height: 72rpx;
   text-align: center;
-  border-radius: 12rpx;
-  border: 1rpx solid #d8d1c9;
-  background: #faf9f7;
-  color: #4b4038;
+  border-radius: 10rpx;
+  border: 1rpx solid #dfe2e6;
+  background: #ffffff;
+  color: #646a73;
   font-size: 28rpx;
   font-weight: 600;
 }
 
 .type-option.active {
-  border-color: #007aff;
-  background: #eef6ff;
-  color: #007aff;
+  border-color: #d9f0e3;
+  background: #f0f9f4;
+  color: #1f8f4d;
 }
 
 .file-name {
   flex: 1;
   font-size: 24rpx;
-  color: #4b4038;
+  color: #646a73;
 }
 
 .file-ok {
   font-size: 24rpx;
-  color: #0f9d58;
+  color: #1f8f4d;
 }
 
 .json-textarea {
@@ -461,9 +461,10 @@ export default {
   min-height: 300rpx;
   box-sizing: border-box;
   padding: 20rpx;
-  border-radius: 12rpx;
-  border: 1rpx solid #ebe6df;
-  background: #fafafa;
+  border-radius: 10rpx;
+  border: 1rpx solid #dfe2e6;
+  background: #ffffff;
+  color: #1f2329;
   font-size: 26rpx;
   line-height: 1.55;
 }
@@ -472,7 +473,7 @@ export default {
   height: 82rpx;
   line-height: 82rpx;
   color: #ffffff;
-  background: #007aff;
+  background: #20b15a;
 }
 
 </style>

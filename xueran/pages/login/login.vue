@@ -1,16 +1,19 @@
 <template>
   <view class="page">
-    <view class="hero">
+    <view class="brand">
       <view class="logo">血</view>
-      <view class="title">微信登录</view>
-      <view class="subtitle">使用微信小程序身份进入，继续使用 AI 问答和个人记录。</view>
+      <view class="brand-text">血染钟楼助手</view>
     </view>
 
-    <view class="panel">
+    <view class="main">
+      <view class="title">微信登录</view>
+      <view class="subtitle">同步你的问答、收藏、上传和模拟考记录。</view>
+
       <button class="wechat-btn" :loading="loading" :disabled="loading" @click="submitWeixinLogin">
-        微信一键登录
+        {{ loading ? '登录中' : '微信一键登录' }}
       </button>
-      <view class="tip">登录后会为你创建或关联一个微信小程序账号。</view>
+
+      <view class="note">仅用于账号识别和资料展示</view>
     </view>
   </view>
 </template>
@@ -80,71 +83,89 @@ export default {
 
 <style scoped>
 .page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
   min-height: 100vh;
   box-sizing: border-box;
-  padding: 68rpx 32rpx 44rpx;
-  background: #f7f1e8;
-  color: #2b2520;
+  padding: 188rpx 48rpx 72rpx;
+  background: #ffffff;
+  color: #1f2329;
 }
 
-.hero {
-  padding: 20rpx 4rpx 42rpx;
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+  width: 100%;
 }
 
 .logo {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 112rpx;
-  height: 112rpx;
-  margin-bottom: 28rpx;
-  border-radius: 28rpx;
-  background: #f6e8df;
-  color: #8f3f2b;
-  font-size: 48rpx;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 12rpx;
+  background: #f0f9f4;
+  color: #1f8f4d;
+  border: 1rpx solid #d9f0e3;
+  font-size: 30rpx;
   font-weight: 700;
+}
+
+.brand-text {
+  color: #1f2329;
+  font-size: 30rpx;
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+.main {
+  width: 100%;
+  max-width: 560rpx;
+  padding-top: 96rpx;
+  text-align: center;
 }
 
 .title {
-  font-size: 48rpx;
-  line-height: 1.25;
-  font-weight: 700;
+  color: #1f2329;
+  font-size: 56rpx;
+  line-height: 1.18;
+  font-weight: 800;
 }
 
 .subtitle {
-  margin-top: 14rpx;
-  color: #8a8178;
+  width: 520rpx;
+  max-width: 100%;
+  margin: 22rpx auto 0;
+  color: #646a73;
   font-size: 28rpx;
-  line-height: 1.55;
-}
-
-.panel {
-  box-sizing: border-box;
-  padding: 36rpx 32rpx 32rpx;
-  border-radius: 24rpx;
-  background: #ffffff;
-  border: 1rpx solid #eadfd3;
-  box-shadow: 0 14rpx 36rpx rgba(64, 42, 27, 0.06);
+  line-height: 1.6;
 }
 
 .wechat-btn {
+  margin-top: 72rpx;
+  width: 100%;
   height: 92rpx;
   line-height: 92rpx;
-  border-radius: 18rpx;
+  border-radius: 10rpx;
   color: #ffffff;
-  font-size: 31rpx;
+  font-size: 30rpx;
   font-weight: 700;
-  background: #1aad19;
+  background: #20b15a;
 }
 
 .wechat-btn[disabled] {
-  background: #8dcf8c;
+  background: #9bd8b6;
   color: #ffffff;
 }
 
-.tip {
-  margin-top: 22rpx;
-  color: #9d9389;
+.note {
+  margin-top: 24rpx;
+  color: #8f959e;
   font-size: 24rpx;
   line-height: 1.45;
   text-align: center;

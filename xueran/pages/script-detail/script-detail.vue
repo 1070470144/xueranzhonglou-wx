@@ -1128,7 +1128,8 @@ export default {
 <style lang="scss" scoped>
 .container {
 	height: 100vh;
-	background-color: #f8f8f8;
+	background-color: #ffffff;
+	color: #1f2329;
 }
 
 .scroll-container {
@@ -1157,14 +1158,14 @@ export default {
 
 .script-detail {
 	background-color: #fff;
-	border-radius: 12rpx 12rpx 0 0;
+	border-radius: 10rpx 10rpx 0 0;
 	margin-top: -20rpx;
-	padding: 30rpx;
+	padding: 34rpx 44rpx;
 	min-height: calc(100vh - 400rpx);
 }
 
 .script-header {
-	border-bottom: 1rpx solid #f0f0f0;
+	border-bottom: 1rpx solid #edf0f2;
 	padding-bottom: 20rpx;
 	margin-bottom: 20rpx;
 }
@@ -1172,7 +1173,7 @@ export default {
 .script-title {
 	font-size: 36rpx;
 	font-weight: bold;
-	color: #333;
+	color: #1f2329;
 	line-height: 1.4;
 	margin-bottom: 16rpx;
 }
@@ -1190,12 +1191,12 @@ export default {
 }
 
 .label {
-	color: #666;
+	color: #8f959e;
 	min-width: 120rpx;
 }
 
 .value {
-	color: #333;
+	color: #1f2329;
 }
 
 .action-buttons {
@@ -1209,7 +1210,7 @@ export default {
 	gap: 20rpx;
 	margin: 40rpx 0 20rpx 0;
 	padding-top: 20rpx;
-	border-top: 1rpx solid #e8e8e8;
+	border-top: 1rpx solid #edf0f2;
 }
 
 .action-btn {
@@ -1221,20 +1222,20 @@ export default {
 }
 
 .primary {
-	background-color: #007AFF;
+	background-color: #20b15a;
 	color: white;
 }
 
 .secondary {
-	background-color: #f8f8f8;
-	color: #007AFF;
-	border: 1rpx solid #007AFF;
+	background-color: #ffffff;
+	color: #1f8f4d;
+	border: 1rpx solid #d9f0e3;
 }
 
 .section-title {
 	font-size: 32rpx;
 	font-weight: bold;
-	color: #333;
+	color: #1f2329;
 	margin: 28rpx 0 12rpx 0;
 	position: relative;
 
@@ -1244,17 +1245,16 @@ export default {
 		width: 14rpx;
 		height: 14rpx;
 		border-radius: 50%;
-		background: #007AFF;
+		background: #20b15a;
 		margin-right: 12rpx;
 		vertical-align: middle;
-		box-shadow: 0 2rpx 6rpx rgba(0,122,255,0.18);
 	}
 }
 
 .description-content {
 	font-size: 28rpx;
 	line-height: 1.6;
-	color: #555;
+	color: #646a73;
 	text-align: justify;
 }
 
@@ -1271,7 +1271,7 @@ export default {
 .info-item {
 	display: flex;
 	flex-direction: column;
-	background-color: #f8f8f8;
+	background-color: #f7f8fa;
 	padding: 16rpx;
 	border-radius: 8rpx;
 	font-size: 24rpx;
@@ -1492,7 +1492,7 @@ export default {
 // 角色展示区域样式
 .character-section {
 	margin-top: 20rpx;
-	border-top: 1rpx solid #f0f0f0;
+	border-top: 1rpx solid #edf0f2;
 	padding-top: 12rpx;
 	background-color: #fff;
 	border-radius: 0;
@@ -1526,7 +1526,7 @@ export default {
 	justify-content: space-between;
 	padding: 8rpx 12rpx;
 	background: transparent;
-	color: #333;
+	color: #1f2329;
 	cursor: pointer;
 	transition: all 0.15s ease;
 	position: relative;
@@ -1563,7 +1563,7 @@ export default {
 .group-title {
 	font-size: 28rpx;
 	font-weight: 600;
-	color: #007AFF;
+	color: #1f8f4d;
 	margin-right: 10rpx;
 	letter-spacing: 0.4rpx;
 
@@ -1573,18 +1573,17 @@ export default {
 		width: 8rpx;
 		height: 8rpx;
 		border-radius: 50%;
-		background: #007AFF;
+		background: #20b15a;
 		margin-right: 8rpx;
 		vertical-align: middle;
-		box-shadow: 0 1rpx 3rpx rgba(0,122,255,0.12);
 	}
 }
 
 .group-count {
 	font-size: 26rpx;
-	color: #666;
+	color: #646a73;
 	font-weight: 500;
-	background-color: #f0f0f0;
+	background-color: #f7f8fa;
 	padding: 4rpx 10rpx;
 	border-radius: 20rpx;
 	backdrop-filter: none;
@@ -1600,7 +1599,7 @@ export default {
 
 	.icon-text {
 		font-size: 28rpx;
-		color: #007AFF;
+		color: #1f8f4d;
 		font-weight: bold;
 		text-shadow: none;
 		transition: all 0.2s ease;
@@ -1635,7 +1634,7 @@ export default {
 .section-title {
 	font-size: 32rpx;
 	font-weight: bold;
-	color: #333;
+	color: #1f2329;
 	margin: 32rpx 0 16rpx 0;
 }
 
@@ -1649,7 +1648,7 @@ export default {
 
 	.icon-text {
 		font-size: 28rpx;
-		color: #667eea;
+		color: #1f8f4d;
 		font-weight: bold;
 		transition: all 0.2s ease;
 	}
@@ -1716,7 +1715,7 @@ export default {
 	align-items: center;
 	justify-content: center;
 	flex-shrink: 0;
-	box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
+	box-shadow: none;
 	transition: all 0.3s ease;
 }
 
@@ -1734,14 +1733,14 @@ export default {
 	width: 104rpx;
 	height: 104rpx;
 	border-radius: 18rpx;
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	background: #f0f9f4;
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	margin-right: 26rpx;
 	flex-shrink: 0;
 	border: 2rpx solid #e8ecf1;
-	box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.08);
+	box-shadow: none;
 	position: relative;
 	overflow: hidden;
 
@@ -1763,7 +1762,7 @@ export default {
 
 	.placeholder-text {
 		font-size: 32rpx;
-		color: white;
+		color: #1f8f4d;
 		font-weight: 800;
 		text-shadow: 0 1rpx 2rpx rgba(0, 0, 0, 0.2);
 		z-index: 1;
@@ -1792,7 +1791,7 @@ export default {
 }
 
 .character-card:active .character-name {
-	color: #667eea;
+	color: #1f8f4d;
 }
 
 .character-ability {
@@ -1834,7 +1833,7 @@ export default {
 .no-characters {
 	text-align: center;
 	padding: 40rpx 20rpx;
-	color: #999;
+	color: #8f959e;
 	font-size: 28rpx;
 }
 

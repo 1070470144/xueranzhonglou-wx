@@ -136,21 +136,21 @@ export default {
 </script>
 
 <style scoped>
-.page { min-height: 100vh; padding: 20rpx; box-sizing: border-box; background: #f8f8f8; color: #2f261f; }
-.toolbar { display: flex; gap: 12rpx; margin-bottom: 18rpx; }
-.search { flex: 1; height: 76rpx; padding: 0 20rpx; border-radius: 12rpx; background: #fff; border: 1rpx solid #ebe6df; box-sizing: border-box; }
+.page { min-height: 100vh; padding: 64rpx 44rpx 56rpx; box-sizing: border-box; background: #ffffff; color: #1f2329; }
+.toolbar { display: flex; gap: 12rpx; padding-bottom: 34rpx; margin-bottom: 18rpx; border-bottom: 1rpx solid #edf0f2; }
+.search { flex: 1; height: 76rpx; padding: 0 20rpx; border-radius: 10rpx; background: #ffffff; border: 1rpx solid #dfe2e6; box-sizing: border-box; color: #1f2329; font-size: 26rpx; }
 button { margin: 0; }
 button::after { border: 0; }
-.search-btn { width: 120rpx; height: 76rpx; line-height: 76rpx; border-radius: 12rpx; color: #fff; background: #007aff; font-size: 26rpx; }
-.card { padding: 22rpx; margin-bottom: 16rpx; border-radius: 16rpx; border: 1rpx solid #ebe6df; background: #fff; }
+.search-btn { width: 120rpx; height: 76rpx; line-height: 76rpx; border-radius: 10rpx; color: #ffffff; background: #20b15a; font-size: 26rpx; }
+.card { padding: 28rpx 0; border-bottom: 1rpx solid #edf0f2; background: #ffffff; }
 .card-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10rpx; }
-.score { font-size: 40rpx; font-weight: 800; color: #007aff; }
-.level { padding: 8rpx 14rpx; border-radius: 10rpx; color: #0f766e; background: #ecfdf3; font-size: 24rpx; }
-.meta { color: #4b4038; font-size: 26rpx; line-height: 1.5; }
-.time { margin-top: 8rpx; color: #8c8178; font-size: 24rpx; }
+.score { font-size: 40rpx; font-weight: 800; color: #1f8f4d; }
+.level { padding: 8rpx 14rpx; border-radius: 8rpx; color: #1f8f4d; background: #f0f9f4; font-size: 24rpx; }
+.meta { color: #646a73; font-size: 26rpx; line-height: 1.5; }
+.time { margin-top: 8rpx; color: #8f959e; font-size: 24rpx; }
 .card-actions { display: flex; gap: 12rpx; margin-top: 16rpx; }
-.detail-btn, .delete-btn { flex: 1; height: 68rpx; line-height: 68rpx; border-radius: 12rpx; font-size: 26rpx; }
-.detail-btn { color: #007aff; background: #eef6ff; }
-.delete-btn { color: #b42318; background: #fff0ed; }
-.empty, .footer { padding: 42rpx 0; color: #8c8178; font-size: 26rpx; text-align: center; }
+.detail-btn, .delete-btn { flex: 1; height: 68rpx; line-height: 68rpx; border-radius: 10rpx; font-size: 26rpx; }
+.detail-btn { color: #1f8f4d; background: #f0f9f4; border: 1rpx solid #d9f0e3; }
+.delete-btn { color: #b42318; background: #fff7f5; border: 1rpx solid #f3c5bd; }
+.empty, .footer { padding: 42rpx 0; color: #8f959e; font-size: 26rpx; text-align: center; }
 </style>

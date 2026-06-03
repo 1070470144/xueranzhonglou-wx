@@ -154,28 +154,28 @@ export default {
 </script>
 
 <style scoped>
-.page { min-height: 100vh; padding: 20rpx; box-sizing: border-box; background: #f8f8f8; color: #2f261f; }
-.panel { padding: 22rpx; border: 1rpx solid #ebe6df; border-radius: 16rpx; background: #fff; }
+.page { min-height: 100vh; padding: 64rpx 44rpx 56rpx; box-sizing: border-box; background: #ffffff; color: #1f2329; }
+.panel { background: #ffffff; }
 .row.two { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12rpx; margin-bottom: 14rpx; }
-.picker { height: 74rpx; line-height: 74rpx; padding: 0 20rpx; border-radius: 12rpx; background: #faf9f7; border: 1rpx solid #ebe6df; font-size: 26rpx; }
+.picker { height: 74rpx; line-height: 74rpx; padding: 0 20rpx; border-radius: 10rpx; background: #ffffff; border: 1rpx solid #dfe2e6; color: #1f2329; font-size: 26rpx; }
 .picker.answer { margin-top: 14rpx; }
-.textarea { width: 100%; min-height: 180rpx; padding: 18rpx; border-radius: 12rpx; background: #fafafa; border: 1rpx solid #ebe6df; box-sizing: border-box; font-size: 26rpx; }
+.textarea { width: 100%; min-height: 180rpx; padding: 18rpx; border-radius: 10rpx; background: #ffffff; border: 1rpx solid #dfe2e6; box-sizing: border-box; color: #1f2329; font-size: 26rpx; }
 .textarea.small { min-height: 120rpx; margin-top: 14rpx; }
 .image-grid { display: flex; flex-wrap: wrap; gap: 14rpx; margin: 14rpx 0; }
-.image-item, .add-image { position: relative; width: 136rpx; height: 136rpx; border-radius: 12rpx; overflow: hidden; }
+.image-item, .add-image { position: relative; width: 136rpx; height: 136rpx; border-radius: 10rpx; overflow: hidden; }
 .picked-image { width: 100%; height: 100%; }
 .remove-image { position: absolute; right: 8rpx; top: 8rpx; width: 34rpx; height: 34rpx; line-height: 32rpx; text-align: center; border-radius: 50%; color: #fff; background: rgba(0,0,0,.55); }
-.add-image { display: flex; align-items: center; justify-content: center; border: 2rpx dashed #d8d1c9; color: #8c8178; font-size: 44rpx; background: #faf9f7; }
+.add-image { display: flex; align-items: center; justify-content: center; border: 2rpx dashed #d9f0e3; color: #1f8f4d; font-size: 44rpx; background: #f0f9f4; }
 .option-row { display: flex; align-items: center; gap: 12rpx; margin-bottom: 12rpx; }
-.option-key { width: 52rpx; height: 52rpx; line-height: 52rpx; text-align: center; border-radius: 50%; background: #eef6ff; color: #007aff; font-weight: 700; }
-.option-input { flex: 1; height: 68rpx; padding: 0 18rpx; border-radius: 12rpx; background: #fafafa; border: 1rpx solid #ebe6df; }
+.option-key { width: 52rpx; height: 52rpx; line-height: 52rpx; text-align: center; border-radius: 50%; background: #f0f9f4; color: #1f8f4d; font-weight: 700; }
+.option-input { flex: 1; height: 68rpx; padding: 0 18rpx; border-radius: 10rpx; background: #ffffff; border: 1rpx solid #dfe2e6; color: #1f2329; }
 .filters.compact { display: flex; gap: 12rpx; margin-top: 14rpx; }
-.chip { padding: 14rpx 24rpx; border-radius: 12rpx; background: #fff; border: 1rpx solid #ebe6df; color: #6f6258; font-size: 26rpx; }
-.chip.active { color: #007aff; background: #eef6ff; border-color: #007aff; }
+.chip { padding: 14rpx 24rpx; border-radius: 10rpx; background: #ffffff; border: 1rpx solid #dfe2e6; color: #646a73; font-size: 26rpx; }
+.chip.active { color: #1f8f4d; background: #f0f9f4; border-color: #d9f0e3; }
 .form-actions { display: flex; gap: 12rpx; margin-top: 18rpx; }
-.ghost-btn, .primary-btn { flex: 1; height: 72rpx; line-height: 72rpx; font-size: 26rpx; border-radius: 12rpx; }
-.ghost-btn { color: #4b4038; background: #f5f2ee; }
-.primary-btn { color: #fff; background: #007aff; }
+.ghost-btn, .primary-btn { flex: 1; height: 72rpx; line-height: 72rpx; font-size: 26rpx; border-radius: 10rpx; }
+.ghost-btn { color: #1f2329; background: #ffffff; border: 1rpx solid #dfe2e6; }
+.primary-btn { color: #ffffff; background: #20b15a; }
 button { margin: 0; }
 button::after { border: 0; }
 </style>

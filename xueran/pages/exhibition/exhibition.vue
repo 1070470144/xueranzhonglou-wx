@@ -3,11 +3,11 @@
 		<!-- 搜索栏 -->
 		<view class="search-bar">
 			<view class="search-input">
-				<uni-icons type="search" size="16" color="#999"></uni-icons>
+				<uni-icons type="search" size="16" color="#8f959e"></uni-icons>
 				<input
 					v-model="searchText"
 					placeholder="搜索剧本..."
-					placeholder-style="color: #999"
+					placeholder-style="color: #8f959e"
 					class="input-field"
 				/>
 			</view>
@@ -92,11 +92,11 @@
 		<!-- 底部导航 -->
 		<view class="bottom-nav">
 			<view class="nav-item active">
-				<uni-icons type="home" size="20" color="#007AFF"></uni-icons>
+				<uni-icons type="home" size="20" color="#1f8f4d"></uni-icons>
 				<text class="nav-text">展览</text>
 			</view>
 			<view class="nav-item" @click="goToRankings">
-				<uni-icons type="bars" size="20" color="#666"></uni-icons>
+				<uni-icons type="bars" size="20" color="#646a73"></uni-icons>
 				<text class="nav-text">排行</text>
 			</view>
 		</view>
@@ -263,21 +263,23 @@ export default {
 <style scoped>
 .container {
 	min-height: 100vh;
-	background-color: #f8f8f8;
+	background-color: #ffffff;
+	color: #1f2329;
 	padding-bottom: 60px; /* 为底部导航留空间 */
 }
 
 .search-bar {
 	padding: 16px;
 	background-color: #fff;
-	border-bottom: 1px solid #e5e5e5;
+	border-bottom: 1px solid #edf0f2;
 }
 
 .search-input {
 	display: flex;
 	align-items: center;
-	background-color: #f5f5f5;
-	border-radius: 20px;
+	background-color: #ffffff;
+	border: 1px solid #dfe2e6;
+	border-radius: 10px;
 	padding: 8px 16px;
 }
 
@@ -300,7 +302,7 @@ export default {
 	border-radius: 8px;
 	flex: 0 0 calc(25% - 9px); /* 四宫格布局，每个卡片占25%宽度，减去gap */
 	min-width: 0; /* 防止flex子项溢出 */
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+	border: 1px solid #edf0f2;
 	overflow: hidden;
 	transition: transform 0.2s;
 	cursor: pointer;
@@ -338,7 +340,7 @@ export default {
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background-color: #f5f5f5;
+	background-color: #f0f9f4;
 }
 
 .image-count {
@@ -431,7 +433,7 @@ export default {
 .script-title {
 	font-size: 14px;
 	font-weight: 600;
-	color: #333;
+	color: #1f2329;
 	flex: 1;
 	line-height: 1.3;
 	display: -webkit-box;
@@ -449,7 +451,7 @@ export default {
 
 .like-count {
 	font-size: 14px;
-	color: #666;
+	color: #646a73;
 	margin-left: 4px;
 }
 
@@ -459,7 +461,7 @@ export default {
 
 .author {
 	font-size: 12px;
-	color: #666;
+	color: #646a73;
 	line-height: 1.2;
 	display: -webkit-box;
 	-webkit-line-clamp: 1;
@@ -474,8 +476,8 @@ export default {
 }
 
 .tag {
-	background-color: #f0f0f0;
-	color: #666;
+	background-color: #f0f9f4;
+	color: #1f8f4d;
 	font-size: 10px;
 	padding: 2px 6px;
 	border-radius: 8px;
@@ -485,7 +487,7 @@ export default {
 .loading {
 	text-align: center;
 	padding: 40px;
-	color: #999;
+	color: #8f959e;
 }
 
 .empty-state {
@@ -500,7 +502,7 @@ export default {
 }
 
 .empty-text {
-	color: #999;
+	color: #8f959e;
 	font-size: 16px;
 	font-weight: 500;
 	text-align: center;
@@ -513,7 +515,7 @@ export default {
 	left: 0;
 	right: 0;
 	background-color: #fff;
-	border-top: 1px solid #e5e5e5;
+	border-top: 1px solid #edf0f2;
 	display: flex;
 	padding: 8px 0;
 }
@@ -529,7 +531,7 @@ export default {
 }
 
 .nav-item.active .nav-text {
-	color: #007AFF;
+	color: #1f8f4d;
 }
 
 .nav-item:active {
@@ -538,7 +540,7 @@ export default {
 
 .nav-text {
 	font-size: 12px;
-	color: #666;
+	color: #646a73;
 	margin-top: 4px;
 }
 </style>
