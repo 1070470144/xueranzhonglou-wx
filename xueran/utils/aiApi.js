@@ -16,12 +16,24 @@ function normalize(result) {
   return result;
 }
 
+function markDirty(key) {
+  try {
+    uni.setStorageSync(key, Date.now());
+  } catch (error) {}
+}
+
+async function withDirty(promise, key) {
+  const result = normalize(await promise);
+  if (result.success) markDirty(key);
+  return result;
+}
+
 export async function getAiAvailability() {
   return normalize(await aiService.getAvailability(withToken()));
 }
 
 export async function askAi(params) {
-  return normalize(await aiService.ask(withToken(params)));
+  return withDirty(aiService.ask(withToken(params)), 'question_records_dirty');
 }
 
 export async function getQuestionHistory(params = {}) {
@@ -33,7 +45,7 @@ export async function getQuestionRecord(id) {
 }
 
 export async function deleteQuestionRecord(id) {
-  return normalize(await aiService.deleteRecord(withToken({ id })));
+  return withDirty(aiService.deleteRecord(withToken({ id })), 'question_records_dirty');
 }
 
 export async function getUserAiConfig() {
@@ -41,7 +53,7 @@ export async function getUserAiConfig() {
 }
 
 export async function saveUserAiConfig(config) {
-  return normalize(await aiService.saveUserConfig(withToken({ config })));
+  return withDirty(aiService.saveUserConfig(withToken({ config })), 'ai_config_dirty');
 }
 
 export async function getAiScripts(params = {}) {

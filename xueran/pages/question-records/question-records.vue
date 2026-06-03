@@ -103,7 +103,8 @@ export default {
       total: 0,
       loading: false,
       deleting: false,
-      selectedRecord: null
+      selectedRecord: null,
+      hasLoaded: false
     };
   },
   computed: {
@@ -113,7 +114,14 @@ export default {
   },
   onLoad() {
     if (!requireLogin('/pages/question-records/question-records')) return;
-    this.loadRecords(true);
+    this.loadRecords(true).finally(() => {
+      this.hasLoaded = true;
+    });
+  },
+  onShow() {
+    if (!this.hasLoaded) return;
+    const force = this.consumeRecordsDirty();
+    if (force || !this.selectedRecord) this.loadRecords(true);
   },
   onPullDownRefresh() {
     this.loadRecords(true).finally(() => uni.stopPullDownRefresh());
@@ -146,6 +154,16 @@ export default {
     },
     searchRecords() {
       this.loadRecords(true);
+    },
+    consumeRecordsDirty() {
+      try {
+        const dirtyAt = uni.getStorageSync('question_records_dirty');
+        if (!dirtyAt) return false;
+        uni.removeStorageSync('question_records_dirty');
+        return true;
+      } catch (error) {
+        return false;
+      }
     },
     loadMore() {
       if (!this.hasMore || this.loading) return;

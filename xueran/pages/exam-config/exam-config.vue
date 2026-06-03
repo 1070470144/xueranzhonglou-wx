@@ -114,7 +114,9 @@ export default {
     if (uni.getStorageSync('exam_questions_dirty')) {
       uni.removeStorageSync('exam_questions_dirty');
       this.reload();
+      return;
     }
+    this.reload({ silent: true });
   },
   onPullDownRefresh() {
     this.reload();
@@ -149,13 +151,13 @@ export default {
       this.filterLevel = level;
       this.reload();
     },
-    reload() {
+    reload(options = {}) {
       this.noMore = false;
-      this.load({ page: 1 });
+      this.load({ page: 1, ...options });
     },
-    async load({ page = 1, append = false } = {}) {
+    async load({ page = 1, append = false, silent = false } = {}) {
       if (this.loading) return;
-      this.loading = true;
+      if (!silent) this.loading = true;
       const result = await getExamQuestions({ page, pageSize: this.pageSize, keyword: this.keyword, level: this.filterLevel || undefined });
       if (result.success) {
         const data = result.data || {};

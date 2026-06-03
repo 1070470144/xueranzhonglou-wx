@@ -99,6 +99,11 @@ export default {
     this.hydrateCache();
     if (!this.isCacheFresh()) this.loadFavorites({ page: 1, append: false });
   },
+  onShow() {
+    const force = this.consumeFavoritesDirty();
+    if (force) favoritesCache.loadedAt = 0;
+    this.reload({ silent: !force });
+  },
   methods: {
     hydrateCache() {
       this.keyword = favoritesCache.keyword || '';
@@ -108,6 +113,16 @@ export default {
     },
     isCacheFresh() {
       return favoritesCache.loadedAt && Date.now() - favoritesCache.loadedAt < FAVORITES_CACHE_TTL;
+    },
+    consumeFavoritesDirty() {
+      try {
+        const dirtyAt = uni.getStorageSync('favorites_dirty');
+        if (!dirtyAt) return false;
+        uni.removeStorageSync('favorites_dirty');
+        return true;
+      } catch (error) {
+        return false;
+      }
     },
     saveCache() {
       favoritesCache.keyword = this.keyword;
@@ -131,12 +146,12 @@ export default {
       this.noMore = false;
       this.loadFavorites({ page: 1, append: false });
     },
-    reload() {
-      this.loadFavorites({ page: 1, append: false });
+    reload(options = {}) {
+      this.loadFavorites({ page: 1, append: false, ...options });
     },
-    async loadFavorites({ page = 1, append = false } = {}) {
+    async loadFavorites({ page = 1, append = false, silent = false } = {}) {
       if (this.loading) return;
-      this.loading = true;
+      if (!silent) this.loading = true;
       this.error = '';
 
       try {

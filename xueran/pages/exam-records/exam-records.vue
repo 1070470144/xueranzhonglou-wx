@@ -43,6 +43,11 @@ export default {
     this.hydrateCache();
     if (!this.isCacheFresh()) this.load({ page: 1 });
   },
+  onShow() {
+    const force = this.consumeRecordsDirty();
+    if (force) recordsCache.loadedAt = 0;
+    this.reload({ silent: !force });
+  },
   onPullDownRefresh() { this.reload(); },
   onReachBottom() { if (!this.loading && !this.noMore) this.load({ page: this.page + 1, append: true }); },
   methods: {
@@ -56,6 +61,16 @@ export default {
     isCacheFresh() {
       return recordsCache.loadedAt && Date.now() - recordsCache.loadedAt < RECORDS_CACHE_TTL;
     },
+    consumeRecordsDirty() {
+      try {
+        const dirtyAt = uni.getStorageSync('exam_records_dirty');
+        if (!dirtyAt) return false;
+        uni.removeStorageSync('exam_records_dirty');
+        return true;
+      } catch (error) {
+        return false;
+      }
+    },
     saveCache() {
       recordsCache.keyword = this.keyword;
       recordsCache.items = this.items;
@@ -63,13 +78,13 @@ export default {
       recordsCache.noMore = this.noMore;
       recordsCache.loadedAt = Date.now();
     },
-    reload() {
+    reload(options = {}) {
       this.noMore = false;
-      this.load({ page: 1 });
+      this.load({ page: 1, ...options });
     },
-    async load({ page = 1, append = false } = {}) {
+    async load({ page = 1, append = false, silent = false } = {}) {
       if (this.loading) return;
-      this.loading = true;
+      if (!silent) this.loading = true;
       const result = await getExamRecords({ page, pageSize: this.pageSize, keyword: this.keyword });
       if (result.success) {
         const data = result.data || {};

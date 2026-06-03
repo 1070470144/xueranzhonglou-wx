@@ -91,6 +91,11 @@ export default {
     this.hydrateCache();
     if (!this.isCacheFresh()) this.loadUploads({ page: 1, append: false });
   },
+  onShow() {
+    const force = this.consumeUploadsDirty();
+    if (force) uploadsCache.loadedAt = 0;
+    this.reload({ silent: !force });
+  },
   methods: {
     hydrateCache() {
       this.keyword = uploadsCache.keyword || '';
@@ -100,6 +105,16 @@ export default {
     },
     isCacheFresh() {
       return uploadsCache.loadedAt && Date.now() - uploadsCache.loadedAt < UPLOADS_CACHE_TTL;
+    },
+    consumeUploadsDirty() {
+      try {
+        const dirtyAt = uni.getStorageSync('uploads_dirty');
+        if (!dirtyAt) return false;
+        uni.removeStorageSync('uploads_dirty');
+        return true;
+      } catch (error) {
+        return false;
+      }
     },
     saveCache() {
       uploadsCache.keyword = this.keyword;
@@ -123,12 +138,12 @@ export default {
       this.noMore = false;
       this.loadUploads({ page: 1, append: false });
     },
-    reload() {
-      this.loadUploads({ page: 1, append: false });
+    reload(options = {}) {
+      this.loadUploads({ page: 1, append: false, ...options });
     },
-    async loadUploads({ page = 1, append = false } = {}) {
+    async loadUploads({ page = 1, append = false, silent = false } = {}) {
       if (this.loading) return;
-      this.loading = true;
+      if (!silent) this.loading = true;
       this.error = '';
 
       try {

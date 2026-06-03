@@ -28,6 +28,18 @@ function requireToken(redirectUrl) {
   return token;
 }
 
+function markFavoritesDirty() {
+  try {
+    uni.setStorageSync('favorites_dirty', Date.now());
+  } catch (error) {}
+}
+
+function markUploadsDirty() {
+  try {
+    uni.setStorageSync('uploads_dirty', Date.now());
+  } catch (error) {}
+}
+
 export async function likeScript(scriptId) {
   const token = requireToken('/pages/script-list/script-list');
   if (!token) {
@@ -81,6 +93,7 @@ export async function favoriteScript(scriptId) {
   try {
     const result = await callScriptService('favoriteScript', { token, scriptId, action: 'favorite' });
     if (result && result.success) {
+      markFavoritesDirty();
       return { success: true, message: getServerMessage(result, '收藏成功') };
     }
     return { success: false, message: getServerMessage(result, '收藏失败') };
@@ -99,6 +112,7 @@ export async function unfavoriteScript(scriptId) {
   try {
     const result = await callScriptService('favoriteScript', { token, scriptId, action: 'unfavorite' });
     if (result && result.success) {
+      markFavoritesDirty();
       return { success: true, message: getServerMessage(result, '已取消收藏') };
     }
     return { success: false, message: getServerMessage(result, '取消收藏失败') };
@@ -139,6 +153,7 @@ export async function uploadUserScript({ jsonData, images = [], scriptType = '�
   try {
     const result = await callScriptService('userUploadScript', { token, jsonData, images, scriptType });
     if (result && result.success) {
+      markUploadsDirty();
       return result;
     }
     return { success: false, message: getServerMessage(result, '上传失败') };
@@ -197,6 +212,7 @@ export async function deleteMyUploadedScript(scriptId) {
   try {
     const result = await callScriptService('deleteMyUploadedScript', { token, scriptId });
     if (result && result.success) {
+      markUploadsDirty();
       return result;
     }
     return { success: false, message: getServerMessage(result, '删除上传失败') };

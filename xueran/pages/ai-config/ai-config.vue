@@ -100,6 +100,17 @@ export default {
     this.hydrateCache();
     if (!this.isCacheFresh()) await this.loadConfig();
   },
+  onShow() {
+    if (uni.getStorageSync('ai_config_dirty')) {
+      uni.removeStorageSync('ai_config_dirty');
+      aiConfigCache.loadedAt = 0;
+      this.loadConfig();
+      return;
+    }
+    if (!this.isCacheFresh()) {
+      this.loadConfig();
+    }
+  },
   methods: {
     hydrateCache() {
       if (!aiConfigCache.config) return;
