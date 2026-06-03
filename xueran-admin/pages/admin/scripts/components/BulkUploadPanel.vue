@@ -41,6 +41,7 @@
         <view class="file-info" v-if="manifest.length > 0">
           <view class="file-stats">
             <text class="stats-text">已选择 {{ manifest.length }} 个文件</text>
+            <text v-if="getInvalidFilesCount() > 0" class="stats-text error">异常 {{ getInvalidFilesCount() }} 个</text>
           </view>
         </view>
       </view>
@@ -114,6 +115,10 @@
               <view class="summary-item">
                 <text class="summary-label">待上传文件：</text>
                 <text class="summary-value">{{ manifest.length }}</text>
+              </view>
+              <view class="summary-item" v-if="uploadBatchTotal > 0">
+                <text class="summary-label">当前批次：</text>
+                <text class="summary-value">{{ uploadBatchIndex }} / {{ uploadBatchTotal }}</text>
               </view>
             </view>
           </view>
@@ -248,6 +253,10 @@ export default {
       conflictStrategy: 'skip', // default
       // UI enhancement state
       concurrency: 5,
+      maxFiles: 1000,
+      uploadBatchSize: 10,
+      uploadBatchIndex: 0,
+      uploadBatchTotal: 0,
       previewVisible: false,
       previewIndex: -1,
       previewModel: {
@@ -265,7 +274,7 @@ export default {
       return this.manifest ? this.manifest.length : 0
     },
     canStartUpload() {
-      return this.manifest.length > 0 && !this.isUploading
+      return this.manifest.length > 0 && !this.isUploading && this.getValidFilesCount() > 0
     },
     totalProcessed() {
       return this.successCount + this.failCount
@@ -383,7 +392,7 @@ export default {
         if (typeof uni !== 'undefined' && typeof uni.chooseFile === 'function') {
           // use uni.chooseFile where supported (APP-PLUS / H5 wrappers)
           uni.chooseFile({
-            count: 50,
+            count: this.maxFiles,
             success: async (res) => {
               try {
                 const files = res.tempFiles || res.tempFilePaths || []
@@ -494,7 +503,17 @@ export default {
           if (collected.length === 0) {
             uni.showToast({ title: '未在所选目录中找到 JSON 文件', icon: 'none' })
           } else {
-            this.manifest = collected.filter(item => item.fileName && item.fileName.toLowerCase().endsWith('.json'))
+            const jsonFiles = collected.filter(item => item.fileName && item.fileName.toLowerCase().endsWith('.json'))
+            if (jsonFiles.length > this.maxFiles) {
+              uni.showModal({
+                title: '文件数量过多',
+                content: `单次最多支持 ${this.maxFiles} 个文件，当前目录包含 ${jsonFiles.length} 个 JSON 文件。`,
+                showCancel: false
+              })
+              return
+            }
+            this.resetUploadState()
+            this.manifest = jsonFiles
           }
           return
         } catch (e) {
@@ -529,18 +548,19 @@ export default {
         const files = e.target.files
         if (!files || !files.length) return
 
-        // Performance optimization: limit file count for large uploads
-        const MAX_FILES = 500
+        // Performance optimization: allow large selections, then upload in server batches.
+        const MAX_FILES = this.maxFiles
         if (files.length > MAX_FILES) {
           uni.showModal({
             title: '文件数量过多',
-            content: `单次最多支持 ${MAX_FILES} 个文件，您选择了 ${files.length} 个文件。建议分批上传。`,
+            content: `单次最多支持 ${MAX_FILES} 个文件，您选择了 ${files.length} 个文件。`,
             showCancel: false
           })
           return
         }
 
         this.manifest = []
+        this.resetUploadState()
         uni.showLoading({ title: '正在处理文件...' })
 
         // Performance optimization: process files in chunks to avoid UI blocking
@@ -626,13 +646,18 @@ export default {
         uni.showToast({ title: '请先选择文件', icon: 'none' })
         return
       }
+      const validManifest = this.manifest.filter(item => this.validateMetadata(item).isValid && item.content)
+      if (!validManifest.length) {
+        uni.showToast({ title: '没有可上传的有效文件', icon: 'none' })
+        return
+      }
       try {
         this.uploadPending = true
         uni.showLoading({ title: '创建作业...' })
         // Deduplicate manifest by (relativePath + fileName) to avoid duplicate uploads
         const seen = new Set()
         const deduped = []
-        for (const m of this.manifest) {
+        for (const m of validManifest) {
           const key = `${m.relativePath || ''}::${m.fileName || ''}`
           if (!seen.has(key)) {
             seen.add(key)
@@ -644,13 +669,7 @@ export default {
           name: 'bulkUpload',
           data: {
             action: 'createJob',
-            manifest: deduped.map(m => ({
-              fileName: m.fileName,
-              relativePath: m.relativePath || null,
-              content: m.content,
-              extractedMeta: m.extractedMeta
-            })),
-            processNow: true
+            totalFiles: deduped.length
           }
         })
         uni.hideLoading()
@@ -660,8 +679,8 @@ export default {
           this.jobStatus = 'running'
           this.successCount = 0
           this.failCount = 0
-          this.pollJob()
-          uni.showToast({ title: '作业已创建', icon: 'success' })
+          this.hasErrors = false
+          await this.uploadInBatches(deduped)
         } else {
           this.uploadPending = false
           uni.showToast({ title: result.message || '作业创建失败', icon: 'none' })
@@ -672,6 +691,58 @@ export default {
         console.error('startUpload error', err)
         uni.showToast({ title: '上传失败', icon: 'none' })
       }
+    },
+    async uploadInBatches(files) {
+      this.uploadBatchTotal = Math.ceil(files.length / this.uploadBatchSize)
+      for (let i = 0; i < files.length; i += this.uploadBatchSize) {
+        const batch = files.slice(i, i + this.uploadBatchSize)
+        const batchIndex = Math.floor(i / this.uploadBatchSize) + 1
+        const isLastBatch = i + this.uploadBatchSize >= files.length
+        this.uploadBatchIndex = batchIndex
+        uni.showLoading({ title: `上传中 ${batchIndex}/${this.uploadBatchTotal}` })
+
+        const res = await uniCloud.callFunction({
+          name: 'bulkUpload',
+          data: {
+            action: 'processBatch',
+            jobId: this.jobId,
+            batchIndex,
+            isLastBatch,
+            manifest: batch.map(m => ({
+              fileName: m.fileName,
+              relativePath: m.relativePath || null,
+              content: m.content,
+              extractedMeta: m.extractedMeta
+            }))
+          }
+        })
+        const result = (res && res.result) ? res.result : res
+        if (!result || result.code !== 0) {
+          this.jobStatus = 'failed'
+          this.uploadPending = false
+          uni.hideLoading()
+          uni.showModal({
+            title: '上传中断',
+            content: `第 ${batchIndex} 批上传失败。已成功 ${this.successCount} 个，失败 ${this.failCount} 个。请刷新列表确认已入库数据。`,
+            showCancel: false
+          })
+          return
+        }
+        this.successCount = result.data.successCount || this.successCount
+        this.failCount = result.data.failCount || this.failCount
+        if (this.failCount > 0) this.hasErrors = true
+        this.jobStatus = result.data.status || (isLastBatch ? 'completed' : 'running')
+        await new Promise(resolve => setTimeout(resolve, 80))
+      }
+
+      uni.hideLoading()
+      this.uploadPending = false
+      this.jobStatus = 'completed'
+      await this.showCompletionSummary({
+        totalFiles: files.length,
+        successCount: this.successCount,
+        failCount: this.failCount
+      })
     },
     pollJob() {
       if (this.pollTimer) clearInterval(this.pollTimer)
@@ -870,6 +941,18 @@ export default {
     getInvalidFilesCount() {
       return this.manifest.filter(item => !this.validateMetadata(item).isValid).length
     },
+    resetUploadState() {
+      if (this.pollTimer) clearInterval(this.pollTimer)
+      this.pollTimer = null
+      this.jobId = null
+      this.jobStatus = null
+      this.successCount = 0
+      this.failCount = 0
+      this.hasErrors = false
+      this.uploadPending = false
+      this.uploadBatchIndex = 0
+      this.uploadBatchTotal = 0
+    },
     cancelPreview() {
       this.previewVisible = false
       this.previewIndex = -1
@@ -907,8 +990,9 @@ export default {
     },
 
     getProgressPercentage() {
-      if (this.manifestCount === 0) return 0
-      return Math.round((this.totalProcessed / this.manifestCount) * 100)
+      const total = this.getValidFilesCount()
+      if (total === 0) return 0
+      return Math.min(100, Math.round((this.totalProcessed / total) * 100))
     }
   }
 }
@@ -1049,6 +1133,9 @@ export default {
 }
 
 .file-stats {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
   text-align: center;
 }
 
@@ -1056,6 +1143,10 @@ export default {
   font-size: 14px;
   color: #606266;
   font-weight: 500;
+}
+
+.stats-text.error {
+  color: #f56c6c;
 }
 
 /* 文件预览区域 */
