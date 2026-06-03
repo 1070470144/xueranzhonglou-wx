@@ -14,6 +14,10 @@ const TABLES = {
   announcements: 'announcements'
 };
 
+const AI_HTTP_TIMEOUT = 45000;
+const AI_HARD_TIMEOUT = 50000;
+const AI_MAX_TOKENS = 1000;
+
 function ok(data = {}, message = '操作成功') {
   return { success: true, message, data };
 }
@@ -22,8 +26,26 @@ function fail(message = '操作失败', data = {}) {
   return { success: false, message, data };
 }
 
+function isTimeoutError(error) {
+  const text = String((error && (error.message || error.errMsg)) || error || '').toLowerCase();
+  return text.includes('timeout') || text.includes('timed out') || text.includes('etimedout');
+}
+
+function aiErrorMessage(error) {
+  if (isTimeoutError(error)) return 'AI 回复超时，请稍后重试或换用响应更快的模型';
+  return (error && error.message) || 'AI 请求失败，请稍后重试';
+}
+
 function now() {
   return Date.now();
+}
+
+function withTimeout(promise, timeout, message) {
+  let timer;
+  const timeoutPromise = new Promise((resolve, reject) => {
+    timer = setTimeout(() => reject(new Error(message || 'timeout')), timeout);
+  });
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timer));
 }
 
 function cleanText(value, max = 4000) {
@@ -273,9 +295,9 @@ function pickKnowledgeSections(item, question) {
   const picked = keys
     .map(key => sections.find(section => section.key === key))
     .filter(Boolean)
-    .slice(0, 4);
-  if (!picked.length) return cleanText(item.content, 1600);
-  return cleanText(picked.map(section => `【${section.title}】\n${section.content}`).join('\n\n'), 2400);
+    .slice(0, 3);
+  if (!picked.length) return cleanText(item.content, 900);
+  return cleanText(picked.map(section => `【${section.title}】\n${section.content}`).join('\n\n'), 1400);
 }
 
 function knowledgeContext(item, question) {
@@ -297,7 +319,7 @@ function scriptContext(script) {
     `作者：${script.author || ''}`,
     `描述：${script.description || ''}`,
     `JSON/内容：${content}`
-  ].join('\n'), 6000);
+  ].join('\n'), 3200);
 }
 
 function buildPrompt({ question, script, knowledge, corrections = [] }) {
@@ -339,12 +361,13 @@ async function callOpenAiCompatible(config, prompt) {
     method: 'POST',
     dataType: 'json',
     contentType: 'json',
-    timeout: 60000,
+    timeout: AI_HTTP_TIMEOUT,
     headers: {
       Authorization: `Bearer ${config.apiKey}`
     },
     data: {
       model: config.model,
+      max_tokens: Math.min(Number(config.maxTokens || AI_MAX_TOKENS), AI_MAX_TOKENS),
       temperature: Number(config.temperature || 0.2),
       messages: [
         { role: 'system', content: '你是严谨、简洁的血染钟楼知识助手。' },
@@ -371,14 +394,14 @@ async function callClaudeCodeCompatible(config, prompt) {
     method: 'POST',
     dataType: 'json',
     contentType: 'json',
-    timeout: 60000,
+    timeout: AI_HTTP_TIMEOUT,
     headers: {
       'x-api-key': config.apiKey,
       'anthropic-version': '2023-06-01'
     },
     data: {
       model: config.model,
-      max_tokens: Number(config.maxTokens || 2000),
+      max_tokens: Math.min(Number(config.maxTokens || AI_MAX_TOKENS), AI_MAX_TOKENS),
       temperature: Number(config.temperature || 0.2),
       system: '你是严谨、简洁的血染钟楼知识助手。',
       messages: [
@@ -401,10 +424,61 @@ async function callClaudeCodeCompatible(config, prompt) {
 }
 
 async function callAi(config, prompt) {
-  if (config.provider === 'claude-code-compatible') {
-    return callClaudeCodeCompatible(config, prompt);
+  const task = config.provider === 'claude-code-compatible'
+    ? callClaudeCodeCompatible(config, prompt)
+    : callOpenAiCompatible(config, prompt);
+  return withTimeout(task, AI_HARD_TIMEOUT, 'AI request timeout');
+}
+
+async function generateRecordAnswer(record, userId) {
+  if (!record || !record._id) return fail('record not found');
+  if (record.userId !== userId) return fail('record not found');
+  if (record.status === 'success') return ok({ record });
+  if (record.status === 'running') return ok({ record });
+
+  const resolved = await resolveAiConfig(userId);
+  if (!resolved) return fail('AI not configured');
+
+  await db.collection(TABLES.records).doc(record._id).update({
+    status: 'running',
+    errorMessage: '',
+    updateTime: now()
+  });
+
+  const script = await getScript(record.scriptId);
+  const corrections = await searchCorrections(record.question, script);
+  const knowledge = await searchKnowledge(record.question, script);
+  const promptQuestion = corrections.length ? `${correctionPromptPrefix(corrections)}\n用户原始问题：${record.question}` : record.question;
+  const prompt = buildPrompt({ question: promptQuestion, script, knowledge, corrections });
+
+  try {
+    const aiResult = await callAi(resolved.config, prompt);
+    const updateDoc = {
+      answer: aiResult.answer,
+      analysis: aiResult.analysis,
+      references: knowledge.map(item => ({ id: item.id, title: item.title, sourceUrl: item.sourceUrl })),
+      correctionReferences: corrections.map(item => ({ id: item._id, question: item.question || '', score: item.score })),
+      provider: resolved.config.provider || 'openai-compatible',
+      model: resolved.config.model,
+      configSource: resolved.source,
+      status: 'success',
+      errorMessage: '',
+      usedCorrectionIds: corrections.map(item => item._id),
+      correctionMatched: corrections.length > 0,
+      updateTime: now()
+    };
+    await db.collection(TABLES.records).doc(record._id).update(updateDoc);
+    return ok({ record: { ...record, ...updateDoc } });
+  } catch (error) {
+    const message = aiErrorMessage(error);
+    await db.collection(TABLES.records).doc(record._id).update({
+      status: 'failed',
+      errorMessage: message,
+      updateTime: now()
+    });
+    console.error('ai generate failed', error);
+    return fail(message, { recordId: record._id, status: 'failed' });
   }
-  return callOpenAiCompatible(config, prompt);
 }
 
 module.exports = {
@@ -526,6 +600,7 @@ module.exports = {
         provider: 'admin-correction',
         model: 'admin-correction',
         configSource: 'correction',
+        status: 'success',
         isCorrected: false,
         usedCorrectionIds: [directCorrection._id],
         correctionMatched: true,
@@ -541,17 +616,13 @@ module.exports = {
         configSource: record.configSource
       });
     }
-    const knowledge = await searchKnowledge(question, script);
-    const promptQuestion = corrections.length ? `${correctionPromptPrefix(corrections)}\n用户原始问题：${question}` : question;
-    const prompt = buildPrompt({ question: promptQuestion, script, knowledge, corrections });
-    const aiResult = await callAi(resolved.config, prompt);
     const record = {
       userId: auth.user._id,
       email: auth.user.email,
       question,
-      answer: aiResult.answer,
-      analysis: aiResult.analysis,
-      references: knowledge.map(item => ({ id: item.id, title: item.title, sourceUrl: item.sourceUrl })),
+      answer: '',
+      analysis: '',
+      references: [],
       correctionReferences: corrections.map(item => ({ id: item._id, question: item.question || '', score: item.score })),
       scriptId: script ? script._id : '',
       scriptTitle: script ? script.title : '',
@@ -559,6 +630,8 @@ module.exports = {
       provider: resolved.config.provider || 'openai-compatible',
       model: resolved.config.model,
       configSource: resolved.source,
+      status: 'pending',
+      errorMessage: '',
       isCorrected: false,
       usedCorrectionIds: corrections.map(item => item._id),
       correctionMatched: corrections.length > 0,
@@ -567,13 +640,71 @@ module.exports = {
     };
     const addResult = await db.collection(TABLES.records).add(record);
     record._id = addResult.id;
+    const generated = await generateRecordAnswer(record, auth.user._id);
+    if (!generated.success) return generated;
+    const generatedRecord = generated.data && generated.data.record ? generated.data.record : record;
     return ok({
       recordId: addResult.id,
-      answer: record.answer,
-      analysis: record.analysis,
-      references: record.references,
-      configSource: resolved.source
+      status: generatedRecord.status,
+      answer: generatedRecord.answer || '',
+      analysis: generatedRecord.analysis || '',
+      references: generatedRecord.references || [],
+      configSource: generatedRecord.configSource || resolved.source
     });
+  },
+
+  async generateAnswer(params = {}) {
+    const auth = await verifyToken(params.token);
+    if (!auth) return fail('请先登录');
+    const record = await getOwnedRecord(params.id || params.recordId, auth.user._id);
+    if (!record) return fail('记录不存在');
+    if (record.status === 'success') {
+      return ok({ record });
+    }
+
+    const resolved = await resolveAiConfig(auth.user._id);
+    if (!resolved) return fail('AI 未配置，请先配置个人 AI 或等待管理员开启默认 AI');
+
+    await db.collection(TABLES.records).doc(record._id).update({
+      status: 'running',
+      errorMessage: '',
+      updateTime: now()
+    });
+
+    const script = await getScript(record.scriptId);
+    const corrections = await searchCorrections(record.question, script);
+    const knowledge = await searchKnowledge(record.question, script);
+    const promptQuestion = corrections.length ? `${correctionPromptPrefix(corrections)}\n用户原始问题：${record.question}` : record.question;
+    const prompt = buildPrompt({ question: promptQuestion, script, knowledge, corrections });
+
+    try {
+      const aiResult = await callAi(resolved.config, prompt);
+      const updateDoc = {
+        answer: aiResult.answer,
+        analysis: aiResult.analysis,
+        references: knowledge.map(item => ({ id: item.id, title: item.title, sourceUrl: item.sourceUrl })),
+        correctionReferences: corrections.map(item => ({ id: item._id, question: item.question || '', score: item.score })),
+        provider: resolved.config.provider || 'openai-compatible',
+        model: resolved.config.model,
+        configSource: resolved.source,
+        status: 'success',
+        errorMessage: '',
+        usedCorrectionIds: corrections.map(item => item._id),
+        correctionMatched: corrections.length > 0,
+        updateTime: now()
+      };
+      await db.collection(TABLES.records).doc(record._id).update(updateDoc);
+      return ok({ record: { ...record, ...updateDoc } });
+    } catch (error) {
+      const message = aiErrorMessage(error);
+      await db.collection(TABLES.records).doc(record._id).update({
+        status: 'failed',
+        errorMessage: message,
+        updateTime: now()
+      });
+      console.error('ai generate failed', error);
+      return fail(message, { recordId: record._id, status: 'failed' });
+    }
   },
 
   async history(params = {}) {

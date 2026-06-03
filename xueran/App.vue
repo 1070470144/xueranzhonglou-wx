@@ -1,6 +1,9 @@
 <script>
+	import { installSilentDefaultLoading } from '@/utils/silentLoading.js';
+
 	export default {
 		onLaunch: function() {
+			installSilentDefaultLoading();
 			console.log('App Launch')
 		},
 		onShow: function() {

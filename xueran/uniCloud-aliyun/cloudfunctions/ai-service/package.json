@@ -1,0 +1,10 @@
+{
+  "name": "ai-service",
+  "version": "1.0.0",
+  "description": "AI cloud object",
+  "main": "index.obj.js",
+  "cloudfunction-config": {
+    "timeout": 60,
+    "memorySize": 512
+  }
+}

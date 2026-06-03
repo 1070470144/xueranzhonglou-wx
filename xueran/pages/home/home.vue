@@ -76,6 +76,10 @@
           {{ asking ? '...' : '↑' }}
         </button>
       </view>
+      <view v-if="asking" class="generating-status">
+        <text class="generating-dot"></text>
+        <text class="generating-text">{{ generatingText }}</text>
+      </view>
     </view>
 
     <view v-if="answer" class="answer-card slide-up">
@@ -101,7 +105,7 @@
 
 <script>
 import { isLoggedIn } from '@/utils/auth.js';
-import { askAi, getAiAvailability, getAiScripts, listAnnouncements } from '@/utils/aiApi.js';
+import { askAi, generateAiAnswer, getAiAvailability, getAiScripts, getQuestionRecord, listAnnouncements } from '@/utils/aiApi.js';
 
 const HOME_CACHE_TTL = 60 * 1000;
 const homeCache = {
@@ -129,6 +133,10 @@ export default {
       analysis: '',
       answerSource: '',
       references: [],
+      activeRecordId: '',
+      answerPollTimer: null,
+      generatingTimer: null,
+      generatingSeconds: 0,
       announcements: []
     };
   },
@@ -141,6 +149,9 @@ export default {
     },
     canAsk() {
       return this.loggedIn && this.available && this.question.trim().length > 0;
+    },
+    generatingText() {
+      return this.getGeneratingText();
     }
   },
   onShow() {
@@ -150,6 +161,8 @@ export default {
   },
   onUnload() {
     if (this.scriptSearchTimer) clearTimeout(this.scriptSearchTimer);
+    this.stopAnswerPolling();
+    this.stopGeneratingTimer();
   },
   methods: {
     hydrateHomeCache() {
@@ -255,29 +268,135 @@ export default {
         return;
       }
       if (!this.canAsk || this.asking) return;
+      const submittedQuestion = this.question.trim();
       this.asking = true;
       this.answer = '';
       this.analysis = '';
       this.references = [];
+      this.startGeneratingTimer();
+      uni.hideLoading();
+      if (typeof wx !== 'undefined') wx.hideLoading();
       try {
         const selected = this.selectedScript;
         const res = await askAi({
-          question: this.question.trim(),
+          question: submittedQuestion,
           scriptId: selected && selected.id ? selected.id : ''
         });
         if (!res.success) {
-          uni.showToast({ title: res.message || '提问失败', icon: 'none' });
+          console.error('askAi result failed:', res);
+          this.answer = '';
+          this.analysis = '';
+          this.references = [];
+          uni.showToast({ title: res.message || '提问失败，请重试', icon: 'none' });
           return;
         }
         const data = res.data || {};
+        this.activeRecordId = data.recordId || '';
         this.answer = data.answer || '';
         this.analysis = data.analysis || '';
         this.references = data.references || [];
         this.answerSource = data.configSource === 'user' ? '使用个人配置' : '使用默认配置';
+        if (data.answer || data.status === 'success') {
+          this.finishAsking(true);
+        } else if (this.activeRecordId) {
+          const answerRes = await generateAiAnswer(this.activeRecordId);
+          if (!answerRes.success) {
+            console.error('generateAiAnswer result failed:', answerRes);
+            this.answer = answerRes.message || 'AI 生成失败，请稍后重试';
+            this.finishAsking();
+            return;
+          }
+          const answerData = answerRes.data || {};
+          const record = answerData.record || answerData;
+          if (record.status === 'success' || record.answer) {
+            this.answer = record.answer || '';
+            this.analysis = record.analysis || '';
+            this.references = record.references || [];
+            this.answerSource = record.configSource === 'user' ? '使用个人配置' : '使用默认配置';
+            this.finishAsking(true);
+          } else if (record.status === 'failed') {
+            this.answer = record.errorMessage || answerRes.message || 'AI 生成失败，请稍后重试';
+            this.analysis = '';
+            this.references = [];
+            this.finishAsking();
+          } else {
+            this.startAnswerPolling(this.activeRecordId);
+          }
+        }
       } catch (error) {
+        this.answer = '';
+        this.analysis = '';
+        this.references = [];
         uni.showToast({ title: '提问失败，请稍后重试', icon: 'none' });
+        this.stopGeneratingTimer();
       } finally {
-        this.asking = false;
+        if (!this.answerPollTimer) {
+          this.finishAsking();
+        }
+      }
+    },
+    finishAsking(clearQuestion = false) {
+      this.asking = false;
+      this.stopGeneratingTimer();
+      if (clearQuestion) this.question = '';
+    },
+    getGeneratingText() {
+      return `AI 正在生成中 ${this.generatingSeconds}s`;
+    },
+    startGeneratingTimer() {
+      this.stopGeneratingTimer();
+      this.generatingSeconds = 0;
+      this.answer = '';
+      this.generatingTimer = setInterval(() => {
+        this.generatingSeconds += 1;
+      }, 1000);
+    },
+    stopGeneratingTimer() {
+      if (this.generatingTimer) {
+        clearInterval(this.generatingTimer);
+        this.generatingTimer = null;
+      }
+    },
+    startAnswerPolling(recordId) {
+      this.stopAnswerPolling();
+      let times = 0;
+      this.answerPollTimer = setInterval(() => {
+        times += 1;
+        this.loadAnswerRecord(recordId);
+        if (times >= 30) {
+          this.stopAnswerPolling();
+          this.answer = 'AI 仍在生成中，请稍后在历史记录查看';
+          this.finishAsking();
+        }
+      }, 1500);
+    },
+    stopAnswerPolling() {
+      if (this.answerPollTimer) {
+        clearInterval(this.answerPollTimer);
+        this.answerPollTimer = null;
+      }
+    },
+    async loadAnswerRecord(recordId) {
+      if (!recordId) return;
+      const res = await getQuestionRecord(recordId);
+      if (!res.success || !res.data || !res.data.record) return;
+      const record = res.data.record;
+      if (record.status === 'success' || record.answer) {
+        this.answer = record.answer || '';
+        this.analysis = record.analysis || '';
+        this.references = record.references || [];
+        this.answerSource = record.configSource === 'user' ? '使用个人配置' : '使用默认配置';
+        this.stopAnswerPolling();
+        this.finishAsking();
+        this.question = '';
+        return;
+      }
+      if (record.status === 'failed') {
+        this.answer = record.errorMessage || 'AI 生成失败，请稍后重试';
+        this.analysis = '';
+        this.references = [];
+        this.stopAnswerPolling();
+        this.finishAsking();
       }
     },
     goLogin() {
@@ -597,6 +716,32 @@ export default {
   align-items: center;
   justify-content: space-between;
   gap: 18rpx;
+}
+
+.generating-status {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  margin-top: 14rpx;
+  color: #666;
+  font-size: 24rpx;
+}
+
+.generating-dot {
+  width: 14rpx;
+  height: 14rpx;
+  border-radius: 50%;
+  background: #007AFF;
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.generating-text {
+  line-height: 1.4;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.35; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1); }
 }
 
 .composer-scope {
