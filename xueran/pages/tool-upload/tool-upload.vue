@@ -21,6 +21,21 @@
       </view>
 
       <view class="field">
+        <text class="field-label">剧本类型</text>
+        <view class="type-segment">
+          <view
+            v-for="type in scriptTypes"
+            :key="type"
+            class="type-option"
+            :class="{ active: scriptType === type }"
+            @tap="scriptType = type"
+          >
+            {{ type }}
+          </view>
+        </view>
+      </view>
+
+      <view class="field">
         <text class="field-label">JSON 文件</text>
         <button class="plain-btn" @tap="chooseJsonFile">选择 JSON 文件</button>
         <view v-if="jsonFileName" class="file-status" :class="jsonFileStatus">
@@ -57,6 +72,8 @@ export default {
       jsonFileName: '',
       jsonFileText: '',
       jsonFileStatus: '',
+      scriptType: '推理',
+      scriptTypes: ['推理', '娱乐'],
       selectedImages: [],
       submitting: false
     };
@@ -217,6 +234,9 @@ export default {
       if (!data.title || typeof data.title !== 'string') {
         throw new Error('JSON 必须包含 title 或 name 字段');
       }
+      data.tag = this.scriptType;
+      data.genre = this.scriptType;
+      data.category = this.scriptType;
       return data;
     },
 
@@ -251,7 +271,7 @@ export default {
       uni.showLoading({ title: '提交中' });
       try {
         const images = await this.uploadImages();
-        const result = await uploadUserScript({ jsonData, images });
+        const result = await uploadUserScript({ jsonData, images, scriptType: this.scriptType });
         if (!result.success) {
           uni.showToast({ title: result.message || '上传失败', icon: 'none' });
           return;
@@ -399,6 +419,30 @@ export default {
   padding: 16rpx;
   border-radius: 12rpx;
   background: #f8f8f8;
+}
+
+.type-segment {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12rpx;
+}
+
+.type-option {
+  height: 72rpx;
+  line-height: 72rpx;
+  text-align: center;
+  border-radius: 12rpx;
+  border: 1rpx solid #d8d1c9;
+  background: #faf9f7;
+  color: #4b4038;
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.type-option.active {
+  border-color: #007aff;
+  background: #eef6ff;
+  color: #007aff;
 }
 
 .file-name {

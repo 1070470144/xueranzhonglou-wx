@@ -18,6 +18,24 @@
         </view>
         <text class="arrow">›</text>
       </view>
+
+      <view class="tool-item" @tap="openTool('/pages/tool-exam/tool-exam')">
+        <view class="tool-icon exam">考</view>
+        <view class="tool-main">
+          <text class="tool-title">模拟考</text>
+          <text class="tool-desc">1星、2星限时考试，自动记录成绩</text>
+        </view>
+        <text class="arrow">›</text>
+      </view>
+
+      <view class="tool-item" @tap="openTool('/pages/tool-practice/tool-practice')">
+        <view class="tool-icon practice">练</view>
+        <view class="tool-main">
+          <text class="tool-title">做题</text>
+          <text class="tool-desc">随机练习一星、二星和收藏题</text>
+        </view>
+        <text class="arrow">›</text>
+      </view>
     </view>
   </view>
 </template>
@@ -77,6 +95,16 @@ export default {
 .tool-icon.rank {
   color: #8a5a00;
   background: #fff4d8;
+}
+
+.tool-icon.exam {
+  color: #b42318;
+  background: #fff0ed;
+}
+
+.tool-icon.practice {
+  color: #0f766e;
+  background: #ecfdf3;
 }
 
 .tool-main {

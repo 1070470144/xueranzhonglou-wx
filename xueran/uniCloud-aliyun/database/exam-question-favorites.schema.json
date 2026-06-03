@@ -1,0 +1,16 @@
+{
+  "bsonType": "object",
+  "required": ["userId", "questionId"],
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  },
+  "properties": {
+    "_id": { "description": "收藏 ID" },
+    "userId": { "bsonType": "string", "description": "用户 ID" },
+    "questionId": { "bsonType": "string", "description": "题目 ID" },
+    "createTime": { "bsonType": "timestamp" }
+  }
+}

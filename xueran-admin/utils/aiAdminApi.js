@@ -64,6 +64,10 @@ export async function listQuestionRecords(params) {
   return normalize(await aiAdminService.listQuestionRecords(params));
 }
 
+export async function getQuestionRecord(id) {
+  return normalize(await aiAdminService.getQuestionRecord(id));
+}
+
 export async function correctAnswer(params) {
   return normalize(await aiAdminService.correctAnswer(params));
 }

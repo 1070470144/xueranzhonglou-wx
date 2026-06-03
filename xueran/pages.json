@@ -39,6 +39,18 @@
       }
     },
     {
+      "path": "pages/tool-exam/tool-exam",
+      "style": {
+        "navigationBarTitleText": "模拟考"
+      }
+    },
+    {
+      "path": "pages/tool-practice/tool-practice",
+      "style": {
+        "navigationBarTitleText": "做题"
+      }
+    },
+    {
       "path": "pages/profile/profile",
       "style": {
         "navigationBarTitleText": "我的"
@@ -88,6 +100,20 @@
       "path": "pages/my-upload-detail/my-upload-detail",
       "style": {
         "navigationBarTitleText": "上传详情"
+      }
+    },
+    {
+      "path": "pages/exam-config/exam-config",
+      "style": {
+        "navigationBarTitleText": "模拟考配置",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/exam-records/exam-records",
+      "style": {
+        "navigationBarTitleText": "模拟考记录",
+        "enablePullDownRefresh": true
       }
     }
   ],

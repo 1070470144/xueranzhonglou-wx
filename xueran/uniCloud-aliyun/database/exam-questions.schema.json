@@ -1,0 +1,24 @@
+{
+  "bsonType": "object",
+  "required": ["userId", "level", "type", "title", "answer"],
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  },
+  "properties": {
+    "_id": { "description": "题目 ID" },
+    "userId": { "bsonType": "string", "description": "所属用户 ID" },
+    "level": { "bsonType": "int", "enum": [1, 2], "description": "星级" },
+    "type": { "bsonType": "string", "enum": ["choice", "judge"], "description": "题型" },
+    "title": { "bsonType": "string", "description": "题干" },
+    "images": { "bsonType": "array", "description": "题干图片" },
+    "options": { "bsonType": "array", "description": "选项" },
+    "answer": { "bsonType": "string", "description": "正确答案" },
+    "explanation": { "bsonType": "string", "description": "解析" },
+    "status": { "bsonType": "string", "enum": ["active", "inactive"], "default": "active" },
+    "createTime": { "bsonType": "timestamp" },
+    "updateTime": { "bsonType": "timestamp" }
+  }
+}

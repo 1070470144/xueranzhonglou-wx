@@ -1,0 +1,12 @@
+[
+  {
+    "IndexName": "user_create_time_idx",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        { "Name": "userId", "Direction": "1" },
+        { "Name": "createTime", "Direction": "-1" }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

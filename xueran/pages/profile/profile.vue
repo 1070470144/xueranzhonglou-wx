@@ -78,6 +78,28 @@
         <view class="arrow"></view>
       </view>
 
+      <view class="feature-item" @click="goToExamConfig">
+        <view class="feature-icon blue-soft">
+          <text class="feature-icon-text">题</text>
+        </view>
+        <view class="feature-content">
+          <view class="feature-title">模拟考配置</view>
+          <view class="feature-desc">维护个人题库、答案和题图</view>
+        </view>
+        <view class="arrow"></view>
+      </view>
+
+      <view class="feature-item" @click="goToExamRecords">
+        <view class="feature-icon green-soft">
+          <text class="feature-icon-text">绩</text>
+        </view>
+        <view class="feature-content">
+          <view class="feature-title">模拟考记录</view>
+          <view class="feature-desc">搜索、查看、删除考试成绩</view>
+        </view>
+        <view class="arrow"></view>
+      </view>
+
       <view class="feature-item last">
         <view class="feature-icon gray-soft">
           <text class="feature-icon-text">设</text>
@@ -151,6 +173,16 @@ export default {
     goToAiConfig() {
       uni.navigateTo({
         url: '/pages/ai-config/ai-config'
+      });
+    },
+    goToExamConfig() {
+      uni.navigateTo({
+        url: '/pages/exam-config/exam-config'
+      });
+    },
+    goToExamRecords() {
+      uni.navigateTo({
+        url: '/pages/exam-records/exam-records'
       });
     }
   }

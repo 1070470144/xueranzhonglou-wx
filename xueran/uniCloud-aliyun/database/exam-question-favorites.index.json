@@ -1,0 +1,12 @@
+[
+  {
+    "IndexName": "user_question_unique_idx",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        { "Name": "userId", "Direction": "1" },
+        { "Name": "questionId", "Direction": "1" }
+      ],
+      "MgoIsUnique": true
+    }
+  }
+]

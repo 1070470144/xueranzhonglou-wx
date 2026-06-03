@@ -3,6 +3,24 @@
 const db = uniCloud.database();
 const $ = db.command.aggregate;
 
+function getCoverImage(item) {
+  let coverImage = null;
+  if (Array.isArray(item.thumbnails) && item.thumbnails.length) {
+    coverImage = item.thumbnails[0];
+  } else if (item.thumbnail && typeof item.thumbnail === 'string') {
+    coverImage = item.thumbnail;
+  } else if (Array.isArray(item.images)) {
+    const img = item.images.find(img =>
+      (typeof img === 'string' && img.trim().length > 0) ||
+      (typeof img === 'object' && img !== null && (img.url || img.fileId))
+    );
+    if (img) {
+      coverImage = typeof img === 'string' ? img : (img.url || img.fileId);
+    }
+  }
+  return coverImage;
+}
+
 /**
  * getRankings cloud function
  * 获取排行榜数据
@@ -95,9 +113,77 @@ exports.main = async (event, context) => {
  */
 async function getUsageRankings(limit) {
   try {
+    const usageResult = await db.collection('script-usage-records')
+      .aggregate()
+      .group({
+        _id: '$scriptId',
+        value: $.sum(1),
+        totalCount: $.sum('$count')
+      })
+      .sort({ value: -1, totalCount: -1 })
+      .limit(limit * 3)
+      .end();
+
+    const usageRows = (usageResult.data || []).filter(item => item && item._id);
+    if (!usageRows.length) {
+      return await getUsageCountRankings(limit);
+    }
+
+    const scriptIds = usageRows.map(item => item._id);
+    const scriptResult = await db.collection('scripts')
+      .where({
+        _id: db.command.in(scriptIds),
+        status: db.command.in(['active', 'published'])
+      })
+      .field({
+        _id: 1,
+        title: 1,
+        author: 1,
+        usageCount: 1,
+        images: 1,
+        thumbnails: 1,
+        thumbnail: 1
+      })
+      .get();
+
+    const scriptMap = {};
+    (scriptResult.data || []).forEach(item => {
+      scriptMap[item._id] = item;
+    });
+
+    const rankings = [];
+    usageRows.forEach(row => {
+      const script = scriptMap[row._id];
+      if (!script || rankings.length >= limit) return;
+      const index = rankings.length;
+      rankings.push({
+        rank: index + 1,
+        scriptId: script._id,
+        title: script.title || '未命名剧本',
+        author: script.author || '未知作者',
+        value: row.value || 0,
+        totalCount: row.totalCount || 0,
+        coverImage: getCoverImage(script),
+        medal: index < 3 ? ['🥇', '🥈', '🥉'][index] : null
+      });
+    });
+
+    if (!rankings.length) {
+      return await getUsageCountRankings(limit);
+    }
+
+    return rankings;
+  } catch (error) {
+    console.warn('getUsageRankings user record fallback:', error);
+    return await getUsageCountRankings(limit);
+  }
+}
+
+async function getUsageCountRankings(limit) {
+  try {
     const result = await db.collection('scripts')
       .where({
-        status: 'active' // 只显示激活状态的剧本
+        status: db.command.in(['active', 'published'])
       })
       .orderBy('usageCount', 'desc')
       .limit(limit)
@@ -113,36 +199,20 @@ async function getUsageRankings(limit) {
       .get();
 
     return result.data.map((item, index) => {
-      // 处理封面图片
-      let coverImage = null;
-      if (Array.isArray(item.thumbnails) && item.thumbnails.length) {
-        coverImage = item.thumbnails[0];
-      } else if (item.thumbnail && typeof item.thumbnail === 'string') {
-        coverImage = item.thumbnail;
-      } else if (Array.isArray(item.images)) {
-        const img = item.images.find(img =>
-          typeof img === 'string' && img.trim().length > 0 ||
-          (typeof img === 'object' && img !== null && (img.url || img.fileId))
-        );
-        if (img) {
-          coverImage = typeof img === 'string' ? img : (img.url || img.fileId);
-        }
-      }
-
       return {
         rank: index + 1,
         scriptId: item._id,
         title: item.title || '未命名剧本',
         author: item.author || '未知作者',
         value: item.usageCount || 0,
-        coverImage: coverImage,
+        coverImage: getCoverImage(item),
         medal: index < 3 ? ['🥇', '🥈', '🥉'][index] : null
       };
     });
 
   } catch (error) {
-    console.error('getUsageRankings error:', error);
-    console.error('getUsageRankings stack:', error.stack);
+    console.error('getUsageCountRankings error:', error);
+    console.error('getUsageCountRankings stack:', error.stack);
     throw error;
   }
 }
@@ -334,7 +404,7 @@ async function getGenreRankings(limit, genreTag) {
   try {
     const result = await db.collection('scripts')
       .where({
-        status: 'active',
+        status: db.command.in(['active', 'published']),
         tag: genreTag
       })
       .orderBy('usageCount', 'desc')

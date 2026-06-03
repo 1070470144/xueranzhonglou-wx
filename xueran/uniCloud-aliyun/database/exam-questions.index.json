@@ -1,0 +1,13 @@
+[
+  {
+    "IndexName": "user_level_update_idx",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        { "Name": "userId", "Direction": "1" },
+        { "Name": "level", "Direction": "1" },
+        { "Name": "updateTime", "Direction": "-1" }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

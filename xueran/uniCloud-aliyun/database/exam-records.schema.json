@@ -1,0 +1,24 @@
+{
+  "bsonType": "object",
+  "required": ["userId", "level", "score", "totalScore", "createTime"],
+  "permission": {
+    "read": false,
+    "create": false,
+    "update": false,
+    "delete": false
+  },
+  "properties": {
+    "_id": { "description": "考试记录 ID" },
+    "userId": { "bsonType": "string", "description": "用户 ID" },
+    "level": { "bsonType": "int", "enum": [1, 2] },
+    "questionCount": { "bsonType": "int" },
+    "scorePerQuestion": { "bsonType": "int" },
+    "totalScore": { "bsonType": "int" },
+    "score": { "bsonType": "int" },
+    "correctCount": { "bsonType": "int" },
+    "wrongCount": { "bsonType": "int" },
+    "durationSeconds": { "bsonType": "int" },
+    "answers": { "bsonType": "array", "description": "答题明细" },
+    "createTime": { "bsonType": "timestamp" }
+  }
+}

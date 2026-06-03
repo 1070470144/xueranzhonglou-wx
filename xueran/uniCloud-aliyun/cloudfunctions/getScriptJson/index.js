@@ -1,5 +1,60 @@
 'use strict';
 
+async function verifyAppUser(db, token) {
+  if (!token) return null;
+
+  const sessionRes = await db.collection('auth-sessions')
+    .where({ token })
+    .limit(1)
+    .get();
+  const session = sessionRes.data && sessionRes.data[0];
+  if (!session || (session.expireTime && session.expireTime <= Date.now())) {
+    return null;
+  }
+
+  const userRes = await db.collection('app-users').doc(session.userId).get();
+  const user = userRes.data && userRes.data[0];
+  if (!user || user.status === 'disabled') return null;
+  return user;
+}
+
+async function recordUserScriptUsage(db, token, scriptId) {
+  try {
+    const user = await verifyAppUser(db, token);
+    if (!user) return false;
+
+    const now = Date.now();
+    const collection = db.collection('script-usage-records');
+    const existing = await collection
+      .where({ userId: user._id, scriptId })
+      .limit(1)
+      .get();
+    const record = existing.data && existing.data[0];
+
+    if (record && record._id) {
+      await collection.doc(record._id).update({
+        count: db.command.inc(1),
+        lastUsedAt: now,
+        updateTime: now
+      });
+      return true;
+    }
+
+    await collection.add({
+      userId: user._id,
+      scriptId,
+      count: 1,
+      lastUsedAt: now,
+      createTime: now,
+      updateTime: now
+    });
+    return true;
+  } catch (error) {
+    console.warn('Failed to record user script usage:', scriptId, error);
+    return false;
+  }
+}
+
 /**
  * getScriptJson 云函数 - 公开接口，供血染钟楼客户端直接使用
  * 返回纯JSON格式的剧本数据，可直接在游戏中导入
@@ -50,6 +105,7 @@ exports.main = async (event, context) => {
   let scriptId = null;
   let download = false;
   let link = false;
+  let token = '';
   try {
     // 检查是否需要下载模式（返回文件下载响应）
     download = (event && (event.download === 'true' || event.download === true)) ||
@@ -80,9 +136,15 @@ exports.main = async (event, context) => {
     if (!scriptId && event && event.params && event.params.length) {
       scriptId = event.params[0] || null;
     }
+    token = (event && event.token) ||
+      (event && event.query && event.query.token) ||
+      (event && event.queryStringParameters && event.queryStringParameters.token) ||
+      (event && event.args && event.args.queryStringParameters && event.args.queryStringParameters.token) ||
+      '';
   } catch (e) {
     scriptId = null;
     download = false;
+    token = '';
   }
 
   if (!scriptId) {
@@ -103,7 +165,8 @@ exports.main = async (event, context) => {
       .doc(scriptId)
       .field({
         content: true,
-        status: true
+        status: true,
+        usageCount: true
       })
       .get();
 
@@ -230,7 +293,7 @@ exports.main = async (event, context) => {
 
           // 统计使用次数 - 使用原子操作确保并发安全
           let usageUpdated = false;
-          let newUsageCount = resultData.usageCount || 0;
+          let newUsageCount = script.usageCount || 0;
           try {
             await db.collection('scripts').doc(scriptId).update({
               usageCount: db.command.inc(1),
@@ -238,6 +301,7 @@ exports.main = async (event, context) => {
             });
             newUsageCount += 1;
             usageUpdated = true;
+            await recordUserScriptUsage(db, token, scriptId);
           } catch (usageErr) {
             console.warn('Failed to update usage count for script:', scriptId, usageErr);
             // 不影响主要功能，继续返回JSON数据

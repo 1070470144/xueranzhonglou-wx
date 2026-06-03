@@ -2,25 +2,29 @@
 	<view class="fix-top-window">
 		<view class="uni-header">
 			<uni-stat-breadcrumb />
-			<view class="uni-group">
-				<input class="uni-search" type="text" v-model="searchKeyword" @confirm="handleSearch" placeholder="搜索剧本标题、作者或描述" />
-				<button class="uni-button hide-on-phone" type="default" size="mini" @click="handleSearch">搜索</button>
-				<select class="uni-select" v-model="statusFilter" @change="handleFilterChange">
-					<option value="">全部状态</option>
-					<option value="published">已上架</option>
-					<option value="pending">待审核</option>
-					<option value="rejected">已拒绝</option>
-					<option value="inactive">已下架</option>
-				</select>
-				<select class="uni-select" v-model="sourceFilter" @change="handleFilterChange">
-					<option value="">全部来源</option>
-					<option value="user_upload">用户上传</option>
-					<option value="admin_upload">后台上传</option>
-					<option value="system_seed">系统数据</option>
-				</select>
-				<button class="uni-button" type="primary" size="mini" @click="navigateTo('./bulk-upload')">批量上传</button>
-				<button class="uni-button" type="primary" size="mini" @click="navigateTo('./edit')">新增剧本</button>
-				<button class="uni-button" type="warn" size="mini" @click="handleBatchDelete">批量删除</button>
+			<view class="scripts-toolbar">
+				<view class="toolbar-filters">
+					<input class="uni-search script-search" type="text" v-model="searchKeyword" @confirm="handleSearch" placeholder="搜索剧本标题、作者或描述" />
+					<button class="uni-button hide-on-phone" type="default" size="mini" @click="handleSearch">搜索</button>
+					<select class="uni-select script-select" v-model="statusFilter" @change="handleFilterChange">
+						<option value="">全部状态</option>
+						<option value="published">已上架</option>
+						<option value="pending">待审核</option>
+						<option value="rejected">已拒绝</option>
+						<option value="inactive">已下架</option>
+					</select>
+					<select class="uni-select script-select" v-model="sourceFilter" @change="handleFilterChange">
+						<option value="">全部来源</option>
+						<option value="user_upload">用户上传</option>
+						<option value="admin_upload">后台上传</option>
+						<option value="system_seed">系统数据</option>
+					</select>
+				</view>
+				<view class="toolbar-actions">
+					<button class="uni-button" type="primary" size="mini" @click="navigateTo('./bulk-upload')">批量上传</button>
+					<button class="uni-button" type="primary" size="mini" @click="navigateTo('./edit')">新增剧本</button>
+					<button class="uni-button danger-button" type="warn" size="mini" @click="handleBatchDelete">批量删除</button>
+				</view>
 			</view>
 		</view>
 
@@ -39,10 +43,16 @@
 
 			<!-- 数据列表 -->
 			<view v-else>
-				<uni-table ref="table" border stripe type="selection" row-key="_id" @selection-change="handleSelectionChange">
+				<view class="list-summary">
+					<text class="summary-main">共 {{ totalCount }} 个剧本</text>
+					<text v-if="selectedScripts.length" class="summary-selected">已选 {{ selectedScripts.length }} 个</text>
+				</view>
+				<view class="script-table-card">
+				<scroll-view scroll-x class="script-table-scroll">
+				<uni-table class="scripts-table" ref="table" border stripe type="selection" row-key="_id" @selection-change="handleSelectionChange">
 					<uni-tr>
-						<uni-th align="center">剧本标题</uni-th>
-						<uni-th align="center">作者</uni-th>
+						<uni-th align="left">剧本</uni-th>
+						<uni-th align="left">作者</uni-th>
 						<uni-th align="center">状态</uni-th>
 						<uni-th align="center">来源</uni-th>
 						<uni-th align="center">上传用户</uni-th>
@@ -56,8 +66,13 @@
 						<uni-th align="center">操作</uni-th>
 					</uni-tr>
 					<uni-tr v-for="(item, index) in scriptList" :key="item._id">
-						<uni-td align="center">{{ item.title }}</uni-td>
-						<uni-td align="center">{{ item.author }}</uni-td>
+						<uni-td align="left">
+							<view class="script-title-cell">
+								<text class="script-title">{{ item.title || '-' }}</text>
+								<text v-if="item.description" class="script-desc">{{ item.description }}</text>
+							</view>
+						</uni-td>
+						<uni-td align="left">{{ item.author || '-' }}</uni-td>
 						<uni-td align="center">
 							<button
 								v-if="isPendingState(item)"
@@ -111,16 +126,18 @@
 							<uni-dateformat :date="item.updateTime" />
 						</uni-td>
 						<uni-td align="center">
-							<view class="uni-group">
+							<view class="script-actions">
 								<button v-if="canReview(item)" @click="handleReview(item, 'approve')" class="uni-button" size="mini" type="primary">通过</button>
-								<button v-if="canReview(item)" @click="handleReview(item, 'reject')" class="uni-button" size="mini" type="warn">拒绝</button>
+								<button v-if="canReview(item)" @click="handleReview(item, 'reject')" class="uni-button danger-button" size="mini" type="warn">拒绝</button>
 								<button @click="openPreview(item)" class="uni-button" size="mini" type="default">查看</button>
 								<button @click="navigateTo('./edit?id=' + item._id)" class="uni-button" size="mini" type="primary">编辑</button>
-								<button @click="handleDelete(item._id)" class="uni-button" size="mini" type="warn">删除</button>
+								<button @click="handleDelete(item._id)" class="uni-button danger-button" size="mini" type="warn">删除</button>
 							</view>
 						</uni-td>
 					</uni-tr>
 				</uni-table>
+				</scroll-view>
+				</view>
 
 				<!-- 分页控件 -->
 				<view v-if="totalCount > 0" class="uni-pagination-box">
@@ -644,6 +661,117 @@ export default {
 </script>
 
 <style>
+.scripts-toolbar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	width: 100%;
+	flex-wrap: wrap;
+}
+
+.toolbar-filters,
+.toolbar-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+.toolbar-filters {
+	flex: 1;
+	min-width: 420px;
+}
+
+.toolbar-actions {
+	justify-content: flex-end;
+}
+
+.script-search {
+	min-width: 260px;
+	max-width: 420px;
+	flex: 1;
+}
+
+.script-select {
+	min-width: 120px;
+}
+
+.list-summary {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 12px;
+	padding: 0 2px;
+}
+
+.summary-main {
+	font-size: 14px;
+	font-weight: 600;
+	color: #303133;
+}
+
+.summary-selected {
+	font-size: 13px;
+	color: #409eff;
+}
+
+.script-table-card {
+	background: #fff;
+	border: 1px solid #ebeef5;
+	border-radius: 6px;
+	overflow: hidden;
+}
+
+.script-table-scroll {
+	width: 100%;
+}
+
+.scripts-table {
+	min-width: 1320px;
+}
+
+.script-title-cell {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	max-width: 260px;
+}
+
+.script-title {
+	font-size: 14px;
+	font-weight: 600;
+	line-height: 1.4;
+	color: #303133;
+	word-break: break-word;
+}
+
+.script-desc {
+	display: -webkit-box;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	font-size: 12px;
+	line-height: 1.45;
+	color: #909399;
+	word-break: break-word;
+}
+
+.script-actions {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	min-width: 210px;
+	flex-wrap: nowrap;
+}
+
+.danger-button {
+	background-color: #f56c6c;
+	border-color: #f56c6c;
+}
+
 .loading-container,
 .error-container,
 .empty-container {

@@ -48,6 +48,13 @@
 			}
 		},
 		{
+			"path": "pages/admin/ai/record-detail",
+			"style": {
+				"navigationBarTitleText": "问答详情",
+				"navigationStyle": "default"
+			}
+		},
+		{
 			"path": "pages/admin/scripts/list",
 			"style": {
 				"navigationBarTitleText": "剧本管理"

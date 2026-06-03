@@ -432,6 +432,7 @@
 
 <script>
 import { likeScript, unlikeScript, initScriptLikeStatus } from '@/utils/api.js';
+import { getAuthToken } from '@/utils/auth.js';
 
 export default {
 	data() {
@@ -854,6 +855,7 @@ export default {
 					data: {
 						scriptId: this.scriptId,
 						link: true,
+						token: getAuthToken(),
 						format: 'pretty'
 					}
 				});

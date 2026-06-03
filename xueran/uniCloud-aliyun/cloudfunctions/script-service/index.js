@@ -574,6 +574,11 @@ function normalizeUploadedScriptData(jsonData) {
 async function userUploadScript(data) {
   const { token, images = [] } = data || {}
   const jsonData = normalizeUploadedScriptData(data && data.jsonData)
+  const requestedType = data && data.scriptType
+  const jsonType = jsonData && (jsonData.tag || jsonData.genre || jsonData.category)
+  const scriptType = ['推理', '娱乐'].includes(requestedType)
+    ? requestedType
+    : (['推理', '娱乐'].includes(jsonType) ? jsonType : '推理')
 
   if (!jsonData || typeof jsonData !== 'object') {
     return { success: false, message: 'Invalid JSON data' }
@@ -602,6 +607,9 @@ async function userUploadScript(data) {
       images: uploadedImages,
       thumbnails: uploadedImages,
       thumbnail: uploadedImages[0] || jsonData.thumbnail || '',
+      tag: scriptType,
+      genre: scriptType,
+      category: scriptType,
       ownerUserId: user._id,
       ownerNickname,
       source: 'user_upload',

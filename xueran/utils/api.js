@@ -130,14 +130,14 @@ export async function getFavoriteScripts({ page = 1, pageSize = 10, q = '' } = {
   }
 }
 
-export async function uploadUserScript({ jsonData, images = [] } = {}) {
+export async function uploadUserScript({ jsonData, images = [], scriptType = '推理' } = {}) {
   const token = requireToken('/pages/rankings/rankings');
   if (!token) {
     return { success: false, message: '请先登录后上传' };
   }
 
   try {
-    const result = await callScriptService('userUploadScript', { token, jsonData, images });
+    const result = await callScriptService('userUploadScript', { token, jsonData, images, scriptType });
     if (result && result.success) {
       return result;
     }

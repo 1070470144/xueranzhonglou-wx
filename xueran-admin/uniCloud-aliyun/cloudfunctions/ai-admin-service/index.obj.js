@@ -583,18 +583,46 @@ module.exports = {
     const page = positiveInt(params.page, 1);
     const pageSize = positiveInt(params.pageSize, 20, 100);
     const keyword = cleanText(params.keyword || '', 100);
+    const userKeyword = cleanText(params.userKeyword || '', 100);
     const query = {};
+    const conditions = [];
+
     if (keyword) {
-      query.$or = [
+      conditions.push({ $or: [
         { email: { $regex: keyword, $options: 'i' } },
         { question: { $regex: keyword, $options: 'i' } },
         { answer: { $regex: keyword, $options: 'i' } }
-      ];
+      ] });
+    }
+
+    if (userKeyword) {
+      conditions.push({ $or: [
+        { email: { $regex: userKeyword, $options: 'i' } },
+        { userId: { $regex: userKeyword, $options: 'i' } },
+        { user_id: { $regex: userKeyword, $options: 'i' } },
+        { uid: { $regex: userKeyword, $options: 'i' } },
+        { nickname: { $regex: userKeyword, $options: 'i' } },
+        { userNickname: { $regex: userKeyword, $options: 'i' } }
+      ] });
+    }
+
+    if (conditions.length === 1) {
+      Object.assign(query, conditions[0]);
+    } else if (conditions.length > 1) {
+      query.$and = conditions;
     }
     const skip = (page - 1) * pageSize;
     const res = await db.collection(TABLES.records).where(query).orderBy('createTime', 'desc').skip(skip).limit(pageSize).get();
     const count = await db.collection(TABLES.records).where(query).count();
     return ok({ list: res.data || [], total: count.total || 0, page, pageSize });
+  },
+
+  async getQuestionRecord(id) {
+    if (!id) return fail('缺少记录 ID');
+    const res = await db.collection(TABLES.records).doc(id).get();
+    const record = res.data && res.data[0];
+    if (!record) return fail('记录不存在');
+    return ok(record);
   },
 
   async correctAnswer(params = {}) {
