@@ -1,0 +1,9 @@
+services:
+  townsquare-web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: townsquare-web
+    restart: unless-stopped
+    ports:
+      - "8080:80"
