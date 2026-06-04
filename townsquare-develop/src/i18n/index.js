@@ -98,6 +98,8 @@ const messages = {
       promptHost: "输入本局频道编号 / 名称",
       promptJoin: "输入要加入的频道编号 / 名称",
       promptPlayerName: "玩家名称",
+      promptJoinPlayerName: "请输入你的玩家名称",
+      promptPlayerCount: "请输入要添加的玩家人数，或直接输入一个玩家名称",
       confirmDistribute: "确定要把已分配的角色发送给所有已入座玩家吗？",
       confirmCustomImages:
         "确定允许自定义图片吗？恶意剧本作者可能通过这种方式追踪你的 IP 地址。",
@@ -416,6 +418,8 @@ const messages = {
       promptHost: "Enter a channel number / name for your session",
       promptJoin: "Enter the channel number / name of the session you want to join",
       promptPlayerName: "Player name",
+      promptJoinPlayerName: "Enter your player name",
+      promptPlayerCount: "Enter the number of players to add, or enter one player name",
       confirmDistribute: "Do you want to distribute assigned characters to all SEATED players?",
       confirmCustomImages:
         "Are you sure you want to allow custom images? A malicious script file author might track your IP address this way.",

@@ -136,6 +136,15 @@ const mutations = {
       name
     });
   },
+  addMany(state, { count, startIndex = state.players.length } = {}) {
+    const amount = Math.max(0, Math.min(20 - state.players.length, count || 0));
+    for (let index = 0; index < amount; index++) {
+      state.players.push({
+        ...NEWPLAYER,
+        name: `玩家 ${startIndex + index + 1}`
+      });
+    }
+  },
   remove(state, index) {
     state.players.splice(index, 1);
   },

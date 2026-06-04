@@ -394,12 +394,16 @@ export default {
     joinSession() {
       if (this.session.sessionId) return this.leaveSession();
       let sessionId = prompt(this.$t("menu.promptJoin"));
+      if (!sessionId) return;
       if (sessionId.match(/^https?:\/\//i)) {
         sessionId = sessionId.split("#").pop();
       }
       if (sessionId) {
+        const playerName = prompt(this.$t("menu.promptJoinPlayerName"));
+        if (playerName === null) return;
         this.$store.commit("session/clearVoteHistory");
         this.$store.commit("session/setSpectator", true);
+        this.$store.commit("session/setPlayerName", playerName.trim());
         this.$store.commit("session/setGameStartedAt", Date.now());
         this.$store.commit("toggleGrimoire", false);
         this.$store.commit("session/setSessionId", sessionId);
@@ -415,9 +419,17 @@ export default {
     addPlayer() {
       if (this.session.isSpectator) return;
       if (this.players.length >= 20) return;
-      const name = prompt(this.$t("menu.promptPlayerName"));
-      if (name) {
-        this.$store.commit("players/add", name);
+      const input = prompt(this.$t("menu.promptPlayerCount"), "1");
+      if (!input) return;
+      const trimmed = input.trim();
+      const count = Number(trimmed);
+      if (Number.isInteger(count) && count > 0) {
+        this.$store.commit("players/addMany", {
+          count,
+          startIndex: this.players.length
+        });
+      } else {
+        this.$store.commit("players/add", trimmed);
       }
     },
     randomizeSeatings() {

@@ -221,6 +221,9 @@ class LiveSession {
       case "authPlayer":
         this._updatePlayerAuth(params);
         break;
+      case "playerName":
+        this._updatePlayerName(params);
+        break;
     }
   }
 
@@ -525,6 +528,42 @@ class LiveSession {
       // just update the player otherwise
       this._store.commit("players/update", { player, property, value });
     }
+    if (property === "id" && value === this._store.state.session.playerId) {
+      this.sendClaimedPlayerName(index);
+    }
+  }
+
+  /**
+   * Send the seated player's requested display name to the host.
+   * @param index
+   */
+  sendClaimedPlayerName(index) {
+    if (!this._isSpectator) return;
+    const name = (this._store.state.session.playerName || "").trim();
+    if (!name) return;
+    this._sendDirect("host", "playerName", {
+      playerId: this._store.state.session.playerId,
+      index,
+      name
+    });
+  }
+
+  /**
+   * Apply a claimed player's requested display name on the host.
+   * @param playerId
+   * @param index
+   * @param name
+   * @private
+   */
+  _updatePlayerName({ playerId, index, name } = {}) {
+    if (this._isSpectator || !playerId || !name) return;
+    const player = this._store.state.players.players[index];
+    if (!player || player.id !== playerId) return;
+    this._store.commit("players/update", {
+      player,
+      property: "name",
+      value: name.trim().substr(0, 30)
+    });
   }
 
   /**
@@ -972,6 +1011,7 @@ export default store => {
       case "players/set":
       case "players/clear":
       case "players/add":
+      case "players/addMany":
         session.sendGamestate("", true);
         break;
       case "players/update":
