@@ -54,6 +54,8 @@ VUE_APP_UNICLOUD_PROVIDER=aliyun
 VUE_APP_UNICLOUD_SPACE_ID=your-space-id
 VUE_APP_UNICLOUD_CLIENT_SECRET=your-client-secret
 VUE_APP_UNICLOUD_ENDPOINT=https://api.next.bspapp.com
+VUE_APP_TOWNSQUARE_WS_URL=wss://www.xuerantools.org/ws/
+TOWNSQUARE_ALLOWED_ORIGINS=https://www.xuerantools.org,https://xuerantools.org,http://localhost:8080,http://localhost:8081
 EOF
 ```
 
@@ -90,6 +92,7 @@ APP_DIR=/your/project/path BRANCH=master bash scripts/update.sh
 ```bash
 docker compose ps
 docker logs townsquare-web
+docker logs townsquare-live
 docker compose down
 docker compose up -d --build
 ```

@@ -11,6 +11,20 @@ register.setDefaultLabels({
 });
 
 const PING_INTERVAL = 30000; // 30 seconds
+const defaultAllowedOriginPattern = /^https?:\/\/([^.]+\.github\.io|localhost|clocktower\.online|eddbra1nprivatetownsquare\.xyz|([^.]+\.)?xuerantools\.org)/i;
+const allowedOrigins = (process.env.TOWNSQUARE_ALLOWED_ORIGINS || "")
+  .split(",")
+  .map(origin => origin.trim().replace(/\/$/, ""))
+  .filter(Boolean);
+
+function isAllowedOrigin(origin) {
+  if (!origin) return false;
+  const normalizedOrigin = origin.replace(/\/$/, "");
+  return (
+    defaultAllowedOriginPattern.test(normalizedOrigin) ||
+    allowedOrigins.includes(normalizedOrigin)
+  );
+}
 
 const options = {};
 
@@ -22,11 +36,7 @@ if (process.env.NODE_ENV !== "development") {
 const server = https.createServer(options);
 const wss = new WebSocket.Server({
   ...(process.env.NODE_ENV === "development" ? { port: 8081 } : { server }),
-  verifyClient: info =>
-    info.origin &&
-    !!info.origin.match(
-      /^https?:\/\/([^.]+\.github\.io|localhost|clocktower\.online|eddbra1nprivatetownsquare\.xyz)/i
-    )
+  verifyClient: info => isAllowedOrigin(info.origin)
 });
 
 function noop() {}

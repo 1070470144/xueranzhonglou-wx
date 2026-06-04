@@ -8,7 +8,21 @@ services:
         VUE_APP_UNICLOUD_SPACE_ID: ${VUE_APP_UNICLOUD_SPACE_ID:-}
         VUE_APP_UNICLOUD_CLIENT_SECRET: ${VUE_APP_UNICLOUD_CLIENT_SECRET:-}
         VUE_APP_UNICLOUD_ENDPOINT: ${VUE_APP_UNICLOUD_ENDPOINT:-https://api.next.bspapp.com}
+        VUE_APP_TOWNSQUARE_WS_URL: ${VUE_APP_TOWNSQUARE_WS_URL:-}
     container_name: townsquare-web
     restart: unless-stopped
     ports:
       - "8080:80"
+    depends_on:
+      - townsquare-live
+
+  townsquare-live:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: live
+    container_name: townsquare-live
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      TOWNSQUARE_ALLOWED_ORIGINS: ${TOWNSQUARE_ALLOWED_ORIGINS:-https://www.xuerantools.org,https://xuerantools.org,http://localhost:8080,http://localhost:8081}
