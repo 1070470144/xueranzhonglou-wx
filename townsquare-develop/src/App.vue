@@ -75,14 +75,29 @@ export default {
   },
   computed: {
     ...mapState(["grimoire", "session"]),
-    ...mapState("players", ["players"])
+    ...mapState("players", ["players"]),
+    locale() {
+      return this.$i18n.locale;
+    }
+  },
+  watch: {
+    locale: "updatePageTitle",
+    "grimoire.isPublic": "updatePageTitle"
   },
   data() {
     return {
       version
     };
   },
+  mounted() {
+    this.updatePageTitle();
+  },
   methods: {
+    updatePageTitle() {
+      document.title = this.$t(
+        this.grimoire.isPublic ? "app.titlePublic" : "app.titleGrimoire"
+      );
+    },
     keyup({ key, ctrlKey, metaKey }) {
       if (ctrlKey || metaKey) return;
       switch (key.toLocaleLowerCase()) {

@@ -8,11 +8,11 @@
       @click="clearVoteHistory"
       icon="trash-alt"
       class="clear"
-      title="Clear vote history"
+      :title="$t('modals.clearVoteHistory')"
       v-if="session.isSpectator"
     />
 
-    <h3>Vote history</h3>
+    <h3>{{ $t("modals.voteHistory") }}</h3>
 
     <template v-if="!session.isSpectator">
       <div class="options">
@@ -23,26 +23,26 @@
               session.isVoteHistoryAllowed ? 'check-square' : 'square'
             ]"
           />
-          Accessible to players
+          {{ $t("modals.accessibleToPlayers") }}
         </div>
         <div class="option" @click="clearVoteHistory">
           <font-awesome-icon icon="trash-alt" />
-          Clear for everyone
+          {{ $t("modals.clearForEveryone") }}
         </div>
       </div>
     </template>
     <table>
       <thead>
         <tr>
-          <td>Time</td>
-          <td>Nominator</td>
-          <td>Nominee</td>
-          <td>Type</td>
-          <td>Votes</td>
-          <td>Majority</td>
+          <td>{{ $t("modals.time") }}</td>
+          <td>{{ $t("modals.nominator") }}</td>
+          <td>{{ $t("modals.nominee") }}</td>
+          <td>{{ $t("modals.type") }}</td>
+          <td>{{ $t("modals.votes") }}</td>
+          <td>{{ $t("modals.majority") }}</td>
           <td>
             <font-awesome-icon icon="user-friends" />
-            Voters
+            {{ $t("modals.voters") }}
           </td>
         </tr>
       </thead>

@@ -2,30 +2,19 @@
   <div class="intro">
     <img src="static/apple-icon.png" alt="" class="logo" />
     <div>
-      Welcome to the (unofficial)
-      <b>Virtual Town Square and Grimoire</b> for Blood on the Clocktower!
-      Please add more players through the
+      {{ $t("intro.welcomePrefix") }}
+      <b>{{ $t("intro.title") }}</b>{{ $t("intro.welcomeSuffix") }}
+      {{ $t("intro.addPlayersPrefix") }}
       <span class="button" @click="toggleMenu">
-        <font-awesome-icon icon="cog" /> Menu
+        <font-awesome-icon icon="cog" /> {{ $t("intro.menu") }}
       </span>
-      on the top right or by pressing <b>[A]</b>. You can also join a game
-      session by pressing <b>[J]</b>.<br />
+      {{ $t("intro.addPlayersSuffix") }}<br />
       <div class="footer">
-        This project is free and open source and can be found on
-        <a href="https://github.com/bra1n/townsquare" target="_blank">GitHub</a
-        >. It is not affiliated with The Pandemonium Institute. "Blood on the
-        Clocktower" is a trademark of Steven Medway and The Pandemonium
-        Institute.
+        {{ $t("intro.footerPrefix") }}
+        <a href="https://github.com/bra1n/townsquare" target="_blank">{{ $t("intro.github") }}</a>
+        {{ $t("intro.footerSuffix") }}
       </div>
     </div>
-    <a
-      class="redirect"
-      v-if="language === 'zh-CN'"
-      href="https://clocktower.gstonegames.com"
-    >
-      <img src="../assets/gstone.png" class="gstone" alt="" />
-      你想使用中文版魔典吗？
-    </a>
   </div>
 </template>
 
@@ -33,11 +22,6 @@
 import { mapMutations } from "vuex";
 
 export default {
-  data() {
-    return {
-      language: window.navigator.userLanguage || window.navigator.language
-    };
-  },
   methods: mapMutations(["toggleMenu"])
 };
 </script>

@@ -1,8 +1,8 @@
-module.exports = store => {
+import { t } from "../i18n";
+
+export default store => {
   const updatePagetitle = isPublic =>
-    (document.title = `Blood on the Clocktower ${
-      isPublic ? "Town Square" : "Grimoire"
-    }`);
+    (document.title = t(isPublic ? "app.titlePublic" : "app.titleGrimoire"));
 
   // initialize data
   if (localStorage.getItem("background")) {

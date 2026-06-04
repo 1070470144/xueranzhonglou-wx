@@ -7,6 +7,7 @@
       spectator: session.isSpectator,
       vote: session.nomination
     }"
+    :style="nightLabelStyle"
   >
     <ul class="circle" :class="['size-' + players.length]">
       <Player
@@ -30,8 +31,8 @@
       :class="{ closed: !isBluffsOpen }"
     >
       <h3>
-        <span v-if="session.isSpectator">Other characters</span>
-        <span v-else>Demon bluffs</span>
+        <span v-if="session.isSpectator">{{ $t("townSquare.otherCharacters") }}</span>
+        <span v-else>{{ $t("townSquare.demonBluffs") }}</span>
         <font-awesome-icon icon="times-circle" @click.stop="toggleBluffs" />
         <font-awesome-icon icon="plus-circle" @click.stop="toggleBluffs" />
       </h3>
@@ -48,7 +49,7 @@
 
     <div class="fabled" :class="{ closed: !isFabledOpen }" v-if="fabled.length">
       <h3>
-        <span>Fabled</span>
+        <span>{{ $t("townSquare.fabled") }}</span>
         <font-awesome-icon icon="times-circle" @click.stop="toggleFabled" />
         <font-awesome-icon icon="plus-circle" @click.stop="toggleFabled" />
       </h3>
@@ -103,7 +104,13 @@ export default {
   computed: {
     ...mapGetters({ nightOrder: "players/nightOrder" }),
     ...mapState(["grimoire", "roles", "session"]),
-    ...mapState("players", ["players", "bluffs", "fabled"])
+    ...mapState("players", ["players", "bluffs", "fabled"]),
+    nightLabelStyle() {
+      return {
+        "--first-night-label": `"${this.$t("townSquare.firstNight")}"`,
+        "--other-nights-label": `"${this.$t("townSquare.otherNights")}"`
+      };
+    }
   },
   data() {
     return {
@@ -155,7 +162,9 @@ export default {
       if (this.session.isSpectator || this.session.lockedVote) return;
       if (
         confirm(
-          `Do you really want to remove ${this.players[playerIndex].name}?`
+          this.$t("townSquare.confirmRemovePlayer", {
+            name: this.players[playerIndex].name
+          })
         )
       ) {
         const { nomination } = this.session;
@@ -571,7 +580,7 @@ export default {
       rgba(0, 0, 0, 0.5) 20%
     );
     &:before {
-      content: "First Night";
+      content: var(--first-night-label, "First Night");
     }
     &:after {
       border-left-color: $townsfolk;
@@ -584,7 +593,7 @@ export default {
     left: 120%;
     background: linear-gradient(to right, $demon 0%, rgba(0, 0, 0, 0.5) 20%);
     &:before {
-      content: "Other Nights";
+      content: var(--other-nights-label, "Other Nights");
     }
     &:after {
       right: 100%;
