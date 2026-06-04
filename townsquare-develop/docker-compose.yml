@@ -3,6 +3,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        VUE_APP_UNICLOUD_PROVIDER: ${VUE_APP_UNICLOUD_PROVIDER:-aliyun}
+        VUE_APP_UNICLOUD_SPACE_ID: ${VUE_APP_UNICLOUD_SPACE_ID:-}
+        VUE_APP_UNICLOUD_CLIENT_SECRET: ${VUE_APP_UNICLOUD_CLIENT_SECRET:-}
+        VUE_APP_UNICLOUD_ENDPOINT: ${VUE_APP_UNICLOUD_ENDPOINT:-https://api.next.bspapp.com}
     container_name: townsquare-web
     restart: unless-stopped
     ports:
