@@ -1,19 +1,30 @@
 <template>
   <view class="page fade-in">
-    <view class="panel">
-      <view class="title">确认登录网页端</view>
-      <view class="desc">确认后，电脑上的网页版会使用当前小程序账号登录。</view>
+    <view class="brand">
+      <view class="logo">血</view>
+      <view class="brand-text">血染钟楼助手</view>
+    </view>
+
+    <view class="main">
+      <view class="title">确认网页登录</view>
+      <view class="subtitle">确认后，电脑上的网页版会使用当前小程序账号登录。</view>
+
       <view v-if="user" class="user-row">
         <image v-if="user.avatarUrl" class="avatar" :src="user.avatarUrl" mode="aspectFill" />
+        <view v-else class="avatar-placeholder">{{ userInitial }}</view>
         <view class="user-info">
           <text class="user-label">当前账号</text>
           <text class="user-name">{{ user.nickname || '微信用户' }}</text>
         </view>
       </view>
-      <button class="confirm-btn" :disabled="submitting || !ticket" @click="confirmLogin">
+
+      <button class="confirm-btn" :loading="submitting" :disabled="submitting || !ticket" @click="confirmLogin">
         {{ submitting ? '确认中...' : '确认登录' }}
       </button>
-      <button class="cancel-btn" @click="goBack">取消</button>
+
+      <button class="cancel-btn" :disabled="submitting" @click="goBack">取消</button>
+
+      <view class="note">仅授权本次网页登录，不会分享你的微信隐私信息</view>
     </view>
   </view>
 </template>
@@ -22,6 +33,12 @@
 import { approveWebLogin, getCurrentUser, isLoggedIn, loginWithWeixin } from '@/utils/auth.js';
 
 export default {
+  computed: {
+    userInitial() {
+      const name = this.user && (this.user.nickname || this.user.email || '微信用户');
+      return String(name || '微').trim().slice(0, 1);
+    }
+  },
   data() {
     return {
       ticket: '',
@@ -92,55 +109,108 @@ export default {
 }
 
 .page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
   min-height: 100vh;
   box-sizing: border-box;
-  padding: 72rpx 44rpx;
+  padding: 188rpx 48rpx 72rpx;
   background: #ffffff;
   color: #1f2329;
 }
 
-.panel {
-  box-sizing: border-box;
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
   width: 100%;
-  padding: 40rpx 32rpx;
-  border: 1rpx solid #edf0f2;
-  border-radius: 18rpx;
-  background: #fff;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64rpx;
+  height: 64rpx;
+  border: 1rpx solid #d9f0e3;
+  border-radius: 12rpx;
+  background: #f0f9f4;
+  color: #1f8f4d;
+  font-size: 30rpx;
+  font-weight: 700;
+}
+
+.brand-text {
+  color: #1f2329;
+  font-size: 30rpx;
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+.main {
+  width: 100%;
+  max-width: 560rpx;
+  padding-top: 96rpx;
+  text-align: center;
 }
 
 .title {
-  font-size: 38rpx;
-  font-weight: 700;
-  line-height: 1.25;
+  color: #1f2329;
+  font-size: 56rpx;
+  line-height: 1.18;
+  font-weight: 800;
 }
 
-.desc {
-  margin-top: 16rpx;
+.subtitle {
+  width: 520rpx;
+  max-width: 100%;
+  margin: 22rpx auto 0;
   color: #646a73;
-  font-size: 27rpx;
-  line-height: 1.55;
+  font-size: 28rpx;
+  line-height: 1.6;
 }
 
 .user-row {
   display: flex;
   align-items: center;
   gap: 18rpx;
-  margin-top: 34rpx;
-  padding: 22rpx;
-  border-radius: 14rpx;
-  background: #f5f6f7;
+  box-sizing: border-box;
+  width: 100%;
+  margin-top: 64rpx;
+  padding: 24rpx;
+  border: 1rpx solid #edf0f2;
+  border-radius: 12rpx;
+  background: #fafafa;
+  text-align: left;
 }
 
-.avatar {
+.avatar,
+.avatar-placeholder {
   width: 72rpx;
   height: 72rpx;
   border-radius: 50%;
+}
+
+.avatar-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f0f9f4;
+  color: #1f8f4d;
+  font-size: 28rpx;
+  font-weight: 700;
 }
 
 .user-info,
 .user-label,
 .user-name {
   display: block;
+}
+
+.user-info {
+  min-width: 0;
 }
 
 .user-label {
@@ -153,29 +223,51 @@ export default {
   color: #1f2329;
   font-size: 28rpx;
   font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .confirm-btn,
 .cancel-btn {
+  width: 100%;
   margin: 34rpx 0 0;
-  height: 84rpx;
-  line-height: 84rpx;
-  border-radius: 14rpx;
-  font-size: 28rpx;
+  height: 92rpx;
+  line-height: 92rpx;
+  border-radius: 10rpx;
+  font-size: 30rpx;
+  font-weight: 700;
 }
 
 .confirm-btn {
-  background: #1f2329;
-  color: #fff;
+  background: #20b15a;
+  color: #ffffff;
 }
 
 .confirm-btn[disabled] {
-  background: #d9dde2;
+  background: #9bd8b6;
+  color: #ffffff;
 }
 
 .cancel-btn {
   margin-top: 18rpx;
   background: #f5f6f7;
   color: #646a73;
+}
+
+.cancel-btn[disabled] {
+  color: #b8bec6;
+}
+
+.note {
+  margin-top: 24rpx;
+  color: #8f959e;
+  font-size: 24rpx;
+  line-height: 1.45;
+  text-align: center;
+}
+
+button::after {
+  border: none;
 }
 </style>
