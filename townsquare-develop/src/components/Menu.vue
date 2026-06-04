@@ -212,7 +212,7 @@
           <!-- Characters -->
           <li class="headline">{{ $t("menu.characters") }}</li>
           <li v-if="!session.isSpectator" @click="toggleModal('edition')">
-            {{ $t("menu.selectEdition") }}
+            {{ $t("menu.selectScript") }}
             <em>[E]</em>
           </li>
           <li

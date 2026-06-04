@@ -31,15 +31,19 @@ function getUniCloudInstance() {
   return uniCloudInstance;
 }
 
-async function callAuth(method, params = {}) {
+export async function callUniCloudFunction(name, method, params = {}) {
   const res = await getUniCloudInstance().callFunction({
-    name: "auth-service",
+    name,
     data: {
       method,
       params: [params]
     }
   });
   return res && res.result ? res.result : res;
+}
+
+async function callAuth(method, params = {}) {
+  return callUniCloudFunction("auth-service", method, params);
 }
 
 export function getAuthSession() {

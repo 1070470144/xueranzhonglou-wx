@@ -77,7 +77,7 @@ export default {
     Gradients
   },
   computed: {
-    ...mapState(["grimoire", "session"]),
+    ...mapState(["grimoire", "session", "modals"]),
     ...mapState("players", ["players"]),
     locale() {
       return this.$i18n.locale;
@@ -103,7 +103,12 @@ export default {
     },
     keyup({ key, ctrlKey, metaKey }) {
       if (ctrlKey || metaKey) return;
-      switch (key.toLocaleLowerCase()) {
+      const normalizedKey = key.toLocaleLowerCase();
+      if (this.hasOpenModal()) {
+        if (normalizedKey === "escape") this.$store.commit("toggleModal");
+        return;
+      }
+      switch (normalizedKey) {
         case "g":
           this.$store.commit("toggleGrimoire");
           break;
@@ -142,6 +147,9 @@ export default {
         case "escape":
           this.$store.commit("toggleModal");
       }
+    },
+    hasOpenModal() {
+      return Object.keys(this.modals).some(name => this.modals[name]);
     }
   }
 };
