@@ -53,6 +53,7 @@ export default {
       expireSeconds: 0,
       status: "pending",
       error: "",
+      pollFailures: 0,
       pollTimer: null,
       countdownTimer: null
     };
@@ -75,6 +76,7 @@ export default {
       this.expireSeconds = 0;
       this.status = "pending";
       this.error = "";
+      this.pollFailures = 0;
       try {
         const res = await createWebLoginTicket();
         if (!res || !res.success || !res.data) {
@@ -117,6 +119,7 @@ export default {
         if (!res || !res.success || !res.data) {
           throw new Error((res && res.message) || this.$t("login.pollFailed"));
         }
+        this.pollFailures = 0;
         this.status = res.data.status || "pending";
         if (this.status === "approved" && res.data.token) {
           setAuthSession(res.data.token, res.data.user);
@@ -127,9 +130,17 @@ export default {
           this.stopTimers();
         }
       } catch (error) {
+        if (this.shouldRetryPoll(error)) {
+          this.pollFailures += 1;
+          return;
+        }
         this.error = this.resolveError(error);
         this.stopTimers();
       }
+    },
+    shouldRetryPoll(error) {
+      const message = String((error && error.message) || error || "");
+      return this.pollFailures < 3 && /failed to fetch|network|timeout/i.test(message);
     },
     getExpireSeconds() {
       if (!this.expireTime) return 0;
