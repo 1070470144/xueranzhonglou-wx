@@ -114,6 +114,7 @@ export default new Vuex.Store({
       background: ""
     },
     modals: {
+      announcement: false,
       edition: false,
       fabled: false,
       gameState: false,

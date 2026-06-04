@@ -8,7 +8,8 @@ const TABLES = {
   records: 'ai-question-records',
   corrections: 'ai-answer-corrections',
   crawlJobs: 'ai-crawl-jobs',
-  announcements: 'announcements'
+  announcements: 'announcements',
+  webAnnouncements: 'web-announcements'
 };
 
 const WIKI_HOME = 'https://clocktower-wiki.gstonegames.com/';
@@ -508,6 +509,125 @@ module.exports = {
     if (status === 'published') doc.publishTime = item.publishTime || now();
     await db.collection(TABLES.announcements).doc(params.id).update(doc);
     return ok({}, 'saved');
+  },
+
+  async listWebAnnouncements(params = {}) {
+    const page = positiveInt(params.page, 1);
+    const pageSize = positiveInt(params.pageSize, 20, 100);
+    const keyword = cleanText(params.keyword || '', 100);
+    const query = {};
+    if (params.status) query.status = params.status;
+    if (params.type) query.type = params.type;
+    if (keyword) {
+      query.$or = [
+        { title: { $regex: keyword, $options: 'i' } },
+        { summary: { $regex: keyword, $options: 'i' } },
+        { content: { $regex: keyword, $options: 'i' } },
+        { version: { $regex: keyword, $options: 'i' } }
+      ];
+    }
+    const skip = (page - 1) * pageSize;
+    const res = await db.collection(TABLES.webAnnouncements).where(query).orderBy('updateTime', 'desc').skip(skip).limit(pageSize).get();
+    const count = await db.collection(TABLES.webAnnouncements).where(query).count();
+    return ok({ list: res.data || [], total: count.total || 0, page, pageSize });
+  },
+
+  async getWebAnnouncement(id) {
+    if (!id) return fail('missing web announcement id');
+    const res = await db.collection(TABLES.webAnnouncements).doc(id).get();
+    const item = res.data && res.data[0];
+    if (!item) return fail('web announcement not found');
+    return ok({ item });
+  },
+
+  async saveWebAnnouncement(item = {}) {
+    const doc = {
+      title: cleanText(item.title, 120),
+      summary: cleanText(item.summary, 300),
+      content: cleanText(item.content, 20000),
+      type: normalizeAnnouncementType(item.type),
+      status: normalizeAnnouncementStatus(item.status),
+      version: cleanText(item.version, 40),
+      pinned: item.pinned === true || item.pinned === 'true' || item.pinned === 1 || item.pinned === '1',
+      priority: normalizePriority(item.priority),
+      startTime: normalizeTime(item.startTime),
+      endTime: normalizeTime(item.endTime),
+      updateTime: now()
+    };
+    if (!doc.title) return fail('title is required');
+    if (!doc.summary) doc.summary = cleanText(doc.content, 120);
+    if (!doc.content) return fail('content is required');
+    if (doc.status === 'published' && !item.publishTime) doc.publishTime = now();
+    else if (item.publishTime) doc.publishTime = normalizeTime(item.publishTime);
+    if (doc.startTime && doc.endTime && doc.startTime > doc.endTime) return fail('start time cannot be later than end time');
+
+    if (item._id) {
+      await db.collection(TABLES.webAnnouncements).doc(item._id).update(doc);
+      return ok({ id: item._id }, 'saved');
+    }
+    doc.createTime = now();
+    if (!doc.publishTime && doc.status === 'published') doc.publishTime = doc.createTime;
+    const res = await db.collection(TABLES.webAnnouncements).add(doc);
+    return ok({ id: res.id }, 'created');
+  },
+
+  async deleteWebAnnouncement(id) {
+    if (!id) return fail('missing web announcement id');
+    await db.collection(TABLES.webAnnouncements).doc(id).remove();
+    return ok({}, 'deleted');
+  },
+
+  async updateWebAnnouncementStatus(params = {}) {
+    if (!params.id) return fail('missing web announcement id');
+    const status = normalizeAnnouncementStatus(params.status);
+    const existed = await db.collection(TABLES.webAnnouncements).doc(params.id).get();
+    const item = existed.data && existed.data[0];
+    if (!item) return fail('web announcement not found');
+    if (status === 'published') {
+      if (!cleanText(item.title, 120)) return fail('title is required');
+      if (!cleanText(item.content, 20000)) return fail('content is required');
+      const startTime = normalizeTime(item.startTime);
+      const endTime = normalizeTime(item.endTime);
+      if (startTime && endTime && startTime > endTime) return fail('start time cannot be later than end time');
+    }
+    const doc = { status, updateTime: now() };
+    if (status === 'published') doc.publishTime = item.publishTime || now();
+    await db.collection(TABLES.webAnnouncements).doc(params.id).update(doc);
+    return ok({}, 'saved');
+  },
+
+  async getPublicWebAnnouncements(params = {}) {
+    const pageSize = positiveInt(params.pageSize, 10, 50);
+    const currentTime = now();
+    const res = await db.collection(TABLES.webAnnouncements)
+      .where({ status: 'published' })
+      .orderBy('pinned', 'desc')
+      .orderBy('priority', 'desc')
+      .orderBy('publishTime', 'desc')
+      .limit(50)
+      .get();
+    const list = (res.data || [])
+      .filter(item => {
+        const startTime = normalizeTime(item.startTime);
+        const endTime = normalizeTime(item.endTime);
+        return (!startTime || startTime <= currentTime) && (!endTime || endTime >= currentTime);
+      })
+      .slice(0, pageSize)
+      .map(item => ({
+        _id: item._id,
+        title: item.title || '',
+        summary: item.summary || '',
+        content: item.content || '',
+        type: item.type || 'notice',
+        version: item.version || '',
+        pinned: !!item.pinned,
+        priority: item.priority || 0,
+        publishTime: item.publishTime || item.updateTime || item.createTime || null,
+        updateTime: item.updateTime || null,
+        startTime: item.startTime || null,
+        endTime: item.endTime || null
+      }));
+    return ok({ list });
   },
 
   async getDefaultConfig() {

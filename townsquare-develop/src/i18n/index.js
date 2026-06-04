@@ -33,6 +33,22 @@ const messages = {
       edit: "编辑",
       remove: "移除"
     },
+    announcements: {
+      title: "公告",
+      version: "当前版本：{version}",
+      loading: "正在加载公告...",
+      empty: "暂无公告",
+      failed: "公告加载失败",
+      backToList: "返回列表",
+      publishedAt: "发布时间：{time}",
+      applicableVersion: "适用版本：{version}",
+      types: {
+        notice: "公告",
+        update: "更新",
+        maintenance: "维护",
+        important: "重要"
+      }
+    },
     menu: {
       recentNominations: "最近提名：{count}",
       sessionTitle: "本局还有 {count} 名其他玩家{latency}",
@@ -332,6 +348,22 @@ const messages = {
       add: "Add",
       edit: "Edit",
       remove: "Remove"
+    },
+    announcements: {
+      title: "Announcements",
+      version: "Current version: {version}",
+      loading: "Loading announcements...",
+      empty: "No announcements",
+      failed: "Failed to load announcements",
+      backToList: "Back to list",
+      publishedAt: "Published at {time}",
+      applicableVersion: "Version: {version}",
+      types: {
+        notice: "Notice",
+        update: "Update",
+        maintenance: "Maintenance",
+        important: "Important"
+      }
     },
     menu: {
       recentNominations: "{count} recent {label}",

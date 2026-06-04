@@ -38,6 +38,16 @@
       {{ session.playerCount }}
     </span>
     <span
+      class="announcement-summary"
+      :class="{ unread: hasUnreadAnnouncement }"
+      @click="openAnnouncements"
+      :title="$t('announcements.title')"
+    >
+      <font-awesome-icon icon="bell" />
+      <span>{{ $t("announcements.title") }}</span>
+      <i v-if="hasUnreadAnnouncement" class="announcement-dot"></i>
+    </span>
+    <span
       v-if="authUser"
       class="auth-summary"
       :title="authUser.nickname || $t('login.loggedIn')"
@@ -280,6 +290,9 @@
 <script>
 import { mapMutations, mapState } from "vuex";
 import { clearAuthSession, getAuthSession } from "@/services/auth";
+import { getPublicWebAnnouncements } from "@/services/announcements";
+
+const ANNOUNCEMENT_READ_KEY = "townsquare.webAnnouncement.readKey";
 
 export default {
   computed: {
@@ -289,11 +302,14 @@ export default {
   data() {
     return {
       tab: "grimoire",
-      authUser: null
+      authUser: null,
+      announcementLatestKey: "",
+      hasUnreadAnnouncement: false
     };
   },
   mounted() {
     this.refreshAuthSession();
+    this.checkAnnouncementUnread();
     window.addEventListener("townsquare-auth-change", this.refreshAuthSession);
   },
   beforeDestroy() {
@@ -302,6 +318,24 @@ export default {
   methods: {
     refreshAuthSession() {
       this.authUser = getAuthSession().user;
+    },
+    async checkAnnouncementUnread() {
+      try {
+        const res = await getPublicWebAnnouncements({ pageSize: 1 });
+        const item = res && res.success && res.data && res.data.list && res.data.list[0];
+        if (!item) return;
+        this.announcementLatestKey = `${item._id}:${item.updateTime || item.publishTime || ""}`;
+        this.hasUnreadAnnouncement = localStorage.getItem(ANNOUNCEMENT_READ_KEY) !== this.announcementLatestKey;
+      } catch (error) {
+        this.hasUnreadAnnouncement = false;
+      }
+    },
+    openAnnouncements() {
+      if (this.announcementLatestKey) {
+        localStorage.setItem(ANNOUNCEMENT_READ_KEY, this.announcementLatestKey);
+        this.hasUnreadAnnouncement = false;
+      }
+      this.toggleModal("announcement");
     },
     logoutWeb() {
       if (!confirm(this.$t("login.confirmLogout"))) return;
@@ -469,6 +503,28 @@ export default {
     &.reconnecting {
       animation: blink 1s infinite;
     }
+  }
+
+  span.announcement-summary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    color: white;
+    min-width: 54px;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .announcement-dot {
+    position: absolute;
+    top: -2px;
+    right: -4px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: $demon;
+    box-shadow: 0 0 6px rgba(255, 0, 0, 0.8);
   }
 
   span.auth-summary {

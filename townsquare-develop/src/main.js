@@ -9,6 +9,7 @@ import { installI18n } from "./i18n";
 
 const faIcons = [
   "AddressCard",
+  "Bell",
   "BookOpen",
   "BookDead",
   "BroadcastTower",

@@ -80,6 +80,12 @@
 			}
 		},
 		{
+			"path": "pages/admin/web-announcements/list",
+			"style": {
+				"navigationBarTitleText": "网页公告管理"
+			}
+		},
+		{
 			"path": "pages/admin/scripts/bulk-upload",
 			"style": {
 				"navigationBarTitleText": "批量上传",

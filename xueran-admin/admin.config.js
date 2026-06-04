@@ -52,6 +52,17 @@ export default {
 				value: '/pages/admin/announcements/list'
 			}]
 		}, {
+			menu_id: "web-announcements",
+			text: '网页公告管理',
+			icon: 'admin-icons-notification',
+			url: "",
+			children: [{
+				menu_id: "web-announcements-list",
+				text: '网页公告列表',
+				icon: 'admin-icons-doc',
+				value: '/pages/admin/web-announcements/list'
+			}]
+		}, {
 			menu_id: "scripts",
 			text: '剧本管理',
 			icon: 'admin-icons-table',

@@ -1,0 +1,23 @@
+[
+  {
+    "IndexName": "status_publishTime",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        { "Name": "status", "Direction": "1" },
+        { "Name": "publishTime", "Direction": "-1" }
+      ],
+      "MgoIsUnique": false
+    }
+  },
+  {
+    "IndexName": "status_priority",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        { "Name": "status", "Direction": "1" },
+        { "Name": "pinned", "Direction": "-1" },
+        { "Name": "priority", "Direction": "-1" }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]

@@ -1,0 +1,73 @@
+{
+  "bsonType": "object",
+  "required": ["title", "content", "status"],
+  "permission": {
+    "read": true,
+    "create": true,
+    "update": true,
+    "delete": true
+  },
+  "properties": {
+    "_id": {
+      "description": "ID"
+    },
+    "title": {
+      "bsonType": "string",
+      "title": "标题",
+      "trim": "both"
+    },
+    "summary": {
+      "bsonType": "string",
+      "title": "摘要",
+      "trim": "both"
+    },
+    "content": {
+      "bsonType": "string",
+      "title": "正文",
+      "trim": "both"
+    },
+    "type": {
+      "bsonType": "string",
+      "title": "类型",
+      "enum": ["notice", "update", "maintenance", "important"]
+    },
+    "status": {
+      "bsonType": "string",
+      "title": "状态",
+      "enum": ["draft", "published", "offline"]
+    },
+    "version": {
+      "bsonType": "string",
+      "title": "适用版本",
+      "trim": "both"
+    },
+    "pinned": {
+      "bsonType": "bool",
+      "title": "置顶"
+    },
+    "priority": {
+      "bsonType": "int",
+      "title": "优先级"
+    },
+    "startTime": {
+      "bsonType": ["long", "null"],
+      "title": "开始时间"
+    },
+    "endTime": {
+      "bsonType": ["long", "null"],
+      "title": "结束时间"
+    },
+    "publishTime": {
+      "bsonType": ["long", "null"],
+      "title": "发布时间"
+    },
+    "createTime": {
+      "bsonType": "long",
+      "title": "创建时间"
+    },
+    "updateTime": {
+      "bsonType": "long",
+      "title": "更新时间"
+    }
+  }
+}

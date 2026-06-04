@@ -111,3 +111,23 @@ export async function deleteAnnouncement(id) {
 export async function updateAnnouncementStatus(params) {
   return normalize(await aiAdminService.updateAnnouncementStatus(params));
 }
+
+export async function listWebAnnouncements(params) {
+  return normalize(await aiAdminService.listWebAnnouncements(params));
+}
+
+export async function getWebAnnouncement(id) {
+  return normalize(await aiAdminService.getWebAnnouncement(id));
+}
+
+export async function saveWebAnnouncement(item) {
+  return normalize(await aiAdminService.saveWebAnnouncement(item));
+}
+
+export async function deleteWebAnnouncement(id) {
+  return normalize(await aiAdminService.deleteWebAnnouncement(id));
+}
+
+export async function updateWebAnnouncementStatus(params) {
+  return normalize(await aiAdminService.updateWebAnnouncementStatus(params));
+}
