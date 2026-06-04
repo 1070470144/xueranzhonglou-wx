@@ -37,6 +37,14 @@
       <font-awesome-icon icon="broadcast-tower" />
       {{ session.playerCount }}
     </span>
+    <span
+      v-if="authUser"
+      class="auth-summary"
+      :title="authUser.nickname || $t('login.loggedIn')"
+    >
+      <font-awesome-icon icon="user" />
+      {{ authUser.nickname || $t("login.loggedIn") }}
+    </span>
     <div class="menu" :class="{ open: grimoire.isMenuOpen }">
       <font-awesome-icon icon="cog" @click="toggleMenu" />
       <ul>
@@ -292,6 +300,7 @@ export default {
       this.authUser = getAuthSession().user;
     },
     logoutWeb() {
+      if (!confirm(this.$t("login.confirmLogout"))) return;
       clearAuthSession();
       this.refreshAuthSession();
     },
@@ -456,6 +465,15 @@ export default {
     &.reconnecting {
       animation: blink 1s infinite;
     }
+  }
+
+  span.auth-summary {
+    max-width: 140px;
+    color: white;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    vertical-align: top;
   }
 }
 

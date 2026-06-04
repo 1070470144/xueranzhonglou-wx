@@ -91,14 +91,16 @@ const messages = {
       approved: "登录成功",
       expired: "二维码已过期，请刷新",
       failed: "登录失败",
+      retrying: "网络波动，正在重试...",
       refresh: "刷新二维码",
       expiresIn: "{seconds} 秒后过期",
       loggedIn: "已登录",
+      confirmLogout: "确定要退出当前网页登录吗？",
       createFailed: "创建登录二维码失败",
       pollFailed: "检查登录状态失败",
       missingUniCloudConfig: "未配置 uniCloud 网页端服务空间参数",
       missingUniCloudSdk: "uniCloud Web SDK 未加载",
-      networkError: "网页登录服务连接失败"
+      networkError: "登录请求失败，请刷新二维码后重试"
     },
     intro: {
       welcomePrefix: "欢迎来到（非官方）",
@@ -316,14 +318,16 @@ const messages = {
       approved: "Login successful",
       expired: "QR code expired. Please refresh.",
       failed: "Login failed",
+      retrying: "Network is unstable. Retrying...",
       refresh: "Refresh QR Code",
       expiresIn: "Expires in {seconds}s",
       loggedIn: "Logged in",
+      confirmLogout: "Are you sure you want to log out of web login?",
       createFailed: "Failed to create login QR code",
       pollFailed: "Failed to check login status",
       missingUniCloudConfig: "uniCloud web config is not configured",
       missingUniCloudSdk: "uniCloud Web SDK is not loaded",
-      networkError: "Could not connect to the web login service"
+      networkError: "Login request failed. Please refresh the QR code and try again."
     },
     intro: {
       welcomePrefix: "Welcome to the (unofficial)",

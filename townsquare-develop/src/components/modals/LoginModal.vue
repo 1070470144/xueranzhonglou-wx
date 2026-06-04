@@ -39,6 +39,7 @@ export default {
   computed: {
     statusText() {
       if (this.error) return this.$t("login.failed");
+      if (this.pollFailures > 0) return this.$t("login.retrying");
       if (this.status === "approved") return this.$t("login.approved");
       if (this.status === "expired") return this.$t("login.expired");
       return this.$t("login.pending");
@@ -147,13 +148,17 @@ export default {
       return Math.max(0, Math.ceil((this.expireTime - Date.now()) / 1000));
     },
     resolveError(error) {
-      if (error && error.message === "uniCloud web config is not configured") {
+      const message = String((error && error.message) || error || "");
+      if (message === "uniCloud web config is not configured") {
         return this.$t("login.missingUniCloudConfig");
       }
-      if (error && error.message === "uniCloud Web SDK is not loaded") {
+      if (message === "uniCloud Web SDK is not loaded") {
         return this.$t("login.missingUniCloudSdk");
       }
-      return (error && error.message) || this.$t("login.networkError");
+      if (/failed to fetch|network|timeout/i.test(message)) {
+        return this.$t("login.networkError");
+      }
+      return message.replace(/^\[auth-service\]:\s*/, "") || this.$t("login.networkError");
     },
     close() {
       this.stopTimers();
