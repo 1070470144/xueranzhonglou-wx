@@ -149,7 +149,7 @@ export default {
     },
     resolveError(error) {
       const message = String((error && error.message) || error || "");
-      if (message === "uniCloud web config is not configured") {
+      if (/uniCloud web config is not configured/.test(message)) {
         return this.$t("login.missingUniCloudConfig");
       }
       if (message === "uniCloud Web SDK is not loaded") {

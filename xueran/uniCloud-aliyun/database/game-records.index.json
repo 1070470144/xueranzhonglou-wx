@@ -1,0 +1,23 @@
+[
+  {
+    "IndexName": "storyteller_endTime",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        { "Name": "storyteller.userId", "Direction": "1" },
+        { "Name": "endTime", "Direction": "-1" }
+      ],
+      "MgoIsUnique": false
+    }
+  },
+  {
+    "IndexName": "participant_endTime",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        { "Name": "participantUserIds", "Direction": "1" },
+        { "Name": "endTime", "Direction": "-1" }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]
+

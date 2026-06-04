@@ -27,7 +27,8 @@ const state = () => ({
   voteHistory: [],
   markedPlayer: -1,
   isVoteHistoryAllowed: true,
-  isRolesDistributed: false
+  isRolesDistributed: false,
+  gameStartedAt: Date.now()
 });
 
 const getters = {};
@@ -50,6 +51,7 @@ const mutations = {
   setMarkedPlayer: set("markedPlayer"),
   setNomination: set("nomination"),
   setVoteHistoryAllowed: set("isVoteHistoryAllowed"),
+  setGameStartedAt: set("gameStartedAt"),
   claimSeat: set("claimedSeat"),
   distributeRoles: set("isRolesDistributed"),
   setSessionId(state, sessionId) {

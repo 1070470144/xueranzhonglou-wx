@@ -56,6 +56,17 @@
         <view class="arrow"></view>
       </view>
 
+      <view class="feature-item" @click="goToMyGames">
+        <view class="feature-icon">
+          <text class="feature-icon-text">局</text>
+        </view>
+        <view class="feature-content">
+          <view class="feature-title">我的战局</view>
+          <view class="feature-desc">查看玩家和说书人战绩</view>
+        </view>
+        <view class="arrow"></view>
+      </view>
+
       <view class="feature-item" @click="goToAiConfig">
         <view class="feature-icon">
           <text class="feature-icon-text">AI</text>
@@ -152,6 +163,15 @@ export default {
     goToMyUploads() {
       uni.navigateTo({
         url: '/pages/my-uploads/my-uploads'
+      });
+    },
+    goToMyGames() {
+      if (!this.user) {
+        this.goToLogin();
+        return;
+      }
+      uni.navigateTo({
+        url: '/pages/my-games/my-games'
       });
     },
     goToAiConfig() {

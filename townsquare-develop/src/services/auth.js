@@ -4,7 +4,7 @@ import uniCloud from "@dcloudio/uni-cloud";
 const TOKEN_KEY = "townsquare.auth.token";
 const USER_KEY = "townsquare.auth.user";
 
-let uniCloudInstance = null;
+let uniCloudInstance;
 
 function getUniCloudConfig() {
   return {
@@ -65,6 +65,16 @@ export function setAuthSession(token, user) {
 export function clearAuthSession() {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);
+}
+
+export function getAuthUserSnapshot() {
+  const { user } = getAuthSession();
+  const userId = user && (user.id || user._id || user.uid || user.userId || user.openid || "");
+  if (!userId) return null;
+  return {
+    userId,
+    nickname: user.nickname || user.username || user.email || ""
+  };
 }
 
 export function createWebLoginTicket() {

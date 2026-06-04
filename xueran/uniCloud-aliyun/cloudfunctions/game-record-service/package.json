@@ -1,0 +1,6 @@
+{
+  "name": "game-record-service",
+  "version": "1.0.0",
+  "description": "Townsquare web game record service",
+  "main": "index.obj.js"
+}

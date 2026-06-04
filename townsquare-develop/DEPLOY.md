@@ -42,6 +42,21 @@ Start the site:
 docker compose up -d --build
 ```
 
+Create the build environment file before running `scripts/update.sh` or building
+on the server. The default path is `/opt/townsquare/config/townsquare.env`.
+These values must point to the shared uniCloud space used by `xueran` and
+`xueran-admin`.
+
+```bash
+sudo mkdir -p /opt/townsquare/config
+sudo tee /opt/townsquare/config/townsquare.env >/dev/null <<'EOF'
+VUE_APP_UNICLOUD_PROVIDER=aliyun
+VUE_APP_UNICLOUD_SPACE_ID=your-space-id
+VUE_APP_UNICLOUD_CLIENT_SECRET=your-client-secret
+VUE_APP_UNICLOUD_ENDPOINT=https://api.next.bspapp.com
+EOF
+```
+
 The default service port is:
 
 ```text

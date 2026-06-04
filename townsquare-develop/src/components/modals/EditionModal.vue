@@ -270,7 +270,7 @@ export default {
     },
     resolveScriptError(error) {
       const message = String((error && error.message) || error || "");
-      if (message === "uniCloud web config is not configured") {
+      if (/uniCloud web config is not configured/.test(message)) {
         return this.$t("login.missingUniCloudConfig");
       }
       if (/failed to fetch|network|timeout/i.test(message)) {

@@ -57,6 +57,19 @@
       }
     },
     {
+      "path": "pages/my-games/my-games",
+      "style": {
+        "navigationBarTitleText": "我的战局",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/my-game-detail/my-game-detail",
+      "style": {
+        "navigationBarTitleText": "战局详情"
+      }
+    },
+    {
       "path": "pages/profile-settings/profile-settings",
       "style": {
         "navigationBarTitleText": "设置"

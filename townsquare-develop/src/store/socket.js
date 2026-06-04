@@ -1,4 +1,5 @@
 import { t } from "../i18n";
+import { getAuthUserSnapshot } from "../services/auth";
 
 class LiveSession {
   constructor(store) {
@@ -12,6 +13,7 @@ class LiveSession {
     this._pingTimer = null;
     this._reconnectTimer = null;
     this._players = {}; // map of players connected to a session
+    this._playerAuthSnapshots = {}; // map of player IDs to web login snapshots
     this._pings = {}; // map of player IDs to ping
     // reconnect to previous session
     if (this._store.state.session.sessionId) {
@@ -95,6 +97,7 @@ class LiveSession {
       this.sendGamestate();
     }
     this._ping();
+    this.syncAuthPlayer();
   }
 
   /**
@@ -213,6 +216,9 @@ class LiveSession {
           isOpen: this._store.state.modals.privateChat
         });
         break;
+      case "authPlayer":
+        this._updatePlayerAuth(params);
+        break;
     }
   }
 
@@ -231,10 +237,20 @@ class LiveSession {
       );
     }
     this._pings = {};
+    this._playerAuthSnapshots = {};
     this._store.commit("session/setPlayerCount", 0);
     this._store.commit("session/setPing", 0);
     this._isSpectator = this._store.state.session.isSpectator;
     this._open(channel);
+  }
+
+  syncAuthPlayer() {
+    if (!this._isSpectator || !this._socket || this._socket.readyState !== 1) return;
+    const auth = getAuthUserSnapshot();
+    this._sendDirect("host", "authPlayer", {
+      playerId: this._store.state.session.playerId,
+      auth
+    });
   }
 
   /**
@@ -242,6 +258,7 @@ class LiveSession {
    */
   disconnect() {
     this._pings = {};
+    this._playerAuthSnapshots = {};
     this._store.commit("session/setPlayerCount", 0);
     this._store.commit("session/setPing", 0);
     this._store.commit("session/setReconnecting", false);
@@ -562,10 +579,15 @@ class LiveSession {
       // remove claimed seats from players that are no longer connected
       this._store.state.players.players.forEach(player => {
         if (player.id && !this._players[player.id]) {
+          const disconnectedPlayerId = player.id;
           this._store.commit("players/update", {
             player,
             property: "id",
             value: ""
+          });
+          this._store.commit("players/setAuthSnapshot", {
+            player,
+            playerId: disconnectedPlayerId
           });
         }
       });
@@ -620,7 +642,18 @@ class LiveSession {
     const players = this._store.state.players.players;
     if (players.length > seat && (seat < 0 || !players[seat].id)) {
       this._send("claim", [seat, this._store.state.session.playerId]);
+      this.syncAuthPlayer();
     }
+  }
+
+  _updatePlayerAuth({ playerId, auth } = {}) {
+    if (this._isSpectator || !playerId) return;
+    if (auth && auth.userId) {
+      this._playerAuthSnapshots[playerId] = auth;
+    } else {
+      delete this._playerAuthSnapshots[playerId];
+    }
+    this._store.commit("players/setAuthSnapshot", { playerId, auth });
   }
 
   /**
@@ -641,12 +674,20 @@ class LiveSession {
         property,
         value: ""
       });
+      this._store.commit("players/setAuthSnapshot", {
+        player: players[oldIndex],
+        playerId: value
+      });
     }
     // add playerId to new seat
     if (index >= 0) {
       const player = players[index];
       if (!player) return;
       this._store.commit("players/update", { player, property, value });
+      this._store.commit("players/setAuthSnapshot", {
+        playerId: value,
+        auth: this._playerAuthSnapshots[value]
+      });
     }
     // update player session list as if this was a ping
     this._handlePing([true, value, 0]);
@@ -853,6 +894,11 @@ class LiveSession {
 export default store => {
   // setup
   const session = new LiveSession(store);
+  if (typeof window !== "undefined") {
+    window.addEventListener("townsquare-auth-change", () => {
+      session.syncAuthPlayer();
+    });
+  }
 
   // listen to mutations
   store.subscribe(({ type, payload }, state) => {

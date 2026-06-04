@@ -1,0 +1,28 @@
+{
+  "bsonType": "object",
+  "required": ["source", "storyteller", "script", "players", "createTime", "updateTime"],
+  "permission": {
+    "read": true,
+    "create": true,
+    "update": true,
+    "delete": true
+  },
+  "properties": {
+    "_id": { "description": "ID" },
+    "source": { "bsonType": "string", "title": "来源" },
+    "sessionId": { "bsonType": "string", "title": "网页房间号" },
+    "status": { "bsonType": "string", "enum": ["finished", "abandoned"] },
+    "winner": { "bsonType": "string", "enum": ["good", "evil", "unknown"] },
+    "storyteller": { "bsonType": "object", "title": "说书人" },
+    "script": { "bsonType": "object", "title": "剧本快照" },
+    "playerCount": { "bsonType": "int", "title": "玩家人数" },
+    "players": { "bsonType": "array", "title": "玩家快照" },
+    "participantUserIds": { "bsonType": "array", "title": "已登录玩家ID" },
+    "startTime": { "bsonType": "long", "title": "开始时间" },
+    "endTime": { "bsonType": "long", "title": "结束时间" },
+    "duration": { "bsonType": "long", "title": "对局时长" },
+    "createTime": { "bsonType": "long", "title": "创建时间" },
+    "updateTime": { "bsonType": "long", "title": "更新时间" }
+  }
+}
+

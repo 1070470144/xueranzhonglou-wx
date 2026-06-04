@@ -1,23 +1,40 @@
-服务器更新命令
-更新命令：APP_DIR=/opt/townsquare/xueranzhonglou-wx/townsquare-develop BRANCH=master bash scripts/update.sh
+服务器环境变量配置：
 
+sudo mkdir -p /opt/townsquare/config
+sudo tee /opt/townsquare/config/townsquare.env >/dev/null <<'EOF'
+VUE_APP_UNICLOUD_PROVIDER=aliyun
+VUE_APP_UNICLOUD_SPACE_ID=共享服务空间SpaceId
+VUE_APP_UNICLOUD_CLIENT_SECRET=共享服务空间ClientSecret
+VUE_APP_UNICLOUD_ENDPOINT=https://api.next.bspapp.com
+EOF
+
+服务器更新命令：
+
+APP_DIR=/opt/townsquare/xueranzhonglou-wx/townsquare-develop BRANCH=master bash scripts/update.sh
 
 服务器首次部署：
+
 cd /opt/townsquare/townsquare-develop
 docker compose up -d --build
+
 后续一键更新：
+
 cd /opt/townsquare/townsquare-develop
 bash scripts/update.sh
+
 默认更新路径是：
+
 /opt/townsquare/townsquare-develop
+
 默认分支是：
+
 main
+
 如果服务器路径或分支不同，可以这样执行：
+
 APP_DIR=/your/project/path BRANCH=master bash scripts/update.sh
-我也做了校验：git diff --check 没有格式错误。
-本地 npm run build 没跑通，原因是当前本地没有 node_modules，找不到 vue-cli-service；这不影响服务器 Docker 构建，因为 Dockerfile 里会执行 npm ci 安装依赖后再构建。
 
+本地开发命令：
 
-本地开发命令
 npm install
-npm run dev
+npm run serve

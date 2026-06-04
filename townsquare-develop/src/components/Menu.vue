@@ -87,6 +87,10 @@
             {{ $t("menu.storyLog") }}
             <em><font-awesome-icon icon="clipboard" /></em>
           </li>
+          <li @click="toggleModal('gameRecord')" v-if="!session.isSpectator && players.length">
+            保存战绩
+            <em><font-awesome-icon icon="trophy" /></em>
+          </li>
           <li @click="toggleNightOrder" v-if="players.length">
             {{ $t("menu.nightOrder") }}
             <em>
@@ -340,6 +344,7 @@ export default {
     logoutWeb() {
       if (!confirm(this.$t("login.confirmLogout"))) return;
       clearAuthSession();
+      window.dispatchEvent(new Event("townsquare-auth-change"));
       this.refreshAuthSession();
     },
     setBackground() {
@@ -357,6 +362,7 @@ export default {
       if (sessionId) {
         this.$store.commit("session/clearVoteHistory");
         this.$store.commit("session/setSpectator", false);
+        this.$store.commit("session/setGameStartedAt", Date.now());
         this.$store.commit("session/setSessionId", sessionId);
         this.copySessionUrl();
       }
@@ -394,6 +400,7 @@ export default {
       if (sessionId) {
         this.$store.commit("session/clearVoteHistory");
         this.$store.commit("session/setSpectator", true);
+        this.$store.commit("session/setGameStartedAt", Date.now());
         this.$store.commit("toggleGrimoire", false);
         this.$store.commit("session/setSessionId", sessionId);
       }
@@ -402,6 +409,7 @@ export default {
       if (confirm(this.$t("menu.confirmLeave"))) {
         this.$store.commit("session/setSpectator", false);
         this.$store.commit("session/setSessionId", "");
+        this.$store.commit("session/setGameStartedAt", Date.now());
       }
     },
     addPlayer() {

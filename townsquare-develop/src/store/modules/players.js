@@ -116,6 +116,12 @@ const mutations = {
       state.players[index][property] = value;
     }
   },
+  setAuthSnapshot(state, { player, playerId, auth } = {}) {
+    player = player || state.players.find(item => item.id === playerId);
+    if (!player) return;
+    player.userId = auth && auth.userId ? auth.userId : "";
+    player.nickname = auth && auth.nickname ? auth.nickname : "";
+  },
   add(state, name) {
     state.players.push({
       ...NEWPLAYER,

@@ -68,6 +68,9 @@ export default store => {
     store.commit("session/setSpectator", spectator);
     store.commit("session/setSessionId", sessionId);
   }
+  if (localStorage.getItem("gameStartedAt")) {
+    store.commit("session/setGameStartedAt", Number(localStorage.getItem("gameStartedAt")) || Date.now());
+  }
 
   // listen to mutations
   store.subscribe(({ type, payload }, state) => {
@@ -175,6 +178,9 @@ export default store => {
         } else {
           localStorage.removeItem("session");
         }
+        break;
+      case "session/setGameStartedAt":
+        localStorage.setItem("gameStartedAt", payload || Date.now());
         break;
       case "session/setPlayerId":
         if (payload) {
