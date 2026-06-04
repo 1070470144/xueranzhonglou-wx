@@ -530,6 +530,63 @@ export default {
   transform: scale(0.1);
 }
 
+@media (orientation: portrait) and (max-width: 768px) {
+  #townsquare > .bluffs,
+  #townsquare > .fabled {
+    left: max(8px, env(safe-area-inset-left));
+    max-width: min(54vw, 220px);
+    border-width: 2px;
+    border-radius: 8px;
+    transform-origin: left center;
+
+    h3 {
+      min-height: 24px;
+      margin: 2px 7px 0;
+      font-size: clamp(12px, 3.4vw, 16px);
+      line-height: 1.2;
+
+      svg {
+        &.fa-times-circle,
+        &.fa-plus-circle {
+          margin-left: 6px;
+        }
+      }
+    }
+
+    ul {
+      margin: 0;
+      padding: 0 5px 5px;
+      justify-content: flex-start;
+
+      li {
+        width: clamp(44px, 15vw, 64px);
+        height: clamp(44px, 15vw, 64px);
+        margin: 0 2px;
+      }
+    }
+  }
+
+  #townsquare > .fabled {
+    top: max(54px, calc(env(safe-area-inset-top) + 48px));
+  }
+
+  #townsquare > .bluffs {
+    bottom: max(56px, calc(env(safe-area-inset-bottom) + 48px));
+  }
+}
+
+@media (orientation: portrait) and (max-width: 420px) {
+  #townsquare > .bluffs,
+  #townsquare > .fabled {
+    max-width: min(58vw, 200px);
+
+    ul li {
+      width: clamp(42px, 14.5vw, 58px);
+      height: clamp(42px, 14.5vw, 58px);
+    }
+  }
+}
+
 .fabled ul li .token:before {
   content: " ";
   opacity: 0;

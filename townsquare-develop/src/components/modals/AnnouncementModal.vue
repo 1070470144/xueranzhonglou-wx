@@ -288,22 +288,99 @@ h4 {
 }
 
 @media (max-width: 700px) {
+  ::v-deep .modal {
+    width: calc(100vw - 20px);
+    max-width: calc(100vw - 20px);
+    max-height: calc(100dvh - 88px);
+    padding: 10px;
+    border-radius: 8px;
+  }
+
+  ::v-deep .modal > .top-right-buttons {
+    top: 12px;
+    right: 12px;
+
+    .top-right-button {
+      width: 22px;
+    }
+  }
+
+  ::v-deep .modal > .slot {
+    min-height: 0;
+    width: 100%;
+  }
+
   .announcement-panel {
-    width: 86vw;
+    width: 100%;
+    max-height: calc(100dvh - 118px);
+    padding: 2px 0 4px;
   }
 
   .announcement-header {
     display: block;
-    padding-right: 64px;
+    padding-right: 56px;
+    margin-bottom: 10px;
 
     h3 {
-      font-size: 24px;
+      font-size: 22px;
     }
   }
 
   .version {
     display: block;
     margin-top: 4px;
+    font-size: 13px;
+  }
+
+  .announcement-list {
+    gap: 8px;
+  }
+
+  .announcement-list-item,
+  .announcement-detail {
+    padding: 10px;
+    border-radius: 7px;
+  }
+
+  .announcement-list-item {
+    gap: 10px;
+  }
+
+  .card-head {
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .type {
+    height: 22px;
+    padding: 0 7px;
+    font-size: 13px;
+  }
+
+  h4 {
+    margin-bottom: 6px;
+    font-size: 18px;
+  }
+
+  .summary {
+    margin-bottom: 8px;
+    font-size: 14px;
+    line-height: 1.45;
+  }
+
+  .content {
+    font-size: 15px;
+    line-height: 1.55;
+  }
+
+  .version,
+  .time,
+  .item-version {
+    font-size: 13px;
+  }
+
+  .detail-icon {
+    width: 14px;
   }
 }
 </style>

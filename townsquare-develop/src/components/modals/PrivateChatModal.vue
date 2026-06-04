@@ -403,13 +403,40 @@ footer {
 
 @media (max-width: 520px) {
   .private-chat-shell {
-    right: 8px;
-    bottom: 8px;
+    right: max(8px, env(safe-area-inset-right));
+    bottom: max(10px, env(safe-area-inset-bottom));
+    gap: 8px;
+  }
+
+  .chat-toggle {
+    min-width: 44px;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 50%;
+
+    span {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 4px;
+      color: white;
+      background: $demon;
+      border-radius: 9px;
+      box-shadow: 0 0 6px rgba($demon, 0.85);
+    }
   }
 
   .private-chat-panel {
     width: calc(100vw - 16px);
-    height: 66vh;
+    height: min(62dvh, 460px);
+    max-height: calc(100dvh - 96px);
+    padding: 10px;
   }
 }
 </style>
