@@ -73,6 +73,10 @@
             <template v-if="grimoire.isNight">{{ $t("menu.switchToDay") }}</template>
             <em>[S]</em>
           </li>
+          <li @click="toggleModal('storyLog')" v-if="!session.isSpectator">
+            {{ $t("menu.storyLog") }}
+            <em><font-awesome-icon icon="clipboard" /></em>
+          </li>
           <li @click="toggleNightOrder" v-if="players.length">
             {{ $t("menu.nightOrder") }}
             <em>

@@ -2,8 +2,10 @@ import Vue from "vue";
 import Vuex from "vuex";
 import persistence from "./persistence";
 import socket from "./socket";
+import storyLogPlugin from "./storyLogPlugin";
 import players from "./modules/players";
 import session from "./modules/session";
+import storyLog from "./modules/storyLog";
 import editionJSON from "../editions.json";
 import rolesJSON from "../roles.json";
 import fabledJSON from "../fabled.json";
@@ -94,7 +96,8 @@ const customRole = {
 export default new Vuex.Store({
   modules: {
     players,
-    session
+    session,
+    storyLog
   },
   state: {
     grimoire: {
@@ -118,6 +121,7 @@ export default new Vuex.Store({
       reminder: false,
       role: false,
       roles: false,
+      storyLog: false,
       voteHistory: false
     },
     edition: editionJSONbyId.get("tb"),
@@ -263,5 +267,5 @@ export default new Vuex.Store({
       state.modals.edition = false;
     }
   },
-  plugins: [persistence, socket]
+  plugins: [persistence, socket, storyLogPlugin]
 });
