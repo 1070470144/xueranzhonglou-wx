@@ -37,6 +37,7 @@
     <GameStateModal />
     <LoginModal />
     <StoryLogModal />
+    <PrivateChatModal />
     <Gradients />
     <span id="version">v{{ version }}</span>
   </div>
@@ -60,9 +61,11 @@ import VoteHistoryModal from "@/components/modals/VoteHistoryModal";
 import GameStateModal from "@/components/modals/GameStateModal";
 import LoginModal from "@/components/modals/LoginModal";
 import StoryLogModal from "@/components/modals/StoryLogModal";
+import PrivateChatModal from "@/components/modals/PrivateChatModal";
 
 export default {
   components: {
+    PrivateChatModal,
     StoryLogModal,
     LoginModal,
     GameStateModal,

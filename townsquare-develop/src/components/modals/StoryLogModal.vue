@@ -17,6 +17,9 @@
         <button type="button" @click="startNewGame">
           <font-awesome-icon icon="plus-circle" /> {{ $t("storyLog.newGame") }}
         </button>
+        <button type="button" @click="exportReview">
+          <font-awesome-icon icon="download" /> {{ $t("storyLog.exportReview") }}
+        </button>
         <label class="phase-select">
           <span>{{ $t("storyLog.adjustPhase") }}</span>
           <select :value="currentPhaseKey" @change="adjustCurrentPhase">
@@ -107,7 +110,8 @@ export default {
     };
   },
   computed: {
-    ...mapState(["modals"]),
+    ...mapState(["modals", "edition", "session"]),
+    ...mapState("players", ["players"]),
     ...mapGetters("storyLog", ["currentGame", "currentLogs"]),
     currentPhaseKey() {
       return this.phaseKey(this.currentGame || { phaseType: "setup", phaseNumber: 0 });
@@ -300,6 +304,118 @@ export default {
       if (confirm(this.$t("storyLog.confirmNewGame"))) {
         this.$store.commit("storyLog/startNewGame");
       }
+    },
+    exportReview() {
+      if (!confirm(this.$t("storyLog.confirmExportReview"))) return;
+      const markdown = this.buildReviewMarkdown();
+      const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = this.reviewFilename();
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    },
+    buildReviewMarkdown() {
+      const lines = [
+        `# ${this.$t("storyLog.reviewTitle")}`,
+        "",
+        `- ${this.$t("storyLog.exportedAt")}：${this.formatDateTime(Date.now())}`,
+        `- ${this.$t("storyLog.scriptName")}：${this.edition.name || this.$t("common.customScript")}`,
+        `- ${this.$t("storyLog.roomId")}：${this.session.sessionId || "-"}`,
+        `- ${this.$t("storyLog.playerCount")}：${this.players.length}`,
+        `- ${this.$t("storyLog.currentPhase")}：${this.phaseLabel(this.currentGame)}`,
+        "",
+        `## ${this.$t("storyLog.playersAndRoles")}`,
+        "",
+        `| ${this.$t("storyLog.seat")} | ${this.$t("storyLog.player")} | ${this.$t("storyLog.role")} | ${this.$t("storyLog.team")} |`,
+        "| --- | --- | --- | --- |",
+        ...this.players.map((player, index) => {
+          const role = player.role || {};
+          return `| ${index + 1} | ${this.markdownCell(player.name || "-")} | ${this.markdownCell(role.name || role.id || "-")} | ${this.markdownCell(role.team || "-")} |`;
+        }),
+        "",
+        `## ${this.$t("storyLog.voteHistory")}`,
+        ""
+      ];
+
+      if (this.session.voteHistory.length) {
+        this.session.voteHistory.forEach(vote => {
+          lines.push(
+            `- ${this.formatDateTime(vote.timestamp)} ${vote.type || ""}：${vote.nominator} -> ${vote.nominee}，${this.$t("storyLog.majority")} ${vote.majority}，${this.$t("storyLog.voters")}：${vote.votes.length ? vote.votes.join("、") : "-"}`
+          );
+        });
+      } else {
+        lines.push(`_${this.$t("storyLog.noVoteHistory")}_`);
+      }
+
+      lines.push("", `## ${this.$t("storyLog.title")}`, "");
+      const groups = this.logsForExport();
+      if (!groups.length) {
+        lines.push(`_${this.$t("storyLog.empty")}_`);
+      } else {
+        groups.forEach(group => {
+          lines.push(`### ${group.label}`, "");
+          group.logs.forEach(log => {
+            const label = `${this.formatDateTime(log.createdAt)} [${this.sourceLabel(log.source)}] ${log.title || this.$t("storyLog.note")}`;
+            lines.push(`- ${label}`);
+            if (log.content) {
+              log.content.split("\n").forEach(line => {
+                lines.push(`  ${line}`);
+              });
+            }
+          });
+          lines.push("");
+        });
+      }
+
+      return `${lines.join("\n")}\n`;
+    },
+    logsForExport() {
+      const groups = [];
+      [...this.currentLogs]
+        .sort((a, b) => this.phaseOrder(a) - this.phaseOrder(b) || a.createdAt - b.createdAt)
+        .forEach(log => {
+          const key = this.phaseKey(log);
+          let group = groups.find(item => item.key === key);
+          if (!group) {
+            group = {
+              key,
+              label: this.phaseLabel(log),
+              logs: []
+            };
+            groups.push(group);
+          }
+          group.logs.push(log);
+        });
+      return groups;
+    },
+    phaseOrder(item) {
+      if (!item || item.phaseType === "setup") return 0;
+      const number = item.phaseNumber || 1;
+      return item.phaseType === "night" ? number * 2 - 1 : number * 2;
+    },
+    formatDateTime(timestamp) {
+      return new Date(timestamp).toLocaleString([], {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit"
+      });
+    },
+    markdownCell(value) {
+      return String(value).replace(/\|/g, "\\|").replace(/\n/g, " ");
+    },
+    reviewFilename() {
+      const date = new Date()
+        .toISOString()
+        .slice(0, 10)
+        .replace(/-/g, "");
+      const room = this.session.sessionId || "local";
+      return `${this.$t("storyLog.reviewTitle")}-${room}-${date}.md`.replace(/[\\/:*?"<>|]/g, "-");
     },
     ...mapMutations(["toggleModal"])
   }

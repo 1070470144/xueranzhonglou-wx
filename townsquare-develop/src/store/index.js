@@ -6,6 +6,7 @@ import storyLogPlugin from "./storyLogPlugin";
 import players from "./modules/players";
 import session from "./modules/session";
 import storyLog from "./modules/storyLog";
+import privateChat from "./modules/privateChat";
 import editionJSON from "../editions.json";
 import rolesJSON from "../roles.json";
 import fabledJSON from "../fabled.json";
@@ -97,7 +98,8 @@ export default new Vuex.Store({
   modules: {
     players,
     session,
-    storyLog
+    storyLog,
+    privateChat
   },
   state: {
     grimoire: {
@@ -117,6 +119,7 @@ export default new Vuex.Store({
       gameState: false,
       login: false,
       nightOrder: false,
+      privateChat: false,
       reference: false,
       reminder: false,
       role: false,

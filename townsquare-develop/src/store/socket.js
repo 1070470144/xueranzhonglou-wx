@@ -207,6 +207,12 @@ class LiveSession {
       case "pronouns":
         this._updatePlayerPronouns(params);
         break;
+      case "privateChat":
+        this._store.commit("privateChat/receiveMessage", {
+          ...params,
+          isOpen: this._store.state.modals.privateChat
+        });
+        break;
     }
   }
 
@@ -832,6 +838,16 @@ class LiveSession {
     if (this._isSpectator) return;
     this._send("remove", payload);
   }
+
+  /**
+   * Send a private chat message to one connected participant in the same room.
+   * @param payload
+   */
+  sendPrivateChat(payload) {
+    const toId = payload && payload.toId;
+    if (!toId || !this._socket || this._socket.readyState !== 1) return;
+    this._sendDirect(toId, "privateChat", payload);
+  }
 }
 
 export default store => {
@@ -843,11 +859,16 @@ export default store => {
     switch (type) {
       case "session/setSessionId":
         if (state.session.sessionId) {
+          store.commit("privateChat/clear");
           session.connect(state.session.sessionId);
         } else {
           window.location.hash = "";
+          store.commit("privateChat/clear");
           session.disconnect();
         }
+        break;
+      case "privateChat/sendMessage":
+        session.sendPrivateChat(payload);
         break;
       case "session/claimSeat":
         session.claimSeat(payload);
