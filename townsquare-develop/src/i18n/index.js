@@ -45,6 +45,7 @@ const messages = {
       showCustomImages: "显示自定义图片",
       disableAnimations: "禁用动画",
       muteSounds: "静音",
+      webLogin: "网页登录",
       playing: "游玩中",
       hosting: "主持中",
       liveSession: "在线房间",
@@ -82,6 +83,22 @@ const messages = {
       confirmRandomize: "确定要随机排列座位吗？",
       confirmClearPlayers: "确定要移除所有玩家吗？",
       confirmClearRoles: "确定要移除所有玩家角色吗？"
+    },
+    login: {
+      title: "网页登录",
+      qrAlt: "网页登录二维码",
+      pending: "请用小程序首页右上角扫码确认登录",
+      approved: "登录成功",
+      expired: "二维码已过期，请刷新",
+      failed: "登录失败",
+      refresh: "刷新二维码",
+      expiresIn: "{seconds} 秒后过期",
+      loggedIn: "已登录",
+      createFailed: "创建登录二维码失败",
+      pollFailed: "检查登录状态失败",
+      missingUniCloudConfig: "未配置 uniCloud 网页端服务空间参数",
+      missingUniCloudSdk: "uniCloud Web SDK 未加载",
+      networkError: "网页登录服务连接失败"
     },
     intro: {
       welcomePrefix: "欢迎来到（非官方）",
@@ -253,6 +270,7 @@ const messages = {
       showCustomImages: "Show Custom Images",
       disableAnimations: "Disable Animations",
       muteSounds: "Mute Sounds",
+      webLogin: "Web Login",
       playing: "Playing",
       hosting: "Hosting",
       liveSession: "Live Session",
@@ -290,6 +308,22 @@ const messages = {
       confirmRandomize: "Are you sure you want to randomize seatings?",
       confirmClearPlayers: "Are you sure you want to remove all players?",
       confirmClearRoles: "Are you sure you want to remove all player roles?"
+    },
+    login: {
+      title: "Web Login",
+      qrAlt: "Web login QR code",
+      pending: "Scan this QR code from the mini-program home page",
+      approved: "Login successful",
+      expired: "QR code expired. Please refresh.",
+      failed: "Login failed",
+      refresh: "Refresh QR Code",
+      expiresIn: "Expires in {seconds}s",
+      loggedIn: "Logged in",
+      createFailed: "Failed to create login QR code",
+      pollFailed: "Failed to check login status",
+      missingUniCloudConfig: "uniCloud web config is not configured",
+      missingUniCloudSdk: "uniCloud Web SDK is not loaded",
+      networkError: "Could not connect to the web login service"
     },
     intro: {
       welcomePrefix: "Welcome to the (unofficial)",

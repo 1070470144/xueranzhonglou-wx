@@ -6,6 +6,7 @@
         <view class="title">询问血染钟楼</view>
         <view class="subtitle">基于已收录的百科知识回答，也可以指定一个板子进行分析。</view>
       </view>
+      <button class="web-login-scan" @click="scanWebLogin">扫码</button>
     </view>
 
     <view v-if="announcements.length" class="announcement-bar slide-up" @click="goAnnouncements">
@@ -407,6 +408,36 @@ export default {
     },
     goAnnouncements() {
       uni.navigateTo({ url: '/pages/announcements/announcements' });
+    },
+    scanWebLogin() {
+      uni.scanCode({
+        onlyFromCamera: false,
+        success: (res) => {
+          const ticket = this.extractWebLoginTicket(res.result || '');
+          if (!ticket) {
+            uni.showToast({ title: '无效网页登录码', icon: 'none' });
+            return;
+          }
+          uni.navigateTo({
+            url: `/pages/web-login-confirm/web-login-confirm?ticket=${encodeURIComponent(ticket)}`
+          });
+        },
+        fail: () => {
+          uni.showToast({ title: '扫码已取消', icon: 'none' });
+        }
+      });
+    },
+    extractWebLoginTicket(value) {
+      const text = String(value || '').trim();
+      if (!text) return '';
+      const match = text.match(/^xueran:\/\/web-login\?ticket=([^&]+)/);
+      if (match) return decodeURIComponent(match[1]);
+      try {
+        const data = JSON.parse(text);
+        return data && data.type === 'xueran-web-login' ? String(data.ticket || '') : '';
+      } catch (error) {
+        return '';
+      }
     }
   }
 };
@@ -472,11 +503,24 @@ export default {
 .hero {
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
   gap: 20rpx;
   margin-bottom: 28rpx;
   padding: 0 0 42rpx;
   border-bottom: 1rpx solid #edf0f2;
   background: #fff;
+}
+
+.web-login-scan {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 0 22rpx;
+  height: 58rpx;
+  line-height: 58rpx;
+  border-radius: 29rpx;
+  background: #1f2329;
+  color: #fff;
+  font-size: 24rpx;
 }
 
 .eyebrow {

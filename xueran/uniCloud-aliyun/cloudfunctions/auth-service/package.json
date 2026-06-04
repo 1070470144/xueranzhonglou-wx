@@ -1,0 +1,10 @@
+{
+  "name": "auth-service",
+  "version": "1.0.0",
+  "description": "Authentication cloud function",
+  "main": "index.js",
+  "cloudfunction-config": {
+    "timeout": 60,
+    "memorySize": 512
+  }
+}

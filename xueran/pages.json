@@ -76,6 +76,12 @@
       }
     },
     {
+      "path": "pages/web-login-confirm/web-login-confirm",
+      "style": {
+        "navigationBarTitleText": "网页登录确认"
+      }
+    },
+    {
       "path": "pages/ai-config/ai-config",
       "style": {
         "navigationBarTitleText": "AI 配置"

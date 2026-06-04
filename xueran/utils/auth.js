@@ -132,6 +132,16 @@ export async function logout() {
   }
 }
 
+export async function approveWebLogin(ticket) {
+  const token = getAuthToken();
+  if (!token) return { success: false, message: '请先登录' };
+  return callAuth('approveWebLoginTicket', {
+    ticket,
+    token,
+    clientPlatform: getClientPlatform()
+  });
+}
+
 export function requireLogin(redirectUrl) {
   if (isLoggedIn()) {
     return true;

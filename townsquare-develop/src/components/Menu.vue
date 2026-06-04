@@ -132,6 +132,14 @@
               </button>
             </em>
           </li>
+          <li v-if="authUser" @click="logoutWeb">
+            {{ authUser.nickname || $t("login.loggedIn") }}
+            <em><font-awesome-icon icon="times" /></em>
+          </li>
+          <li v-else @click="toggleModal('login')">
+            {{ $t("menu.webLogin") }}
+            <em><font-awesome-icon icon="user" /></em>
+          </li>
         </template>
 
         <template v-if="tab === 'session'">
@@ -259,6 +267,7 @@
 
 <script>
 import { mapMutations, mapState } from "vuex";
+import { clearAuthSession, getAuthSession } from "@/services/auth";
 
 export default {
   computed: {
@@ -267,10 +276,25 @@ export default {
   },
   data() {
     return {
-      tab: "grimoire"
+      tab: "grimoire",
+      authUser: null
     };
   },
+  mounted() {
+    this.refreshAuthSession();
+    window.addEventListener("townsquare-auth-change", this.refreshAuthSession);
+  },
+  beforeDestroy() {
+    window.removeEventListener("townsquare-auth-change", this.refreshAuthSession);
+  },
   methods: {
+    refreshAuthSession() {
+      this.authUser = getAuthSession().user;
+    },
+    logoutWeb() {
+      clearAuthSession();
+      this.refreshAuthSession();
+    },
     setBackground() {
       const background = prompt(this.$t("menu.promptBackground"));
       if (background || background === "") {

@@ -3,6 +3,7 @@
 const crypto = require('crypto');
 
 const TOKEN_TTL = 30 * 24 * 60 * 60 * 1000;
+const WEB_LOGIN_TTL = 5 * 60 * 1000;
 const PASSWORD_SALT_BYTES = 16;
 const DEFAULT_WX_MP_APPID = 'wx507ffa5fa6ed62f6';
 const DEFAULT_WX_MP_APP_SECRET = '3120fbf8d3b758d78d7bbfb1fa95d832';
@@ -21,6 +22,10 @@ function cleanText(value, max = 300) {
 
 function makeId(prefix) {
   return `${prefix}_${crypto.randomBytes(12).toString('hex')}`;
+}
+
+function normalizeTicket(value) {
+  return cleanText(value, 120);
 }
 
 function hashPassword(password, salt) {
@@ -74,6 +79,13 @@ async function createSession(db, user) {
   };
   await db.collection('auth-sessions').add(session);
   return token;
+}
+
+async function getUserById(db, userId) {
+  const userResult = await db.collection('app-users').doc(userId).get();
+  const user = userResult.data && userResult.data[0];
+  if (!user || user.status === 'disabled') return null;
+  return user;
 }
 
 function getWxMpConfig() {
@@ -136,13 +148,119 @@ async function verifyToken(db, token) {
     return null;
   }
 
-  const userResult = await db.collection('app-users').doc(session.userId).get();
-  const user = userResult.data && userResult.data[0];
-  if (!user || user.status === 'disabled') {
+  const user = await getUserById(db, session.userId);
+  if (!user) {
     return null;
   }
 
   return { session, user };
+}
+
+async function createWebLoginTicket(data, context = {}) {
+  const db = uniCloud.database();
+  const ticket = makeId('wlt');
+  const expireTime = now() + WEB_LOGIN_TTL;
+  const client = data && data.client ? data.client : {};
+  await db.collection('web-login-tickets').add({
+    ticket,
+    status: 'pending',
+    userId: '',
+    createTime: now(),
+    expireTime,
+    approvedTime: 0,
+    consumedTime: 0,
+    webClient: {
+      platform: cleanText(client.platform || context.PLATFORM || context.platform, 40),
+      userAgent: cleanText(client.userAgent, 300)
+    }
+  });
+
+  return {
+    success: true,
+    data: {
+      ticket,
+      payload: `xueran://web-login?ticket=${encodeURIComponent(ticket)}`,
+      expireTime
+    }
+  };
+}
+
+async function approveWebLoginTicket(data, context = {}) {
+  const ticket = normalizeTicket(data && data.ticket);
+  const token = cleanText(data && data.token, 120);
+  if (!ticket) return { success: false, message: '登录二维码无效' };
+  if (!token) return { success: false, message: '请先登录小程序' };
+
+  const db = uniCloud.database();
+  const auth = await verifyToken(db, token);
+  if (!auth) return { success: false, message: '登录已失效，请重新登录' };
+
+  const result = await db.collection('web-login-tickets').where({ ticket }).limit(1).get();
+  const loginTicket = result.data && result.data[0];
+  if (!loginTicket) return { success: false, message: '登录二维码不存在' };
+  if (loginTicket.expireTime <= now()) {
+    await db.collection('web-login-tickets').doc(loginTicket._id).update({ status: 'expired' });
+    return { success: false, message: '登录二维码已过期' };
+  }
+  if (loginTicket.status !== 'pending') {
+    return { success: false, message: '登录二维码已使用或已失效' };
+  }
+
+  await db.collection('web-login-tickets').doc(loginTicket._id).update({
+    status: 'approved',
+    userId: auth.user._id,
+    approvedTime: now(),
+    miniappClient: {
+      platform: cleanText(data && data.clientPlatform || context.PLATFORM || context.platform, 40)
+    }
+  });
+
+  return { success: true, message: '已确认网页登录' };
+}
+
+async function pollWebLoginTicket(data) {
+  const ticket = normalizeTicket(data && data.ticket);
+  if (!ticket) return { success: false, message: '登录二维码无效' };
+
+  const db = uniCloud.database();
+  const result = await db.collection('web-login-tickets').where({ ticket }).limit(1).get();
+  const loginTicket = result.data && result.data[0];
+  if (!loginTicket) return { success: false, message: '登录二维码不存在' };
+
+  if (loginTicket.expireTime <= now() && loginTicket.status === 'pending') {
+    await db.collection('web-login-tickets').doc(loginTicket._id).update({ status: 'expired' });
+    return { success: true, data: { status: 'expired' } };
+  }
+
+  if (loginTicket.status === 'pending' || loginTicket.status === 'expired') {
+    return { success: true, data: { status: loginTicket.status } };
+  }
+
+  if (loginTicket.status === 'consumed') {
+    return { success: true, data: { status: 'consumed' } };
+  }
+
+  if (loginTicket.status !== 'approved') {
+    return { success: true, data: { status: loginTicket.status || 'unknown' } };
+  }
+
+  const user = await getUserById(db, loginTicket.userId);
+  if (!user) return { success: false, message: '用户不存在或已禁用' };
+
+  const token = await createSession(db, user);
+  await db.collection('web-login-tickets').doc(loginTicket._id).update({
+    status: 'consumed',
+    consumedTime: now()
+  });
+
+  return {
+    success: true,
+    data: {
+      status: 'approved',
+      token,
+      user: publicUser(user)
+    }
+  };
 }
 
 async function register(data) {
@@ -317,16 +435,35 @@ async function logout(data) {
   return { success: true };
 }
 
+function normalizeEvent(event = {}) {
+  if (event.method) return event;
+  if (!event.body) return event;
+  try {
+    return typeof event.body === 'string' ? JSON.parse(event.body) : event.body;
+  } catch (error) {
+    return event;
+  }
+}
+
 exports.main = async (event, context = {}) => {
-  const { method, params = [] } = event || {};
+  const normalizedEvent = normalizeEvent(event || {});
+  const { method, params = [] } = normalizedEvent || {};
   try {
     switch (method) {
+      case 'ping':
+        return { success: true, data: { time: now() } };
       case 'register':
         return await register(params[0] || {});
       case 'login':
         return await login(params[0] || {});
       case 'weixinLogin':
         return await weixinLogin(params[0] || {}, context);
+      case 'createWebLoginTicket':
+        return await createWebLoginTicket(params[0] || {}, context);
+      case 'approveWebLoginTicket':
+        return await approveWebLoginTicket(params[0] || {}, context);
+      case 'pollWebLoginTicket':
+        return await pollWebLoginTicket(params[0] || {});
       case 'me':
         return await me(params[0] || {});
       case 'updateProfile':
