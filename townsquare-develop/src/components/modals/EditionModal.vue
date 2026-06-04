@@ -10,12 +10,30 @@
           :placeholder="$t('modals.searchScripts')"
           @input="queueSearch"
         />
+        <button
+          type="button"
+          class="refresh-button"
+          :disabled="loading"
+          :title="galleryText('refresh')"
+          @click="refreshGalleryScripts"
+        >
+          <font-awesome-icon icon="sync-alt" :spin="refreshing" />
+        </button>
       </div>
-      <div class="script-list">
-        <div v-if="loading" class="state-line">
+      <div
+        class="script-list"
+        @scroll="handleScriptListScroll"
+        @touchstart="handleTouchStart"
+        @touchmove="handleTouchMove"
+        @touchend="handleTouchEnd"
+      >
+        <div v-if="pullDistance > 0" class="state-line pull-state">
+          {{ pullDistance >= pullRefreshThreshold ? galleryText("releaseToRefresh") : galleryText("pullToRefresh") }}
+        </div>
+        <div v-if="loading && !galleryScripts.length" class="state-line">
           <font-awesome-icon icon="spinner" spin /> {{ $t("modals.loadingScripts") }}
         </div>
-        <div v-else-if="error" class="state-line error">{{ error }}</div>
+        <div v-else-if="error && !galleryScripts.length" class="state-line error">{{ error }}</div>
         <button
           v-else
           v-for="script in galleryScripts"
@@ -36,6 +54,20 @@
             <span class="script-meta">{{ getScriptMeta(script) }}</span>
           </span>
         </button>
+        <div v-if="loading && galleryScripts.length" class="state-line more-state">
+          <font-awesome-icon icon="spinner" spin /> {{ $t("modals.loadingScripts") }}
+        </div>
+        <button
+          v-else-if="!loading && !error && hasMore && galleryScripts.length"
+          type="button"
+          class="state-line load-more-button"
+          @click="loadNextGalleryPage"
+        >
+          {{ galleryText("loadMore") }}
+        </button>
+        <div v-if="error && galleryScripts.length" class="state-line error more-state">
+          {{ error }}
+        </div>
         <div v-if="!loading && !error && !galleryScripts.length" class="state-line">
           {{ $t("modals.noScriptsFound") }}
         </div>
@@ -120,9 +152,18 @@ export default {
       view: "gallery",
       searchText: "",
       loading: false,
+      refreshing: false,
+      pendingRefresh: false,
       error: "",
       galleryScripts: [],
+      page: 1,
+      pageSize: 20,
+      totalScripts: 0,
+      hasMore: true,
       searchTimer: null,
+      touchStartY: 0,
+      pullDistance: 0,
+      pullRefreshThreshold: 54,
       scripts: [
         [
           "Deadly Penance Day",
@@ -156,7 +197,7 @@ export default {
     "modals.edition"(visible) {
       if (visible) {
         this.view = "gallery";
-        this.loadGalleryScripts();
+        this.refreshGalleryScripts();
       }
     }
   },
@@ -167,31 +208,120 @@ export default {
     close() {
       this.toggleModal("edition");
     },
+    galleryText(key) {
+      const zh = {
+        refresh: "刷新",
+        loadMore: "加载更多",
+        pullToRefresh: "下拉刷新",
+        releaseToRefresh: "松开刷新"
+      };
+      const en = {
+        refresh: "Refresh",
+        loadMore: "Load more",
+        pullToRefresh: "Pull to refresh",
+        releaseToRefresh: "Release to refresh"
+      };
+      return (this.$i18n.locale === "en-US" ? en : zh)[key] || key;
+    },
     async loadGalleryScripts() {
+      if (this.loading) return;
       this.loading = true;
       this.error = "";
       try {
         const keyword = this.searchText.trim();
         const res = keyword
-          ? await searchScripts({ keyword })
-          : await getScriptList();
+          ? await searchScripts({ keyword, page: this.page, pageSize: this.pageSize })
+          : await getScriptList({ page: this.page, pageSize: this.pageSize });
         if (!res || !res.success || !res.data) {
           throw new Error((res && res.message) || this.$t("modals.loadScriptsFailed"));
         }
-        this.galleryScripts = (res.data.list || []).map(script => ({
+        const list = (res.data.list || []).map(script => ({
           ...script,
           id: script.id || script._id
         }));
+        this.galleryScripts = list;
+        this.totalScripts = Number(res.data.total) || list.length;
+        this.hasMore = this.galleryScripts.length < this.totalScripts;
       } catch (error) {
         this.galleryScripts = [];
         this.error = this.resolveScriptError(error);
       } finally {
         this.loading = false;
+        this.refreshing = false;
+        if (this.pendingRefresh) {
+          this.pendingRefresh = false;
+          this.$nextTick(this.refreshGalleryScripts);
+        }
       }
+    },
+    async refreshGalleryScripts() {
+      if (this.loading) {
+        this.pendingRefresh = true;
+        return;
+      }
+      this.page = 1;
+      this.totalScripts = 0;
+      this.hasMore = true;
+      this.refreshing = true;
+      await this.loadGalleryScripts();
     },
     queueSearch() {
       if (this.searchTimer) clearTimeout(this.searchTimer);
-      this.searchTimer = setTimeout(this.loadGalleryScripts, 300);
+      this.searchTimer = setTimeout(this.refreshGalleryScripts, 300);
+    },
+    async loadNextGalleryPage() {
+      if (this.loading || !this.hasMore) return;
+      this.page += 1;
+      this.loading = true;
+      this.error = "";
+      try {
+        const keyword = this.searchText.trim();
+        const res = keyword
+          ? await searchScripts({ keyword, page: this.page, pageSize: this.pageSize })
+          : await getScriptList({ page: this.page, pageSize: this.pageSize });
+        if (!res || !res.success || !res.data) {
+          throw new Error((res && res.message) || this.$t("modals.loadScriptsFailed"));
+        }
+        const list = (res.data.list || []).map(script => ({
+          ...script,
+          id: script.id || script._id
+        }));
+        this.galleryScripts = this.galleryScripts.concat(list);
+        this.totalScripts = Number(res.data.total) || this.galleryScripts.length;
+        this.hasMore = this.galleryScripts.length < this.totalScripts && list.length > 0;
+      } catch (error) {
+        this.page = Math.max(1, this.page - 1);
+        this.error = this.resolveScriptError(error);
+      } finally {
+        this.loading = false;
+      }
+    },
+    handleScriptListScroll(event) {
+      const el = event.currentTarget;
+      if (!el || this.loading || !this.hasMore) return;
+      if (el.scrollTop + el.clientHeight >= el.scrollHeight - 80) {
+        this.loadNextGalleryPage();
+      }
+    },
+    handleTouchStart(event) {
+      const el = event.currentTarget;
+      if (!el || el.scrollTop > 0 || this.loading) return;
+      this.touchStartY = event.touches[0].clientY;
+      this.pullDistance = 0;
+    },
+    handleTouchMove(event) {
+      if (!this.touchStartY || this.loading) return;
+      const el = event.currentTarget;
+      if (!el || el.scrollTop > 0) return;
+      const distance = event.touches[0].clientY - this.touchStartY;
+      this.pullDistance = Math.max(0, Math.min(80, distance));
+    },
+    async handleTouchEnd() {
+      if (this.pullDistance >= this.pullRefreshThreshold) {
+        await this.refreshGalleryScripts();
+      }
+      this.touchStartY = 0;
+      this.pullDistance = 0;
     },
     getScriptImage(script) {
       const images = script.images || script.thumbnails || [];
@@ -380,6 +510,25 @@ export default {
   }
 }
 
+.refresh-button {
+  display: inline-flex;
+  flex: 0 0 28px;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: white;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 4px;
+  cursor: pointer;
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.6;
+  }
+}
+
 .script-list {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -388,6 +537,7 @@ export default {
   max-width: 74vw;
   max-height: 430px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   margin: 0 auto 10px;
   padding: 2px;
 }
@@ -473,9 +623,27 @@ export default {
 }
 
 .state-line {
+  grid-column: 1 / -1;
   padding: 18px 8px;
   text-align: center;
   color: rgba(255, 255, 255, 0.8);
+}
+
+.pull-state,
+.more-state {
+  padding: 10px 8px;
+}
+
+.load-more-button {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 6px;
+  cursor: pointer;
+
+  &:hover {
+    border-color: rgba($townsfolk, 0.85);
+  }
 }
 
 .error {

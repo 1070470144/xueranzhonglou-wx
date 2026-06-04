@@ -37,3 +37,7 @@ export function getMyGameRecords({ mode = 'player', page = 1, pageSize = 10, q =
 export function getMyGameRecordDetail(id) {
   return callGameRecordService('getMyGameRecordDetail', { id });
 }
+
+export function deleteMyGameRecord(id, mode = 'player') {
+  return callGameRecordService('deleteMyGameRecord', { id, mode });
+}

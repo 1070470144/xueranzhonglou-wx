@@ -213,6 +213,41 @@ module.exports = {
     return ok({ item });
   },
 
+  async deleteMyGameRecord(params = {}) {
+    const userId = await getAuthedUserId(params);
+    const id = cleanText(params.id || '', 120);
+    const mode = params.mode === 'storyteller' ? 'storyteller' : 'player';
+    if (!userId) return fail('missing user id');
+    if (!id) return fail('missing record id');
+    const res = await db.collection(TABLE).doc(id).get();
+    const item = res.data && res.data[0];
+    if (!item) return fail('record not found');
+    const isStoryteller = item.storyteller && item.storyteller.userId === userId;
+    const isParticipant = safeArray(item.participantUserIds).includes(userId);
+    if (mode === 'storyteller') {
+      if (!isStoryteller) return fail('no permission');
+      await db.collection(TABLE).doc(id).remove();
+      return ok({ deleted: true, scope: 'record' }, 'deleted');
+    }
+    if (!isParticipant) return fail('no permission');
+    const participantUserIds = safeArray(item.participantUserIds).filter(id => id !== userId);
+    const players = safeArray(item.players).map(player => {
+      if (player.userId !== userId) return player;
+      return {
+        ...player,
+        userId: '',
+        nickname: '',
+        isLoggedIn: false
+      };
+    });
+    await db.collection(TABLE).doc(id).update({
+      participantUserIds,
+      players,
+      updateTime: now()
+    });
+    return ok({ deleted: true, scope: 'participant' }, 'deleted');
+  },
+
   async getMyGameRecordStats(params = {}) {
     const userId = await getAuthedUserId(params);
     if (!userId) return fail('missing user id');

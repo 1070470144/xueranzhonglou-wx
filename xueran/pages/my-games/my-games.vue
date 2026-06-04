@@ -43,6 +43,9 @@
         <view class="meta-row">说书人：{{ item.storyteller && item.storyteller.nickname || '未知' }}</view>
         <view v-if="mode === 'player' && item.role" class="meta-row">我的角色：{{ item.role.name || '未知角色' }}</view>
         <view class="meta-row">{{ item.playerCount || 0 }} 人 · {{ durationText(item.duration) }} · {{ dateText(item.endTime) }}</view>
+        <view class="card-actions">
+          <view class="delete-action" @click.stop="confirmDelete(item)">删除</view>
+        </view>
       </view>
     </view>
 
@@ -58,7 +61,7 @@
 </template>
 
 <script>
-import { getMyGameRecordStats, getMyGameRecords } from '@/utils/gameRecordsApi.js';
+import { deleteMyGameRecord, getMyGameRecordStats, getMyGameRecords } from '@/utils/gameRecordsApi.js';
 
 export default {
   data() {
@@ -140,7 +143,37 @@ export default {
       }
     },
     goToDetail(item) {
-      uni.navigateTo({ url: `/pages/my-game-detail/my-game-detail?id=${item.id}` });
+      uni.navigateTo({ url: `/pages/my-game-detail/my-game-detail?id=${item.id}&mode=${this.mode}` });
+    },
+    confirmDelete(item) {
+      const content = this.mode === 'storyteller'
+        ? '删除后，这场主持记录和相关玩家战绩都会移除。确定删除吗？'
+        : '删除后，这场战局将从你的玩家战绩中移除。确定删除吗？';
+      uni.showModal({
+        title: '删除战绩',
+        content,
+        confirmText: '删除',
+        confirmColor: '#b42318',
+        success: res => {
+          if (res.confirm) this.deleteRecord(item);
+        }
+      });
+    },
+    async deleteRecord(item) {
+      if (!item || !item.id) return;
+      uni.showLoading({ title: '删除中...' });
+      try {
+        const result = await deleteMyGameRecord(item.id, this.mode);
+        if (!result || !result.success) throw new Error((result && result.message) || '删除失败');
+        this.items = this.items.filter(record => record.id !== item.id);
+        await this.loadStats();
+        uni.hideLoading();
+        uni.showToast({ title: '已删除', icon: 'success' });
+        if (!this.items.length) this.loadRecords({ page: 1, append: false });
+      } catch (error) {
+        uni.hideLoading();
+        uni.showToast({ title: '删除失败', icon: 'none' });
+      }
     },
     winnerLabel(winner) {
       if (winner === 'good') return '善良胜利';
@@ -196,9 +229,10 @@ export default {
 .winner-tag.good { color: #1f8f4d; background: #f0f9f4; }
 .winner-tag.evil { color: #b42318; background: #fff1f0; }
 .meta-row { margin-top: 8rpx; color: #646a73; font-size: 25rpx; line-height: 1.45; }
+.card-actions { display: flex; justify-content: flex-end; margin-top: 16rpx; }
+.delete-action { padding: 8rpx 0 8rpx 24rpx; color: #b42318; font-size: 25rpx; }
 .empty-state { padding: 100rpx 0; text-align: center; }
 .empty-title { font-size: 32rpx; font-weight: 700; color: #1f2329; }
 .empty-desc, .list-footer { margin-top: 16rpx; text-align: center; color: #8f959e; font-size: 25rpx; }
 .list-footer.error { color: #b42318; }
 </style>
-

@@ -23,17 +23,20 @@
           </view>
         </view>
       </view>
+
+      <view class="delete-button" @click="confirmDelete">删除战绩</view>
     </view>
   </view>
 </template>
 
 <script>
-import { getMyGameRecordDetail } from '@/utils/gameRecordsApi.js';
+import { deleteMyGameRecord, getMyGameRecordDetail } from '@/utils/gameRecordsApi.js';
 
 export default {
   data() {
     return {
       id: '',
+      mode: 'player',
       record: null,
       loading: false
     };
@@ -45,6 +48,7 @@ export default {
   },
   onLoad(options = {}) {
     this.id = options.id || '';
+    this.mode = options.mode === 'storyteller' ? 'storyteller' : 'player';
     this.loadDetail();
   },
   methods: {
@@ -59,6 +63,45 @@ export default {
       } finally {
         this.loading = false;
       }
+    },
+    confirmDelete() {
+      const content = this.mode === 'storyteller'
+        ? '删除后，这场主持记录和相关玩家战绩都会移除。确定删除吗？'
+        : '删除后，这场战局将从你的玩家战绩中移除。确定删除吗？';
+      uni.showModal({
+        title: '删除战绩',
+        content,
+        confirmText: '删除',
+        confirmColor: '#b42318',
+        success: res => {
+          if (res.confirm) this.deleteRecord();
+        }
+      });
+    },
+    async deleteRecord() {
+      if (!this.id) return;
+      uni.showLoading({ title: '删除中...' });
+      try {
+        const result = await deleteMyGameRecord(this.id, this.mode);
+        if (!result || !result.success) throw new Error((result && result.message) || '删除失败');
+        this.refreshPreviousPage();
+        uni.hideLoading();
+        uni.showToast({ title: '已删除', icon: 'success' });
+        setTimeout(() => uni.navigateBack(), 500);
+      } catch (error) {
+        uni.hideLoading();
+        uni.showToast({ title: '删除失败', icon: 'none' });
+      }
+    },
+    refreshPreviousPage() {
+      const pages = getCurrentPages && getCurrentPages();
+      const previousPage = pages && pages[pages.length - 2];
+      const previousVm = previousPage && previousPage.$vm;
+      if (!previousVm) return;
+      if (Array.isArray(previousVm.items)) {
+        previousVm.items = previousVm.items.filter(item => item.id !== this.id);
+      }
+      if (typeof previousVm.loadStats === 'function') previousVm.loadStats();
     },
     winnerLabel(winner) {
       if (winner === 'good') return '善良胜利';
@@ -101,6 +144,6 @@ export default {
 .result { flex-shrink: 0; font-size: 24rpx; }
 .result.win { color: #1f8f4d; }
 .result.lose { color: #b42318; }
+.delete-button { margin-top: 48rpx; height: 82rpx; line-height: 82rpx; text-align: center; border: 1rpx solid #fecdca; border-radius: 8rpx; color: #b42318; font-size: 28rpx; background: #fff7f6; }
 .empty-state { padding: 120rpx 0; text-align: center; color: #8f959e; font-size: 28rpx; }
 </style>
-

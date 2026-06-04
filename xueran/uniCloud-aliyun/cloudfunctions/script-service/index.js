@@ -62,6 +62,14 @@ function normalizeScript(script) {
   return script
 }
 
+function applyPublicScriptStatus(db, whereCondition, status) {
+  if (!status || status === 'public' || status === 'published') {
+    whereCondition.status = db.command.in(['active', 'published'])
+  } else if (status !== 'all') {
+    whereCondition.status = status
+  }
+}
+
 /**
  * 获取剧本列表
  */
@@ -82,7 +90,8 @@ async function getScriptList(data) {
       const collection = db.collection('scripts')
 
       // 构建查询条件
-      const whereCondition = { status }
+      const whereCondition = {}
+      applyPublicScriptStatus(db, whereCondition, status)
       if (category !== 'all') {
         whereCondition.category = category
       }
@@ -188,7 +197,7 @@ async function getScriptDetail(data) {
  * 搜索剧本
  */
 async function searchScripts(data) {
-    const { keyword = '', tags = [], page = 1, pageSize = 20 } = data
+    const { keyword = '', tags = [], page = 1, pageSize = 20, status = 'published' } = data
 
     // 输入验证
     if (page < 1 || pageSize < 1 || pageSize > 100) {
@@ -203,9 +212,8 @@ async function searchScripts(data) {
       const collection = db.collection('scripts')
 
       // 构建查询条件
-      const whereCondition = {
-        status: 'published'
-      }
+      const whereCondition = {}
+      applyPublicScriptStatus(db, whereCondition, status)
 
       // 关键词搜索
       if (keyword) {
