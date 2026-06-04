@@ -314,14 +314,14 @@ export default {
   #townsquare {
     height: 100dvh;
     min-height: 100svh;
-    padding: max(66px, env(safe-area-inset-top)) 38px max(74px, env(safe-area-inset-bottom));
+    padding: max(64px, env(safe-area-inset-top)) 22px max(72px, env(safe-area-inset-bottom));
     align-items: center;
     overflow: hidden;
   }
 
   .circle {
-    width: min(100%, calc(100vw - 118px));
-    height: min(100%, calc(100vw - 118px));
+    width: min(100%, calc(100vw - 64px));
+    height: min(100%, calc(100vw - 64px));
     max-width: 520px;
     max-height: 520px;
     position: relative;
@@ -330,13 +330,13 @@ export default {
 
 @media (orientation: portrait) and (max-width: 420px) {
   #townsquare {
-    padding-left: 34px;
-    padding-right: 34px;
+    padding-left: 18px;
+    padding-right: 18px;
   }
 
   .circle {
-    width: min(100%, calc(100vw - 106px));
-    height: min(100%, calc(100vw - 106px));
+    width: min(100%, calc(100vw - 54px));
+    height: min(100%, calc(100vw - 54px));
   }
 }
 

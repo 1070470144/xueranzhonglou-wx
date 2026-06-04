@@ -239,13 +239,13 @@ export default {
         window.innerWidth <= 768 && window.innerWidth <= window.innerHeight;
       if (isPortraitMobile) {
         if (this.players.length < 7) {
-          return { width: 15 + Math.min(this.grimoire.zoom, 2) + unit };
+          return { width: 16.5 + Math.min(this.grimoire.zoom, 2) + unit };
         } else if (this.players.length <= 10) {
-          return { width: 13 + Math.min(this.grimoire.zoom, 2) + unit };
+          return { width: 15 + Math.min(this.grimoire.zoom, 2) + unit };
         } else if (this.players.length <= 15) {
-          return { width: 11 + Math.min(this.grimoire.zoom, 2) + unit };
+          return { width: 12.6 + Math.min(this.grimoire.zoom, 2) + unit };
         } else {
-          return { width: 10 + Math.min(this.grimoire.zoom, 2) + unit };
+          return { width: 11.2 + Math.min(this.grimoire.zoom, 2) + unit };
         }
       }
       if (this.players.length < 7) {
