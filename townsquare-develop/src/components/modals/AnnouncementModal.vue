@@ -3,7 +3,6 @@
     <section class="announcement-panel">
       <header class="announcement-header">
         <h3>{{ $t("announcements.title") }}</h3>
-        <span class="version">{{ $t("announcements.version", { version }) }}</span>
       </header>
 
       <div v-if="loading" class="state">
@@ -59,7 +58,6 @@
 
 <script>
 import { mapMutations, mapState } from "vuex";
-import { version } from "../../../package.json";
 import Modal from "./Modal";
 import { getPublicWebAnnouncements } from "@/services/announcements";
 
@@ -70,8 +68,7 @@ export default {
       announcements: [],
       selectedAnnouncement: null,
       loading: false,
-      error: "",
-      version
+      error: ""
     };
   },
   computed: mapState(["modals"]),
