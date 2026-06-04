@@ -95,10 +95,6 @@ function normalizeGameRecord(item = {}) {
   };
 }
 
-function getRecordUserId(params = {}) {
-  return cleanText(params.userId || params.uid || '', 120);
-}
-
 async function verifyAuthToken(token) {
   const cleanToken = cleanText(token || '', 120);
   if (!cleanToken) return null;
@@ -137,6 +133,18 @@ function formatGameListItem(record, mode, userId) {
   };
 }
 
+function recordSearchText(record, mode, userId) {
+  const player = mode === 'player' ? getPlayerInRecord(record, userId) : null;
+  return [
+    record.storyteller && record.storyteller.nickname,
+    record.script && record.script.name,
+    record.script && record.script.author,
+    player && player.roleName,
+    player && player.name,
+    record.winner
+  ].filter(Boolean).join(' ').toLowerCase();
+}
+
 function winRate(wins, total) {
   return total ? Math.round((wins / total) * 1000) / 10 : 0;
 }
@@ -154,6 +162,8 @@ module.exports = {
   async saveGameRecord(item = {}) {
     const authedUserId = await getAuthedUserId(item);
     const doc = normalizeGameRecord(item);
+    doc.hostAuthState = authedUserId ? 'verified' : 'anonymous';
+    doc.participantAuthState = 'host-reported';
     if (authedUserId) {
       doc.storyteller.userId = authedUserId;
     } else {
@@ -167,7 +177,7 @@ module.exports = {
   },
 
   async listMyGameRecords(params = {}) {
-    const userId = await getAuthedUserId(params) || getRecordUserId(params);
+    const userId = await getAuthedUserId(params);
     if (!userId) return fail('missing user id');
     const mode = params.mode === 'storyteller' ? 'storyteller' : 'player';
     const page = positiveInt(params.page, 1);
@@ -177,22 +187,20 @@ module.exports = {
       ? { 'storyteller.userId': userId }
       : { participantUserIds: userId };
     const skip = (page - 1) * pageSize;
+    if (keyword) {
+      const res = await db.collection(TABLE).where(query).orderBy('endTime', 'desc').limit(500).get();
+      const filtered = (res.data || []).filter(record => recordSearchText(record, mode, userId).includes(keyword));
+      const list = filtered.slice(skip, skip + pageSize).map(record => formatGameListItem(record, mode, userId));
+      return ok({ list, total: filtered.length, page, pageSize });
+    }
     const res = await db.collection(TABLE).where(query).orderBy('endTime', 'desc').skip(skip).limit(pageSize).get();
     const count = await db.collection(TABLE).where(query).count();
-    let list = (res.data || []).map(record => formatGameListItem(record, mode, userId));
-    if (keyword) {
-      list = list.filter(item => [
-        item.storyteller && item.storyteller.nickname,
-        item.script && item.script.name,
-        item.role && item.role.name,
-        item.winner
-      ].filter(Boolean).join(' ').toLowerCase().includes(keyword));
-    }
+    const list = (res.data || []).map(record => formatGameListItem(record, mode, userId));
     return ok({ list, total: count.total || 0, page, pageSize });
   },
 
   async getMyGameRecordDetail(params = {}) {
-    const userId = await getAuthedUserId(params) || getRecordUserId(params);
+    const userId = await getAuthedUserId(params);
     const id = cleanText(params.id || '', 120);
     if (!userId) return fail('missing user id');
     if (!id) return fail('missing record id');
@@ -206,7 +214,7 @@ module.exports = {
   },
 
   async getMyGameRecordStats(params = {}) {
-    const userId = await getAuthedUserId(params) || getRecordUserId(params);
+    const userId = await getAuthedUserId(params);
     if (!userId) return fail('missing user id');
     const playerRes = await db.collection(TABLE).where({ participantUserIds: userId }).limit(500).get();
     const storytellerRes = await db.collection(TABLE).where({ 'storyteller.userId': userId }).limit(500).get();

@@ -10,6 +10,8 @@
   "properties": {
     "_id": { "description": "ID" },
     "source": { "bsonType": "string", "title": "来源" },
+    "hostAuthState": { "bsonType": "string", "enum": ["verified", "anonymous"] },
+    "participantAuthState": { "bsonType": "string", "enum": ["host-reported"] },
     "sessionId": { "bsonType": "string", "title": "网页房间号" },
     "status": { "bsonType": "string", "enum": ["finished", "abandoned"] },
     "winner": { "bsonType": "string", "enum": ["good", "evil", "unknown"] },
@@ -25,4 +27,3 @@
     "updateTime": { "bsonType": "long", "title": "更新时间" }
   }
 }
-
