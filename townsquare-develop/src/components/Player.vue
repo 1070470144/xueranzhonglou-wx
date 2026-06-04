@@ -235,6 +235,19 @@ export default {
     },
     zoom: function() {
       const unit = window.innerWidth > window.innerHeight ? "vh" : "vw";
+      const isPortraitMobile =
+        window.innerWidth <= 768 && window.innerWidth <= window.innerHeight;
+      if (isPortraitMobile) {
+        if (this.players.length < 7) {
+          return { width: 15 + Math.min(this.grimoire.zoom, 2) + unit };
+        } else if (this.players.length <= 10) {
+          return { width: 13 + Math.min(this.grimoire.zoom, 2) + unit };
+        } else if (this.players.length <= 15) {
+          return { width: 11 + Math.min(this.grimoire.zoom, 2) + unit };
+        } else {
+          return { width: 10 + Math.min(this.grimoire.zoom, 2) + unit };
+        }
+      }
       if (this.players.length < 7) {
         return { width: 18 + this.grimoire.zoom + unit };
       } else if (this.players.length <= 10) {

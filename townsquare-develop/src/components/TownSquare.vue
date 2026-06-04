@@ -310,6 +310,36 @@ export default {
   }
 }
 
+@media (orientation: portrait) and (max-width: 768px) {
+  #townsquare {
+    height: 100dvh;
+    min-height: 100svh;
+    padding: max(66px, env(safe-area-inset-top)) 38px max(74px, env(safe-area-inset-bottom));
+    align-items: center;
+    overflow: hidden;
+  }
+
+  .circle {
+    width: min(100%, calc(100vw - 118px));
+    height: min(100%, calc(100vw - 118px));
+    max-width: 520px;
+    max-height: 520px;
+    position: relative;
+  }
+}
+
+@media (orientation: portrait) and (max-width: 420px) {
+  #townsquare {
+    padding-left: 34px;
+    padding-right: 34px;
+  }
+
+  .circle {
+    width: min(100%, calc(100vw - 106px));
+    height: min(100%, calc(100vw - 106px));
+  }
+}
+
 @mixin on-circle($item-count) {
   $angle: math.div(360, $item-count);
   $rot: 0;
