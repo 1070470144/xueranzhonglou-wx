@@ -422,7 +422,7 @@
 						class="action-btn primary"
 						@click="copyJsonUrl"
 					>
-						复制JSON地址
+						复制JSON
 					</button>
 				</view>
 			</view>

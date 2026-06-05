@@ -157,8 +157,21 @@ export default {
   },
   onShow() {
     this.loggedIn = isLoggedIn();
+    this.enableShareMenu();
     this.hydrateHomeCache();
     this.refreshHomeData();
+  },
+  onShareAppMessage() {
+    return {
+      title: '血染钟楼 AI 助手',
+      path: '/pages/home/home'
+    };
+  },
+  onShareTimeline() {
+    return {
+      title: '血染钟楼 AI 助手',
+      query: ''
+    };
   },
   onUnload() {
     if (this.scriptSearchTimer) clearTimeout(this.scriptSearchTimer);
@@ -166,6 +179,14 @@ export default {
     this.stopGeneratingTimer();
   },
   methods: {
+    enableShareMenu() {
+      // #ifdef MP-WEIXIN
+      wx.showShareMenu({
+        withShareTicket: true,
+        menus: ['shareAppMessage', 'shareTimeline']
+      });
+      // #endif
+    },
     hydrateHomeCache() {
       if (homeCache.announcements.length) {
         this.announcements = homeCache.announcements;
@@ -518,9 +539,13 @@ export default {
   height: 58rpx;
   line-height: 58rpx;
   border-radius: 29rpx;
-  background: #1f2329;
-  color: #fff;
+  background: #f5f6f7;
+  color: #1f2329;
   font-size: 24rpx;
+}
+
+.web-login-scan::after {
+  border: 0;
 }
 
 .eyebrow {

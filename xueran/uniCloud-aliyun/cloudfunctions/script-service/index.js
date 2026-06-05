@@ -212,18 +212,32 @@ async function searchScripts(data) {
       const collection = db.collection('scripts')
 
       // 构建查询条件
-      const whereCondition = {}
-      applyPublicScriptStatus(db, whereCondition, status)
+      const cmd = db.command
+      const baseCondition = {}
+      const andConditions = []
+      applyPublicScriptStatus(db, baseCondition, status)
+      if (Object.keys(baseCondition).length > 0) {
+        andConditions.push(baseCondition)
+      }
 
-      // 关键词搜索
+      // 关键词搜索：覆盖标题、作者、标签，避免只搜当前已展示列表或只按标题命中。
       if (keyword) {
-        whereCondition.title = new RegExp(keyword, 'i')
+        const keywordReg = new RegExp(keyword, 'i')
+        andConditions.push(cmd.or([
+          { title: keywordReg },
+          { author: keywordReg },
+          { tags: keywordReg }
+        ]))
       }
 
       // 标签过滤
       if (tags && tags.length > 0) {
-        whereCondition.tags = db.command.in(tags)
+        andConditions.push({ tags: cmd.in(tags) })
       }
+
+      const whereCondition = andConditions.length > 1
+        ? cmd.and(andConditions)
+        : (andConditions[0] || {})
 
       // 计算跳过的记录数
       const skip = (page - 1) * pageSize

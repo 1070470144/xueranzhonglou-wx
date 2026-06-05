@@ -2,6 +2,10 @@
 const db = uniCloud.database();
 const collectionName = 'scripts';
 
+function escapeRegExp(value) {
+  return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 async function verifyAppUser(token) {
   if (!token) return null;
 
@@ -50,15 +54,18 @@ exports.main = async (event, context) => {
 
   if (q && q.trim()) {
     const searchTerm = q.trim();
+    const escapedSearchTerm = escapeRegExp(searchTerm);
     console.log('Search term:', searchTerm);
     console.log('Search term length:', searchTerm.length);
     console.log('Search term char codes:', Array.from(searchTerm).map(c => c.charCodeAt(0)));
 
-    // 使用与admin端相同的MongoDB原生查询语法
+    // 搜索全量数据库记录，不依赖当前已展示列表。
     where.$or = [
-      { title: { $regex: searchTerm, $options: 'i' } }, // 标题匹配
-      { author: { $regex: searchTerm, $options: 'i' } }, // 作者匹配
-      { description: { $regex: searchTerm, $options: 'i' } } // 描述匹配
+      { title: { $regex: escapedSearchTerm, $options: 'i' } },
+      { author: { $regex: escapedSearchTerm, $options: 'i' } },
+      { description: { $regex: escapedSearchTerm, $options: 'i' } },
+      { tags: { $regex: escapedSearchTerm, $options: 'i' } },
+      { category: { $regex: escapedSearchTerm, $options: 'i' } }
     ];
 
     console.log('Search where condition:', JSON.stringify(where, null, 2));
