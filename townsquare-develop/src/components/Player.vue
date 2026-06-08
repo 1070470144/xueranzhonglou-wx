@@ -10,7 +10,8 @@
           'no-vote': player.isVoteless,
           you: session.sessionId && player.id && player.id === session.playerId,
           'vote-yes': session.votes[index],
-          'vote-lock': voteLocked
+          'vote-lock': voteLocked,
+          'token-upside-down': isTokenUpsideDown
         },
         player.role.team
       ]"
@@ -105,7 +106,7 @@
       </div>
       <div
         class="name"
-        @click="isMenuOpen = !isMenuOpen"
+        @click="toggleMenu"
         :class="{ active: isMenuOpen }"
       >
         <span>{{ displayName }}</span>
@@ -116,7 +117,13 @@
       </div>
 
       <transition name="fold">
-        <ul class="menu" v-if="isMenuOpen">
+        <ul
+          class="menu"
+          v-if="isMenuOpen"
+          :class="menuPosition"
+          :style="menuStyle"
+          ref="menu"
+        >
           <li
             @click="changePronouns"
             v-if="
@@ -129,6 +136,9 @@
           <template v-if="!session.isSpectator">
             <li @click="changeName">
               <font-awesome-icon icon="user-edit" />{{ $t("player.rename") }}
+            </li>
+            <li @click="toggleTokenUpsideDown">
+              <font-awesome-icon icon="sync-alt" />{{ $t("player.flipToken") }}
             </li>
             <li @click="movePlayer()" :class="{ disabled: session.lockedVote }">
               <font-awesome-icon icon="redo-alt" />
@@ -229,6 +239,11 @@ export default {
       if (!this.player.name) return "";
       return `${this.index + 1}.${this.player.name}`;
     },
+    menuStyle: function() {
+      return this.menuOffsetY
+        ? { transform: `translateY(${this.menuOffsetY}px)` }
+        : {};
+    },
     voteLocked: function() {
       const session = this.session;
       const players = this.players.length;
@@ -266,10 +281,55 @@ export default {
   data() {
     return {
       isMenuOpen: false,
-      isSwap: false
+      isSwap: false,
+      isTokenUpsideDown: false,
+      menuPosition: {
+        left: false,
+        down: false
+      },
+      menuOffsetY: 0
     };
   },
+  watch: {
+    isMenuOpen(open) {
+      if (!open) this.resetMenuPosition();
+    }
+  },
   methods: {
+    toggleMenu() {
+      this.isMenuOpen = !this.isMenuOpen;
+      this.resetMenuPosition();
+      if (this.isMenuOpen) this.$nextTick(this.adjustMenuPosition);
+    },
+    resetMenuPosition() {
+      this.menuPosition = {
+        left: false,
+        down: false
+      };
+      this.menuOffsetY = 0;
+    },
+    adjustMenuPosition() {
+      const menu = this.$refs.menu;
+      if (!menu) return;
+      const bounds = menu.getBoundingClientRect();
+      const padding = 8;
+      this.menuPosition = {
+        left: bounds.right > window.innerWidth,
+        down: bounds.top < padding
+      };
+      requestAnimationFrame(() => {
+        const nextBounds = menu.getBoundingClientRect();
+        if (nextBounds.top < padding) {
+          this.menuOffsetY = padding - nextBounds.top;
+        } else if (nextBounds.bottom > window.innerHeight - padding) {
+          this.menuOffsetY = window.innerHeight - padding - nextBounds.bottom;
+        }
+      });
+    },
+    toggleTokenUpsideDown() {
+      this.isTokenUpsideDown = !this.isTokenUpsideDown;
+      this.isMenuOpen = false;
+    },
     changePronouns() {
       if (this.session.isSpectator && this.player.id !== this.session.playerId)
         return;
@@ -526,8 +586,16 @@ export default {
   backface-visibility: hidden;
 }
 
+.player.token-upside-down .token {
+  transform: perspective(400px) rotateY(0deg) rotate(180deg);
+}
+
 #townsquare.public .circle .token {
   transform: perspective(400px) rotateY(-180deg);
+}
+
+#townsquare.public .circle .player.token-upside-down .token {
+  transform: perspective(400px) rotateY(-180deg) rotate(180deg);
 }
 
 /****** Player choice icons *******/
@@ -809,6 +877,18 @@ li.move:not(.from) .player .overlay svg.move {
   cursor: pointer;
   box-shadow: 0 0 5px rgba(0, 0, 0, 0.5);
 
+  &.left {
+    left: auto;
+    right: 110%;
+    margin-left: 0;
+    margin-right: 15px;
+  }
+
+  &.down {
+    top: -5px;
+    bottom: auto;
+  }
+
   &:before {
     content: " ";
     width: 0;
@@ -819,6 +899,20 @@ li.move:not(.from) .player .overlay svg.move {
     right: 100%;
     bottom: 5px;
     margin-right: 2px;
+  }
+
+  &.left:before {
+    border-right-color: transparent;
+    border-left-color: black;
+    right: auto;
+    left: 100%;
+    margin-right: 0;
+    margin-left: 2px;
+  }
+
+  &.down:before {
+    top: 5px;
+    bottom: auto;
   }
 
   li:hover {
