@@ -23,7 +23,10 @@ export default store => {
   if (localStorage.getItem("zoom")) {
     store.commit("setZoom", parseFloat(localStorage.getItem("zoom")));
   }
-  if (localStorage.getItem("isGrimoire")) {
+  if (localStorage.getItem("publicView") === "1") {
+    store.commit("toggleGrimoire", true);
+    updatePagetitle(true);
+  } else if (localStorage.getItem("publicView") === "0") {
     store.commit("toggleGrimoire", false);
     updatePagetitle(false);
   }
@@ -79,10 +82,10 @@ export default store => {
   store.subscribe(({ type, payload }, state) => {
     switch (type) {
       case "toggleGrimoire":
-        if (!state.grimoire.isPublic) {
-          localStorage.setItem("isGrimoire", 1);
+        if (state.grimoire.isPublic) {
+          localStorage.setItem("publicView", 1);
         } else {
-          localStorage.removeItem("isGrimoire");
+          localStorage.setItem("publicView", 0);
         }
         updatePagetitle(state.grimoire.isPublic);
         break;

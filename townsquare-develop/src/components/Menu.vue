@@ -74,8 +74,8 @@
           <!-- Grimoire -->
           <li class="headline">{{ $t("menu.grimoire") }}</li>
           <li @click="toggleGrimoire" v-if="players.length">
-            <template v-if="!grimoire.isPublic">{{ $t("menu.hide") }}</template>
-            <template v-if="grimoire.isPublic">{{ $t("menu.show") }}</template>
+            <template v-if="!grimoire.isPublic">{{ $t("menu.charactersVisible") }}</template>
+            <template v-if="grimoire.isPublic">{{ $t("menu.charactersHidden") }}</template>
             <em>[G]</em>
           </li>
           <li @click="toggleNight" v-if="!session.isSpectator">
