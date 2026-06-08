@@ -121,6 +121,7 @@ export default new Vuex.Store({
       gameRecord: false,
       login: false,
       nightOrder: false,
+      playerName: false,
       privateChat: false,
       reference: false,
       reminder: false,

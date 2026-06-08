@@ -108,7 +108,7 @@
         @click="isMenuOpen = !isMenuOpen"
         :class="{ active: isMenuOpen }"
       >
-        <span>{{ player.name }}</span>
+        <span>{{ displayName }}</span>
         <font-awesome-icon icon="venus-mars" v-if="player.pronouns" />
         <div class="pronouns" v-if="player.pronouns">
           <span>{{ player.pronouns }}</span>
@@ -224,6 +224,10 @@ export default {
     ...mapGetters({ nightOrder: "players/nightOrder" }),
     index: function() {
       return this.players.indexOf(this.player);
+    },
+    displayName: function() {
+      if (!this.player.name) return "";
+      return `${this.index + 1}.${this.player.name}`;
     },
     voteLocked: function() {
       const session = this.session;

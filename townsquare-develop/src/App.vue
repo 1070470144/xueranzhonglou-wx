@@ -38,6 +38,7 @@
     <GameRecordModal />
     <AnnouncementModal />
     <LoginModal />
+    <PlayerNameModal />
     <StoryLogModal />
     <PrivateChatModal />
     <Gradients />
@@ -64,6 +65,7 @@ import GameStateModal from "@/components/modals/GameStateModal";
 import GameRecordModal from "@/components/modals/GameRecordModal";
 import AnnouncementModal from "@/components/modals/AnnouncementModal";
 import LoginModal from "@/components/modals/LoginModal";
+import PlayerNameModal from "@/components/modals/PlayerNameModal";
 import StoryLogModal from "@/components/modals/StoryLogModal";
 import PrivateChatModal from "@/components/modals/PrivateChatModal";
 
@@ -72,6 +74,7 @@ export default {
     AnnouncementModal,
     PrivateChatModal,
     StoryLogModal,
+    PlayerNameModal,
     LoginModal,
     GameStateModal,
     GameRecordModal,

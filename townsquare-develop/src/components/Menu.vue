@@ -137,6 +137,10 @@
                 :icon="['fas', grimoire.isStatic ? 'check-square' : 'square']"
             /></em>
           </li>
+          <li @click="toggleModal('playerName')" v-if="session.isSpectator">
+            {{ $t("menu.changePlayerName") }}
+            <em><font-awesome-icon icon="user-edit" /></em>
+          </li>
           <li @click="toggleMuted">
             {{ $t("menu.muteSounds") }}
             <em

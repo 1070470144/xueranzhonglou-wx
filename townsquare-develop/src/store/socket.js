@@ -579,6 +579,13 @@ class LiveSession {
     });
   }
 
+  sendCurrentPlayerName() {
+    if (!this._isSpectator) return;
+    const index = this._store.state.session.claimedSeat;
+    if (index < 0) return;
+    this.sendClaimedPlayerName(index);
+  }
+
   /**
    * Apply a claimed player's requested display name on the host.
    * @param playerId
@@ -1030,6 +1037,9 @@ export default store => {
         break;
       case "session/setMarkedPlayer":
         session.setMarked(payload);
+        break;
+      case "session/setPlayerName":
+        session.sendCurrentPlayerName();
         break;
       case "players/swap":
         session.swapPlayer(payload);

@@ -31,7 +31,9 @@ const messages = {
       enterUrl: "输入 URL",
       add: "添加",
       edit: "编辑",
-      remove: "移除"
+      remove: "移除",
+      ok: "确定",
+      cancel: "取消"
     },
     announcements: {
       title: "公告",
@@ -65,6 +67,7 @@ const messages = {
       backgroundImage: "背景图片",
       showCustomImages: "显示自定义图片",
       disableAnimations: "禁用动画",
+      changePlayerName: "修改名字",
       muteSounds: "静音",
       storyLog: "主持日志",
       privateChat: "私聊",
@@ -127,6 +130,11 @@ const messages = {
       missingUniCloudConfig: "未配置 uniCloud 网页端服务空间参数",
       missingUniCloudSdk: "uniCloud Web SDK 未加载",
       networkError: "登录请求失败，请刷新二维码后重试"
+    },
+    playerName: {
+      title: "修改名字",
+      label: "名字",
+      hint: "保存后会同步到你当前认领的座位。"
     },
     storyLog: {
       title: "主持日志",
@@ -359,7 +367,9 @@ const messages = {
       enterUrl: "Enter URL",
       add: "Add",
       edit: "Edit",
-      remove: "Remove"
+      remove: "Remove",
+      ok: "OK",
+      cancel: "Cancel"
     },
     announcements: {
       title: "Announcements",
@@ -395,6 +405,7 @@ const messages = {
       backgroundImage: "Background image",
       showCustomImages: "Show Custom Images",
       disableAnimations: "Disable Animations",
+      changePlayerName: "Change name",
       muteSounds: "Mute Sounds",
       storyLog: "Storyteller Log",
       privateChat: "Private Chat",
@@ -457,6 +468,11 @@ const messages = {
       missingUniCloudConfig: "uniCloud web config is not configured",
       missingUniCloudSdk: "uniCloud Web SDK is not loaded",
       networkError: "Login request failed. Please refresh the QR code and try again."
+    },
+    playerName: {
+      title: "Change name",
+      label: "Name",
+      hint: "Saved names sync to your claimed seat."
     },
     storyLog: {
       title: "Storyteller Log",
