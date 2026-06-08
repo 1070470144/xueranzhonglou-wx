@@ -57,7 +57,7 @@ import Token from "../Token";
 
 export default {
   components: { Token, Modal },
-  props: ["playerIndex"],
+  props: ["playerIndex", "bluffType"],
   computed: {
     availableRoles() {
       const availableRoles = [];
@@ -88,10 +88,15 @@ export default {
     setRole(role) {
       if (this.playerIndex < 0) {
         // assign to bluff slot (index < 0)
-        this.$store.commit("players/setBluff", {
+        this.$store.commit(
+          this.bluffType === "lunatic"
+            ? "players/setLunaticBluff"
+            : "players/setBluff",
+          {
           index: this.playerIndex * -1 - 1,
           role
-        });
+          }
+        );
       } else {
         if (this.session.isSpectator && role.team === "traveler") return;
         // assign to player

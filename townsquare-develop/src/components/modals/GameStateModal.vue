@@ -34,6 +34,7 @@ export default {
     gamestate: function() {
       return JSON.stringify({
         bluffs: this.players.bluffs.map(({ id }) => id),
+        lunaticBluffs: this.players.lunaticBluffs.map(({ id }) => id),
         edition: this.edition.isOfficial
           ? { id: this.edition.id }
           : this.edition,
@@ -64,7 +65,7 @@ export default {
       if (this.session.isSpectator) return;
       try {
         const data = JSON.parse(this.input || this.gamestate);
-        const { bluffs, edition, roles, fabled, players } = data;
+        const { bluffs, lunaticBluffs, edition, roles, fabled, players } = data;
         if (roles) {
           this.$store.commit("setCustomRoles", roles);
         }
@@ -74,6 +75,14 @@ export default {
         if (bluffs.length) {
           bluffs.forEach((role, index) => {
             this.$store.commit("players/setBluff", {
+              index,
+              role: this.$store.state.roles.get(role) || {}
+            });
+          });
+        }
+        if (lunaticBluffs && lunaticBluffs.length) {
+          lunaticBluffs.forEach((role, index) => {
+            this.$store.commit("players/setLunaticBluff", {
               index,
               role: this.$store.state.roles.get(role) || {}
             });

@@ -15,7 +15,9 @@ const NEWPLAYER = {
 const state = () => ({
   players: [],
   fabled: [],
-  bluffs: []
+  bluffs: [],
+  lunaticBluffs: [],
+  lunaticBluffPlayerIndex: -1
 });
 
 const getters = {
@@ -105,6 +107,8 @@ const mutations = {
   clear(state) {
     state.players = [];
     state.bluffs = [];
+    state.lunaticBluffs = [];
+    state.lunaticBluffPlayerIndex = -1;
     state.fabled = [];
   },
   set(state, players = []) {
@@ -165,6 +169,19 @@ const mutations = {
     } else {
       state.bluffs = [];
     }
+  },
+  setLunaticBluff(state, { index, role } = {}) {
+    if (index !== undefined) {
+      state.lunaticBluffs.splice(index, 1, role);
+    } else {
+      state.lunaticBluffs = [];
+    }
+  },
+  receiveLunaticBluffs(state, bluffs = []) {
+    state.bluffs = bluffs;
+  },
+  setLunaticBluffPlayerIndex(state, index = -1) {
+    state.lunaticBluffPlayerIndex = index;
   },
   setFabled(state, { index, fabled } = {}) {
     if (index !== undefined) {

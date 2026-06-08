@@ -28,23 +28,56 @@
       class="bluffs"
       v-if="players.length"
       ref="bluffs"
-      :class="{ closed: !isBluffsOpen }"
+      :class="{ closed: !isBluffsOpen, 'vertical-bluff-tabs': isBluffAreaVertical }"
     >
+      <div class="bluff-tabs" v-if="!session.isSpectator">
+        <button
+          type="button"
+          :class="{ active: activeBluffTab === 'demon' }"
+          @click.stop="activeBluffTab = 'demon'"
+        >
+          {{ $t("townSquare.demonBluffs") }}
+        </button>
+        <button
+          type="button"
+          :class="{ active: activeBluffTab === 'lunatic' }"
+          @click.stop="activeBluffTab = 'lunatic'"
+        >
+          {{ $t("townSquare.lunaticBluffs") }}
+        </button>
+      </div>
       <h3>
-        <span v-if="session.isSpectator">{{ $t("townSquare.otherCharacters") }}</span>
-        <span v-else>{{ $t("townSquare.demonBluffs") }}</span>
-        <font-awesome-icon icon="times-circle" @click.stop="toggleBluffs" />
-        <font-awesome-icon icon="plus-circle" @click.stop="toggleBluffs" />
+        <span v-if="session.isSpectator">{{ $t("townSquare.demonBluffs") }}</span>
       </h3>
+      <font-awesome-icon icon="times-circle" @click.stop="toggleBluffs" />
+      <font-awesome-icon icon="plus-circle" @click.stop="toggleBluffs" />
       <ul>
         <li
           v-for="index in bluffSize"
           :key="index"
           @click="openRoleModal(index * -1)"
         >
-          <Token :role="bluffs[index - 1]"></Token>
+          <Token :role="activeBluffs[index - 1]"></Token>
         </li>
       </ul>
+      <div
+        class="lunatic-bluff-target"
+        v-if="!session.isSpectator && activeBluffTab === 'lunatic' && isBluffsOpen"
+      >
+        <select
+          :value="lunaticBluffPlayerIndex"
+          @change="setLunaticBluffPlayerIndex(Number($event.target.value))"
+        >
+          <option :value="-1">{{ $t("townSquare.choosePlayer") }}</option>
+          <option
+            v-for="(player, index) in players"
+            :key="player.id || index"
+            :value="index"
+          >
+            {{ index + 1 }}. {{ player.name || $t("townSquare.unnamedPlayer") }}
+          </option>
+        </select>
+      </div>
     </div>
 
     <div class="fabled" :class="{ closed: !isFabledOpen }" v-if="fabled.length">
@@ -83,7 +116,7 @@
     </div>
 
     <ReminderModal :player-index="selectedPlayer"></ReminderModal>
-    <RoleModal :player-index="selectedPlayer"></RoleModal>
+    <RoleModal :player-index="selectedPlayer" :bluff-type="selectedBluffType"></RoleModal>
   </div>
 </template>
 
@@ -104,7 +137,18 @@ export default {
   computed: {
     ...mapGetters({ nightOrder: "players/nightOrder" }),
     ...mapState(["grimoire", "roles", "session"]),
-    ...mapState("players", ["players", "bluffs", "fabled"]),
+    ...mapState("players", [
+      "players",
+      "bluffs",
+      "lunaticBluffs",
+      "lunaticBluffPlayerIndex",
+      "fabled"
+    ]),
+    activeBluffs() {
+      return this.activeBluffTab === "lunatic" && !this.session.isSpectator
+        ? this.lunaticBluffs
+        : this.bluffs;
+    },
     nightLabelStyle() {
       return {
         "--first-night-label": `"${this.$t("townSquare.firstNight")}"`,
@@ -119,9 +163,25 @@ export default {
       swap: -1,
       move: -1,
       nominate: -1,
+      activeBluffTab: "demon",
+      selectedBluffType: "demon",
+      isBluffAreaVertical: false,
+      bluffResizeObserver: null,
+      bluffLayoutFrame: null,
       isBluffsOpen: true,
       isFabledOpen: true
     };
+  },
+  mounted() {
+    this.$nextTick(this.observeBluffArea);
+    window.addEventListener("resize", this.updateBluffTabLayout);
+  },
+  beforeDestroy() {
+    if (this.bluffResizeObserver) this.bluffResizeObserver.disconnect();
+    if (this.bluffLayoutFrame && window.cancelAnimationFrame) {
+      cancelAnimationFrame(this.bluffLayoutFrame);
+    }
+    window.removeEventListener("resize", this.updateBluffTabLayout);
   },
   methods: {
     toggleBluffs() {
@@ -156,7 +216,31 @@ export default {
       if (this.session.isSpectator && player && player.role.team === "traveler")
         return;
       this.selectedPlayer = playerIndex;
+      this.selectedBluffType = playerIndex < 0 ? this.activeBluffTab : "demon";
       this.$store.commit("toggleModal", "role");
+    },
+    setLunaticBluffPlayerIndex(index) {
+      this.$store.commit("players/setLunaticBluffPlayerIndex", index);
+    },
+    observeBluffArea() {
+      this.updateBluffTabLayout();
+      if (!window.ResizeObserver || !this.$refs.bluffs) return;
+      this.bluffResizeObserver = new ResizeObserver(this.updateBluffTabLayout);
+      this.bluffResizeObserver.observe(this.$refs.bluffs);
+    },
+    updateBluffTabLayout() {
+      if (this.bluffLayoutFrame) return;
+      const schedule = window.requestAnimationFrame || (callback => setTimeout(callback, 0));
+      this.bluffLayoutFrame = schedule(() => {
+        this.bluffLayoutFrame = null;
+        const bluffs = this.$refs.bluffs;
+        if (!bluffs) return;
+        const bounds = bluffs.getBoundingClientRect();
+        const isVertical = bounds.height > bounds.width;
+        if (this.isBluffAreaVertical !== isVertical) {
+          this.isBluffAreaVertical = isVertical;
+        }
+      });
     },
     removePlayer(playerIndex) {
       if (this.session.isSpectator || this.session.lockedVote) return;
@@ -460,6 +544,9 @@ export default {
     top: 10px;
     right: 10px;
     cursor: pointer;
+    &.fa-plus-circle {
+      display: none;
+    }
     &:hover {
       color: red;
     }
@@ -505,12 +592,93 @@ export default {
       transition: all 250ms;
     }
   }
+  .bluff-tabs {
+    display: flex;
+    gap: 4px;
+    padding: 6px 36px 0 8px;
+
+    button {
+      cursor: pointer;
+      color: white;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font: inherit;
+      white-space: nowrap;
+
+      &.active {
+        background: rgba($demon, 0.65);
+        border-color: rgba(255, 255, 255, 0.75);
+      }
+    }
+  }
+  .lunatic-bluff-target {
+    display: flex;
+    padding: 0 8px 7px;
+
+    select {
+      width: 100%;
+      min-height: 0;
+      color: white;
+      background: rgba(0, 0, 0, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 4px;
+      height: 24px;
+    }
+  }
+  &.vertical-bluff-tabs {
+    .bluff-tabs {
+      position: absolute;
+      left: 6px;
+      top: 10px;
+      bottom: 10px;
+      width: 30px;
+      flex-direction: column;
+      gap: 6px;
+      padding: 0;
+      z-index: 3;
+
+      button {
+        flex: 1;
+        min-height: 0;
+        padding: 4px 2px;
+        font-size: 12px;
+        line-height: 1;
+        text-align: center;
+        writing-mode: vertical-rl;
+        text-orientation: mixed;
+        white-space: normal;
+        overflow: hidden;
+      }
+    }
+
+    &:not(.closed) > h3,
+    &:not(.closed) > ul,
+    &:not(.closed) > .lunatic-bluff-target {
+      margin-left: 34px;
+    }
+  }
   &.closed {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+
     svg.fa-times-circle {
       display: none;
     }
     svg.fa-plus-circle {
       display: block;
+      top: 50%;
+      right: auto;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    h3,
+    ul {
+      margin: 0;
+      padding: 0;
     }
     ul li {
       width: 0;
@@ -522,6 +690,12 @@ export default {
         border-width: 0;
       }
     }
+    .lunatic-bluff-target {
+      display: none;
+    }
+    .bluff-tabs {
+      display: none;
+    }
   }
 }
 
@@ -530,7 +704,7 @@ export default {
   transform: scale(0.1);
 }
 
-@media (orientation: portrait) and (max-width: 768px) {
+@media (max-width: 768px) {
   #townsquare > .bluffs,
   #townsquare > .fabled {
     left: max(8px, env(safe-area-inset-left));
@@ -542,13 +716,19 @@ export default {
     h3 {
       min-height: 24px;
       margin: 2px 7px 0;
+      padding-right: 22px;
       font-size: clamp(12px, 3.4vw, 16px);
       line-height: 1.2;
+      align-items: center;
 
       svg {
         &.fa-times-circle,
         &.fa-plus-circle {
           margin-left: 6px;
+        }
+        &.fa-times-circle {
+          top: 6px;
+          right: 6px;
         }
       }
     }
@@ -564,6 +744,13 @@ export default {
         margin: 0 2px;
       }
     }
+    .lunatic-bluff-target {
+      padding: 0 5px 5px;
+      select {
+        height: 22px;
+        font-size: 12px;
+      }
+    }
   }
 
   #townsquare > .fabled {
@@ -575,7 +762,7 @@ export default {
   }
 }
 
-@media (orientation: portrait) and (max-width: 420px) {
+@media (max-width: 420px) {
   #townsquare > .bluffs,
   #townsquare > .fabled {
     max-width: min(58vw, 200px);

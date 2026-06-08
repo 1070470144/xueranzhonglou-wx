@@ -227,6 +227,11 @@ const messages = {
     townSquare: {
       otherCharacters: "其他角色",
       demonBluffs: "恶魔伪装",
+      lunaticBluffs: "疯子伪装",
+      choosePlayer: "选择玩家",
+      send: "发送",
+      unnamedPlayer: "未命名玩家",
+      playerNotConnected: "该座位玩家未入座或不在线",
       fabled: "传奇角色",
       firstNight: "首夜",
       otherNights: "其他夜晚",
@@ -553,6 +558,11 @@ const messages = {
     townSquare: {
       otherCharacters: "Other characters",
       demonBluffs: "Demon bluffs",
+      lunaticBluffs: "Lunatic bluffs",
+      choosePlayer: "Choose player",
+      send: "Send",
+      unnamedPlayer: "Unnamed player",
+      playerNotConnected: "That seat is empty or the player is offline",
       fabled: "Fabled",
       firstNight: "First Night",
       otherNights: "Other Nights",

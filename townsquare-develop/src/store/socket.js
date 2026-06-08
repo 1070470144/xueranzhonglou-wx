@@ -1,5 +1,6 @@
 import { t } from "../i18n";
 import { getAuthUserSnapshot } from "../services/auth";
+import { buildBluffMessages, hydrateBluffs } from "../services/bluffs";
 
 class LiveSession {
   constructor(store) {
@@ -139,6 +140,9 @@ class LiveSession {
         break;
       case "fabled":
         this._updateFabled(params);
+        break;
+      case "lunaticBluffs":
+        this._updateLunaticBluffs(params);
         break;
       case "gs":
         this._updateGamestate(params);
@@ -464,6 +468,33 @@ class LiveSession {
     });
   }
 
+  sendBluffs() {
+    if (this._isSpectator) return;
+    const {
+      players,
+      bluffs,
+      lunaticBluffs,
+      lunaticBluffPlayerIndex
+    } = this._store.state.players;
+    const message = buildBluffMessages(
+      players,
+      bluffs,
+      lunaticBluffs,
+      lunaticBluffPlayerIndex
+    );
+    if (Object.keys(message).length) {
+      this._send("direct", message);
+    }
+  }
+
+  _updateLunaticBluffs(bluffs = []) {
+    if (!this._isSpectator) return;
+    this._store.commit(
+      "players/receiveLunaticBluffs",
+      hydrateBluffs(bluffs, this._store.state.roles)
+    );
+  }
+
   /**
    * Publish a player update.
    * @param player
@@ -752,6 +783,7 @@ class LiveSession {
     if (Object.keys(message).length) {
       this._send("direct", message);
     }
+    this.sendBluffs();
   }
 
   /**

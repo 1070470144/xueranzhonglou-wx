@@ -46,6 +46,14 @@ export default store => {
       });
     });
   }
+  if (localStorage.lunaticBluffs !== undefined) {
+    JSON.parse(localStorage.lunaticBluffs).forEach((role, index) => {
+      store.commit("players/setLunaticBluff", {
+        index,
+        role: store.state.roles.get(role) || {}
+      });
+    });
+  }
   if (localStorage.fabled !== undefined) {
     store.commit("players/setFabled", {
       fabled: JSON.parse(localStorage.fabled).map(
@@ -141,6 +149,12 @@ export default store => {
         localStorage.setItem(
           "bluffs",
           JSON.stringify(state.players.bluffs.map(({ id }) => id))
+        );
+        break;
+      case "players/setLunaticBluff":
+        localStorage.setItem(
+          "lunaticBluffs",
+          JSON.stringify(state.players.lunaticBluffs.map(({ id }) => id))
         );
         break;
       case "players/setFabled":
