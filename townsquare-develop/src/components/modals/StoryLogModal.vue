@@ -14,11 +14,14 @@
       </div>
 
       <div class="actions">
-        <button type="button" @click="startNewGame">
+        <button type="button" class="danger-action" @click="startNewGame">
           <font-awesome-icon icon="plus-circle" /> {{ $t("storyLog.newGame") }}
         </button>
         <button type="button" @click="exportReview">
           <font-awesome-icon icon="download" /> {{ $t("storyLog.exportReview") }}
+        </button>
+        <button type="button" @click="copyReviewText">
+          <font-awesome-icon icon="clipboard" /> {{ $t("storyLog.copyReviewText") }}
         </button>
         <label class="phase-select">
           <span>{{ $t("storyLog.adjustPhase") }}</span>
@@ -28,9 +31,10 @@
             </option>
           </select>
         </label>
-        <button type="button" @click="clearLogs">
+        <button type="button" class="danger-action" @click="clearLogs">
           <font-awesome-icon icon="trash-alt" /> {{ $t("storyLog.clearCurrent") }}
         </button>
+        <span v-if="copyMessage" class="copy-status">{{ copyMessage }}</span>
       </div>
 
       <nav class="phase-tabs" v-if="phaseTabs.length">
@@ -106,7 +110,9 @@ export default {
     return {
       manualType: "note",
       manualContent: "",
-      activePhaseKey: ""
+      activePhaseKey: "",
+      copyMessage: "",
+      copyMessageTimer: null
     };
   },
   computed: {
@@ -318,6 +324,106 @@ export default {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     },
+    async copyReviewText() {
+      const text = this.buildReviewText();
+      const copied = await this.copyTextToClipboard(text);
+      this.showCopyMessage(
+        copied
+          ? this.$t("storyLog.copyReviewSuccess")
+          : this.$t("storyLog.copyReviewFailed")
+      );
+    },
+    buildReviewText() {
+      const lines = [
+        this.$t("storyLog.reviewTitle"),
+        "",
+        `${this.$t("storyLog.exportedAt")}：${this.formatDateTime(Date.now())}`,
+        `${this.$t("storyLog.scriptName")}：${this.edition.name || this.$t("common.customScript")}`,
+        `${this.$t("storyLog.roomId")}：${this.session.sessionId || "-"}`,
+        `${this.$t("storyLog.playerCount")}：${this.players.length}`,
+        `${this.$t("storyLog.currentPhase")}：${this.phaseLabel(this.currentGame)}`,
+        "",
+        `【${this.$t("storyLog.playersAndRoles")}】`
+      ];
+
+      if (this.players.length) {
+        this.players.forEach((player, index) => {
+          const role = player.role || {};
+          lines.push(
+            `${index + 1}. ${player.name || "-"} - ${role.name || role.id || "-"} - ${role.team || "-"}`
+          );
+        });
+      } else {
+        lines.push("-");
+      }
+
+      lines.push("", `【${this.$t("storyLog.voteHistory")}】`);
+      if (this.session.voteHistory.length) {
+        this.session.voteHistory.forEach(vote => {
+          lines.push(
+            `- ${this.formatDateTime(vote.timestamp)} ${vote.type || ""}：${vote.nominator} -> ${vote.nominee}，${this.$t("storyLog.majority")} ${vote.majority}，${this.$t("storyLog.voters")}：${vote.votes.length ? vote.votes.join("、") : "-"}`
+          );
+        });
+      } else {
+        lines.push(this.$t("storyLog.noVoteHistory"));
+      }
+
+      lines.push("", `【${this.$t("storyLog.title")}】`);
+      const groups = this.logsForExport();
+      if (!groups.length) {
+        lines.push(this.$t("storyLog.empty"));
+      } else {
+        groups.forEach(group => {
+          lines.push("", `【${group.label}】`);
+          group.logs.forEach(log => {
+            const label = `${this.formatDateTime(log.createdAt)} [${this.sourceLabel(log.source)}] ${log.title || this.$t("storyLog.note")}`;
+            lines.push(`- ${label}`);
+            if (log.content) {
+              log.content.split("\n").forEach(line => {
+                lines.push(`  ${line}`);
+              });
+            }
+          });
+        });
+      }
+
+      return `${lines.join("\n")}\n`;
+    },
+    async copyTextToClipboard(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        try {
+          await navigator.clipboard.writeText(text);
+          return true;
+        } catch (error) {
+          // Fall through to textarea copy for browsers that block Clipboard API.
+        }
+      }
+
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.setAttribute("readonly", "");
+      textarea.style.position = "fixed";
+      textarea.style.top = "0";
+      textarea.style.left = "-9999px";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      let copied = false;
+      try {
+        copied = document.execCommand("copy");
+      } catch (error) {
+        copied = false;
+      }
+      document.body.removeChild(textarea);
+      return copied;
+    },
+    showCopyMessage(message) {
+      this.copyMessage = message;
+      window.clearTimeout(this.copyMessageTimer);
+      this.copyMessageTimer = window.setTimeout(() => {
+        this.copyMessage = "";
+      }, 2000);
+    },
     buildReviewMarkdown() {
       const lines = [
         `# ${this.$t("storyLog.reviewTitle")}`,
@@ -485,12 +591,26 @@ header {
 }
 
 .actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 6px;
+  margin-bottom: 10px;
   font-size: 80%;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    min-height: 30px;
+    white-space: nowrap;
+  }
+
+  .danger-action {
+    border-color: rgba($demon, 0.75);
+    color: #ff4c4c;
+  }
 }
 
 .phase-select,
@@ -511,8 +631,24 @@ header {
 }
 
 .phase-select {
-  flex: 1;
-  justify-content: center;
+  grid-column: 1 / -1;
+  justify-content: space-between;
+  min-height: 32px;
+  padding: 0 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 4px;
+
+  select {
+    max-width: 170px;
+  }
+}
+
+.copy-status {
+  grid-column: 1 / -1;
+  color: rgba($townsfolk, 0.95);
+  font-size: 90%;
+  text-align: right;
 }
 
 .phase-tabs {
