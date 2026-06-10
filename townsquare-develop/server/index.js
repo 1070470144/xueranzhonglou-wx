@@ -70,6 +70,7 @@ function sendRoomPlayerList(room) {
     name: player.name
   }));
   sendJson(room.host, "room:players", players);
+  room.players.forEach(({ ws }) => sendJson(ws, "room:players", players));
 }
 
 function sendRoomError(ws, command, err) {

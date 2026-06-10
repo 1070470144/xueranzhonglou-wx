@@ -60,6 +60,18 @@
         </button>
       </section>
 
+      <details v-if="!room.isHost" class="room-control-group" open>
+        <summary class="room-control-group-title">{{ $t("room.currentPlayers") }}</summary>
+        <ul class="room-control-player-list readonly-player-list">
+          <li v-for="player in room.players" :key="player.id" class="room-control-player-row">
+            <span>{{ player.name }}</span>
+          </li>
+          <li v-if="!room.players.length" class="room-control-player-row empty-player-row">
+            <span>{{ $t("room.noCurrentPlayers") }}</span>
+          </li>
+        </ul>
+      </details>
+
       <template v-if="room.isHost">
         <details class="room-control-group" open>
           <summary class="room-control-group-title">{{ $t("room.playersGroup") }}</summary>
@@ -586,6 +598,14 @@ summary {
   border-color: #8b6508;
   background: #2a1c09;
   font-size: 0.72em;
+}
+
+.readonly-player-list li {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.empty-player-row span {
+  color: #8f7d66;
 }
 
 .room-control-status-row {
