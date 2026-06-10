@@ -15,6 +15,7 @@ const serverSource = fs.readFileSync(
   'case "room:list:update"',
   'case "room:create:ok"',
   'case "room:join:ok"',
+  'case "room:state"',
   'case "room:update"',
   'case "room:players"',
   'case "room:kicked"',
@@ -67,7 +68,7 @@ assert(
 );
 
 const applyRoomJoinedStart = socketSource.indexOf("_applyRoomJoined({ room, scriptJson } = {}, isSpectator)");
-const applyRoomJoinedEnd = socketSource.indexOf("\n  _loadRoomScript(scriptJson)");
+const applyRoomJoinedEnd = socketSource.indexOf("\n  _loadRoomScript(scriptJson) {", applyRoomJoinedStart);
 const applyRoomJoinedSource = socketSource.slice(applyRoomJoinedStart, applyRoomJoinedEnd);
 
 assert(
@@ -114,8 +115,15 @@ assert(
 );
 
 assert(
-  applyRoomJoinedSource.includes('this._sendDirect("host", "getGamestate"'),
+  /if \(isSpectator\)[\s\S]*?this\._sendDirect\([\s\S]*?"host"[\s\S]*?"getGamestate"/.test(
+    applyRoomJoinedSource
+  ),
   "joining a room should request the host gamestate on the reused room socket"
+);
+
+assert(
+  socketSource.includes('this._send("room:state:get", {})'),
+  "storyteller reconnect should request room state from the server"
 );
 
 assert(

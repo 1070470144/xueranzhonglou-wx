@@ -13,6 +13,7 @@ register.setDefaultLabels({
 });
 
 const PING_INTERVAL = 30000; // 30 seconds
+const HOST_RECONNECT_GRACE_MS = Number(process.env.TOWNSQUARE_HOST_RECONNECT_GRACE_MS || 30000);
 const defaultAllowedOriginPattern = /^https?:\/\/([^.]+\.github\.io|localhost|127\.0\.0\.1|\[::1\]|10(?:\.\d{1,3}){3}|192\.168(?:\.\d{1,3}){2}|172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2}|clocktower\.online|eddbra1nprivatetownsquare\.xyz|([^.]+\.)?xuerantools\.org)(?::\d+)?(?:\/|$)/i;
 const allowedOrigins = (process.env.TOWNSQUARE_ALLOWED_ORIGINS || "")
   .split(",")
@@ -68,14 +69,36 @@ function sendRoomClosed(room) {
 }
 
 function closeStaleRooms() {
+  const now = Date.now();
   const closedRooms = rooms.closeRoomsWhere(
-    room => !room.host || room.host.readyState !== WebSocket.OPEN
+    room =>
+      (!room.host || room.host.readyState !== WebSocket.OPEN) &&
+      room.hostDisconnectedAt &&
+      now - room.hostDisconnectedAt >= HOST_RECONNECT_GRACE_MS
   );
   closedRooms.forEach(room => {
     clearTimeout(room.voiceRecallTimer);
     sendRoomClosed(room);
   });
   return closedRooms.length;
+}
+
+function sendRoomSnapshot(ws, room) {
+  sendJson(ws, "room:state", {
+    room: rooms.summarize(room),
+    scriptJson: room.scriptJson
+  });
+  sendRoomPlayerList(room);
+  sendVoiceState(room);
+}
+
+function reclaimHostConnection(ws, room) {
+  room.host = ws;
+  room.hostDisconnectedAt = 0;
+  moveClientToChannel(ws, room.id);
+  ws.playerId = "host";
+  ws.isLobby = false;
+  registerVoiceParticipant(room, ws);
 }
 
 function sendRoomPlayerList(room) {
@@ -294,6 +317,18 @@ wss.on("connection", function connection(ws, req) {
             closeStaleRooms();
             sendJson(ws, "room:list:update", rooms.listRooms());
             return;
+          case "room:state:get": {
+            const room = rooms.getRoom(ws.roomId || params.roomId);
+            if (!room) throw new Error("room_not_found");
+            if (ws.playerId !== "host") throw new Error("host_only");
+            if (room.host && room.host !== ws && room.host.readyState === WebSocket.OPEN) {
+              throw new Error("host_already_present");
+            }
+            reclaimHostConnection(ws, room);
+            sendRoomSnapshot(ws, room);
+            broadcastRoomList();
+            return;
+          }
           case "room:create": {
             const room = rooms.createRoom({
               host: ws,
@@ -537,9 +572,17 @@ wss.on("connection", function connection(ws, req) {
     const room = rooms.getRoom(ws.roomId);
     if (!room) return;
     if (room.host === ws) {
-      const closedRoom = rooms.closeRoom(room.id);
-      clearTimeout(room.voiceRecallTimer);
-      if (closedRoom) sendRoomClosed(closedRoom);
+      room.hostDisconnectedAt = Date.now();
+      clearTimeout(room.hostReconnectTimer);
+      room.hostReconnectTimer = setTimeout(() => {
+        const activeRoom = rooms.getRoom(room.id);
+        if (!activeRoom || activeRoom.host !== ws) return;
+        if (activeRoom.host.readyState === WebSocket.OPEN) return;
+        const closedRoom = rooms.closeRoom(activeRoom.id);
+        clearTimeout(activeRoom.voiceRecallTimer);
+        if (closedRoom) sendRoomClosed(closedRoom);
+        broadcastRoomList();
+      }, HOST_RECONNECT_GRACE_MS);
       broadcastRoomList();
     } else {
       rooms.removePlayerConnection(room.id, ws.playerId, ws);

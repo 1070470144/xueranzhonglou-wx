@@ -95,6 +95,7 @@ function createRoom({ host, name, hostName = "", note = "", visibility = "public
     passwordHash: isPrivate ? passwordHash(password) : "",
     maxPlayers: normalizeMaxPlayers(maxPlayers),
     host,
+    hostDisconnectedAt: 0,
     hostName: sanitizeDisplayName(hostName, DEFAULT_HOST_NAME),
     note: normalizeNote(note),
     players: new Map(),

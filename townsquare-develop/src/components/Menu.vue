@@ -190,8 +190,6 @@
               {{ $t("room.openLobby")
               }}<em><font-awesome-icon icon="users" /></em>
             </li>
-            <li @click="hostSession">{{ $t("menu.host") }}<em>[H]</em></li>
-            <li @click="joinSession">{{ $t("menu.join") }}<em>[J]</em></li>
           </template>
           <template v-else>
             <li @click="toggleModal('roomControl')">

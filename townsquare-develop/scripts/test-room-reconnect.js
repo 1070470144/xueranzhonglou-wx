@@ -233,6 +233,53 @@ async function runReconnectScenario() {
   await delay(200);
 }
 
+async function runHostRefreshScenario() {
+  const suffix = Date.now().toString(36);
+  const host = new TestClient("refresh-host-original", `refresh-host-${suffix}`);
+  const refreshedHost = new TestClient("refresh-host-new-tab", "host");
+  const player = new TestClient("refresh-player", `refresh-player-${suffix}`);
+
+  await host.connect();
+  const room = await createRoom(host, `Host Refresh ${suffix}`);
+
+  await player.connect();
+  let [command, payload] = await joinRoom(player, room.id, "Refresh Player");
+  assert(command === "room:join:ok", "player joins before host refresh", payload.room);
+
+  host.close();
+  await delay(300);
+
+  await refreshedHost.connect(room.id);
+  refreshedHost.send("room:state:get", {});
+  const [, statePayload] = await refreshedHost.waitForNext(
+    nextCommand => nextCommand === "room:state",
+    REQUEST_TIMEOUT * 2
+  );
+  assert(
+    statePayload.room && statePayload.room.id === room.id,
+    "host refresh can reclaim existing room",
+    statePayload
+  );
+
+  player.send("claim", [0, player.playerId]);
+  const [, claimPayload] = await refreshedHost.waitForNext(
+    (nextCommand, params) =>
+      nextCommand === "claim" &&
+      Array.isArray(params) &&
+      params[0] === 0 &&
+      params[1] === player.playerId
+  );
+  assert(
+    claimPayload[1] === player.playerId,
+    "reclaimed host receives player messages after refresh",
+    claimPayload
+  );
+
+  player.close();
+  refreshedHost.close();
+  await delay(200);
+}
+
 async function main() {
   writeLog("INFO", "room reconnect tests started", {
     wsUrl: WS_URL,
@@ -240,6 +287,7 @@ async function main() {
     logPath
   });
   await runReconnectScenario();
+  await runHostRefreshScenario();
   writeLog("PASS", "room reconnect tests completed", { logPath });
 }
 

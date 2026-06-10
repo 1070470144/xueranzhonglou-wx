@@ -120,8 +120,10 @@ class LiveSession {
         "getGamestate",
         this._store.state.session.playerId,
       );
-    } else {
+    } else if (this._store.state.room.current) {
       this.sendGamestate();
+    } else {
+      this._send("room:state:get", {});
     }
     this._ping();
     this.syncAuthPlayer();
@@ -166,6 +168,9 @@ class LiveSession {
       case "room:join:ok":
         this._clearRoomRequestTimeout();
         this._applyRoomJoined(params, true);
+        break;
+      case "room:state":
+        this._applyRoomJoined(params, false);
         break;
       case "room:create:error":
       case "room:join:error":
