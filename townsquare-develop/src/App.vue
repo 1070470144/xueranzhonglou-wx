@@ -41,6 +41,8 @@
     <PlayerNameModal />
     <StoryLogModal />
     <PrivateChatModal />
+    <VoicePanel />
+    <VoiceInviteConfirm />
     <RoomLobbyModal />
     <RoomControlDrawer />
     <Gradients />
@@ -70,6 +72,8 @@ import LoginModal from "@/components/modals/LoginModal";
 import PlayerNameModal from "@/components/modals/PlayerNameModal";
 import StoryLogModal from "@/components/modals/StoryLogModal";
 import PrivateChatModal from "@/components/modals/PrivateChatModal";
+import VoicePanel from "@/components/VoicePanel";
+import VoiceInviteConfirm from "@/components/VoiceInviteConfirm";
 import RoomLobbyModal from "@/components/modals/RoomLobbyModal";
 import RoomControlDrawer from "@/components/RoomControlDrawer";
 
@@ -78,6 +82,8 @@ export default {
     AnnouncementModal,
     RoomControlDrawer,
     RoomLobbyModal,
+    VoiceInviteConfirm,
+    VoicePanel,
     PrivateChatModal,
     StoryLogModal,
     PlayerNameModal,

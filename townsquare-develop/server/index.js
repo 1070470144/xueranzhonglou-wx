@@ -3,6 +3,7 @@ const https = require("https");
 const WebSocket = require("ws");
 const client = require("prom-client");
 const rooms = require("./rooms");
+const voiceRooms = require("./voiceRooms");
 
 // Create a Registry which registers the metrics
 const register = new client.Registry();
@@ -71,6 +72,57 @@ function sendRoomPlayerList(room) {
   }));
   sendJson(room.host, "room:players", players);
   room.players.forEach(({ ws }) => sendJson(ws, "room:players", players));
+}
+
+function registerVoiceParticipant(room, ws) {
+  const state = voiceRooms.ensureVoiceState(room);
+  const isHost = room.host === ws || ws.playerId === "host";
+  const player = isHost ? null : room.players.get(ws.playerId);
+  voiceRooms.registerParticipant(state, {
+    id: isHost ? "host" : ws.playerId,
+    name: isHost ? room.hostName : player && player.name,
+    isHost,
+    now: Date.now()
+  });
+  return state;
+}
+
+function sendVoiceState(room) {
+  const state = voiceRooms.ensureVoiceState(room);
+  const payload = voiceRooms.summarize(state);
+  sendJson(room.host, "voice:state", payload);
+  room.players.forEach(({ ws }) => sendJson(ws, "voice:state", payload));
+}
+
+function sendVoiceError(ws, command, err) {
+  sendJson(ws, "voice:error", {
+    command,
+    reason: err && err.message ? err.message : "unknown_error"
+  });
+}
+
+function findRoomClient(room, participantId) {
+  if (participantId === "host") return room.host;
+  const player = room.players.get(participantId);
+  return player && player.ws;
+}
+
+function scheduleVoiceRecall(room, executeAt) {
+  clearTimeout(room.voiceRecallTimer);
+  room.voiceRecallTimer = setTimeout(() => {
+    const activeRoom = rooms.getRoom(room.id);
+    if (!activeRoom || !activeRoom.voiceState || !activeRoom.voiceState.recall) return;
+    if (activeRoom.voiceState.recall.executeAt !== executeAt) return;
+    try {
+      voiceRooms.executeRecall(activeRoom.voiceState, {
+        byId: "host",
+        now: Date.now()
+      });
+      sendVoiceState(activeRoom);
+    } catch (e) {
+      console.log("voice recall execute failed", activeRoom.id, e.message);
+    }
+  }, Math.max(0, executeAt - Date.now()));
 }
 
 function sendRoomError(ws, command, err) {
@@ -245,10 +297,12 @@ wss.on("connection", function connection(ws, req) {
             moveClientToChannel(ws, room.id);
             ws.playerId = "host";
             ws.isLobby = false;
+            registerVoiceParticipant(room, ws);
             sendJson(ws, "room:create:ok", {
               room: rooms.summarize(room),
               scriptJson: room.scriptJson
             });
+            sendVoiceState(room);
             broadcastRoomList();
             return;
           }
@@ -261,11 +315,13 @@ wss.on("connection", function connection(ws, req) {
             rooms.addPlayer(room.id, ws, params.playerName);
             moveClientToChannel(ws, room.id);
             ws.isLobby = false;
+            registerVoiceParticipant(room, ws);
             sendJson(ws, "room:join:ok", {
               room: rooms.summarize(room),
               scriptJson: room.scriptJson
             });
             sendRoomPlayerList(room);
+            sendVoiceState(room);
             broadcastRoomList();
             return;
           }
@@ -273,6 +329,7 @@ wss.on("connection", function connection(ws, req) {
             const room = rooms.getRoom(ws.roomId);
             if (!room || room.host !== ws) throw new Error("host_only");
             rooms.updateRoom(room.id, params);
+            registerVoiceParticipant(room, ws);
             sendJson(ws, "room:update:ok", {
               room: rooms.summarize(room),
               scriptJson: room.scriptJson
@@ -290,17 +347,109 @@ wss.on("connection", function connection(ws, req) {
             const room = rooms.getRoom(ws.roomId);
             if (!room || room.host !== ws) throw new Error("host_only");
             const player = rooms.kickPlayer(room.id, params.playerId);
+            if (room.voiceState) voiceRooms.unregisterParticipant(room.voiceState, params.playerId);
             if (player && player.ws) {
               sendJson(player.ws, "room:kicked", { roomId: room.id });
               player.ws.close(1000, "kicked");
             }
             sendRoomPlayerList(room);
+            sendVoiceState(room);
             broadcastRoomList();
             return;
           }
         }
       } catch (e) {
         sendRoomError(ws, `${command}:error`, e);
+        return;
+      }
+    }
+
+    if (command && command.indexOf("voice:") === 0) {
+      const room = rooms.getRoom(ws.roomId);
+      if (!room) {
+        sendVoiceError(ws, command, new Error("room_not_found"));
+        return;
+      }
+      try {
+        const state = registerVoiceParticipant(room, ws);
+        switch (command) {
+          case "voice:state:get":
+            sendVoiceState(room);
+            return;
+          case "voice:invite:create":
+            voiceRooms.createInvite(state, {
+              fromId: ws.playerId,
+              invitedIds: params.invitedIds || [],
+              now: Date.now()
+            });
+            sendVoiceState(room);
+            return;
+          case "voice:invite:respond":
+            const responder = state.participants.get(ws.playerId);
+            const acceptInvite = !!params.accept;
+            const rejectedInvite = voiceRooms.respondInvite(state, {
+              participantId: ws.playerId,
+              inviteId: params.inviteId,
+              accept: acceptInvite,
+              now: Date.now()
+            });
+            if (!acceptInvite) {
+              sendJson(findRoomClient(room, rejectedInvite.fromId), "voice:invite:rejected", {
+                inviteId: rejectedInvite.id,
+                rejectedById: ws.playerId,
+                rejectedByName: responder && responder.name
+              });
+            }
+            sendVoiceState(room);
+            return;
+          case "voice:channel:join":
+            voiceRooms.joinChannel(state, {
+              participantId: ws.playerId,
+              channelId: params.channelId
+            });
+            sendVoiceState(room);
+            return;
+          case "voice:channel:leave":
+            voiceRooms.leaveChannel(state, { participantId: ws.playerId });
+            sendVoiceState(room);
+            return;
+          case "voice:muteAll:set":
+            voiceRooms.setMuteAll(state, { byId: ws.playerId, value: params.value });
+            sendVoiceState(room);
+            return;
+          case "voice:recall:start": {
+            const recall = voiceRooms.startRecall(state, {
+              byId: ws.playerId,
+              now: Date.now(),
+              delayMs: params.delayMs
+            });
+            sendVoiceState(room);
+            scheduleVoiceRecall(room, recall.executeAt);
+            return;
+          }
+          case "voice:recall:execute":
+            voiceRooms.executeRecall(state, { byId: ws.playerId, now: Date.now() });
+            sendVoiceState(room);
+            return;
+          case "voice:signal": {
+            const from = state.participants.get(ws.playerId);
+            const target = state.participants.get(params.toId);
+            if (!from || !target || from.currentChannelId !== target.currentChannelId) {
+              throw new Error("not_channel_member");
+            }
+            const targetWs = findRoomClient(room, params.toId);
+            sendJson(targetWs, "voice:signal", {
+              fromId: ws.playerId,
+              signal: params.signal
+            });
+            return;
+          }
+        }
+      } catch (e) {
+        sendJson(ws, "voice:error", {
+          command,
+          reason: e && e.message ? e.message : "unknown_error"
+        });
         return;
       }
     }
@@ -375,11 +524,14 @@ wss.on("connection", function connection(ws, req) {
     if (!room) return;
     if (room.host === ws) {
       const closedRoom = rooms.closeRoom(room.id);
+      clearTimeout(room.voiceRecallTimer);
       if (closedRoom) sendRoomClosed(closedRoom);
       broadcastRoomList();
     } else {
       rooms.removePlayerConnection(room.id, ws.playerId, ws);
+      if (room.voiceState) voiceRooms.unregisterParticipant(room.voiceState, ws.playerId);
       sendRoomPlayerList(room);
+      sendVoiceState(room);
       broadcastRoomList();
     }
   });

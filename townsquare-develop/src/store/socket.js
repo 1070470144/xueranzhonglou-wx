@@ -55,7 +55,10 @@ class LiveSession {
           3 * 1000
         );
       } else {
-        if (this._isRoomSession) this._store.commit("room/clearRoom");
+        if (this._isRoomSession) {
+          this._store.commit("voice/clear");
+          this._store.commit("room/clearRoom");
+        }
         this._isRoomSession = false;
         this._store.commit("session/setSessionId", "");
         if (err.reason) alert(err.reason);
@@ -191,13 +194,27 @@ class LiveSession {
         break;
       case "room:kicked":
         alert(t("room.errors.kicked"));
+        this._store.commit("voice/clear");
         this._store.commit("room/clearRoom");
         this._store.commit("session/setSessionId", "");
         break;
       case "room:closed":
         alert(t("room.errors.closed"));
+        this._store.commit("voice/clear");
         this._store.commit("room/clearRoom");
         this._store.commit("session/setSessionId", "");
+        break;
+      case "voice:state":
+        this._store.commit("voice/setState", params);
+        break;
+      case "voice:error":
+        this._store.commit("voice/setError", params && params.reason);
+        break;
+      case "voice:invite:rejected":
+        this._store.commit("voice/receiveInviteRejection", params);
+        break;
+      case "voice:signal":
+        this._store.commit("voice/receiveSignal", params);
         break;
       case "getGamestate":
         this.sendGamestate(params);
@@ -355,6 +372,7 @@ class LiveSession {
     this._store.commit("session/setPlayerCount", 0);
     this._store.commit("session/setPing", 0);
     this._store.commit("session/setReconnecting", false);
+    this._store.commit("voice/clear");
     clearTimeout(this._reconnectTimer);
     if (this._socket) {
       if (this._isSpectator) {
@@ -1090,6 +1108,52 @@ class LiveSession {
     this._send("room:kick", { playerId });
   }
 
+  requestVoiceState() {
+    this._send("voice:state:get", {});
+  }
+
+  createVoiceInvite(payload) {
+    const invitedIds = payload && payload.invitedIds;
+    this._send("voice:invite:create", {
+      invitedIds: Array.isArray(invitedIds) ? invitedIds : []
+    });
+  }
+
+  respondVoiceInvite(payload) {
+    this._send("voice:invite:respond", {
+      inviteId: payload && payload.inviteId,
+      accept: !!(payload && payload.accept)
+    });
+  }
+
+  joinVoiceChannel(channelId) {
+    this._send("voice:channel:join", { channelId });
+  }
+
+  leaveVoiceChannel() {
+    this._send("voice:channel:leave", {});
+  }
+
+  setVoiceMuteAll(value) {
+    if (this._isSpectator) return;
+    this._send("voice:muteAll:set", { value: !!value });
+  }
+
+  startVoiceRecall() {
+    if (this._isSpectator) return;
+    this._send("voice:recall:start", { delayMs: 3000 });
+  }
+
+  executeVoiceRecall() {
+    if (this._isSpectator) return;
+    this._send("voice:recall:execute", {});
+  }
+
+  sendVoiceSignal(payload) {
+    if (!payload || !payload.toId || !payload.signal) return;
+    this._send("voice:signal", payload);
+  }
+
   _ensureLobbySocket() {
     if (this.isLobbyConnected()) return;
     this.disconnect();
@@ -1115,6 +1179,7 @@ class LiveSession {
     this._isJoiningRoom = true;
     this._store.commit("session/claimSeat", -1);
     this._store.commit("session/clearVoteHistory");
+    this._store.commit("voice/clear");
     if (isSpectator) this._store.commit("players/clear");
     this._isRoomSession = true;
     this._store.commit("session/setSpectator", isSpectator);
@@ -1135,6 +1200,7 @@ class LiveSession {
       this._sendDirect("host", "getGamestate", this._store.state.session.playerId);
       this.syncAuthPlayer();
     }
+    this.requestVoiceState();
   }
 
   ensureRoomSeats(room) {
@@ -1228,6 +1294,7 @@ export default store => {
         } else {
           window.location.hash = "";
           store.commit("privateChat/clear");
+          store.commit("voice/clear");
           store.commit("room/clearRoom");
           session.disconnect();
         }
@@ -1249,6 +1316,33 @@ export default store => {
         break;
       case "privateChat/sendMessage":
         session.sendPrivateChat(payload);
+        break;
+      case "voice/requestState":
+        session.requestVoiceState();
+        break;
+      case "voice/createInvite":
+        session.createVoiceInvite(payload);
+        break;
+      case "voice/respondInvite":
+        session.respondVoiceInvite(payload);
+        break;
+      case "voice/joinChannel":
+        session.joinVoiceChannel(payload);
+        break;
+      case "voice/leaveChannel":
+        session.leaveVoiceChannel();
+        break;
+      case "voice/setMuteAll":
+        session.setVoiceMuteAll(payload);
+        break;
+      case "voice/startRecall":
+        session.startVoiceRecall();
+        break;
+      case "voice/executeRecall":
+        session.executeVoiceRecall();
+        break;
+      case "voice/sendSignal":
+        session.sendVoiceSignal(payload);
         break;
       case "session/claimSeat":
         session.claimSeat(payload);

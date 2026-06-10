@@ -8,6 +8,7 @@ import session from "./modules/session";
 import storyLog from "./modules/storyLog";
 import privateChat from "./modules/privateChat";
 import room from "./modules/room";
+import voice from "./modules/voice";
 import editionJSON from "../editions.json";
 import rolesJSON from "../roles.json";
 import fabledJSON from "../fabled.json";
@@ -101,7 +102,8 @@ export default new Vuex.Store({
     session,
     storyLog,
     privateChat,
-    room
+    room,
+    voice
   },
   state: {
     grimoire: {
