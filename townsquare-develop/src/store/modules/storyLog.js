@@ -1,6 +1,6 @@
 const STORAGE_KEY = "townsquare.storyLog";
 
-const createId = prefix =>
+const createId = (prefix) =>
   `${prefix}_${Date.now().toString(36)}_${Math.random()
     .toString(36)
     .substr(2, 6)}`;
@@ -13,15 +13,15 @@ const createGame = () => ({
   phaseNumber: 0,
   nightNumber: 0,
   dayNumber: 0,
-  logs: []
+  logs: [],
 });
 
-const normalizeState = saved => {
+const normalizeState = (saved) => {
   if (!saved || !saved.games || !saved.currentGameId) {
     const game = createGame();
     return {
       currentGameId: game.id,
-      games: { [game.id]: game }
+      games: { [game.id]: game },
     };
   }
   if (!saved.games[saved.currentGameId]) {
@@ -40,17 +40,17 @@ const loadState = () => {
   }
 };
 
-const persist = state => {
+const persist = (state) => {
   localStorage.setItem(
     STORAGE_KEY,
     JSON.stringify({
       currentGameId: state.currentGameId,
-      games: state.games
-    })
+      games: state.games,
+    }),
   );
 };
 
-const getCurrentGame = state => state.games[state.currentGameId];
+const getCurrentGame = (state) => state.games[state.currentGameId];
 
 const mutations = {
   addEntry(state, entry) {
@@ -68,7 +68,7 @@ const mutations = {
       phaseNumber: game.phaseNumber,
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      ...entry
+      ...entry,
     };
     game.logs.push(log);
     persist(state);
@@ -76,7 +76,7 @@ const mutations = {
   updateEntry(state, { id, content }) {
     const game = getCurrentGame(state);
     if (!game) return;
-    const log = game.logs.find(item => item.id === id);
+    const log = game.logs.find((item) => item.id === id);
     if (!log) return;
     log.content = content;
     log.updatedAt = Date.now();
@@ -85,7 +85,7 @@ const mutations = {
   moveEntryPhase(state, { id, phaseType, phaseNumber }) {
     const game = getCurrentGame(state);
     if (!game) return;
-    const log = game.logs.find(item => item.id === id);
+    const log = game.logs.find((item) => item.id === id);
     if (!log) return;
     const number = Math.max(0, parseInt(phaseNumber, 10) || 0);
     log.phaseType = phaseType;
@@ -96,7 +96,7 @@ const mutations = {
   appendEntryContent(state, { id, content }) {
     const game = getCurrentGame(state);
     if (!game) return;
-    const log = game.logs.find(item => item.id === id);
+    const log = game.logs.find((item) => item.id === id);
     if (!log || !content) return;
     log.content = log.content ? `${log.content}\n${content}` : content;
     log.updatedAt = Date.now();
@@ -105,7 +105,7 @@ const mutations = {
   deleteEntry(state, id) {
     const game = getCurrentGame(state);
     if (!game) return;
-    game.logs = game.logs.filter(item => item.id !== id);
+    game.logs = game.logs.filter((item) => item.id !== id);
     persist(state);
   },
   clearCurrentLogs(state) {
@@ -127,7 +127,7 @@ const mutations = {
     state.currentGameId = game.id;
     state.games = {
       ...state.games,
-      [game.id]: game
+      [game.id]: game,
     };
     persist(state);
   },
@@ -154,20 +154,20 @@ const mutations = {
     if (phaseType === "night") game.nightNumber = number;
     if (phaseType === "day") game.dayNumber = number;
     persist(state);
-  }
+  },
 };
 
 const getters = {
-  currentGame: state => getCurrentGame(state),
-  currentLogs: state => {
+  currentGame: (state) => getCurrentGame(state),
+  currentLogs: (state) => {
     const game = getCurrentGame(state);
     return game ? game.logs : [];
-  }
+  },
 };
 
 export default {
   namespaced: true,
   state: loadState,
   getters,
-  mutations
+  mutations,
 };

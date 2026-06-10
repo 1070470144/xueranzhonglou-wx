@@ -28,10 +28,10 @@ import { mapMutations, mapState } from "vuex";
 
 export default {
   components: {
-    Modal
+    Modal,
   },
   computed: {
-    gamestate: function() {
+    gamestate: function () {
       return JSON.stringify({
         bluffs: this.players.bluffs.map(({ id }) => id),
         lunaticBluffs: this.players.lunaticBluffs.map(({ id }) => id),
@@ -41,27 +41,27 @@ export default {
         roles: this.edition.isOfficial
           ? ""
           : this.$store.getters.customRolesStripped,
-        fabled: this.players.fabled.map(fabled =>
-          fabled.isCustom ? fabled : { id: fabled.id }
+        fabled: this.players.fabled.map((fabled) =>
+          fabled.isCustom ? fabled : { id: fabled.id },
         ),
-        players: this.players.players.map(player => ({
+        players: this.players.players.map((player) => ({
           ...player,
-          role: player.role.id || {}
-        }))
+          role: player.role.id || {},
+        })),
       });
     },
-    ...mapState(["modals", "players", "edition", "roles", "session"])
+    ...mapState(["modals", "players", "edition", "roles", "session"]),
   },
   data() {
     return {
-      input: ""
+      input: "",
     };
   },
   methods: {
-    copy: function() {
+    copy: function () {
       navigator.clipboard.writeText(this.input || this.gamestate);
     },
-    load: function() {
+    load: function () {
       if (this.session.isSpectator) return;
       try {
         const data = JSON.parse(this.input || this.gamestate);
@@ -76,7 +76,7 @@ export default {
           bluffs.forEach((role, index) => {
             this.$store.commit("players/setBluff", {
               index,
-              role: this.$store.state.roles.get(role) || {}
+              role: this.$store.state.roles.get(role) || {},
             });
           });
         }
@@ -84,30 +84,30 @@ export default {
           lunaticBluffs.forEach((role, index) => {
             this.$store.commit("players/setLunaticBluff", {
               index,
-              role: this.$store.state.roles.get(role) || {}
+              role: this.$store.state.roles.get(role) || {},
             });
           });
         }
         if (fabled) {
           this.$store.commit("players/setFabled", {
             fabled: fabled.map(
-              f =>
+              (f) =>
                 this.$store.state.fabled.get(f) ||
                 this.$store.state.fabled.get(f.id) ||
-                f
-            )
+                f,
+            ),
           });
         }
         if (players) {
           this.$store.commit(
             "players/set",
-            players.map(player => ({
+            players.map((player) => ({
               ...player,
               role:
                 this.$store.state.roles.get(player.role) ||
                 this.$store.getters.rolesJSONbyId.get(player.role) ||
-                {}
-            }))
+                {},
+            })),
           );
         }
         this.toggleModal("gameState");
@@ -115,8 +115,8 @@ export default {
         alert(this.$t("modals.unableToParseJson", { message: e }));
       }
     },
-    ...mapMutations(["toggleModal"])
-  }
+    ...mapMutations(["toggleModal"]),
+  },
 };
 </script>
 

@@ -8,7 +8,7 @@ const getConversation = (state, targetId, targetName = "") => {
       targetId,
       targetName,
       messages: [],
-      unread: 0
+      unread: 0,
     });
   } else if (targetName) {
     state.conversations[targetId].targetName = targetName;
@@ -16,18 +16,18 @@ const getConversation = (state, targetId, targetName = "") => {
   return state.conversations[targetId];
 };
 
-const normalizeContent = content => String(content || "").trim();
+const normalizeContent = (content) => String(content || "").trim();
 
 const state = () => ({
   activeTargetId: "",
-  conversations: {}
+  conversations: {},
 });
 
 const getters = {
   totalUnread({ conversations }) {
     return Object.values(conversations).reduce(
       (total, conversation) => total + conversation.unread,
-      0
+      0,
     );
   },
   conversationList({ conversations }) {
@@ -40,7 +40,7 @@ const getters = {
         : 0;
       return bTime - aTime;
     });
-  }
+  },
 };
 
 const mutations = {
@@ -62,19 +62,23 @@ const mutations = {
       toName: payload.toName,
       content,
       createdAt: payload.createdAt,
-      direction: "out"
+      direction: "out",
     });
     if (conversation.messages.length > MAX_MESSAGES_PER_CONVERSATION) {
       conversation.messages.splice(
         0,
-        conversation.messages.length - MAX_MESSAGES_PER_CONVERSATION
+        conversation.messages.length - MAX_MESSAGES_PER_CONVERSATION,
       );
     }
   },
   receiveMessage(state, payload) {
     const content = normalizeContent(payload.content);
     if (!payload.fromId || !content) return;
-    const conversation = getConversation(state, payload.fromId, payload.fromName);
+    const conversation = getConversation(
+      state,
+      payload.fromId,
+      payload.fromName,
+    );
     conversation.messages.push({
       id: payload.id,
       fromId: payload.fromId,
@@ -83,12 +87,12 @@ const mutations = {
       toName: payload.toName,
       content,
       createdAt: payload.createdAt,
-      direction: "in"
+      direction: "in",
     });
     if (conversation.messages.length > MAX_MESSAGES_PER_CONVERSATION) {
       conversation.messages.splice(
         0,
-        conversation.messages.length - MAX_MESSAGES_PER_CONVERSATION
+        conversation.messages.length - MAX_MESSAGES_PER_CONVERSATION,
       );
     }
     if (!payload.isOpen || state.activeTargetId !== payload.fromId) {
@@ -98,12 +102,12 @@ const mutations = {
   clear(state) {
     state.activeTargetId = "";
     state.conversations = {};
-  }
+  },
 };
 
 export default {
   namespaced: true,
   state,
   getters,
-  mutations
+  mutations,
 };

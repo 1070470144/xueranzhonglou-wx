@@ -11,16 +11,16 @@ export default {
     return {
       manager: null,
       isFlushingSignals: false,
-      peerStatus: {}
+      peerStatus: {},
     };
   },
   computed: {
     ...mapState(["session"]),
     ...mapState("voice", {
-      voiceEnabled: state => state.enabled,
-      micEnabled: state => state.micEnabled,
-      pendingSignals: state => state.pendingSignals,
-      signalNonce: state => state.signalNonce
+      voiceEnabled: (state) => state.enabled,
+      micEnabled: (state) => state.micEnabled,
+      pendingSignals: (state) => state.pendingSignals,
+      signalNonce: (state) => state.signalNonce,
     }),
     ownId() {
       return this.$store.getters["voice/ownId"];
@@ -35,11 +35,11 @@ export default {
       return this.$store.getters["voice/currentMembers"];
     },
     currentMemberSignature() {
-      return this.currentMembers.map(member => member.id).join(",");
+      return this.currentMembers.map((member) => member.id).join(",");
     },
     canSpeak() {
       return this.$store.getters["voice/canSpeak"];
-    }
+    },
   },
   watch: {
     voiceEnabled: "syncVoice",
@@ -48,7 +48,8 @@ export default {
     currentMemberSignature: "syncVoice",
     signalNonce: "flushSignals",
     canSpeak(value) {
-      if (!value && this.micEnabled) this.$store.commit("voice/setMicEnabled", false);
+      if (!value && this.micEnabled)
+        this.$store.commit("voice/setMicEnabled", false);
       this.syncVoice();
     },
     "session.sessionId"(sessionId) {
@@ -57,14 +58,14 @@ export default {
         return;
       }
       if (this.manager) this.manager.destroy();
-    }
+    },
   },
   mounted() {
     this.manager = new VoicePeerManager({
-      sendSignal: payload => this.sendSignal(payload),
-      onStatus: status => {
+      sendSignal: (payload) => this.sendSignal(payload),
+      onStatus: (status) => {
         this.$set(this.peerStatus, status.peerId, status.state);
-      }
+      },
     });
     if (this.session.sessionId) this.requestVoiceState();
   },
@@ -87,7 +88,7 @@ export default {
           members: this.currentMembers,
           enabled: this.voiceEnabled,
           micEnabled: this.micEnabled,
-          canSpeak: this.canSpeak
+          canSpeak: this.canSpeak,
         });
       } catch (error) {
         this.$store.commit("voice/setError", error && error.message);
@@ -110,8 +111,8 @@ export default {
       } finally {
         this.isFlushingSignals = false;
       }
-    }
-  }
+    },
+  },
 };
 </script>
 

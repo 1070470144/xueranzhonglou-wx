@@ -44,10 +44,12 @@
               backgroundImage: `url(${
                 role.image && grimoire.isImageOptIn
                   ? role.image
-                  : require('../../assets/icons/' +
-                      (role.imageAlt || role.id) +
-                      '.png')
-              })`
+                  : require(
+                      '../../assets/icons/' +
+                        (role.imageAlt || role.id) +
+                        '.png',
+                    )
+              })`,
             }"
           ></span>
           <span class="reminder" v-if="role.firstNightReminder">
@@ -69,10 +71,12 @@
               backgroundImage: `url(${
                 role.image && grimoire.isImageOptIn
                   ? role.image
-                  : require('../../assets/icons/' +
-                      (role.imageAlt || role.id) +
-                      '.png')
-              })`
+                  : require(
+                      '../../assets/icons/' +
+                        (role.imageAlt || role.id) +
+                        '.png',
+                    )
+              })`,
             }"
           ></span>
           <span class="name">
@@ -104,10 +108,10 @@ import { mapMutations, mapState } from "vuex";
 
 export default {
   components: {
-    Modal
+    Modal,
   },
   computed: {
-    rolesFirstNight: function() {
+    rolesFirstNight: function () {
       const rolesFirstNight = [];
       // add minion / demon infos to night order sheet
       if (this.players.length > 6) {
@@ -117,55 +121,55 @@ export default {
             name: this.$t("modals.minionInfo"),
             firstNight: 5,
             team: "minion",
-            players: this.players.filter(p => p.role.team === "minion"),
-            firstNightReminder: this.$t("modals.minionReminder")
+            players: this.players.filter((p) => p.role.team === "minion"),
+            firstNightReminder: this.$t("modals.minionReminder"),
           },
           {
             id: "evil",
             name: this.$t("modals.demonInfo"),
             firstNight: 8,
             team: "demon",
-            players: this.players.filter(p => p.role.team === "demon"),
-            firstNightReminder: this.$t("modals.demonReminder")
-          }
+            players: this.players.filter((p) => p.role.team === "demon"),
+            firstNightReminder: this.$t("modals.demonReminder"),
+          },
         );
       }
-      this.roles.forEach(role => {
-        const players = this.players.filter(p => p.role.id === role.id);
+      this.roles.forEach((role) => {
+        const players = this.players.filter((p) => p.role.id === role.id);
         if (role.firstNight && (role.team !== "traveler" || players.length)) {
           rolesFirstNight.push(Object.assign({ players }, role));
         }
       });
       this.fabled
         .filter(({ firstNight }) => firstNight)
-        .forEach(fabled => {
+        .forEach((fabled) => {
           rolesFirstNight.push(Object.assign({ players: [] }, fabled));
         });
       rolesFirstNight.sort((a, b) => a.firstNight - b.firstNight);
       return rolesFirstNight;
     },
-    rolesOtherNight: function() {
+    rolesOtherNight: function () {
       const rolesOtherNight = [];
-      this.roles.forEach(role => {
-        const players = this.players.filter(p => p.role.id === role.id);
+      this.roles.forEach((role) => {
+        const players = this.players.filter((p) => p.role.id === role.id);
         if (role.otherNight && (role.team !== "traveler" || players.length)) {
           rolesOtherNight.push(Object.assign({ players }, role));
         }
       });
       this.fabled
         .filter(({ otherNight }) => otherNight)
-        .forEach(fabled => {
+        .forEach((fabled) => {
           rolesOtherNight.push(Object.assign({ players: [] }, fabled));
         });
       rolesOtherNight.sort((a, b) => a.otherNight - b.otherNight);
       return rolesOtherNight;
     },
     ...mapState(["roles", "modals", "edition", "grimoire"]),
-    ...mapState("players", ["players", "fabled"])
+    ...mapState("players", ["players", "fabled"]),
   },
   methods: {
-    ...mapMutations(["toggleModal"])
-  }
+    ...mapMutations(["toggleModal"]),
+  },
 };
 </script>
 

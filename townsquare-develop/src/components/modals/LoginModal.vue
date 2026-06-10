@@ -29,12 +29,12 @@ import { mapMutations, mapState } from "vuex";
 import {
   createWebLoginTicket,
   pollWebLoginTicket,
-  setAuthSession
+  setAuthSession,
 } from "@/services/auth";
 
 export default {
   components: {
-    Modal
+    Modal,
   },
   computed: {
     statusText() {
@@ -44,7 +44,7 @@ export default {
       if (this.status === "expired") return this.$t("login.expired");
       return this.$t("login.pending");
     },
-    ...mapState(["modals"])
+    ...mapState(["modals"]),
   },
   data() {
     return {
@@ -56,14 +56,14 @@ export default {
       error: "",
       pollFailures: 0,
       pollTimer: null,
-      countdownTimer: null
+      countdownTimer: null,
     };
   },
   watch: {
     "modals.login"(visible) {
       if (visible) this.restart();
       else this.stopTimers();
-    }
+    },
   },
   beforeDestroy() {
     this.stopTimers();
@@ -81,7 +81,9 @@ export default {
       try {
         const res = await createWebLoginTicket();
         if (!res || !res.success || !res.data) {
-          throw new Error((res && res.message) || this.$t("login.createFailed"));
+          throw new Error(
+            (res && res.message) || this.$t("login.createFailed"),
+          );
         }
         this.ticket = res.data.ticket;
         this.expireTime = res.data.expireTime || 0;
@@ -89,7 +91,7 @@ export default {
         this.qrCode = await QRCode.toDataURL(res.data.payload, {
           width: 220,
           margin: 1,
-          errorCorrectionLevel: "M"
+          errorCorrectionLevel: "M",
         });
         this.startTimers();
       } catch (error) {
@@ -141,7 +143,10 @@ export default {
     },
     shouldRetryPoll(error) {
       const message = String((error && error.message) || error || "");
-      return this.pollFailures < 3 && /failed to fetch|network|timeout/i.test(message);
+      return (
+        this.pollFailures < 3 &&
+        /failed to fetch|network|timeout/i.test(message)
+      );
     },
     getExpireSeconds() {
       if (!this.expireTime) return 0;
@@ -158,14 +163,17 @@ export default {
       if (/failed to fetch|network|timeout/i.test(message)) {
         return this.$t("login.networkError");
       }
-      return message.replace(/^\[auth-service\]:\s*/, "") || this.$t("login.networkError");
+      return (
+        message.replace(/^\[auth-service\]:\s*/, "") ||
+        this.$t("login.networkError")
+      );
     },
     close() {
       this.stopTimers();
       this.toggleModal("login");
     },
-    ...mapMutations(["toggleModal"])
-  }
+    ...mapMutations(["toggleModal"]),
+  },
 };
 </script>
 
@@ -203,7 +211,9 @@ h3 {
   border: 1px solid #3d2e26;
   border-radius: 2px;
   background: rgba(18, 15, 13, 0.86);
-  box-shadow: inset 0 1px 0 rgba(255, 236, 190, 0.05), 0 8px 22px rgba(0, 0, 0, 0.48);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 236, 190, 0.05),
+    0 8px 22px rgba(0, 0, 0, 0.48);
 }
 
 .qr-wrap img {

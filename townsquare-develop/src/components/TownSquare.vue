@@ -5,7 +5,7 @@
     :class="{
       public: grimoire.isPublic,
       spectator: session.isSpectator,
-      vote: session.nomination
+      vote: session.nomination,
     }"
     :style="nightLabelStyle"
   >
@@ -19,7 +19,7 @@
           from: Math.max(swap, move, nominate) === index,
           swap: swap > -1,
           move: move > -1,
-          nominate: nominate > -1
+          nominate: nominate > -1,
         }"
       ></Player>
     </ul>
@@ -28,7 +28,10 @@
       class="bluffs"
       v-if="players.length"
       ref="bluffs"
-      :class="{ closed: !isBluffsOpen, 'vertical-bluff-tabs': isBluffAreaVertical }"
+      :class="{
+        closed: !isBluffsOpen,
+        'vertical-bluff-tabs': isBluffAreaVertical,
+      }"
     >
       <div class="bluff-tabs" v-if="!session.isSpectator">
         <button
@@ -47,7 +50,9 @@
         </button>
       </div>
       <h3>
-        <span v-if="session.isSpectator">{{ $t("townSquare.demonBluffs") }}</span>
+        <span v-if="session.isSpectator">{{
+          $t("townSquare.demonBluffs")
+        }}</span>
       </h3>
       <font-awesome-icon icon="times-circle" @click.stop="toggleBluffs" />
       <font-awesome-icon icon="plus-circle" @click.stop="toggleBluffs" />
@@ -62,7 +67,9 @@
       </ul>
       <div
         class="lunatic-bluff-target"
-        v-if="!session.isSpectator && activeBluffTab === 'lunatic' && isBluffsOpen"
+        v-if="
+          !session.isSpectator && activeBluffTab === 'lunatic' && isBluffsOpen
+        "
       >
         <select
           :value="lunaticBluffPlayerIndex"
@@ -116,7 +123,10 @@
     </div>
 
     <ReminderModal :player-index="selectedPlayer"></ReminderModal>
-    <RoleModal :player-index="selectedPlayer" :bluff-type="selectedBluffType"></RoleModal>
+    <RoleModal
+      :player-index="selectedPlayer"
+      :bluff-type="selectedBluffType"
+    ></RoleModal>
   </div>
 </template>
 
@@ -132,7 +142,7 @@ export default {
     Player,
     Token,
     RoleModal,
-    ReminderModal
+    ReminderModal,
   },
   computed: {
     ...mapGetters({ nightOrder: "players/nightOrder" }),
@@ -142,7 +152,7 @@ export default {
       "bluffs",
       "lunaticBluffs",
       "lunaticBluffPlayerIndex",
-      "fabled"
+      "fabled",
     ]),
     activeBluffs() {
       return this.activeBluffTab === "lunatic" && !this.session.isSpectator
@@ -152,9 +162,9 @@ export default {
     nightLabelStyle() {
       return {
         "--first-night-label": `"${this.$t("townSquare.firstNight")}"`,
-        "--other-nights-label": `"${this.$t("townSquare.otherNights")}"`
+        "--other-nights-label": `"${this.$t("townSquare.otherNights")}"`,
       };
-    }
+    },
   },
   data() {
     return {
@@ -169,7 +179,7 @@ export default {
       bluffResizeObserver: null,
       bluffLayoutFrame: null,
       isBluffsOpen: true,
-      isFabledOpen: true
+      isFabledOpen: true,
     };
   },
   mounted() {
@@ -230,7 +240,8 @@ export default {
     },
     updateBluffTabLayout() {
       if (this.bluffLayoutFrame) return;
-      const schedule = window.requestAnimationFrame || (callback => setTimeout(callback, 0));
+      const schedule =
+        window.requestAnimationFrame || ((callback) => setTimeout(callback, 0));
       this.bluffLayoutFrame = schedule(() => {
         this.bluffLayoutFrame = null;
         const bluffs = this.$refs.bluffs;
@@ -247,8 +258,8 @@ export default {
       if (
         confirm(
           this.$t("townSquare.confirmRemovePlayer", {
-            name: this.players[playerIndex].name
-          })
+            name: this.players[playerIndex].name,
+          }),
         )
       ) {
         const { nomination } = this.session;
@@ -263,7 +274,7 @@ export default {
             // update nomination array if removed player has lower index
             this.$store.commit("session/setNomination", [
               nomination[0] > playerIndex ? nomination[0] - 1 : nomination[0],
-              nomination[1] > playerIndex ? nomination[1] - 1 : nomination[1]
+              nomination[1] > playerIndex ? nomination[1] - 1 : nomination[1],
             ]);
           }
         }
@@ -279,7 +290,7 @@ export default {
         if (this.session.nomination) {
           // update nomination if one of the involved players is swapped
           const swapTo = this.players.indexOf(to);
-          const updatedNomination = this.session.nomination.map(nom => {
+          const updatedNomination = this.session.nomination.map((nom) => {
             if (nom === this.swap) return swapTo;
             if (nom === swapTo) return this.swap;
             return nom;
@@ -293,7 +304,7 @@ export default {
         }
         this.$store.commit("players/swap", [
           this.swap,
-          this.players.indexOf(to)
+          this.players.indexOf(to),
         ]);
         this.cancel();
       }
@@ -307,7 +318,7 @@ export default {
         if (this.session.nomination) {
           // update nomination if it is affected by the move
           const moveTo = this.players.indexOf(to);
-          const updatedNomination = this.session.nomination.map(nom => {
+          const updatedNomination = this.session.nomination.map((nom) => {
             if (nom === this.move) return moveTo;
             if (nom > this.move && nom <= moveTo) return nom - 1;
             if (nom < this.move && nom >= moveTo) return nom + 1;
@@ -322,7 +333,7 @@ export default {
         }
         this.$store.commit("players/move", [
           this.move,
-          this.players.indexOf(to)
+          this.players.indexOf(to),
         ]);
         this.cancel();
       }
@@ -344,8 +355,8 @@ export default {
       this.move = -1;
       this.swap = -1;
       this.nominate = -1;
-    }
-  }
+    },
+  },
 };
 </script>
 
@@ -398,7 +409,8 @@ export default {
   #townsquare {
     height: 100dvh;
     min-height: 100svh;
-    padding: max(64px, env(safe-area-inset-top)) 22px max(72px, env(safe-area-inset-bottom));
+    padding: max(64px, env(safe-area-inset-top)) 22px
+      max(72px, env(safe-area-inset-bottom));
     align-items: center;
     overflow: hidden;
   }
@@ -533,7 +545,9 @@ export default {
   background: rgba(12, 9, 8, 0.72);
   border-radius: 2px;
   border: 2px solid #3d2e26;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 236, 190, 0.05);
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.62),
+    inset 0 1px 0 rgba(255, 236, 190, 0.05);
   backdrop-filter: blur(3px);
   filter: none;
   transform-origin: bottom left;
@@ -573,8 +587,11 @@ export default {
     justify-content: center;
     color: #fff8e7;
     border-bottom: 1px solid #3d2e26;
-    background:
-      radial-gradient(circle at 50% 0%, rgba(92, 26, 22, 0.22), transparent 36%),
+    background: radial-gradient(
+        circle at 50% 0%,
+        rgba(92, 26, 22, 0.22),
+        transparent 36%
+      ),
       rgba(18, 14, 12, 0.9);
     font-size: 1em;
     letter-spacing: 0.08em;
@@ -834,7 +851,6 @@ export default {
   #townsquare > .fabled.closed h3 span {
     display: none;
   }
-
 
   #townsquare > .fabled {
     top: max(54px, calc(env(safe-area-inset-top) + 48px));

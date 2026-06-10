@@ -1,7 +1,7 @@
 import { t } from "../i18n";
 
-export default store => {
-  const updatePagetitle = isPublic =>
+export default (store) => {
+  const updatePagetitle = (isPublic) =>
     (document.title = t(isPublic ? "app.titlePublic" : "app.titleGrimoire"));
 
   // initialize data
@@ -42,7 +42,7 @@ export default store => {
     JSON.parse(localStorage.bluffs).forEach((role, index) => {
       store.commit("players/setBluff", {
         index,
-        role: store.state.roles.get(role) || {}
+        role: store.state.roles.get(role) || {},
       });
     });
   }
@@ -50,27 +50,27 @@ export default store => {
     JSON.parse(localStorage.lunaticBluffs).forEach((role, index) => {
       store.commit("players/setLunaticBluff", {
         index,
-        role: store.state.roles.get(role) || {}
+        role: store.state.roles.get(role) || {},
       });
     });
   }
   if (localStorage.fabled !== undefined) {
     store.commit("players/setFabled", {
       fabled: JSON.parse(localStorage.fabled).map(
-        fabled => store.state.fabled.get(fabled.id) || fabled
-      )
+        (fabled) => store.state.fabled.get(fabled.id) || fabled,
+      ),
     });
   }
   if (localStorage.players) {
     store.commit(
       "players/set",
-      JSON.parse(localStorage.players).map(player => ({
+      JSON.parse(localStorage.players).map((player) => ({
         ...player,
         role:
           store.state.roles.get(player.role) ||
           store.getters.rolesJSONbyId.get(player.role) ||
-          {}
-      }))
+          {},
+      })),
     );
   }
   /**** Session related data *****/
@@ -83,7 +83,10 @@ export default store => {
     store.commit("session/setSessionId", sessionId);
   }
   if (localStorage.getItem("gameStartedAt")) {
-    store.commit("session/setGameStartedAt", Number(localStorage.getItem("gameStartedAt")) || Date.now());
+    store.commit(
+      "session/setGameStartedAt",
+      Number(localStorage.getItem("gameStartedAt")) || Date.now(),
+    );
   }
 
   // listen to mutations
@@ -148,23 +151,23 @@ export default store => {
       case "players/setBluff":
         localStorage.setItem(
           "bluffs",
-          JSON.stringify(state.players.bluffs.map(({ id }) => id))
+          JSON.stringify(state.players.bluffs.map(({ id }) => id)),
         );
         break;
       case "players/setLunaticBluff":
         localStorage.setItem(
           "lunaticBluffs",
-          JSON.stringify(state.players.lunaticBluffs.map(({ id }) => id))
+          JSON.stringify(state.players.lunaticBluffs.map(({ id }) => id)),
         );
         break;
       case "players/setFabled":
         localStorage.setItem(
           "fabled",
           JSON.stringify(
-            state.players.fabled.map(fabled =>
-              fabled.isCustom ? fabled : { id: fabled.id }
-            )
-          )
+            state.players.fabled.map((fabled) =>
+              fabled.isCustom ? fabled : { id: fabled.id },
+            ),
+          ),
         );
         break;
       case "players/add":
@@ -180,12 +183,12 @@ export default store => {
           localStorage.setItem(
             "players",
             JSON.stringify(
-              state.players.players.map(player => ({
+              state.players.players.map((player) => ({
                 ...player,
                 // simplify the stored data
-                role: player.role.id || {}
-              }))
-            )
+                role: player.role.id || {},
+              })),
+            ),
           );
         } else {
           localStorage.removeItem("players");
@@ -195,7 +198,7 @@ export default store => {
         if (payload) {
           localStorage.setItem(
             "session",
-            JSON.stringify([state.session.isSpectator, payload])
+            JSON.stringify([state.session.isSpectator, payload]),
           );
         } else {
           localStorage.removeItem("session");

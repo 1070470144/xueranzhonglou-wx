@@ -5,14 +5,14 @@ export const LOCALE_STORAGE_KEY = "townsquare.locale";
 
 export const locales = [
   { code: "zh-CN", label: "中文" },
-  { code: "en-US", label: "English" }
+  { code: "en-US", label: "English" },
 ];
 
 const messages = {
   "zh-CN": {
     app: {
       titlePublic: "染然钟楼 城镇广场",
-      titleGrimoire: "染然钟楼 魔典"
+      titleGrimoire: "染然钟楼 魔典",
     },
     common: {
       language: "语言",
@@ -33,7 +33,7 @@ const messages = {
       edit: "编辑",
       remove: "移除",
       ok: "确定",
-      cancel: "取消"
+      cancel: "取消",
     },
     announcements: {
       title: "公告",
@@ -48,8 +48,8 @@ const messages = {
         notice: "公告",
         update: "更新",
         maintenance: "维护",
-        important: "重要"
-      }
+        important: "重要",
+      },
     },
     menu: {
       recentNominations: "最近提名：{count}",
@@ -111,7 +111,7 @@ const messages = {
       confirmLeave: "确定要离开当前在线游戏吗？",
       confirmRandomize: "确定要随机排列座位吗？",
       confirmClearPlayers: "确定要移除所有玩家吗？",
-      confirmClearRoles: "确定要移除所有玩家角色吗？"
+      confirmClearRoles: "确定要移除所有玩家角色吗？",
     },
     login: {
       title: "网页登录",
@@ -129,12 +129,12 @@ const messages = {
       pollFailed: "检查登录状态失败",
       missingUniCloudConfig: "未配置 uniCloud 网页端服务空间参数",
       missingUniCloudSdk: "uniCloud Web SDK 未加载",
-      networkError: "登录请求失败，请刷新二维码后重试"
+      networkError: "登录请求失败，请刷新二维码后重试",
     },
     playerName: {
       title: "修改名字",
       label: "名字",
-      hint: "保存后会同步到你当前认领的座位。"
+      hint: "保存后会同步到你当前认领的座位。",
     },
     storyLog: {
       title: "主持日志",
@@ -182,7 +182,8 @@ const messages = {
       confirmDelete: "确定删除这条记录吗？",
       confirmClear: "确定清空本局日志吗？这不会改变当前盘面。",
       confirmNewGame: "确定新开一局日志吗？当前日志会保留到历史记录。",
-      confirmExportReview: "复盘文件会包含当前主持日志、玩家角色和投票记录，确定导出吗？"
+      confirmExportReview:
+        "复盘文件会包含当前主持日志、玩家角色和投票记录，确定导出吗？",
     },
     privateChat: {
       title: "私聊",
@@ -195,7 +196,7 @@ const messages = {
       placeholder: "输入私聊内容",
       send: "发送",
       me: "我",
-      playerName: "玩家 {index}"
+      playerName: "玩家 {index}",
     },
     voice: {
       title: "语音",
@@ -230,8 +231,8 @@ const messages = {
         not_channel_member: "你不能进入该私聊频道。",
         recall_in_progress: "召回进行中，暂时不能发起或接受私聊。",
         host_only: "只有说书人可以执行该操作。",
-        invalid_invite_targets: "请选择要邀请的玩家。"
-      }
+        invalid_invite_targets: "请选择要邀请的玩家。",
+      },
     },
     room: {
       title: "房间大厅",
@@ -297,10 +298,11 @@ const messages = {
         invalid_host_name: "请输入说书人名称。",
         invalid_player_name: "请输入玩家名称。",
         invalid_script_json: "剧本 JSON 格式不正确。",
-        connection_timeout: "房间服务没有响应，请确认当前连接的是已更新的房间服务。",
+        connection_timeout:
+          "房间服务没有响应，请确认当前连接的是已更新的房间服务。",
         kicked: "你已被移出房间。",
-        closed: "主持人已离开，房间已关闭。"
-      }
+        closed: "主持人已离开，房间已关闭。",
+      },
     },
     intro: {
       welcomePrefix: "欢迎来到（非官方）",
@@ -308,16 +310,17 @@ const messages = {
       welcomeSuffix: "！",
       addPlayersPrefix: "请通过右上角的",
       menu: "菜单",
-      addPlayersSuffix: "添加更多玩家，或按 [A] 添加。你也可以按 [J] 加入游戏房间。",
+      addPlayersSuffix:
+        "添加更多玩家，或按 [A] 添加。你也可以按 [J] 加入游戏房间。",
       footerPrefix: "本项目免费且开源，可在",
       github: "GitHub",
       footerSuffix:
-        "查看。它与 The Pandemonium Institute 没有关联。\"Blood on the Clocktower\" 是 Steven Medway 和 The Pandemonium Institute 的商标。"
+        '查看。它与 The Pandemonium Institute 没有关联。"Blood on the Clocktower" 是 Steven Medway 和 The Pandemonium Institute 的商标。',
     },
     townInfo: {
       addMorePlayers: "请添加更多玩家！",
       byAuthor: "作者：{author}",
-      nightPhase: "夜晚阶段"
+      nightPhase: "夜晚阶段",
     },
     vote: {
       nominated: "提名了",
@@ -335,7 +338,7 @@ const messages = {
       secondsBetweenVotes: "每票间隔 {seconds} 秒",
       handDown: "放下手",
       handUp: "举手",
-      claimSeatToVote: "请先认领座位再投票。"
+      claimSeatToVote: "请先认领座位再投票。",
     },
     townSquare: {
       otherCharacters: "其他角色",
@@ -348,7 +351,7 @@ const messages = {
       fabled: "传奇角色",
       firstNight: "首夜",
       otherNights: "其他夜晚",
-      confirmRemovePlayer: "确定要移除 {name} 吗？"
+      confirmRemovePlayer: "确定要移除 {name} 吗？",
     },
     player: {
       handUp: "举手",
@@ -370,7 +373,7 @@ const messages = {
       vacateSeat: "离开座位",
       seatOccupied: "座位已占用",
       promptPronouns: "玩家称谓",
-      promptName: "玩家名称"
+      promptName: "玩家名称",
     },
     modals: {
       chooseEdition: "选择版本：",
@@ -443,18 +446,18 @@ const messages = {
         minion: "爪牙",
         demon: "恶魔",
         traveler: "旅行者",
-        fabled: "传奇角色"
-      }
+        fabled: "传奇角色",
+      },
     },
     session: {
       missingCustomRoles:
-        "本房间包含当前找不到的自定义角色。请先加载它们再加入！缺失角色：{roles}"
-    }
+        "本房间包含当前找不到的自定义角色。请先加载它们再加入！缺失角色：{roles}",
+    },
   },
   "en-US": {
     app: {
       titlePublic: "Blood on the Clocktower Town Square",
-      titleGrimoire: "Blood on the Clocktower Grimoire"
+      titleGrimoire: "Blood on the Clocktower Grimoire",
     },
     common: {
       language: "Language",
@@ -475,7 +478,7 @@ const messages = {
       edit: "Edit",
       remove: "Remove",
       ok: "OK",
-      cancel: "Cancel"
+      cancel: "Cancel",
     },
     announcements: {
       title: "Announcements",
@@ -490,8 +493,8 @@ const messages = {
         notice: "Notice",
         update: "Update",
         maintenance: "Maintenance",
-        important: "Important"
-      }
+        important: "Important",
+      },
     },
     menu: {
       recentNominations: "{count} recent {label}",
@@ -545,17 +548,20 @@ const messages = {
       sourceCode: "Source code",
       promptBackground: "Enter custom background URL",
       promptHost: "Enter a channel number / name for your session",
-      promptJoin: "Enter the channel number / name of the session you want to join",
+      promptJoin:
+        "Enter the channel number / name of the session you want to join",
       promptPlayerName: "Player name",
       promptJoinPlayerName: "Enter your player name",
-      promptPlayerCount: "Enter the number of players to add, or enter one player name",
-      confirmDistribute: "Do you want to distribute assigned characters to all SEATED players?",
+      promptPlayerCount:
+        "Enter the number of players to add, or enter one player name",
+      confirmDistribute:
+        "Do you want to distribute assigned characters to all SEATED players?",
       confirmCustomImages:
         "Are you sure you want to allow custom images? A malicious script file author might track your IP address this way.",
       confirmLeave: "Are you sure you want to leave the active live game?",
       confirmRandomize: "Are you sure you want to randomize seatings?",
       confirmClearPlayers: "Are you sure you want to remove all players?",
-      confirmClearRoles: "Are you sure you want to remove all player roles?"
+      confirmClearRoles: "Are you sure you want to remove all player roles?",
     },
     login: {
       title: "Web Login",
@@ -573,12 +579,13 @@ const messages = {
       pollFailed: "Failed to check login status",
       missingUniCloudConfig: "uniCloud web config is not configured",
       missingUniCloudSdk: "uniCloud Web SDK is not loaded",
-      networkError: "Login request failed. Please refresh the QR code and try again."
+      networkError:
+        "Login request failed. Please refresh the QR code and try again.",
     },
     playerName: {
       title: "Change name",
       label: "Name",
-      hint: "Saved names sync to your claimed seat."
+      hint: "Saved names sync to your claimed seat.",
     },
     storyLog: {
       title: "Storyteller Log",
@@ -624,9 +631,12 @@ const messages = {
       editPrompt: "Edit content",
       phasePrompt: "Phase number",
       confirmDelete: "Delete this log entry?",
-      confirmClear: "Clear logs for this game? This will not change the current board.",
-      confirmNewGame: "Start a new log game? Current logs will remain in history.",
-      confirmExportReview: "The review file will include current storyteller logs, player roles, and vote history. Export it?"
+      confirmClear:
+        "Clear logs for this game? This will not change the current board.",
+      confirmNewGame:
+        "Start a new log game? Current logs will remain in history.",
+      confirmExportReview:
+        "The review file will include current storyteller logs, player roles, and vote history. Export it?",
     },
     privateChat: {
       title: "Private Chat",
@@ -639,7 +649,7 @@ const messages = {
       placeholder: "Type a private message",
       send: "Send",
       me: "Me",
-      playerName: "Player {index}"
+      playerName: "Player {index}",
     },
     voice: {
       title: "Voice",
@@ -668,14 +678,15 @@ const messages = {
       muteAll: "Mute all",
       unmuteAll: "Unmute all",
       recallAll: "Recall to main",
-      recallNotice: "The storyteller is recalling everyone to the main channel.",
+      recallNotice:
+        "The storyteller is recalling everyone to the main channel.",
       errors: {
         microphone_not_supported: "This browser does not support microphones.",
         not_channel_member: "You cannot enter that private channel.",
         recall_in_progress: "Recall is in progress. Private chats are paused.",
         host_only: "Only the storyteller can do that.",
-        invalid_invite_targets: "Choose players to invite."
-      }
+        invalid_invite_targets: "Choose players to invite.",
+      },
     },
     room: {
       title: "Room Lobby",
@@ -723,7 +734,8 @@ const messages = {
       scriptJson: "Script JSON",
       currentScript: "Current script",
       chooseScript: "Choose Script",
-      scriptAutoUse: "Uses your current script when creating. You can change it in room control.",
+      scriptAutoUse:
+        "Uses your current script when creating. You can change it in room control.",
       noScript: "No Script",
       save: "Save",
       connectedPlayers: "Connected players",
@@ -741,10 +753,11 @@ const messages = {
         invalid_host_name: "Enter a storyteller name.",
         invalid_player_name: "Enter a player name.",
         invalid_script_json: "The script JSON is invalid.",
-        connection_timeout: "The room service did not respond. Check that this app is connected to the updated room server.",
+        connection_timeout:
+          "The room service did not respond. Check that this app is connected to the updated room server.",
         kicked: "You were removed from the room.",
-        closed: "The host left and the room was closed."
-      }
+        closed: "The host left and the room was closed.",
+      },
     },
     intro: {
       welcomePrefix: "Welcome to the (unofficial)",
@@ -757,12 +770,12 @@ const messages = {
       footerPrefix: "This project is free and open source and can be found on",
       github: "GitHub",
       footerSuffix:
-        ". It is not affiliated with The Pandemonium Institute. \"Blood on the Clocktower\" is a trademark of Steven Medway and The Pandemonium Institute."
+        '. It is not affiliated with The Pandemonium Institute. "Blood on the Clocktower" is a trademark of Steven Medway and The Pandemonium Institute.',
     },
     townInfo: {
       addMorePlayers: "Please add more players!",
       byAuthor: "by {author}",
-      nightPhase: "Night phase"
+      nightPhase: "Night phase",
     },
     vote: {
       nominated: "nominated",
@@ -780,7 +793,7 @@ const messages = {
       secondsBetweenVotes: "{seconds} seconds between votes",
       handDown: "Hand DOWN",
       handUp: "Hand UP",
-      claimSeatToVote: "Please claim a seat to vote."
+      claimSeatToVote: "Please claim a seat to vote.",
     },
     townSquare: {
       otherCharacters: "Other characters",
@@ -793,7 +806,7 @@ const messages = {
       fabled: "Fabled",
       firstNight: "First Night",
       otherNights: "Other Nights",
-      confirmRemovePlayer: "Do you really want to remove {name}?"
+      confirmRemovePlayer: "Do you really want to remove {name}?",
     },
     player: {
       handUp: "Hand UP",
@@ -815,7 +828,7 @@ const messages = {
       vacateSeat: "Vacate seat",
       seatOccupied: "Seat occupied",
       promptPronouns: "Player pronouns",
-      promptName: "Player name"
+      promptName: "Player name",
     },
     modals: {
       chooseEdition: "Select an edition:",
@@ -834,9 +847,11 @@ const messages = {
       loadCustomDescription:
         "To play with a custom script, you need to select the characters you want to play with in the official",
       scriptTool: "Script Tool",
-      customCharactersDescription: "To play with custom characters, please read",
+      customCharactersDescription:
+        "To play with custom characters, please read",
       documentation: "the documentation",
-      customCharactersSuffix: "on how to write a custom character definition file.",
+      customCharactersSuffix:
+        "on how to write a custom character definition file.",
       trustWarning: "Only load custom JSON files from sources that you trust!",
       popularScripts: "Some popular custom scripts:",
       useClipboard: "Use JSON from Clipboard",
@@ -866,9 +881,9 @@ const messages = {
       minionInfo: "Minion info",
       demonInfo: "Demon info & bluffs",
       minionReminder:
-        "If more than one Minion, they all make eye contact with each other. Show the \"This is the Demon\" card. Point to the Demon.",
+        'If more than one Minion, they all make eye contact with each other. Show the "This is the Demon" card. Point to the Demon.',
       demonReminder:
-        "Show the \"These are your minions\" card. Point to each Minion. Show the \"These characters are not in play\" card. Show 3 character tokens of good characters not in play.",
+        'Show the "These are your minions" card. Point to each Minion. Show the "These characters are not in play" card. Show 3 character tokens of good characters not in play.',
       voteHistory: "Vote history",
       clearVoteHistory: "Clear vote history",
       accessibleToPlayers: "Accessible to players",
@@ -888,14 +903,14 @@ const messages = {
         minion: "minion",
         demon: "demon",
         traveler: "traveler",
-        fabled: "fabled"
-      }
+        fabled: "fabled",
+      },
     },
     session: {
       missingCustomRoles:
-        "This session contains custom characters that can't be found. Please load them before joining! Missing roles: {roles}"
-    }
-  }
+        "This session contains custom characters that can't be found. Please load them before joining! Missing roles: {roles}",
+    },
+  },
 };
 
 const getInitialLocale = () => {
@@ -904,7 +919,7 @@ const getInitialLocale = () => {
 };
 
 export const i18nState = Vue.observable({
-  locale: getInitialLocale()
+  locale: getInitialLocale(),
 });
 
 const resolveMessage = (locale, key) =>
@@ -924,11 +939,11 @@ export const t = (key, params = {}) => {
   if (typeof template !== "string") return key;
 
   return template.replace(/\{(\w+)\}/g, (match, name) =>
-    Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match
+    Object.prototype.hasOwnProperty.call(params, name) ? params[name] : match,
   );
 };
 
-export const setLocale = locale => {
+export const setLocale = (locale) => {
   if (!locales.some(({ code }) => code === locale)) return;
   i18nState.locale = locale;
   localStorage.setItem(LOCALE_STORAGE_KEY, locale);

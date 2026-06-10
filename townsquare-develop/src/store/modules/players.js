@@ -9,15 +9,17 @@ const NEWPLAYER = {
   userId: "",
   nickname: "",
   user: null,
-  authUser: null
+  authUser: null,
 };
 
 const MAX_PLAYERS = 20;
 const DEFAULT_PLAYER_LABEL = "\u73a9\u5bb6";
 
-const normalizePlayerCount = count => {
+const normalizePlayerCount = (count) => {
   const parsed = Number.parseInt(count, 10);
-  return Number.isFinite(parsed) ? Math.max(0, Math.min(MAX_PLAYERS, parsed)) : 0;
+  return Number.isFinite(parsed)
+    ? Math.max(0, Math.min(MAX_PLAYERS, parsed))
+    : 0;
 };
 
 const state = () => ({
@@ -25,16 +27,16 @@ const state = () => ({
   fabled: [],
   bluffs: [],
   lunaticBluffs: [],
-  lunaticBluffPlayerIndex: -1
+  lunaticBluffPlayerIndex: -1,
 });
 
 const getters = {
   alive({ players }) {
-    return players.filter(player => !player.isDead).length;
+    return players.filter((player) => !player.isDead).length;
   },
   nonTravelers({ players }) {
     const nonTravelers = players.filter(
-      player => player.role.team !== "traveler"
+      (player) => player.role.team !== "traveler",
     );
     return Math.min(nonTravelers.length, 15);
   },
@@ -50,7 +52,7 @@ const getters = {
         otherNight.push(role.otherNight);
       }
     });
-    fabled.forEach(role => {
+    fabled.forEach((role) => {
       if (role.firstNight && !firstNight.includes(role.firstNight)) {
         firstNight.push(role.firstNight);
       }
@@ -61,32 +63,32 @@ const getters = {
     firstNight.sort((a, b) => a - b);
     otherNight.sort((a, b) => a - b);
     const nightOrder = new Map();
-    players.forEach(player => {
+    players.forEach((player) => {
       const first = Math.max(firstNight.indexOf(player.role.firstNight), 0);
       const other = Math.max(otherNight.indexOf(player.role.otherNight), 0);
       nightOrder.set(player, { first, other });
     });
-    fabled.forEach(role => {
+    fabled.forEach((role) => {
       const first = Math.max(firstNight.indexOf(role.firstNight), 0);
       const other = Math.max(otherNight.indexOf(role.otherNight), 0);
       nightOrder.set(role, { first, other });
     });
     return nightOrder;
-  }
+  },
 };
 
 const actions = {
   randomize({ state, commit }) {
     const players = state.players
-      .map(a => [Math.random(), a])
+      .map((a) => [Math.random(), a])
       .sort((a, b) => a[0] - b[0])
-      .map(a => a[1]);
+      .map((a) => a[1]);
     commit("set", players);
   },
   clearRoles({ state, commit, rootState }) {
     let players;
     if (rootState.session.isSpectator) {
-      players = state.players.map(player => {
+      players = state.players.map((player) => {
         if (player.role.team !== "traveler") {
           player.role = {};
         }
@@ -94,21 +96,23 @@ const actions = {
         return player;
       });
     } else {
-      players = state.players.map(({ name, id, pronouns, userId, nickname, user, authUser }) => ({
-        ...NEWPLAYER,
-        name,
-        id,
-        pronouns,
-        userId,
-        nickname,
-        user,
-        authUser
-      }));
+      players = state.players.map(
+        ({ name, id, pronouns, userId, nickname, user, authUser }) => ({
+          ...NEWPLAYER,
+          name,
+          id,
+          pronouns,
+          userId,
+          nickname,
+          user,
+          authUser,
+        }),
+      );
       commit("setFabled", { fabled: [] });
     }
     commit("set", players);
     commit("setBluff");
-  }
+  },
 };
 
 const mutations = {
@@ -137,7 +141,7 @@ const mutations = {
     }
   },
   setAuthSnapshot(state, { player, playerId, auth } = {}) {
-    player = player || state.players.find(item => item.id === playerId);
+    player = player || state.players.find((item) => item.id === playerId);
     if (!player) return;
     player.userId = auth && auth.userId ? auth.userId : "";
     player.nickname = auth && auth.nickname ? auth.nickname : "";
@@ -145,7 +149,7 @@ const mutations = {
   add(state, name) {
     state.players.push({
       ...NEWPLAYER,
-      name
+      name,
     });
   },
   setCount(state, count) {
@@ -156,16 +160,19 @@ const mutations = {
     for (let index = state.players.length; index < targetCount; index++) {
       state.players.push({
         ...NEWPLAYER,
-        name: `${DEFAULT_PLAYER_LABEL} ${index + 1}`
+        name: `${DEFAULT_PLAYER_LABEL} ${index + 1}`,
       });
     }
   },
   addMany(state, { count, startIndex = state.players.length } = {}) {
-    const amount = Math.max(0, Math.min(MAX_PLAYERS - state.players.length, count || 0));
+    const amount = Math.max(
+      0,
+      Math.min(MAX_PLAYERS - state.players.length, count || 0),
+    );
     for (let index = 0; index < amount; index++) {
       state.players.push({
         ...NEWPLAYER,
-        name: `玩家 ${startIndex + index + 1}`
+        name: `玩家 ${startIndex + index + 1}`,
       });
     }
   },
@@ -175,7 +182,7 @@ const mutations = {
   swap(state, [from, to]) {
     [state.players[from], state.players[to]] = [
       state.players[to],
-      state.players[from]
+      state.players[from],
     ];
     // hack: "modify" the array so that Vue notices something changed
     state.players.splice(0, 0);
@@ -213,7 +220,7 @@ const mutations = {
         state.fabled = fabled;
       }
     }
-  }
+  },
 };
 
 export default {
@@ -221,5 +228,5 @@ export default {
   state,
   getters,
   actions,
-  mutations
+  mutations,
 };

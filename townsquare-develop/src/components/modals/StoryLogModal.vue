@@ -18,21 +18,28 @@
           <font-awesome-icon icon="plus-circle" /> {{ $t("storyLog.newGame") }}
         </button>
         <button type="button" @click="exportReview">
-          <font-awesome-icon icon="download" /> {{ $t("storyLog.exportReview") }}
+          <font-awesome-icon icon="download" />
+          {{ $t("storyLog.exportReview") }}
         </button>
         <button type="button" @click="copyReviewText">
-          <font-awesome-icon icon="clipboard" /> {{ $t("storyLog.copyReviewText") }}
+          <font-awesome-icon icon="clipboard" />
+          {{ $t("storyLog.copyReviewText") }}
         </button>
         <label class="phase-select">
           <span>{{ $t("storyLog.adjustPhase") }}</span>
           <select :value="currentPhaseKey" @change="adjustCurrentPhase">
-            <option v-for="choice in phaseChoices" :key="choice.key" :value="choice.key">
+            <option
+              v-for="choice in phaseChoices"
+              :key="choice.key"
+              :value="choice.key"
+            >
               {{ choice.label }}
             </option>
           </select>
         </label>
         <button type="button" class="danger-action" @click="clearLogs">
-          <font-awesome-icon icon="trash-alt" /> {{ $t("storyLog.clearCurrent") }}
+          <font-awesome-icon icon="trash-alt" />
+          {{ $t("storyLog.clearCurrent") }}
         </button>
         <span v-if="copyMessage" class="copy-status">{{ copyMessage }}</span>
       </div>
@@ -63,7 +70,11 @@
           <label class="entry-phase-select">
             <span>{{ $t("storyLog.movePhase") }}</span>
             <select :value="phaseKey(log)" @change="movePhase(log, $event)">
-              <option v-for="choice in phaseChoices" :key="choice.key" :value="choice.key">
+              <option
+                v-for="choice in phaseChoices"
+                :key="choice.key"
+                :value="choice.key"
+              >
                 {{ choice.label }}
               </option>
             </select>
@@ -112,7 +123,7 @@ export default {
       manualContent: "",
       activePhaseKey: "",
       copyMessage: "",
-      copyMessageTimer: null
+      copyMessageTimer: null,
     };
   },
   computed: {
@@ -120,18 +131,20 @@ export default {
     ...mapState("players", ["players"]),
     ...mapGetters("storyLog", ["currentGame", "currentLogs"]),
     currentPhaseKey() {
-      return this.phaseKey(this.currentGame || { phaseType: "setup", phaseNumber: 0 });
+      return this.phaseKey(
+        this.currentGame || { phaseType: "setup", phaseNumber: 0 },
+      );
     },
     groupedLogs() {
       const groups = [];
-      this.currentLogs.forEach(log => {
+      this.currentLogs.forEach((log) => {
         const key = this.phaseKey(log);
-        let group = groups.find(item => item.key === key);
+        let group = groups.find((item) => item.key === key);
         if (!group) {
           group = {
             key,
             label: this.phaseLabel(log),
-            logs: []
+            logs: [],
           };
           groups.push(group);
         }
@@ -140,26 +153,26 @@ export default {
       return groups;
     },
     phaseTabs() {
-      const tabs = this.groupedLogs.map(group => ({
+      const tabs = this.groupedLogs.map((group) => ({
         key: group.key,
-        label: group.label
+        label: group.label,
       }));
-      if (!tabs.some(tab => tab.key === this.currentPhaseKey)) {
+      if (!tabs.some((tab) => tab.key === this.currentPhaseKey)) {
         tabs.push({
           key: this.currentPhaseKey,
-          label: this.phaseLabel(this.currentGame)
+          label: this.phaseLabel(this.currentGame),
         });
       }
       return tabs;
     },
     phaseChoices() {
-      const choices = this.phaseTabs.map(tab => ({
+      const choices = this.phaseTabs.map((tab) => ({
         key: tab.key,
         label: tab.label,
-        ...this.parsePhaseKey(tab.key)
+        ...this.parsePhaseKey(tab.key),
       }));
       const next = this.nextPhaseChoice;
-      if (next && !choices.some(choice => choice.key === next.key)) {
+      if (next && !choices.some((choice) => choice.key === next.key)) {
         choices.push(next);
       }
       return choices;
@@ -171,7 +184,7 @@ export default {
           key: "night-1",
           label: this.$t("storyLog.firstNight"),
           phaseType: "night",
-          phaseNumber: 1
+          phaseNumber: 1,
         };
       }
       if (this.currentGame.phaseType === "night") {
@@ -180,7 +193,7 @@ export default {
           key: `day-${phaseNumber}`,
           label: this.$t("storyLog.dayNumber", { count: phaseNumber }),
           phaseType: "day",
-          phaseNumber
+          phaseNumber,
         };
       }
       const phaseNumber = this.currentGame.nightNumber + 1;
@@ -191,13 +204,15 @@ export default {
             ? this.$t("storyLog.firstNight")
             : this.$t("storyLog.nightNumber", { count: phaseNumber }),
         phaseType: "night",
-        phaseNumber
+        phaseNumber,
       };
     },
     activeLogs() {
-      const group = this.groupedLogs.find(item => item.key === this.activePhaseKey);
+      const group = this.groupedLogs.find(
+        (item) => item.key === this.activePhaseKey,
+      );
       return group ? group.logs : [];
-    }
+    },
   },
   watch: {
     "modals.storyLog"(isOpen) {
@@ -205,7 +220,7 @@ export default {
     },
     currentPhaseKey(key) {
       this.activePhaseKey = key;
-    }
+    },
   },
   created() {
     this.activePhaseKey = this.currentPhaseKey;
@@ -226,26 +241,29 @@ export default {
     },
     phaseKey(item) {
       const phaseType = (item && item.phaseType) || "setup";
-      const phaseNumber = phaseType === "setup" ? 0 : (item && item.phaseNumber) || 1;
+      const phaseNumber =
+        phaseType === "setup" ? 0 : (item && item.phaseNumber) || 1;
       return `${phaseType}-${phaseNumber}`;
     },
     parsePhaseKey(key) {
       const [phaseType, phaseNumber] = String(key || "setup-0").split("-");
       return {
         phaseType,
-        phaseNumber: Math.max(0, parseInt(phaseNumber, 10) || 0)
+        phaseNumber: Math.max(0, parseInt(phaseNumber, 10) || 0),
       };
     },
     findPhaseChoice(key) {
-      return this.phaseChoices.find(choice => choice.key === key) || null;
+      return this.phaseChoices.find((choice) => choice.key === key) || null;
     },
     sourceLabel(source) {
-      return source === "auto" ? this.$t("storyLog.auto") : this.$t("storyLog.manual");
+      return source === "auto"
+        ? this.$t("storyLog.auto")
+        : this.$t("storyLog.manual");
     },
     formatTime(timestamp) {
       return new Date(timestamp).toLocaleTimeString([], {
         hour: "2-digit",
-        minute: "2-digit"
+        minute: "2-digit",
       });
     },
     addManual() {
@@ -255,7 +273,7 @@ export default {
         source: "manual",
         type: this.manualType,
         title: this.$t(`storyLog.${this.manualType}`),
-        content
+        content,
       });
       this.manualContent = "";
     },
@@ -264,7 +282,7 @@ export default {
       if (content) {
         this.$store.commit("storyLog/appendEntryContent", {
           id: log.id,
-          content
+          content,
         });
       }
     },
@@ -273,7 +291,7 @@ export default {
       if (content !== null) {
         this.$store.commit("storyLog/updateEntry", {
           id: log.id,
-          content
+          content,
         });
       }
     },
@@ -283,7 +301,7 @@ export default {
       this.$store.commit("storyLog/moveEntryPhase", {
         id: log.id,
         phaseType: choice.phaseType,
-        phaseNumber: choice.phaseNumber
+        phaseNumber: choice.phaseNumber,
       });
       this.activePhaseKey = choice.key;
     },
@@ -297,7 +315,7 @@ export default {
       if (!choice) return;
       this.$store.commit("storyLog/setPhase", {
         phaseType: choice.phaseType,
-        phaseNumber: choice.phaseNumber
+        phaseNumber: choice.phaseNumber,
       });
       this.activePhaseKey = choice.key;
     },
@@ -314,7 +332,9 @@ export default {
     exportReview() {
       if (!confirm(this.$t("storyLog.confirmExportReview"))) return;
       const markdown = this.buildReviewMarkdown();
-      const blob = new Blob([markdown], { type: "text/markdown;charset=utf-8" });
+      const blob = new Blob([markdown], {
+        type: "text/markdown;charset=utf-8",
+      });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -330,7 +350,7 @@ export default {
       this.showCopyMessage(
         copied
           ? this.$t("storyLog.copyReviewSuccess")
-          : this.$t("storyLog.copyReviewFailed")
+          : this.$t("storyLog.copyReviewFailed"),
       );
     },
     buildReviewText() {
@@ -338,19 +358,25 @@ export default {
         this.$t("storyLog.reviewTitle"),
         "",
         `${this.$t("storyLog.exportedAt")}：${this.formatDateTime(Date.now())}`,
-        `${this.$t("storyLog.scriptName")}：${this.edition.name || this.$t("common.customScript")}`,
+        `${this.$t("storyLog.scriptName")}：${
+          this.edition.name || this.$t("common.customScript")
+        }`,
         `${this.$t("storyLog.roomId")}：${this.session.sessionId || "-"}`,
         `${this.$t("storyLog.playerCount")}：${this.players.length}`,
-        `${this.$t("storyLog.currentPhase")}：${this.phaseLabel(this.currentGame)}`,
+        `${this.$t("storyLog.currentPhase")}：${this.phaseLabel(
+          this.currentGame,
+        )}`,
         "",
-        `【${this.$t("storyLog.playersAndRoles")}】`
+        `【${this.$t("storyLog.playersAndRoles")}】`,
       ];
 
       if (this.players.length) {
         this.players.forEach((player, index) => {
           const role = player.role || {};
           lines.push(
-            `${index + 1}. ${player.name || "-"} - ${role.name || role.id || "-"} - ${role.team || "-"}`
+            `${index + 1}. ${player.name || "-"} - ${
+              role.name || role.id || "-"
+            } - ${role.team || "-"}`,
           );
         });
       } else {
@@ -359,9 +385,15 @@ export default {
 
       lines.push("", `【${this.$t("storyLog.voteHistory")}】`);
       if (this.session.voteHistory.length) {
-        this.session.voteHistory.forEach(vote => {
+        this.session.voteHistory.forEach((vote) => {
           lines.push(
-            `- ${this.formatDateTime(vote.timestamp)} ${vote.type || ""}：${vote.nominator} -> ${vote.nominee}，${this.$t("storyLog.majority")} ${vote.majority}，${this.$t("storyLog.voters")}：${vote.votes.length ? vote.votes.join("、") : "-"}`
+            `- ${this.formatDateTime(vote.timestamp)} ${vote.type || ""}：${
+              vote.nominator
+            } -> ${vote.nominee}，${this.$t("storyLog.majority")} ${
+              vote.majority
+            }，${this.$t("storyLog.voters")}：${
+              vote.votes.length ? vote.votes.join("、") : "-"
+            }`,
           );
         });
       } else {
@@ -373,13 +405,17 @@ export default {
       if (!groups.length) {
         lines.push(this.$t("storyLog.empty"));
       } else {
-        groups.forEach(group => {
+        groups.forEach((group) => {
           lines.push("", `【${group.label}】`);
-          group.logs.forEach(log => {
-            const label = `${this.formatDateTime(log.createdAt)} [${this.sourceLabel(log.source)}] ${log.title || this.$t("storyLog.note")}`;
+          group.logs.forEach((log) => {
+            const label = `${this.formatDateTime(
+              log.createdAt,
+            )} [${this.sourceLabel(log.source)}] ${
+              log.title || this.$t("storyLog.note")
+            }`;
             lines.push(`- ${label}`);
             if (log.content) {
-              log.content.split("\n").forEach(line => {
+              log.content.split("\n").forEach((line) => {
                 lines.push(`  ${line}`);
               });
             }
@@ -428,29 +464,47 @@ export default {
       const lines = [
         `# ${this.$t("storyLog.reviewTitle")}`,
         "",
-        `- ${this.$t("storyLog.exportedAt")}：${this.formatDateTime(Date.now())}`,
-        `- ${this.$t("storyLog.scriptName")}：${this.edition.name || this.$t("common.customScript")}`,
+        `- ${this.$t("storyLog.exportedAt")}：${this.formatDateTime(
+          Date.now(),
+        )}`,
+        `- ${this.$t("storyLog.scriptName")}：${
+          this.edition.name || this.$t("common.customScript")
+        }`,
         `- ${this.$t("storyLog.roomId")}：${this.session.sessionId || "-"}`,
         `- ${this.$t("storyLog.playerCount")}：${this.players.length}`,
-        `- ${this.$t("storyLog.currentPhase")}：${this.phaseLabel(this.currentGame)}`,
+        `- ${this.$t("storyLog.currentPhase")}：${this.phaseLabel(
+          this.currentGame,
+        )}`,
         "",
         `## ${this.$t("storyLog.playersAndRoles")}`,
         "",
-        `| ${this.$t("storyLog.seat")} | ${this.$t("storyLog.player")} | ${this.$t("storyLog.role")} | ${this.$t("storyLog.team")} |`,
+        `| ${this.$t("storyLog.seat")} | ${this.$t(
+          "storyLog.player",
+        )} | ${this.$t("storyLog.role")} | ${this.$t("storyLog.team")} |`,
         "| --- | --- | --- | --- |",
         ...this.players.map((player, index) => {
           const role = player.role || {};
-          return `| ${index + 1} | ${this.markdownCell(player.name || "-")} | ${this.markdownCell(role.name || role.id || "-")} | ${this.markdownCell(role.team || "-")} |`;
+          return `| ${index + 1} | ${this.markdownCell(
+            player.name || "-",
+          )} | ${this.markdownCell(
+            role.name || role.id || "-",
+          )} | ${this.markdownCell(role.team || "-")} |`;
         }),
         "",
         `## ${this.$t("storyLog.voteHistory")}`,
-        ""
+        "",
       ];
 
       if (this.session.voteHistory.length) {
-        this.session.voteHistory.forEach(vote => {
+        this.session.voteHistory.forEach((vote) => {
           lines.push(
-            `- ${this.formatDateTime(vote.timestamp)} ${vote.type || ""}：${vote.nominator} -> ${vote.nominee}，${this.$t("storyLog.majority")} ${vote.majority}，${this.$t("storyLog.voters")}：${vote.votes.length ? vote.votes.join("、") : "-"}`
+            `- ${this.formatDateTime(vote.timestamp)} ${vote.type || ""}：${
+              vote.nominator
+            } -> ${vote.nominee}，${this.$t("storyLog.majority")} ${
+              vote.majority
+            }，${this.$t("storyLog.voters")}：${
+              vote.votes.length ? vote.votes.join("、") : "-"
+            }`,
           );
         });
       } else {
@@ -462,13 +516,17 @@ export default {
       if (!groups.length) {
         lines.push(`_${this.$t("storyLog.empty")}_`);
       } else {
-        groups.forEach(group => {
+        groups.forEach((group) => {
           lines.push(`### ${group.label}`, "");
-          group.logs.forEach(log => {
-            const label = `${this.formatDateTime(log.createdAt)} [${this.sourceLabel(log.source)}] ${log.title || this.$t("storyLog.note")}`;
+          group.logs.forEach((log) => {
+            const label = `${this.formatDateTime(
+              log.createdAt,
+            )} [${this.sourceLabel(log.source)}] ${
+              log.title || this.$t("storyLog.note")
+            }`;
             lines.push(`- ${label}`);
             if (log.content) {
-              log.content.split("\n").forEach(line => {
+              log.content.split("\n").forEach((line) => {
                 lines.push(`  ${line}`);
               });
             }
@@ -482,15 +540,19 @@ export default {
     logsForExport() {
       const groups = [];
       [...this.currentLogs]
-        .sort((a, b) => this.phaseOrder(a) - this.phaseOrder(b) || a.createdAt - b.createdAt)
-        .forEach(log => {
+        .sort(
+          (a, b) =>
+            this.phaseOrder(a) - this.phaseOrder(b) ||
+            a.createdAt - b.createdAt,
+        )
+        .forEach((log) => {
           const key = this.phaseKey(log);
-          let group = groups.find(item => item.key === key);
+          let group = groups.find((item) => item.key === key);
           if (!group) {
             group = {
               key,
               label: this.phaseLabel(log),
-              logs: []
+              logs: [],
             };
             groups.push(group);
           }
@@ -509,22 +571,22 @@ export default {
         month: "2-digit",
         day: "2-digit",
         hour: "2-digit",
-        minute: "2-digit"
+        minute: "2-digit",
       });
     },
     markdownCell(value) {
       return String(value).replace(/\|/g, "\\|").replace(/\n/g, " ");
     },
     reviewFilename() {
-      const date = new Date()
-        .toISOString()
-        .slice(0, 10)
-        .replace(/-/g, "");
+      const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
       const room = this.session.sessionId || "local";
-      return `${this.$t("storyLog.reviewTitle")}-${room}-${date}.md`.replace(/[\\/:*?"<>|]/g, "-");
+      return `${this.$t("storyLog.reviewTitle")}-${room}-${date}.md`.replace(
+        /[\\/:*?"<>|]/g,
+        "-",
+      );
     },
-    ...mapMutations(["toggleModal"])
-  }
+    ...mapMutations(["toggleModal"]),
+  },
 };
 </script>
 
@@ -535,8 +597,11 @@ export default {
   position: fixed;
   inset: 0;
   z-index: 110;
-  background:
-    radial-gradient(circle at 78% 14%, rgba(96, 24, 20, 0.16), transparent 30%),
+  background: radial-gradient(
+      circle at 78% 14%,
+      rgba(96, 24, 20, 0.16),
+      transparent 30%
+    ),
     rgba(9, 7, 6, 0.38);
   backdrop-filter: blur(1px);
 }
@@ -557,7 +622,9 @@ export default {
   color: #dcc4a1;
   border-left: 2px solid #3d2e26;
   background: var(--story-panel);
-  box-shadow: -18px 0 54px rgba(0, 0, 0, 0.62), inset 1px 0 0 rgba(255, 236, 190, 0.05);
+  box-shadow:
+    -18px 0 54px rgba(0, 0, 0, 0.62),
+    inset 1px 0 0 rgba(255, 236, 190, 0.05);
   backdrop-filter: blur(4px);
   font-family: "STKaiti", "KaiTi", "STSong", "SimSun", serif;
 }
@@ -570,8 +637,11 @@ header {
   margin-bottom: 0;
   padding: 0.55em 0.78em;
   border-bottom: 1px solid #3d2e26;
-  background:
-    radial-gradient(circle at 50% 0%, rgba(92, 26, 22, 0.22), transparent 36%),
+  background: radial-gradient(
+      circle at 50% 0%,
+      rgba(92, 26, 22, 0.22),
+      transparent 36%
+    ),
     rgba(18, 14, 12, 0.9);
 
   h3 {

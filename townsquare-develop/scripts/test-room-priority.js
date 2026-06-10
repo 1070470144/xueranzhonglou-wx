@@ -143,10 +143,18 @@ async function createRoom(host, params = {}) {
     name: params.name,
     visibility: params.visibility || "public",
     password: params.password || "",
+    maxPlayers: params.maxPlayers,
     scriptName: params.scriptName || "Priority Script",
     scriptJson: params.scriptJson || ""
   });
   const [, payload] = await host.waitFor("room:create:ok");
+  if (params.maxPlayers !== undefined) {
+    assert(
+      payload.room && payload.room.maxPlayers === params.maxPlayers,
+      "room created with requested max player count",
+      { expected: params.maxPlayers, actual: payload.room && payload.room.maxPlayers }
+    );
+  }
   assert(payload.room && payload.room.id, "room created", payload.room);
   return payload.room;
 }

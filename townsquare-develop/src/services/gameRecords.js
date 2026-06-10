@@ -7,7 +7,10 @@ function alignmentByTeam(team) {
 }
 
 function safeUserId(user) {
-  return user && (user.id || user._id || user.uid || user.userId || user.openid || "");
+  return (
+    user &&
+    (user.id || user._id || user.uid || user.userId || user.openid || "")
+  );
 }
 
 export function buildGameRecordSnapshot({ players, edition, session, winner }) {
@@ -26,13 +29,13 @@ export function buildGameRecordSnapshot({ players, edition, session, winner }) {
     winner: normalizedWinner,
     storyteller: {
       userId: storytellerUserId,
-      nickname: (user && (user.nickname || user.email || user.username)) || ""
+      nickname: (user && (user.nickname || user.email || user.username)) || "",
     },
     script: {
       id: (edition && edition.id) || "custom",
       name: (edition && edition.name) || "自定义剧本",
       author: (edition && edition.author) || "",
-      isOfficial: !!(edition && edition.isOfficial)
+      isOfficial: !!(edition && edition.isOfficial),
     },
     startTime,
     endTime,
@@ -56,9 +59,9 @@ export function buildGameRecordSnapshot({ players, edition, session, winner }) {
           normalizedWinner === "unknown" || alignment === "unknown"
             ? null
             : alignment === normalizedWinner,
-        isLoggedIn: !!userId
+        isLoggedIn: !!userId,
       };
-    })
+    }),
   };
 }
 

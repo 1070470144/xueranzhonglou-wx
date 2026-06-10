@@ -31,16 +31,16 @@
 
 <script>
 export default {
-  data: function() {
+  data: function () {
     return {
-      isMaximized: false
+      isMaximized: false,
     };
   },
   methods: {
     close() {
       this.$emit("close");
-    }
-  }
+    },
+  },
 };
 </script>
 
@@ -48,8 +48,11 @@ export default {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background:
-    radial-gradient(circle at 50% 12%, rgba(96, 24, 20, 0.18), transparent 32%),
+  background: radial-gradient(
+      circle at 50% 12%,
+      rgba(96, 24, 20, 0.18),
+      transparent 32%
+    ),
     rgba(9, 7, 6, 0.58);
   display: flex;
   justify-content: center;
@@ -74,7 +77,9 @@ export default {
   border: 2px solid var(--modal-line);
   border-radius: 2px;
   background: var(--modal-panel);
-  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 236, 190, 0.05);
+  box-shadow:
+    0 22px 70px rgba(0, 0, 0, 0.62),
+    inset 0 1px 0 rgba(255, 236, 190, 0.05);
   backdrop-filter: blur(4px);
   font-family: "STKaiti", "KaiTi", "STSong", "SimSun", serif;
   overflow: hidden;
@@ -134,7 +139,9 @@ export default {
   textarea:focus {
     outline: none;
     border-color: rgba(212, 175, 55, 0.82);
-    box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.32), inset 0 1px 4px rgba(0, 0, 0, 0.58);
+    box-shadow:
+      0 0 0 1px rgba(212, 175, 55, 0.32),
+      inset 0 1px 4px rgba(0, 0, 0, 0.58);
   }
 
   > .top-right-buttons {
@@ -159,9 +166,27 @@ export default {
     max-height: calc(100vh - 3.3em);
     padding: 1em;
     overflow: auto;
-    background:
-      radial-gradient(circle at 50% 0%, rgba(92, 26, 22, 0.16), transparent 34%),
+    background: radial-gradient(
+        circle at 50% 0%,
+        rgba(92, 26, 22, 0.16),
+        transparent 34%
+      ),
       var(--modal-surface);
+  }
+}
+
+@media (max-width: 640px) {
+  .modal > .top-right-buttons {
+    top: 0.5em;
+    right: 0.5em;
+    gap: 0.42em;
+
+    > .top-right-button {
+      width: 1.75em;
+      min-width: 1.75em;
+      height: 1.75em;
+      padding: 0.18em;
+    }
   }
 }
 

@@ -3,10 +3,10 @@ const emptyVoiceState = () => ({
   recall: null,
   channels: [],
   participants: [],
-  invitations: []
+  invitations: [],
 });
 
-const ownId = rootState =>
+const ownId = (rootState) =>
   rootState.session.isSpectator ? rootState.session.playerId : "host";
 
 const state = () => ({
@@ -16,34 +16,43 @@ const state = () => ({
   state: emptyVoiceState(),
   inviteRejection: null,
   pendingSignals: [],
-  signalNonce: 0
+  signalNonce: 0,
 });
 
 const getters = {
   ownId: (state, getters, rootState) => ownId(rootState),
   ownParticipant(state, getters, rootState) {
     const id = ownId(rootState);
-    return state.state.participants.find(participant => participant.id === id) || null;
+    return (
+      state.state.participants.find((participant) => participant.id === id) ||
+      null
+    );
   },
   currentChannel(state, getters) {
     const participant = getters.ownParticipant;
     const channelId = participant ? participant.currentChannelId : "main";
-    return state.state.channels.find(channel => channel.id === channelId) || null;
+    return (
+      state.state.channels.find((channel) => channel.id === channelId) || null
+    );
   },
   canSpeak(state, getters, rootState) {
     return !state.state.muteAll || !rootState.session.isSpectator;
   },
   pendingInvites(state, getters, rootState) {
     const id = ownId(rootState);
-    return state.state.invitations.filter(invite => invite.invitedIds.includes(id));
+    return state.state.invitations.filter((invite) =>
+      invite.invitedIds.includes(id),
+    );
   },
   currentMembers(state, getters) {
     const channel = getters.currentChannel;
     if (!channel) return [];
     return channel.memberIds
-      .map(id => state.state.participants.find(participant => participant.id === id))
+      .map((id) =>
+        state.state.participants.find((participant) => participant.id === id),
+      )
       .filter(Boolean);
-  }
+  },
 };
 
 const mutations = {
@@ -91,12 +100,12 @@ const mutations = {
   setMuteAll() {},
   startRecall() {},
   executeRecall() {},
-  sendSignal() {}
+  sendSignal() {},
 };
 
 export default {
   namespaced: true,
   state,
   getters,
-  mutations
+  mutations,
 };

@@ -45,7 +45,12 @@
 
       <footer>
         <button type="button" @click="close">取消</button>
-        <button type="button" class="primary" :disabled="saving || !canSave" @click="submit">
+        <button
+          type="button"
+          class="primary"
+          :disabled="saving || !canSave"
+          @click="submit"
+        >
           {{ saving ? "保存中..." : "保存" }}
         </button>
       </footer>
@@ -55,7 +60,10 @@
 
 <script>
 import { mapState } from "vuex";
-import { buildGameRecordSnapshot, saveGameRecord } from "@/services/gameRecords";
+import {
+  buildGameRecordSnapshot,
+  saveGameRecord,
+} from "@/services/gameRecords";
 import { getAuthSession } from "@/services/auth";
 
 export default {
@@ -69,21 +77,33 @@ export default {
       winnerChoices: [
         { value: "good", label: "善良胜利" },
         { value: "evil", label: "邪恶胜利" },
-        { value: "unknown", label: "不记录胜负" }
-      ]
+        { value: "unknown", label: "不记录胜负" },
+      ],
     };
   },
   computed: {
     ...mapState(["modals", "edition", "session"]),
     ...mapState("players", ["players"]),
     loggedIn() {
-      return !!(this.authUser && (this.authUser.id || this.authUser._id || this.authUser.uid || this.authUser.userId || this.authUser.openid));
+      return !!(
+        this.authUser &&
+        (this.authUser.id ||
+          this.authUser._id ||
+          this.authUser.uid ||
+          this.authUser.userId ||
+          this.authUser.openid)
+      );
     },
     canSave() {
       return this.players.length > 0;
     },
     loggedPlayersCount() {
-      return this.players.filter(player => player.userId || (player.user && (player.user._id || player.user.uid || player.user.userId))).length;
+      return this.players.filter(
+        (player) =>
+          player.userId ||
+          (player.user &&
+            (player.user._id || player.user.uid || player.user.userId)),
+      ).length;
     },
     durationText() {
       const start = Number(this.session.gameStartedAt) || this.now;
@@ -92,12 +112,12 @@ export default {
       const rest = minutes % 60;
       if (!hours) return `${rest} 分钟`;
       return `${hours} 小时 ${rest} 分钟`;
-    }
+    },
   },
   watch: {
     "modals.gameRecord"(open) {
       if (open) this.refresh();
-    }
+    },
   },
   beforeDestroy() {
     if (this.timer) clearInterval(this.timer);
@@ -122,10 +142,11 @@ export default {
           players: this.players,
           edition: this.edition,
           session: this.session,
-          winner: this.winner
+          winner: this.winner,
         });
         const result = await saveGameRecord(payload);
-        if (!result || !result.success) throw new Error((result && result.message) || "保存失败");
+        if (!result || !result.success)
+          throw new Error((result && result.message) || "保存失败");
         alert("战绩已保存");
         this.$store.commit("session/setGameStartedAt", Date.now());
         this.close();
@@ -134,8 +155,8 @@ export default {
       } finally {
         this.saving = false;
       }
-    }
-  }
+    },
+  },
 };
 </script>
 
@@ -150,8 +171,11 @@ export default {
   justify-content: center;
   z-index: 110;
   padding: 1.2em;
-  background:
-    radial-gradient(circle at 50% 12%, rgba(96, 24, 20, 0.18), transparent 32%),
+  background: radial-gradient(
+      circle at 50% 12%,
+      rgba(96, 24, 20, 0.18),
+      transparent 32%
+    ),
     rgba(9, 7, 6, 0.58);
   backdrop-filter: blur(2px);
 }
@@ -168,7 +192,9 @@ export default {
   border-radius: 2px;
   background: var(--record-panel);
   color: #dcc4a1;
-  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 236, 190, 0.05);
+  box-shadow:
+    0 22px 70px rgba(0, 0, 0, 0.62),
+    inset 0 1px 0 rgba(255, 236, 190, 0.05);
   backdrop-filter: blur(4px);
   font-family: "STKaiti", "KaiTi", "STSong", "SimSun", serif;
 
@@ -184,8 +210,11 @@ export default {
     min-height: 3.2em;
     padding: 0.55em 0.78em;
     border-bottom: 1px solid #3d2e26;
-    background:
-      radial-gradient(circle at 50% 0%, rgba(92, 26, 22, 0.22), transparent 36%),
+    background: radial-gradient(
+        circle at 50% 0%,
+        rgba(92, 26, 22, 0.22),
+        transparent 36%
+      ),
       rgba(18, 14, 12, 0.9);
   }
 

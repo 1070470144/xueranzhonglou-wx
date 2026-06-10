@@ -10,7 +10,7 @@
           label:
             session.voteHistory.length == 1
               ? $t('menu.nominationSingular')
-              : $t('menu.nominationPlural')
+              : $t('menu.nominationPlural'),
         })
       "
     >
@@ -21,7 +21,7 @@
       class="session"
       :class="{
         spectator: session.isSpectator,
-        reconnecting: session.isReconnecting
+        reconnecting: session.isReconnecting,
       }"
       v-if="session.sessionId"
       @click="leaveSession"
@@ -30,7 +30,7 @@
           count: session.playerCount,
           latency: session.ping
             ? $t('menu.latency', { ping: session.ping })
-            : ''
+            : '',
         })
       "
     >
@@ -68,20 +68,31 @@
           <!-- Grimoire -->
           <li class="headline">{{ $t("menu.grimoire") }}</li>
           <li @click="toggleGrimoire" v-if="players.length">
-            <template v-if="!grimoire.isPublic">{{ $t("menu.charactersVisible") }}</template>
-            <template v-if="grimoire.isPublic">{{ $t("menu.charactersHidden") }}</template>
+            <template v-if="!grimoire.isPublic">{{
+              $t("menu.charactersVisible")
+            }}</template>
+            <template v-if="grimoire.isPublic">{{
+              $t("menu.charactersHidden")
+            }}</template>
             <em>[G]</em>
           </li>
           <li @click="toggleNight" v-if="!session.isSpectator">
-            <template v-if="!grimoire.isNight">{{ $t("menu.switchToNight") }}</template>
-            <template v-if="grimoire.isNight">{{ $t("menu.switchToDay") }}</template>
+            <template v-if="!grimoire.isNight">{{
+              $t("menu.switchToNight")
+            }}</template>
+            <template v-if="grimoire.isNight">{{
+              $t("menu.switchToDay")
+            }}</template>
             <em>[S]</em>
           </li>
           <li @click="toggleModal('storyLog')" v-if="!session.isSpectator">
             {{ $t("menu.storyLog") }}
             <em><font-awesome-icon icon="clipboard" /></em>
           </li>
-          <li @click="toggleModal('gameRecord')" v-if="!session.isSpectator && players.length">
+          <li
+            @click="toggleModal('gameRecord')"
+            v-if="!session.isSpectator && players.length"
+          >
             保存战绩
             <em><font-awesome-icon icon="trophy" /></em>
           </li>
@@ -91,7 +102,7 @@
               <font-awesome-icon
                 :icon="[
                   'fas',
-                  grimoire.isNightOrder ? 'check-square' : 'square'
+                  grimoire.isNightOrder ? 'check-square' : 'square',
                 ]"
               />
             </em>
@@ -112,7 +123,7 @@
           </li>
           <li @click="setBackground">
             {{ $t("menu.backgroundImage") }}
-            <em><font-awesome-icon icon="image"/></em>
+            <em><font-awesome-icon icon="image" /></em>
           </li>
           <li v-if="!edition.isOfficial" @click="imageOptIn">
             <small>{{ $t("menu.showCustomImages") }}</small>
@@ -120,7 +131,7 @@
               ><font-awesome-icon
                 :icon="[
                   'fas',
-                  grimoire.isImageOptIn ? 'check-square' : 'square'
+                  grimoire.isImageOptIn ? 'check-square' : 'square',
                 ]"
             /></em>
           </li>
@@ -176,7 +187,8 @@
           </li>
           <template v-if="!session.sessionId">
             <li @click="toggleModal('roomLobby')">
-              {{ $t("room.openLobby") }}<em><font-awesome-icon icon="users" /></em>
+              {{ $t("room.openLobby")
+              }}<em><font-awesome-icon icon="users" /></em>
             </li>
             <li @click="hostSession">{{ $t("menu.host") }}<em>[H]</em></li>
             <li @click="joinSession">{{ $t("menu.join") }}<em>[J]</em></li>
@@ -184,14 +196,16 @@
           <template v-else>
             <li @click="toggleModal('roomControl')">
               {{ $t("room.manage") }}
-              <em>{{ room.current ? room.current.name : session.sessionId }}</em>
+              <em>{{
+                room.current ? room.current.name : session.sessionId
+              }}</em>
             </li>
             <li v-if="session.ping">
               {{
                 $t("menu.delayTo", {
                   target: session.isSpectator
                     ? $t("menu.hostTarget")
-                    : $t("menu.playersTarget")
+                    : $t("menu.playersTarget"),
                 })
               }}
               <em>{{ session.ping }}ms</em>
@@ -222,7 +236,7 @@
           </li>
           <li @click="toggleModal('gameState')">
             {{ $t("menu.gameStateJson") }}
-            <em><font-awesome-icon icon="file-code"/></em>
+            <em><font-awesome-icon icon="file-code" /></em>
           </li>
           <li>
             <a href="https://discord.gg/Gd7ybwWbFk" target="_blank">
@@ -263,14 +277,14 @@ export default {
     ...mapState("players", ["players"]),
     isRoomSession() {
       return !!this.room.current;
-    }
+    },
   },
   data() {
     return {
       tab: "grimoire",
       authUser: null,
       announcementLatestKey: "",
-      hasUnreadAnnouncement: false
+      hasUnreadAnnouncement: false,
     };
   },
   mounted() {
@@ -279,7 +293,10 @@ export default {
     window.addEventListener("townsquare-auth-change", this.refreshAuthSession);
   },
   beforeDestroy() {
-    window.removeEventListener("townsquare-auth-change", this.refreshAuthSession);
+    window.removeEventListener(
+      "townsquare-auth-change",
+      this.refreshAuthSession,
+    );
   },
   methods: {
     refreshAuthSession() {
@@ -288,10 +305,15 @@ export default {
     async checkAnnouncementUnread() {
       try {
         const res = await getPublicWebAnnouncements({ pageSize: 1 });
-        const item = res && res.success && res.data && res.data.list && res.data.list[0];
+        const item =
+          res && res.success && res.data && res.data.list && res.data.list[0];
         if (!item) return;
-        this.announcementLatestKey = `${item._id}:${item.updateTime || item.publishTime || ""}`;
-        this.hasUnreadAnnouncement = localStorage.getItem(ANNOUNCEMENT_READ_KEY) !== this.announcementLatestKey;
+        this.announcementLatestKey = `${item._id}:${
+          item.updateTime || item.publishTime || ""
+        }`;
+        this.hasUnreadAnnouncement =
+          localStorage.getItem(ANNOUNCEMENT_READ_KEY) !==
+          this.announcementLatestKey;
       } catch (error) {
         this.hasUnreadAnnouncement = false;
       }
@@ -319,7 +341,7 @@ export default {
       if (this.session.sessionId) return;
       const sessionId = prompt(
         this.$t("menu.promptHost"),
-        Math.round(Math.random() * 10000)
+        Math.round(Math.random() * 10000),
       );
       if (sessionId) {
         this.$store.commit("session/clearVoteHistory");
@@ -375,7 +397,7 @@ export default {
       if (Number.isInteger(count) && count > 0) {
         this.$store.commit("players/addMany", {
           count,
-          startIndex: this.players.length
+          startIndex: this.players.length,
         });
       } else {
         this.$store.commit("players/add", trimmed);
@@ -395,9 +417,9 @@ export default {
       "toggleNightOrder",
       "toggleStatic",
       "setZoom",
-      "toggleModal"
-    ])
-  }
+      "toggleModal",
+    ]),
+  },
 };
 </script>
 
@@ -447,7 +469,9 @@ export default {
     border: 1px solid #3d2e26;
     border-radius: 2px;
     background: rgba(12, 9, 8, 0.78);
-    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 236, 190, 0.05);
+    box-shadow:
+      0 6px 18px rgba(0, 0, 0, 0.55),
+      inset 0 1px 0 rgba(255, 236, 190, 0.05);
   }
 
   span.nomlog-summary {
@@ -528,7 +552,9 @@ export default {
     border-bottom: 0;
     border-radius: 2px 2px 0 0;
     padding: 5px 5px 15px;
-    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 236, 190, 0.05);
+    box-shadow:
+      0 8px 22px rgba(0, 0, 0, 0.62),
+      inset 0 1px 0 rgba(255, 236, 190, 0.05);
 
     &:hover {
       color: #fff8e7;
@@ -550,7 +576,9 @@ export default {
     margin: 0;
     flex-direction: column;
     overflow: hidden;
-    box-shadow: 0 18px 54px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 236, 190, 0.05);
+    box-shadow:
+      0 18px 54px rgba(0, 0, 0, 0.62),
+      inset 0 1px 0 rgba(255, 236, 190, 0.05);
     border: 2px solid #3d2e26;
     border-radius: 2px 0 2px 2px;
     background: rgba(12, 9, 8, 0.76);
@@ -627,7 +655,6 @@ export default {
           }
         }
       }
-
     }
 
     .headline {
@@ -649,20 +676,48 @@ export default {
 
 @media (max-width: 600px) {
   #controls {
-    right: 0;
-    padding-right: 0;
-  }
-
-  .menu {
     position: fixed;
     top: 5px;
     right: 5px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    gap: 0.22em;
+    max-width: calc(100vw - 10px);
+    padding-right: 0;
+    white-space: nowrap;
+  }
+
+  #controls > span {
+    flex: 0 1 auto;
+    max-width: 7em;
+    margin-top: 4px;
+    margin-left: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  #controls span.announcement-summary {
+    min-width: 1.9em;
+    max-width: 1.9em;
+    padding: 0;
+  }
+
+  #controls span.announcement-summary > span {
+    display: none;
+  }
+
+  .menu {
+    position: relative;
+    top: 0;
+    right: 0;
+    flex: 0 0 50px;
     width: 50px;
     transform: none;
     transform-origin: calc(100% - 20px) 22px;
 
     &.open {
-      width: min(220px, calc(100vw - 10px));
+      width: 50px;
     }
 
     &:not(.open) ul {
@@ -670,6 +725,10 @@ export default {
     }
 
     ul {
+      position: absolute;
+      top: 50px;
+      right: 0;
+      width: min(220px, calc(100vw - 10px));
       max-height: calc(100vh - 55px);
       overflow-y: auto;
     }

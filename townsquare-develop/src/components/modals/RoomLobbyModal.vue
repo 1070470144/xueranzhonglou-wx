@@ -2,13 +2,24 @@
   <Modal
     :class="[
       'room-lobby',
-      { 'room-lobby-list': mode === 'list' || mode === 'create' || mode === 'join' }
+      {
+        'room-lobby-list':
+          mode === 'list' || mode === 'create' || mode === 'join',
+      },
     ]"
     v-if="modals.roomLobby"
     @close="close"
   >
-    <div v-if="mode !== 'list' && mode !== 'create' && mode !== 'join'" class="room-toolbar">
-      <button v-if="mode !== 'list' && mode !== 'join'" type="button" class="button icon-button" @click="backToList">
+    <div
+      v-if="mode !== 'list' && mode !== 'create' && mode !== 'join'"
+      class="room-toolbar"
+    >
+      <button
+        v-if="mode !== 'list' && mode !== 'join'"
+        type="button"
+        class="button icon-button"
+        @click="backToList"
+      >
         <font-awesome-icon icon="undo" />
       </button>
       <span v-else></span>
@@ -17,19 +28,34 @@
         <small v-if="mode === 'list'">{{ $t("room.availableRooms") }}</small>
       </div>
       <div class="room-actions">
-        <button v-if="!session.sessionId && mode === 'list'" type="button" class="button demon create-button" @click="showCreate">
+        <button
+          v-if="!session.sessionId && mode === 'list'"
+          type="button"
+          class="button demon create-button"
+          @click="showCreate"
+        >
           <font-awesome-icon icon="plus-circle" />
           <span>{{ $t("room.showCreate") }}</span>
         </button>
-        <button v-else type="button" class="button icon-button" @click="refresh">
+        <button
+          v-else
+          type="button"
+          class="button icon-button"
+          @click="refresh"
+        >
           <font-awesome-icon icon="sync-alt" />
         </button>
       </div>
     </div>
 
-    <p v-if="room.error && mode !== 'create'" class="room-error">{{ errorText }}</p>
+    <p v-if="room.error && mode !== 'create'" class="room-error">
+      {{ errorText }}
+    </p>
 
-    <section v-if="mode === 'list' || mode === 'create' || mode === 'join'" class="room-section room-hall">
+    <section
+      v-if="mode === 'list' || mode === 'create' || mode === 'join'"
+      class="room-section room-hall"
+    >
       <div class="hall-topline">
         <span>钟楼大厅</span>
         <strong>血染钟楼</strong>
@@ -38,14 +64,27 @@
 
       <div class="hall-bottom-bar">
         <div class="hall-search">
-          <input v-model="roomSearch" type="search" :placeholder="$t('room.searchPlaceholder')" />
+          <input
+            v-model="roomSearch"
+            type="search"
+            :placeholder="$t('room.searchPlaceholder')"
+          />
         </div>
         <div class="hall-footer-actions">
-          <button v-if="!session.sessionId" type="button" class="button demon create-button" @click="showCreate">
+          <button
+            v-if="!session.sessionId"
+            type="button"
+            class="button demon create-button"
+            @click="showCreate"
+          >
             <font-awesome-icon icon="plus-circle" />
             <span>{{ $t("room.showCreate") }}</span>
           </button>
-          <button type="button" class="button icon-button hall-refresh" @click="refresh">
+          <button
+            type="button"
+            class="button icon-button hall-refresh"
+            @click="refresh"
+          >
             <font-awesome-icon icon="sync-alt" />
           </button>
         </div>
@@ -98,19 +137,35 @@
               <div class="room-row-main">
                 <strong class="room-name">{{ item.name }}</strong>
               </div>
-              <span class="room-language-stamp" :class="{ private: item.isPrivate }">
+              <span
+                class="room-language-stamp"
+                :class="{ private: item.isPrivate }"
+              >
                 {{ item.isPrivate ? $t("room.private") : $t("room.public") }}
               </span>
               <div class="room-script-cell">
                 <strong>{{ item.scriptName || $t("room.noScript") }}</strong>
                 <span>{{ item.hostName || $t("room.defaultHostName") }}</span>
               </div>
-              <span class="room-host">{{ item.hostName || $t("room.defaultHostName") }}</span>
-              <span class="room-note-cell" :title="item.note">{{ item.note || "-" }}</span>
+              <span class="room-host">{{
+                item.hostName || $t("room.defaultHostName")
+              }}</span>
+              <span class="room-note-cell" :title="item.note">{{
+                item.note || "-"
+              }}</span>
               <div class="room-row-meta">
-                <span class="room-count"><font-awesome-icon icon="user-friends" /> {{ item.playerCount }}/{{ item.maxPlayers }}</span>
-                <span class="room-status" :class="item.status || 'waiting'">{{ statusText(item.status) }}</span>
-                <button type="button" class="button join-button" @click.stop="selectRoom(item)">
+                <span class="room-count"
+                  ><font-awesome-icon icon="user-friends" />
+                  {{ item.playerCount }}/{{ item.maxPlayers }}</span
+                >
+                <span class="room-status" :class="item.status || 'waiting'">{{
+                  statusText(item.status)
+                }}</span>
+                <button
+                  type="button"
+                  class="button join-button"
+                  @click.stop="selectRoom(item)"
+                >
                   {{ $t("room.join") }}
                 </button>
               </div>
@@ -120,7 +175,12 @@
             {{ $t("room.empty") }}
           </div>
           <div v-if="filteredRooms.length" class="room-pagination">
-            <button type="button" class="button pagination-prev" :disabled="currentPage <= 1" @click="goToPage(currentPage - 1)">
+            <button
+              type="button"
+              class="button pagination-prev"
+              :disabled="currentPage <= 1"
+              @click="goToPage(currentPage - 1)"
+            >
               ‹
             </button>
             <div class="pagination-pages">
@@ -135,7 +195,12 @@
                 {{ page }}
               </button>
             </div>
-            <button type="button" class="button pagination-next" :disabled="currentPage >= totalPages" @click="goToPage(currentPage + 1)">
+            <button
+              type="button"
+              class="button pagination-next"
+              :disabled="currentPage >= totalPages"
+              @click="goToPage(currentPage + 1)"
+            >
               ›
             </button>
           </div>
@@ -143,25 +208,45 @@
       </div>
     </section>
 
-    <div v-if="mode === 'create'" class="room-submodal-layer" @click.self="backToList">
+    <div
+      v-if="mode === 'create'"
+      class="room-submodal-layer"
+      @click.self="backToList"
+    >
       <section class="room-section room-form create-room-form" @click.stop>
         <div class="create-room-title">
           <h3>{{ title }}</h3>
-          <button type="button" class="button icon-button create-room-close" :aria-label="$t('common.close')" @click="backToList">
+          <button
+            type="button"
+            class="button icon-button create-room-close"
+            :aria-label="$t('common.close')"
+            @click="backToList"
+          >
             <font-awesome-icon icon="times-circle" />
           </button>
         </div>
-        <p v-if="room.error" class="room-error create-room-error">{{ errorText }}</p>
+        <p v-if="room.error" class="room-error create-room-error">
+          {{ errorText }}
+        </p>
         <div class="create-room-scroll">
           <div class="create-field-grid">
             <div class="create-basic-row">
               <div class="field-block create-name-field">
                 <label>{{ $t("room.name") }}</label>
-                <input :value="createForm.name" type="text" @input="updateCreate('name', $event.target.value)" />
+                <input
+                  :value="createForm.name"
+                  type="text"
+                  @input="updateCreate('name', $event.target.value)"
+                />
               </div>
               <div class="field-block create-host-field">
                 <label>{{ $t("room.hostName") }}</label>
-                <input v-if="!hostDisplayName" :value="createForm.hostName" type="text" @input="updateCreate('hostName', $event.target.value)" />
+                <input
+                  v-if="!hostDisplayName"
+                  :value="createForm.hostName"
+                  type="text"
+                  @input="updateCreate('hostName', $event.target.value)"
+                />
                 <div v-else class="readonly-field">{{ hostDisplayName }}</div>
               </div>
             </div>
@@ -174,7 +259,12 @@
                 :max="20"
                 step="1"
                 @input="updateCreate('maxPlayers', $event.target.value)"
-                @blur="updateCreate('maxPlayers', normalizeMaxPlayers(createForm.maxPlayers))"
+                @blur="
+                  updateCreate(
+                    'maxPlayers',
+                    normalizeMaxPlayers(createForm.maxPlayers),
+                  )
+                "
               />
             </div>
             <div class="field-block create-visibility-field">
@@ -198,12 +288,21 @@
             </div>
             <div class="field-block create-note-field">
               <label>{{ $t("room.note") }}</label>
-              <input :value="createForm.note" type="text" maxlength="80" @input="updateCreate('note', $event.target.value)" />
+              <input
+                :value="createForm.note"
+                type="text"
+                maxlength="80"
+                @input="updateCreate('note', $event.target.value)"
+              />
             </div>
             <template v-if="createForm.visibility === 'private'">
               <div class="field-block create-password-field">
                 <label>{{ $t("room.password") }}</label>
-                <input :value="createForm.password" type="password" @input="updateCreate('password', $event.target.value)" />
+                <input
+                  :value="createForm.password"
+                  type="password"
+                  @input="updateCreate('password', $event.target.value)"
+                />
               </div>
             </template>
           </div>
@@ -212,58 +311,102 @@
               <small>{{ $t("room.script") }}</small>
               <strong>{{ currentScriptName }}</strong>
             </span>
-            <button type="button" class="button create-script-action" @click="chooseScript">
-              <font-awesome-icon icon="theater-masks" /> {{ $t("room.chooseScript") }}
+            <button
+              type="button"
+              class="button create-script-action"
+              @click="chooseScript"
+            >
+              <font-awesome-icon icon="theater-masks" />
+              {{ $t("room.chooseScript") }}
             </button>
           </div>
         </div>
         <div class="create-room-footer">
-          <button type="button" class="button demon primary-action create-primary-action" @click="createRoom">
+          <button
+            type="button"
+            class="button demon primary-action create-primary-action"
+            @click="createRoom"
+          >
             {{ $t("room.createRoom") }}
           </button>
         </div>
       </section>
     </div>
 
-    <div v-if="mode === 'join' && selectedRoom" class="room-submodal-layer" @click.self="backToList">
-      <section class="room-section room-form create-room-form join-room-form" @click.stop>
+    <div
+      v-if="mode === 'join' && selectedRoom"
+      class="room-submodal-layer"
+      @click.self="backToList"
+    >
+      <section
+        class="room-section room-form create-room-form join-room-form"
+        @click.stop
+      >
         <div class="create-room-title">
           <h3>{{ $t("room.joinRoom", { name: selectedRoom.name }) }}</h3>
-          <button type="button" class="button icon-button create-room-close" :aria-label="$t('common.close')" @click="backToList">
+          <button
+            type="button"
+            class="button icon-button create-room-close"
+            :aria-label="$t('common.close')"
+            @click="backToList"
+          >
             <font-awesome-icon icon="times-circle" />
           </button>
         </div>
         <div class="create-room-scroll join-room-scroll">
           <div class="selected-room-card">
             <strong>{{ selectedRoom.name }}</strong>
-            <span>{{ selectedRoom.playerCount }}/{{ selectedRoom.maxPlayers }} - {{ selectedRoom.scriptName }}</span>
+            <span
+              >{{ selectedRoom.playerCount }}/{{ selectedRoom.maxPlayers }} -
+              {{ selectedRoom.scriptName }}</span
+            >
             <em :class="{ private: selectedRoom.isPrivate }">
-              {{ selectedRoom.isPrivate ? $t("room.private") : $t("room.public") }}
+              {{
+                selectedRoom.isPrivate ? $t("room.private") : $t("room.public")
+              }}
             </em>
           </div>
           <div class="field-block featured-field">
             <label>{{ $t("room.playerName") }}</label>
-            <input :value="joinForm.playerName" type="text" @input="updateJoin('playerName', $event.target.value)" />
+            <input
+              :value="joinForm.playerName"
+              type="text"
+              @input="updateJoin('playerName', $event.target.value)"
+            />
           </div>
           <template v-if="selectedRoom.isPrivate">
             <div class="field-block">
               <label>{{ $t("room.password") }}</label>
-              <input :value="joinForm.password" type="password" @input="updateJoin('password', $event.target.value)" />
+              <input
+                :value="joinForm.password"
+                type="password"
+                @input="updateJoin('password', $event.target.value)"
+              />
             </div>
           </template>
         </div>
         <div class="create-room-footer join-room-footer">
-          <button type="button" class="button demon primary-action create-primary-action" @click="joinRoom">
+          <button
+            type="button"
+            class="button demon primary-action create-primary-action"
+            @click="joinRoom"
+          >
             {{ $t("room.join") }}
           </button>
         </div>
       </section>
     </div>
 
-    <section v-if="mode === 'manage' && room.current" class="room-section room-form">
+    <section
+      v-if="mode === 'manage' && room.current"
+      class="room-section room-form"
+    >
       <div class="selected-room-card manage-card">
         <strong>{{ room.current.name }}</strong>
-        <span>{{ room.current.playerCount }}/{{ room.current.maxPlayers }} - {{ room.current.scriptName }}</span>
+        <span
+          >{{ room.current.playerCount }}/{{ room.current.maxPlayers }} -
+          {{ room.current.scriptName }}</span
+        >
         <em :class="{ private: room.current.isPrivate }">
           {{ room.current.isPrivate ? $t("room.private") : $t("room.public") }}
         </em>
@@ -271,7 +414,11 @@
       <template v-if="room.isHost">
         <div class="field-block featured-field">
           <label>{{ $t("room.name") }}</label>
-          <input :value="createForm.name" type="text" @input="updateCreate('name', $event.target.value)" />
+          <input
+            :value="createForm.name"
+            type="text"
+            @input="updateCreate('name', $event.target.value)"
+          />
         </div>
         <div class="field-block">
           <label>{{ $t("room.visibility") }}</label>
@@ -295,7 +442,11 @@
         <template v-if="createForm.visibility === 'private'">
           <div class="field-block">
             <label>{{ $t("room.password") }}</label>
-            <input :value="createForm.password" type="password" @input="updateCreate('password', $event.target.value)" />
+            <input
+              :value="createForm.password"
+              type="password"
+              @input="updateCreate('password', $event.target.value)"
+            />
           </div>
         </template>
         <div class="room-script-row script-card">
@@ -304,10 +455,15 @@
             <strong>{{ currentScriptName }}</strong>
           </span>
           <button type="button" class="button" @click="chooseScript">
-            <font-awesome-icon icon="theater-masks" /> {{ $t("room.chooseScript") }}
+            <font-awesome-icon icon="theater-masks" />
+            {{ $t("room.chooseScript") }}
           </button>
         </div>
-        <button type="button" class="button demon primary-action" @click="updateRoom">
+        <button
+          type="button"
+          class="button demon primary-action"
+          @click="updateRoom"
+        >
           {{ $t("room.save") }}
         </button>
 
@@ -342,7 +498,7 @@ export default {
       roomSearch: "",
       visibilityFilter: "all",
       showVisibilityMenu: false,
-      authUser: null
+      authUser: null,
     };
   },
   computed: {
@@ -373,21 +529,26 @@ export default {
       return this.hostDisplayName || this.guestHostName;
     },
     filteredRooms() {
-      return this.room.list.filter(item => this.filterRoom(item));
+      return this.room.list.filter((item) => this.filterRoom(item));
     },
     visibilityOptions() {
       return [
         { value: "all", label: this.$t("room.all") },
         { value: "public", label: this.$t("room.public") },
-        { value: "private", label: this.$t("room.private") }
+        { value: "private", label: this.$t("room.private") },
       ];
     },
     visibilityLabel() {
-      const option = this.visibilityOptions.find(item => item.value === this.visibilityFilter);
+      const option = this.visibilityOptions.find(
+        (item) => item.value === this.visibilityFilter,
+      );
       return option ? option.label : this.$t("room.all");
     },
     totalPages() {
-      return Math.max(1, Math.ceil(this.filteredRooms.length / this.roomsPerPage));
+      return Math.max(
+        1,
+        Math.ceil(this.filteredRooms.length / this.roomsPerPage),
+      );
     },
     pagedRooms() {
       const start = (this.currentPage - 1) * this.roomsPerPage;
@@ -396,7 +557,9 @@ export default {
     previewRoom() {
       if (
         this.selectedPreviewRoom &&
-        this.filteredRooms.some(item => item.id === this.selectedPreviewRoom.id)
+        this.filteredRooms.some(
+          (item) => item.id === this.selectedPreviewRoom.id,
+        )
       ) {
         return this.selectedPreviewRoom;
       }
@@ -405,7 +568,7 @@ export default {
     errorText() {
       const key = this.room.error ? `room.errors.${this.room.error}` : "";
       return key ? this.$t(key) : "";
-    }
+    },
   },
   mounted() {
     this.refreshAuthUser();
@@ -430,10 +593,11 @@ export default {
         name: current.name,
         note: current.note || "",
         maxPlayers: current.maxPlayers || this.createForm.maxPlayers,
-        visibility: current.visibility || "public"
+        visibility: current.visibility || "public",
       });
       if (this.modals.roomLobby) this.$store.commit("toggleModal", "roomLobby");
-      if (!this.modals.roomControl) this.$store.commit("toggleModal", "roomControl");
+      if (!this.modals.roomControl)
+        this.$store.commit("toggleModal", "roomControl");
     },
     roomSearch() {
       this.goToPage(1);
@@ -444,7 +608,7 @@ export default {
     },
     totalPages(total) {
       if (this.currentPage > total) this.goToPage(total);
-    }
+    },
   },
   methods: {
     refreshAuthUser() {
@@ -464,8 +628,12 @@ export default {
       if (this.visibilityFilter === "private" && !item.isPrivate) return false;
       const needle = this.roomSearch.trim().toLocaleLowerCase();
       if (!needle) return true;
-      return [item.name, item.hostName, item.scriptName, item.note]
-        .some(value => String(value || "").toLocaleLowerCase().includes(needle));
+      return [item.name, item.hostName, item.scriptName, item.note].some(
+        (value) =>
+          String(value || "")
+            .toLocaleLowerCase()
+            .includes(needle),
+      );
     },
     statusText(status) {
       return this.$t(status === "playing" ? "room.playing" : "room.waiting");
@@ -529,7 +697,7 @@ export default {
         ...this.room.createForm,
         hostName: this.createHostName,
         maxPlayers: this.normalizeMaxPlayers(this.room.createForm.maxPlayers),
-        status: "waiting"
+        status: "waiting",
       });
     },
     joinRoom() {
@@ -542,8 +710,8 @@ export default {
       if (confirm(this.$t("room.confirmKick"))) {
         this.$store.commit("room/kick", playerId);
       }
-    }
-  }
+    },
+  },
 };
 </script>
 
@@ -555,11 +723,16 @@ export default {
     color: #f8eed8;
     border: 1px solid rgba(139, 84, 48, 0.75);
     border-radius: 4px;
-    background:
-      radial-gradient(circle at 50% 0%, rgba(118, 20, 24, 0.3), transparent 24%),
+    background: radial-gradient(
+        circle at 50% 0%,
+        rgba(118, 20, 24, 0.3),
+        transparent 24%
+      ),
       linear-gradient(180deg, rgba(28, 16, 13, 0.98), rgba(13, 9, 8, 0.98)),
       #0d0908;
-    box-shadow: 0 18px 58px rgba(0, 0, 0, 0.72), inset 0 1px 0 rgba(255, 222, 150, 0.08);
+    box-shadow:
+      0 18px 58px rgba(0, 0, 0, 0.72),
+      inset 0 1px 0 rgba(255, 222, 150, 0.08);
   }
   .room-toolbar {
     display: grid;
@@ -639,8 +812,11 @@ export default {
     min-height: 3.35em;
     padding: 0 0.95em;
     border-bottom: 1px solid rgba(139, 84, 48, 0.72);
-    background:
-      radial-gradient(circle at 50% 0%, rgba(130, 24, 26, 0.36), transparent 32%),
+    background: radial-gradient(
+        circle at 50% 0%,
+        rgba(130, 24, 26, 0.36),
+        transparent 32%
+      ),
       rgba(16, 10, 9, 0.86);
     color: #b99b6b;
     font-size: 0.9em;
@@ -805,7 +981,9 @@ export default {
   }
   .room-register-bar {
     display: grid;
-    grid-template-columns: minmax(7.8em, 1fr) 6.5em minmax(10em, 1.25fr) minmax(7.4em, 0.9fr) minmax(8em, 1fr) 4.9em 5.4em 6.2em;
+    grid-template-columns:
+      minmax(7.8em, 1fr) 6.5em minmax(10em, 1.25fr) minmax(7.4em, 0.9fr)
+      minmax(8em, 1fr) 4.9em 5.4em 6.2em;
     gap: 0;
     align-items: stretch;
     min-height: 2.35em;
@@ -852,7 +1030,9 @@ export default {
   }
   .room-row-card {
     display: grid;
-    grid-template-columns: minmax(7.8em, 1fr) 6.5em minmax(10em, 1.25fr) minmax(7.4em, 0.9fr) minmax(8em, 1fr) 4.9em 5.4em 6.2em;
+    grid-template-columns:
+      minmax(7.8em, 1fr) 6.5em minmax(10em, 1.25fr) minmax(7.4em, 0.9fr)
+      minmax(8em, 1fr) 4.9em 5.4em 6.2em;
     gap: 0;
     align-items: center;
     min-height: 3.7em;
@@ -864,7 +1044,10 @@ export default {
     background: rgba(10, 7, 6, 0.62);
     box-shadow: none;
     cursor: pointer;
-    transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+    transition:
+      background 0.15s ease,
+      border-color 0.15s ease,
+      transform 0.15s ease;
   }
   .room-row-card:nth-child(even) {
     background: rgba(18, 11, 9, 0.62);
@@ -1109,11 +1292,20 @@ export default {
     padding: 1.18em;
     border: 1px solid rgba(229, 191, 114, 0.22);
     border-radius: 8px;
-    background:
-      linear-gradient(180deg, rgba(104, 28, 42, 0.28), transparent 45%),
-      radial-gradient(circle at 76% 12%, rgba(229, 191, 114, 0.1), transparent 28%),
+    background: linear-gradient(
+        180deg,
+        rgba(104, 28, 42, 0.28),
+        transparent 45%
+      ),
+      radial-gradient(
+        circle at 76% 12%,
+        rgba(229, 191, 114, 0.1),
+        transparent 28%
+      ),
       rgba(7, 10, 18, 0.7);
-    box-shadow: inset 0 1px 0 rgba(255, 241, 202, 0.09), inset 0 0 0 1px rgba(255, 255, 255, 0.025);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 241, 202, 0.09),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.025);
   }
   .preview-overline {
     margin-bottom: 0.45em;
@@ -1170,8 +1362,11 @@ export default {
     padding: 2.2em 1em;
     border: 1px solid rgba(229, 191, 114, 0.15);
     border-radius: 8px;
-    background:
-      radial-gradient(circle at 50% 38%, rgba(229, 191, 114, 0.1), transparent 30%),
+    background: radial-gradient(
+        circle at 50% 38%,
+        rgba(229, 191, 114, 0.1),
+        transparent 30%
+      ),
       rgba(2, 5, 10, 0.5);
   }
   .hall-empty-state strong {
@@ -1212,10 +1407,26 @@ export default {
     border: 2px solid rgba(210, 222, 255, 0.42);
     border-radius: 3px;
   }
-  .table-icon span:nth-child(1) { left: 1em; top: 1.2em; transform: rotate(-14deg); }
-  .table-icon span:nth-child(2) { left: 2.7em; top: 0.65em; transform: rotate(-7deg); }
-  .table-icon span:nth-child(3) { right: 2.7em; top: 0.65em; transform: rotate(7deg); }
-  .table-icon span:nth-child(4) { right: 1em; top: 1.2em; transform: rotate(14deg); }
+  .table-icon span:nth-child(1) {
+    left: 1em;
+    top: 1.2em;
+    transform: rotate(-14deg);
+  }
+  .table-icon span:nth-child(2) {
+    left: 2.7em;
+    top: 0.65em;
+    transform: rotate(-7deg);
+  }
+  .table-icon span:nth-child(3) {
+    right: 2.7em;
+    top: 0.65em;
+    transform: rotate(7deg);
+  }
+  .table-icon span:nth-child(4) {
+    right: 1em;
+    top: 1.2em;
+    transform: rotate(14deg);
+  }
   .readonly-field {
     display: block;
     width: 100%;
@@ -1390,7 +1601,9 @@ export default {
   }
   .join-room-form input:focus {
     border-color: rgba(212, 175, 55, 0.78);
-    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.14), inset 0 1px 4px rgba(0, 0, 0, 0.48);
+    box-shadow:
+      0 0 0 2px rgba(212, 175, 55, 0.14),
+      inset 0 1px 4px rgba(0, 0, 0, 0.48);
   }
   .join-room-form .primary-action {
     justify-self: end;
@@ -1422,8 +1635,11 @@ export default {
     display: grid;
     place-items: center;
     padding: 1.25em;
-    background:
-      radial-gradient(circle at 50% 18%, rgba(92, 26, 22, 0.18), transparent 34%),
+    background: radial-gradient(
+        circle at 50% 18%,
+        rgba(92, 26, 22, 0.18),
+        transparent 34%
+      ),
       rgba(3, 2, 2, 0.48);
     backdrop-filter: blur(1px);
   }
@@ -1444,7 +1660,9 @@ export default {
     border: 2px solid #3d2e26;
     border-radius: 2px;
     background: var(--create-form-panel);
-    box-shadow: 0 18px 54px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 236, 190, 0.05);
+    box-shadow:
+      0 18px 54px rgba(0, 0, 0, 0.62),
+      inset 0 1px 0 rgba(255, 236, 190, 0.05);
     backdrop-filter: blur(4px);
     font-family: "STKaiti", "KaiTi", "STSong", "SimSun", serif;
   }
@@ -1475,8 +1693,11 @@ export default {
     min-height: 3.2em;
     padding: 0.45em 0.65em;
     border-bottom: 1px solid #3d2e26;
-    background:
-      radial-gradient(circle at 50% 0%, rgba(92, 26, 22, 0.22), transparent 36%),
+    background: radial-gradient(
+        circle at 50% 0%,
+        rgba(92, 26, 22, 0.22),
+        transparent 36%
+      ),
       rgba(18, 14, 12, 0.9);
   }
   .create-room-title h3 {
@@ -1565,8 +1786,11 @@ export default {
   }
   .create-name-field {
     min-height: 5.1em;
-    background:
-      radial-gradient(circle at 20% 0%, rgba(92, 26, 22, 0.18), transparent 32%),
+    background: radial-gradient(
+        circle at 20% 0%,
+        rgba(92, 26, 22, 0.18),
+        transparent 32%
+      ),
       rgba(18, 15, 13, 0.82);
   }
   .create-host-field {
@@ -1610,7 +1834,9 @@ export default {
   }
   .create-room-form input:focus {
     border-color: rgba(212, 175, 55, 0.82);
-    box-shadow: 0 0 0 1px rgba(212, 175, 55, 0.32), inset 0 1px 4px rgba(0, 0, 0, 0.58);
+    box-shadow:
+      0 0 0 1px rgba(212, 175, 55, 0.32),
+      inset 0 1px 4px rgba(0, 0, 0, 0.58);
   }
   .create-room-form .segmented-control {
     gap: 0;
@@ -1688,7 +1914,9 @@ export default {
     border: 1px solid #d4af37;
     border-radius: 2px;
     background: linear-gradient(#b8860b, #946b07 48%, #5c4204);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.8),
+      inset 0 1px 1px rgba(255, 255, 255, 0.2);
     font-family: inherit;
     font-weight: 700;
     letter-spacing: 0.12em;
@@ -1731,8 +1959,11 @@ export default {
     align-items: center;
     justify-content: center;
     padding: 1.5em;
-    background:
-      radial-gradient(circle at 50% 12%, rgba(96, 24, 20, 0.18), transparent 32%),
+    background: radial-gradient(
+        circle at 50% 12%,
+        rgba(96, 24, 20, 0.18),
+        transparent 32%
+      ),
       rgba(9, 7, 6, 0.56);
   }
   .modal {
@@ -1786,8 +2017,11 @@ export default {
     padding: 0 1em 0.75em;
     align-items: end;
     border-bottom: 3px double #4a3b32;
-    background:
-      radial-gradient(circle at 50% 0%, rgba(92, 26, 22, 0.26), transparent 28%),
+    background: radial-gradient(
+        circle at 50% 0%,
+        rgba(92, 26, 22, 0.26),
+        transparent 28%
+      ),
       transparent;
     color: #b8a082;
   }
@@ -1815,7 +2049,9 @@ export default {
     border: 2px solid #3d2e26;
     border-radius: 2px;
     background: var(--hall-glass-core);
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.78), inset 0 1px 0 rgba(255, 236, 190, 0.05);
+    box-shadow:
+      0 0 20px rgba(0, 0, 0, 0.78),
+      inset 0 1px 0 rgba(255, 236, 190, 0.05);
     backdrop-filter: blur(5px);
   }
   .room-notice-list,
@@ -1883,7 +2119,9 @@ export default {
     border: 1px solid #3d2e26;
     border-radius: 2px;
     background: var(--hall-glass-surface);
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 236, 190, 0.04);
+    box-shadow:
+      0 4px 14px rgba(0, 0, 0, 0.62),
+      inset 0 1px 0 rgba(255, 236, 190, 0.04);
     backdrop-filter: blur(4px);
   }
   .hall-search {
@@ -1901,7 +2139,9 @@ export default {
     border: 1px solid #d4af37;
     background: linear-gradient(#b8860b, #946b07 48%, #5c4204);
     color: #fff8e7;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.8),
+      inset 0 1px 1px rgba(255, 255, 255, 0.2);
   }
 }
 

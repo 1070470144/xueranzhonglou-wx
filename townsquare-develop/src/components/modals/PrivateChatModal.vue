@@ -36,7 +36,7 @@
         </nav>
 
         <div v-if="!targets.length" class="empty-state">
-            {{ $t("privateChat.noTargets") }}
+          {{ $t("privateChat.noTargets") }}
         </div>
         <div class="chat-body">
           <section v-if="targets.length" ref="messages" class="messages">
@@ -50,7 +50,11 @@
               :class="message.direction"
             >
               <div class="meta">
-                <span>{{ message.direction === "out" ? $t("privateChat.me") : message.fromName }}</span>
+                <span>{{
+                  message.direction === "out"
+                    ? $t("privateChat.me")
+                    : message.fromName
+                }}</span>
                 <time>{{ formatTime(message.createdAt) }}</time>
               </div>
               <p>{{ message.content }}</p>
@@ -66,7 +70,8 @@
             @keyup.ctrl.enter="send"
           ></textarea>
           <button type="button" :disabled="!canSend" @click="send">
-            <font-awesome-icon icon="paper-plane" /> {{ $t("privateChat.send") }}
+            <font-awesome-icon icon="paper-plane" />
+            {{ $t("privateChat.send") }}
           </button>
         </footer>
       </template>
@@ -82,7 +87,7 @@ const nowId = () => `${Date.now()}-${Math.random().toString(36).substr(2)}`;
 export default {
   data() {
     return {
-      content: ""
+      content: "",
     };
   },
   computed: {
@@ -95,7 +100,7 @@ export default {
       },
       set(targetId) {
         this.setActiveTarget(targetId);
-      }
+      },
     },
     totalUnread() {
       return this.$store.getters["privateChat/totalUnread"];
@@ -110,13 +115,17 @@ export default {
         if (!player.id || player.id === this.session.playerId) return;
         targets.push({
           id: player.id,
-          name: player.name || this.$t("privateChat.playerName", { index: index + 1 })
+          name:
+            player.name ||
+            this.$t("privateChat.playerName", { index: index + 1 }),
         });
       });
       return targets;
     },
     activeTarget() {
-      return this.targets.find(target => target.id === this.activeTargetId) || null;
+      return (
+        this.targets.find((target) => target.id === this.activeTargetId) || null
+      );
     },
     messages() {
       const conversation = this.conversations[this.activeTargetId];
@@ -130,9 +139,11 @@ export default {
     },
     ownName() {
       if (!this.session.isSpectator) return this.$t("privateChat.host");
-      const player = this.players.find(({ id }) => id === this.session.playerId);
+      const player = this.players.find(
+        ({ id }) => id === this.session.playerId,
+      );
       return player && player.name ? player.name : this.$t("privateChat.me");
-    }
+    },
   },
   watch: {
     "modals.privateChat"(visible) {
@@ -143,12 +154,15 @@ export default {
     },
     messages() {
       this.$nextTick(this.scrollToBottom);
-    }
+    },
   },
   methods: {
     ensureTarget() {
       if (!this.modals.privateChat) return;
-      if (this.activeTargetId && this.targets.some(({ id }) => id === this.activeTargetId)) {
+      if (
+        this.activeTargetId &&
+        this.targets.some(({ id }) => id === this.activeTargetId)
+      ) {
         this.setActiveTarget(this.activeTargetId);
         return;
       }
@@ -163,7 +177,7 @@ export default {
         toId: this.activeTarget.id,
         toName: this.activeTarget.name,
         content: this.content.trim(),
-        createdAt: Date.now()
+        createdAt: Date.now(),
       });
       this.content = "";
     },
@@ -174,7 +188,7 @@ export default {
     formatTime(timestamp) {
       return new Date(timestamp).toLocaleTimeString([], {
         hour: "2-digit",
-        minute: "2-digit"
+        minute: "2-digit",
       });
     },
     scrollToBottom() {
@@ -185,8 +199,8 @@ export default {
       this.toggleModal("privateChat");
     },
     ...mapMutations(["toggleModal"]),
-    ...mapMutations("privateChat", ["setActiveTarget"])
-  }
+    ...mapMutations("privateChat", ["setActiveTarget"]),
+  },
 };
 </script>
 
@@ -217,7 +231,9 @@ export default {
   background: rgba(12, 9, 8, 0.82);
   border: 2px solid #3d2e26;
   border-radius: 2px;
-  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 236, 190, 0.05);
+  box-shadow:
+    0 8px 22px rgba(0, 0, 0, 0.62),
+    inset 0 1px 0 rgba(255, 236, 190, 0.05);
 
   &.active {
     color: #fff8e7;
@@ -257,7 +273,9 @@ export default {
   background: rgba(12, 9, 8, 0.76);
   border: 2px solid #3d2e26;
   border-radius: 2px;
-  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 236, 190, 0.05);
+  box-shadow:
+    0 18px 54px rgba(0, 0, 0, 0.62),
+    inset 0 1px 0 rgba(255, 236, 190, 0.05);
   backdrop-filter: blur(4px);
   font-family: "STKaiti", "KaiTi", "STSong", "SimSun", serif;
 }
@@ -270,8 +288,11 @@ header {
   margin-bottom: 0;
   padding: 0.55em 0.7em;
   border-bottom: 1px solid #3d2e26;
-  background:
-    radial-gradient(circle at 50% 0%, rgba(92, 26, 22, 0.22), transparent 36%),
+  background: radial-gradient(
+      circle at 50% 0%,
+      rgba(92, 26, 22, 0.22),
+      transparent 36%
+    ),
     rgba(18, 14, 12, 0.9);
 
   h3 {

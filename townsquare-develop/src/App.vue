@@ -5,12 +5,12 @@
     tabindex="-1"
     :class="{
       night: grimoire.isNight,
-      static: grimoire.isStatic
+      static: grimoire.isStatic,
     }"
     :style="{
       backgroundImage: grimoire.background
         ? `url('${grimoire.background}')`
-        : ''
+        : '',
     }"
   >
     <video
@@ -101,22 +101,22 @@ export default {
     Menu,
     EditionModal,
     RolesModal,
-    Gradients
+    Gradients,
   },
   computed: {
     ...mapState(["grimoire", "session", "modals"]),
     ...mapState("players", ["players"]),
     locale() {
       return this.$i18n.locale;
-    }
+    },
   },
   watch: {
     locale: "updatePageTitle",
-    "grimoire.isPublic": "updatePageTitle"
+    "grimoire.isPublic": "updatePageTitle",
   },
   data() {
     return {
-      version
+      version,
     };
   },
   mounted() {
@@ -125,7 +125,7 @@ export default {
   methods: {
     updatePageTitle() {
       document.title = this.$t(
-        this.grimoire.isPublic ? "app.titlePublic" : "app.titleGrimoire"
+        this.grimoire.isPublic ? "app.titlePublic" : "app.titleGrimoire",
       );
     },
     keyup({ key, ctrlKey, metaKey }) {
@@ -176,9 +176,9 @@ export default {
       }
     },
     hasOpenModal() {
-      return Object.keys(this.modals).some(name => this.modals[name]);
-    }
-  }
+      return Object.keys(this.modals).some((name) => this.modals[name]);
+    },
+  },
 };
 </script>
 
@@ -188,7 +188,8 @@ export default {
 @font-face {
   font-family: "Papyrus";
   src: url("assets/fonts/papyrus.eot"); /* IE9*/
-  src: url("assets/fonts/papyrus.eot?#iefix") format("embedded-opentype"),
+  src:
+    url("assets/fonts/papyrus.eot?#iefix") format("embedded-opentype"),
     /* IE6-IE8 */ url("assets/fonts/papyrus.woff2") format("woff2"),
     /* chrome firefox */ url("assets/fonts/papyrus.woff") format("woff"),
     /* chrome firefox */ url("assets/fonts/papyrus.ttf") format("truetype"),
@@ -307,7 +308,9 @@ ul {
   padding: 0.18em 0.78em;
   border: 1px solid #8b6508;
   border-radius: 2px;
-  box-shadow: inset 0 1px 0 rgba(255, 236, 190, 0.06), 0 2px 8px rgba(0, 0, 0, 0.55);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 236, 190, 0.06),
+    0 2px 8px rgba(0, 0, 0, 0.55);
   background: #2a1c09;
   color: #fff8e7;
   font-weight: bold;
@@ -330,7 +333,9 @@ ul {
   &.townsfolk {
     border-color: #5f789f;
     background: linear-gradient(#20375e, #172845 54%, #0b1525);
-    box-shadow: inset 0 1px 0 rgba(210, 228, 255, 0.16), 0 2px 8px rgba(0, 0, 0, 0.55);
+    box-shadow:
+      inset 0 1px 0 rgba(210, 228, 255, 0.16),
+      0 2px 8px rgba(0, 0, 0, 0.55);
     &:hover:not(.disabled) {
       color: #ffffff;
       border-color: #94b4e4;
@@ -339,7 +344,9 @@ ul {
   &.demon {
     border-color: #d4af37;
     background: linear-gradient(#b8860b, #946b07 48%, #5c4204);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.8),
+      inset 0 1px 1px rgba(255, 255, 255, 0.2);
   }
 }
 

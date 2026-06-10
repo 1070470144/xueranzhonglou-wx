@@ -11,7 +11,8 @@ function getUniCloudConfig() {
     provider: process.env.VUE_APP_UNICLOUD_PROVIDER || "aliyun",
     spaceId: process.env.VUE_APP_UNICLOUD_SPACE_ID || "",
     clientSecret: process.env.VUE_APP_UNICLOUD_CLIENT_SECRET || "",
-    endpoint: process.env.VUE_APP_UNICLOUD_ENDPOINT || "https://api.next.bspapp.com"
+    endpoint:
+      process.env.VUE_APP_UNICLOUD_ENDPOINT || "https://api.next.bspapp.com",
   };
 }
 
@@ -36,8 +37,8 @@ export async function callUniCloudFunction(name, method, params = {}) {
     name,
     data: {
       method,
-      params: [params]
-    }
+      params: [params],
+    },
   });
   return res && res.result ? res.result : res;
 }
@@ -69,11 +70,13 @@ export function clearAuthSession() {
 
 export function getAuthUserSnapshot() {
   const { user } = getAuthSession();
-  const userId = user && (user.id || user._id || user.uid || user.userId || user.openid || "");
+  const userId =
+    user &&
+    (user.id || user._id || user.uid || user.userId || user.openid || "");
   if (!userId) return null;
   return {
     userId,
-    nickname: user.nickname || user.username || user.email || ""
+    nickname: user.nickname || user.username || user.email || "",
   };
 }
 
@@ -81,8 +84,8 @@ export function createWebLoginTicket() {
   return callAuth("createWebLoginTicket", {
     client: {
       platform: "web",
-      userAgent: navigator.userAgent || ""
-    }
+      userAgent: navigator.userAgent || "",
+    },
   });
 }
 

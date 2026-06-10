@@ -11,9 +11,9 @@
           you: session.sessionId && player.id && player.id === session.playerId,
           'vote-yes': session.votes[index],
           'vote-lock': voteLocked,
-          'token-upside-down': isTokenUpsideDown
+          'token-upside-down': isTokenUpsideDown,
         },
-        player.role.team
+        player.role.team,
       ]"
     >
       <div class="shroud" @click="toggleStatus()"></div>
@@ -104,11 +104,7 @@
       <div class="marked">
         <font-awesome-icon icon="skull" />
       </div>
-      <div
-        class="name"
-        @click="toggleMenu"
-        :class="{ active: isMenuOpen }"
-      >
+      <div class="name" @click="toggleMenu" :class="{ active: isMenuOpen }">
         <span>{{ displayName }}</span>
         <font-awesome-icon icon="venus-mars" v-if="player.pronouns" />
         <div class="pronouns" v-if="player.pronouns">
@@ -128,10 +124,12 @@
             @click="changePronouns"
             v-if="
               !session.isSpectator ||
-                (session.isSpectator && player.id === session.playerId)
+              (session.isSpectator && player.id === session.playerId)
             "
           >
-            <font-awesome-icon icon="venus-mars" />{{ $t("player.changePronouns") }}
+            <font-awesome-icon icon="venus-mars" />{{
+              $t("player.changePronouns")
+            }}
           </li>
           <template v-if="!session.isSpectator">
             <li @click="changeName">
@@ -198,10 +196,12 @@
             backgroundImage: `url(${
               reminder.image && grimoire.isImageOptIn
                 ? reminder.image
-                : require('../assets/icons/' +
-                    (reminder.imageAlt || reminder.role) +
-                    '.png')
-            })`
+                : require(
+                    '../assets/icons/' +
+                      (reminder.imageAlt || reminder.role) +
+                      '.png',
+                  )
+            })`,
           }"
         ></span>
         <span class="text">{{ reminder.name }}</span>
@@ -220,31 +220,31 @@ import { mapGetters, mapState } from "vuex";
 
 export default {
   components: {
-    Token
+    Token,
   },
   props: {
     player: {
       type: Object,
-      required: true
-    }
+      required: true,
+    },
   },
   computed: {
     ...mapState("players", ["players"]),
     ...mapState(["grimoire", "session"]),
     ...mapGetters({ nightOrder: "players/nightOrder" }),
-    index: function() {
+    index: function () {
       return this.players.indexOf(this.player);
     },
-    displayName: function() {
+    displayName: function () {
       if (!this.player.name) return "";
       return `${this.index + 1}.${this.player.name}`;
     },
-    menuStyle: function() {
+    menuStyle: function () {
       return this.menuOffsetY
         ? { transform: `translateY(${this.menuOffsetY}px)` }
         : {};
     },
-    voteLocked: function() {
+    voteLocked: function () {
       const session = this.session;
       const players = this.players.length;
       if (!session.nomination) return false;
@@ -252,7 +252,7 @@ export default {
         (this.index - 1 + players - session.nomination[1]) % players;
       return indexAdjusted < session.lockedVote - 1;
     },
-    zoom: function() {
+    zoom: function () {
       const unit = window.innerWidth > window.innerHeight ? "vh" : "vw";
       const isPortraitMobile =
         window.innerWidth <= 768 && window.innerWidth <= window.innerHeight;
@@ -276,7 +276,7 @@ export default {
       } else {
         return { width: 12 + this.grimoire.zoom + unit };
       }
-    }
+    },
   },
   data() {
     return {
@@ -285,15 +285,15 @@ export default {
       isTokenUpsideDown: false,
       menuPosition: {
         left: false,
-        down: false
+        down: false,
       },
-      menuOffsetY: 0
+      menuOffsetY: 0,
     };
   },
   watch: {
     isMenuOpen(open) {
       if (!open) this.resetMenuPosition();
-    }
+    },
   },
   methods: {
     toggleMenu() {
@@ -304,7 +304,7 @@ export default {
     resetMenuPosition() {
       this.menuPosition = {
         left: false,
-        down: false
+        down: false,
       };
       this.menuOffsetY = 0;
     },
@@ -315,7 +315,7 @@ export default {
       const padding = 8;
       this.menuPosition = {
         left: bounds.right > window.innerWidth,
-        down: bounds.top < padding
+        down: bounds.top < padding,
       };
       requestAnimationFrame(() => {
         const nextBounds = menu.getBoundingClientRect();
@@ -333,7 +333,10 @@ export default {
     changePronouns() {
       if (this.session.isSpectator && this.player.id !== this.session.playerId)
         return;
-      const pronouns = prompt(this.$t("player.promptPronouns"), this.player.pronouns);
+      const pronouns = prompt(
+        this.$t("player.promptPronouns"),
+        this.player.pronouns,
+      );
       //Only update pronouns if not null (prompt was not cancelled)
       if (pronouns !== null) {
         this.updatePlayer("pronouns", pronouns, true);
@@ -364,7 +367,9 @@ export default {
     },
     changeName() {
       if (this.session.isSpectator) return;
-      const name = prompt(this.$t("player.promptName"), this.player.name) || this.player.name;
+      const name =
+        prompt(this.$t("player.promptName"), this.player.name) ||
+        this.player.name;
       this.updatePlayer("name", name, true);
     },
     removeReminder(reminder) {
@@ -382,7 +387,7 @@ export default {
       this.$store.commit("players/update", {
         player: this.player,
         property,
-        value
+        value,
       });
       if (closeMenu) {
         this.isMenuOpen = false;
@@ -419,10 +424,10 @@ export default {
       if (!this.voteLocked) return;
       this.$store.commit("session/voteSync", [
         this.index,
-        !this.session.votes[this.index]
+        !this.session.votes[this.index],
       ]);
-    }
-  }
+    },
+  },
 };
 </script>
 
@@ -980,7 +985,10 @@ li.move:not(.from) .player .overlay svg.move {
     width: 100%;
     position: absolute;
     top: 15%;
-    text-shadow: 0 1px 1px #f6dfbd, 0 -1px 1px #f6dfbd, 1px 0 1px #f6dfbd,
+    text-shadow:
+      0 1px 1px #f6dfbd,
+      0 -1px 1px #f6dfbd,
+      1px 0 1px #f6dfbd,
       -1px 0 1px #f6dfbd;
   }
 

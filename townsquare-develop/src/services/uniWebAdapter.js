@@ -13,7 +13,10 @@ function request(options = {}) {
   fetch(options.url, {
     method,
     headers,
-    body: method.toUpperCase() === "GET" ? undefined : JSON.stringify(options.data || {})
+    body:
+      method.toUpperCase() === "GET"
+        ? undefined
+        : JSON.stringify(options.data || {}),
   })
     .then(async (response) => {
       const contentType = response.headers.get("content-type") || "";
@@ -24,7 +27,7 @@ function request(options = {}) {
         data,
         statusCode: response.status,
         header: normalizeHeaders(response.headers),
-        errMsg: response.ok ? "request:ok" : "request:fail"
+        errMsg: response.ok ? "request:ok" : "request:fail",
       };
       if (response.ok && options.success) options.success(result);
       if (!response.ok && options.fail) options.fail(result);
@@ -32,7 +35,7 @@ function request(options = {}) {
     })
     .catch((error) => {
       const result = {
-        errMsg: error && error.message ? error.message : "request:fail"
+        errMsg: error && error.message ? error.message : "request:fail",
       };
       if (options.fail) options.fail(result);
       if (options.complete) options.complete(result);
@@ -63,10 +66,14 @@ if (typeof window !== "undefined" && !window.uni) {
     },
     getStorage({ key, success, fail, complete } = {}) {
       const value = localStorage.getItem(key);
-      const result = { data: parseStorageValue(value), errMsg: "getStorage:ok" };
+      const result = {
+        data: parseStorageValue(value),
+        errMsg: "getStorage:ok",
+      };
       if (value === null && fail) fail({ errMsg: "getStorage:fail" });
       if (value !== null && success) success(result);
-      if (complete) complete(value === null ? { errMsg: "getStorage:fail" } : result);
+      if (complete)
+        complete(value === null ? { errMsg: "getStorage:fail" } : result);
     },
     getStorageSync(key) {
       return parseStorageValue(localStorage.getItem(key));
@@ -83,8 +90,8 @@ if (typeof window !== "undefined" && !window.uni) {
         windowWidth: window.innerWidth,
         windowHeight: window.innerHeight,
         language: navigator.language,
-        userAgent: navigator.userAgent
+        userAgent: navigator.userAgent,
       };
-    }
+    },
   };
 }

@@ -1,11 +1,15 @@
 <template>
-  <Modal class="role-picker" v-if="modals.role && availableRoles.length" @close="close">
+  <Modal
+    class="role-picker"
+    v-if="modals.role && availableRoles.length"
+    @close="close"
+  >
     <div class="role-picker-topline">
       <span>{{ activeRoles.length }}</span>
       <strong>
         {{
           $t("modals.chooseRoleFor", {
-            name: targetName
+            name: targetName,
           })
         }}
       </strong>
@@ -75,12 +79,12 @@ export default {
     availableRoles() {
       const availableRoles = [];
       const players = this.$store.state.players.players;
-      this.$store.state.roles.forEach(role => {
+      this.$store.state.roles.forEach((role) => {
         // don't show bluff roles that are already assigned to players
         if (
           this.playerIndex >= 0 ||
           (this.playerIndex < 0 &&
-            !players.some(player => player.role.id === role.id))
+            !players.some((player) => player.role.id === role.id))
         ) {
           availableRoles.push(role);
         }
@@ -100,11 +104,11 @@ export default {
     },
     ...mapState(["modals", "roles", "session"]),
     ...mapState("players", ["players"]),
-    ...mapState(["otherTravelers"])
+    ...mapState(["otherTravelers"]),
   },
   data() {
     return {
-      tab: "editionRoles"
+      tab: "editionRoles",
     };
   },
   methods: {
@@ -116,9 +120,9 @@ export default {
             ? "players/setLunaticBluff"
             : "players/setBluff",
           {
-          index: this.playerIndex * -1 - 1,
-          role
-          }
+            index: this.playerIndex * -1 - 1,
+            role,
+          },
         );
       } else {
         if (this.session.isSpectator && role.team === "traveler") return;
@@ -127,7 +131,7 @@ export default {
         this.$store.commit("players/update", {
           player,
           property: "role",
-          value: role
+          value: role,
         });
       }
       this.tab = "editionRoles";
@@ -137,8 +141,8 @@ export default {
       this.tab = "editionRoles";
       this.toggleModal("role");
     },
-    ...mapMutations(["toggleModal"])
-  }
+    ...mapMutations(["toggleModal"]),
+  },
 };
 </script>
 
@@ -149,8 +153,11 @@ export default {
   &.modal-backdrop,
   .modal-backdrop {
     z-index: 120;
-    background:
-      radial-gradient(circle at 50% 12%, rgba(96, 24, 20, 0.18), transparent 32%),
+    background: radial-gradient(
+        circle at 50% 12%,
+        rgba(96, 24, 20, 0.18),
+        transparent 32%
+      ),
       rgba(9, 7, 6, 0.56);
   }
 
@@ -163,8 +170,11 @@ export default {
     color: #dcc4a1;
     border: 0;
     border-radius: 0;
-    background:
-      radial-gradient(circle at 50% 0%, rgba(92, 26, 22, 0.22), transparent 28%),
+    background: radial-gradient(
+        circle at 50% 0%,
+        rgba(92, 26, 22, 0.22),
+        transparent 28%
+      ),
       rgba(12, 9, 8, 0.72);
     box-shadow: 0 22px 70px rgba(0, 0, 0, 0.62);
     backdrop-filter: blur(3px);
@@ -210,8 +220,11 @@ export default {
   padding: 0 4.2em 0.38em;
   color: #b8a082;
   border-bottom: 3px double #4a3b32;
-  background:
-    radial-gradient(circle at 50% 0%, rgba(92, 26, 22, 0.26), transparent 28%),
+  background: radial-gradient(
+      circle at 50% 0%,
+      rgba(92, 26, 22, 0.26),
+      transparent 28%
+    ),
     transparent;
 }
 
@@ -246,7 +259,9 @@ export default {
   border: 2px solid #3d2e26;
   border-radius: 2px;
   background: rgba(18, 14, 12, 0.78);
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.78), inset 0 1px 0 rgba(255, 236, 190, 0.05);
+  box-shadow:
+    0 0 20px rgba(0, 0, 0, 0.78),
+    inset 0 1px 0 rgba(255, 236, 190, 0.05);
   backdrop-filter: blur(5px);
 }
 
@@ -272,7 +287,10 @@ export default {
 ul.tokens {
   position: static;
   display: grid !important;
-  grid-template-columns: repeat(auto-fit, minmax(var(--role-token-size), var(--role-token-size)));
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(var(--role-token-size), var(--role-token-size))
+  );
   gap: var(--role-token-gap-y) var(--role-token-gap-x);
   align-content: center;
   justify-content: center;
@@ -294,22 +312,34 @@ ul.tokens li {
   height: var(--role-token-size);
   margin: 0;
   aspect-ratio: 1;
-  transition: transform 180ms ease, filter 180ms ease;
+  transition:
+    transform 180ms ease,
+    filter 180ms ease;
 
   &.townsfolk {
-    box-shadow: 0 0 10px $townsfolk, 0 0 10px #004cff;
+    box-shadow:
+      0 0 10px $townsfolk,
+      0 0 10px #004cff;
   }
   &.outsider {
-    box-shadow: 0 0 10px $outsider, 0 0 10px $outsider;
+    box-shadow:
+      0 0 10px $outsider,
+      0 0 10px $outsider;
   }
   &.minion {
-    box-shadow: 0 0 10px $minion, 0 0 10px $minion;
+    box-shadow:
+      0 0 10px $minion,
+      0 0 10px $minion;
   }
   &.demon {
-    box-shadow: 0 0 10px $demon, 0 0 10px $demon;
+    box-shadow:
+      0 0 10px $demon,
+      0 0 10px $demon;
   }
   &.traveler {
-    box-shadow: 0 0 10px $traveler, 0 0 10px $traveler;
+    box-shadow:
+      0 0 10px $traveler,
+      0 0 10px $traveler;
   }
   &:hover {
     transform: scale(1.035);
@@ -329,7 +359,9 @@ ul.tokens li {
   border: 1px solid #3d2e26;
   border-radius: 2px;
   background: rgba(18, 14, 12, 0.62);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 236, 190, 0.04);
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.62),
+    inset 0 1px 0 rgba(255, 236, 190, 0.04);
 }
 
 .role-picker .button-group .button {
@@ -350,7 +382,9 @@ ul.tokens li {
   color: #fff8e7;
   border-color: #d4af37;
   background: linear-gradient(#b8860b, #946b07 48%, #5c4204);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.8),
+    inset 0 1px 1px rgba(255, 255, 255, 0.2);
 }
 
 #townsquare.spectator ul.tokens li.traveler {
@@ -406,11 +440,17 @@ ul.tokens li {
   }
 
   ul.tokens {
+    grid-template-columns: repeat(auto-fit, var(--role-token-size));
+    align-content: start;
+    justify-content: center;
     height: calc(100% - 2.2em);
-    padding: 0.36em 0.34em;
-    --role-token-size: clamp(2.52em, 12vw, 3.28em);
-    --role-token-gap-x: clamp(0.2em, 1.4vw, 0.38em);
-    --role-token-gap-y: clamp(0.2em, 1.5vw, 0.42em);
+    padding: 0.42em 0.36em 2.2em;
+    scroll-padding-bottom: 2.2em;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    --role-token-size: clamp(5.3em, 25.2vw, 6.9em);
+    --role-token-gap-x: clamp(0.14em, 1vw, 0.24em);
+    --role-token-gap-y: clamp(0.14em, 1vw, 0.26em);
   }
 
   ul.tokens li {

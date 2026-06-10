@@ -6,13 +6,13 @@ const emptyCreateForm = () => ({
   visibility: "public",
   password: "",
   scriptJson: "",
-  voiceUrl: ""
+  voiceUrl: "",
 });
 
 const emptyJoinForm = () => ({
   roomId: "",
   playerName: "",
-  password: ""
+  password: "",
 });
 
 const state = () => ({
@@ -23,7 +23,7 @@ const state = () => ({
   isLoading: false,
   error: "",
   createForm: emptyCreateForm(),
-  joinForm: emptyJoinForm()
+  joinForm: emptyJoinForm(),
 });
 
 const mutations = {
@@ -67,11 +67,11 @@ const mutations = {
   create() {},
   join() {},
   update() {},
-  kick() {}
+  kick() {},
 };
 
 export default {
   namespaced: true,
   state,
-  mutations
+  mutations,
 };

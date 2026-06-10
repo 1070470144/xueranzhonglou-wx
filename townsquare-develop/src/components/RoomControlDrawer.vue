@@ -1,9 +1,14 @@
 <template>
   <transition name="room-control-slide">
-    <aside v-if="modals.roomControl && room.current" class="room-control-drawer">
+    <aside
+      v-if="modals.roomControl && room.current"
+      class="room-control-drawer"
+    >
       <header class="room-control-header">
         <div class="room-control-title">
-          <small>{{ room.isHost ? $t("room.roomControl") : $t("room.roomInfo") }}</small>
+          <small>{{
+            room.isHost ? $t("room.roomControl") : $t("room.roomInfo")
+          }}</small>
           <h3>{{ room.current.name }}</h3>
         </div>
         <button type="button" class="button icon-button" @click="close">
@@ -12,11 +17,18 @@
       </header>
 
       <section class="room-control-summary">
-        <span class="room-control-pill" :class="room.current.status || 'waiting'">
+        <span
+          class="room-control-pill"
+          :class="room.current.status || 'waiting'"
+        >
           {{ statusText(room.current.status) }}
         </span>
-        <span>{{ room.current.playerCount }}/{{ room.current.maxPlayers }}</span>
-        <span>{{ room.current.isPrivate ? $t("room.private") : $t("room.public") }}</span>
+        <span
+          >{{ room.current.playerCount }}/{{ room.current.maxPlayers }}</span
+        >
+        <span>{{
+          room.current.isPrivate ? $t("room.private") : $t("room.public")
+        }}</span>
       </section>
 
       <section class="room-control-overview">
@@ -36,44 +48,64 @@
         </dl>
       </section>
 
-      <section v-if="room.isHost" class="room-control-actions room-control-command-grid">
+      <section
+        v-if="room.isHost"
+        class="room-control-actions room-control-command-grid"
+      >
         <button type="button" class="button" @click="copySessionUrl">
           <font-awesome-icon icon="copy" /> {{ $t("menu.copyPlayerLink") }}
         </button>
         <button type="button" class="button" @click="chooseScript">
-          <font-awesome-icon icon="theater-masks" /> {{ $t("menu.selectScript") }}
+          <font-awesome-icon icon="theater-masks" />
+          {{ $t("menu.selectScript") }}
         </button>
         <button type="button" class="button" @click="assignRoles">
           <font-awesome-icon icon="random" /> {{ $t("menu.chooseAssign") }}
         </button>
         <button type="button" class="button demon" @click="distributeRoles">
-          <font-awesome-icon icon="theater-masks" /> {{ $t("menu.sendCharacters") }}
+          <font-awesome-icon icon="theater-masks" />
+          {{ $t("menu.sendCharacters") }}
         </button>
       </section>
 
-      <section v-else class="room-control-actions room-control-command-grid guest-actions">
+      <section
+        v-else
+        class="room-control-actions room-control-command-grid guest-actions"
+      >
         <button type="button" class="button" @click="copySessionUrl">
           <font-awesome-icon icon="copy" /> {{ $t("menu.copyPlayerLink") }}
         </button>
         <button type="button" class="button" @click="toggleModal('playerName')">
-          <font-awesome-icon icon="user-edit" /> {{ $t("menu.changePlayerName") }}
+          <font-awesome-icon icon="user-edit" />
+          {{ $t("menu.changePlayerName") }}
         </button>
       </section>
 
       <details v-if="!room.isHost" class="room-control-group" open>
-        <summary class="room-control-group-title">{{ $t("room.currentPlayers") }}</summary>
+        <summary class="room-control-group-title">
+          {{ $t("room.currentPlayers") }}
+        </summary>
         <ul class="room-control-player-list readonly-player-list">
-          <li v-for="player in room.players" :key="player.id" class="room-control-player-row">
+          <li
+            v-for="player in room.players"
+            :key="player.id"
+            class="room-control-player-row"
+          >
             <span>{{ player.name }}</span>
           </li>
-          <li v-if="!room.players.length" class="room-control-player-row empty-player-row">
+          <li
+            v-if="!room.players.length"
+            class="room-control-player-row empty-player-row"
+          >
             <span>{{ $t("room.noCurrentPlayers") }}</span>
           </li>
         </ul>
       </details>
 
       <details class="room-control-group voice-control-group" open>
-        <summary class="room-control-group-title">{{ $t("voice.entry") }}</summary>
+        <summary class="room-control-group-title">
+          {{ $t("voice.entry") }}
+        </summary>
         <div v-if="recallActive" class="room-control-voice-alert">
           {{ $t("voice.recallNotice") }}
         </div>
@@ -83,7 +115,9 @@
 
         <div class="room-control-inline-actions two-column">
           <button type="button" class="button demon" @click="toggleVoice">
-            <font-awesome-icon :icon="voice.enabled ? 'volume-mute' : 'volume-up'" />
+            <font-awesome-icon
+              :icon="voice.enabled ? 'volume-mute' : 'volume-up'"
+            />
             {{ voice.enabled ? $t("voice.disconnect") : $t("voice.connect") }}
           </button>
           <button
@@ -93,12 +127,23 @@
             :disabled="!voice.enabled || !canVoiceSpeak"
             @click="toggleMic"
           >
-            <font-awesome-icon :icon="voice.micEnabled && canVoiceSpeak ? 'volume-up' : 'volume-mute'" />
-            {{ voice.micEnabled && canVoiceSpeak ? $t("voice.micOn") : $t("voice.micOff") }}
+            <font-awesome-icon
+              :icon="
+                voice.micEnabled && canVoiceSpeak ? 'volume-up' : 'volume-mute'
+              "
+            />
+            {{
+              voice.micEnabled && canVoiceSpeak
+                ? $t("voice.micOn")
+                : $t("voice.micOff")
+            }}
           </button>
         </div>
 
-        <div v-if="pendingInvites.length" class="room-control-voice-list invitations">
+        <div
+          v-if="pendingInvites.length"
+          class="room-control-voice-list invitations"
+        >
           <h4>{{ $t("voice.invitations") }}</h4>
           <ul>
             <li v-for="invite in pendingInvites" :key="invite.id">
@@ -106,10 +151,18 @@
                 <strong>{{ inviteSenderName(invite) }}</strong>
               </div>
               <div class="voice-response-actions">
-                <button type="button" class="button townsfolk" @click="respondVoiceInvite(invite.id, true)">
+                <button
+                  type="button"
+                  class="button townsfolk"
+                  @click="respondVoiceInvite(invite.id, true)"
+                >
                   {{ $t("voice.accept") }}
                 </button>
-                <button type="button" class="button" @click="respondVoiceInvite(invite.id, false)">
+                <button
+                  type="button"
+                  class="button"
+                  @click="respondVoiceInvite(invite.id, false)"
+                >
                   {{ $t("voice.reject") }}
                 </button>
               </div>
@@ -128,10 +181,17 @@
               <button
                 type="button"
                 class="button"
-                :disabled="ownVoiceChannelId === channel.id || !canJoinVoiceChannel(channel)"
+                :disabled="
+                  ownVoiceChannelId === channel.id ||
+                  !canJoinVoiceChannel(channel)
+                "
                 @click="joinVoiceChannel(channel.id)"
               >
-                {{ ownVoiceChannelId === channel.id ? $t("voice.inChannel") : $t("voice.enter") }}
+                {{
+                  ownVoiceChannelId === channel.id
+                    ? $t("voice.inChannel")
+                    : $t("voice.enter")
+                }}
               </button>
             </li>
           </ul>
@@ -150,23 +210,32 @@
               <span>{{ target.name }}</span>
             </label>
           </div>
-          <p v-else class="room-control-voice-empty">{{ $t("voice.noTargets") }}</p>
+          <p v-else class="room-control-voice-empty">
+            {{ $t("voice.noTargets") }}
+          </p>
           <button
             type="button"
             class="button demon full-width"
             :disabled="!canCreateVoiceInvite"
             @click="createVoiceInvite"
           >
-            <font-awesome-icon icon="user-friends" /> {{ $t("voice.createPrivate") }}
+            <font-awesome-icon icon="user-friends" />
+            {{ $t("voice.createPrivate") }}
           </button>
         </div>
       </details>
 
       <template v-if="room.isHost">
         <details class="room-control-group" open>
-          <summary class="room-control-group-title">{{ $t("room.playersGroup") }}</summary>
+          <summary class="room-control-group-title">
+            {{ $t("room.playersGroup") }}
+          </summary>
           <ul class="room-control-player-list">
-            <li v-for="player in room.players" :key="player.id" class="room-control-player-row">
+            <li
+              v-for="player in room.players"
+              :key="player.id"
+              class="room-control-player-row"
+            >
               <span>{{ player.name }}</span>
               <button type="button" class="button" @click="kick(player.id)">
                 {{ $t("room.kick") }}
@@ -174,35 +243,49 @@
             </li>
           </ul>
           <div class="room-control-inline-actions two-column">
-            <button type="button" class="button" :disabled="!canAddSeat" @click="addSeat">
+            <button
+              type="button"
+              class="button"
+              :disabled="!canAddSeat"
+              @click="addSeat"
+            >
               <font-awesome-icon icon="plus-circle" /> {{ $t("room.addSeat") }}
             </button>
-            <button type="button" class="button" :disabled="!canRemoveSeat" @click="removeSeat">
-              <font-awesome-icon icon="minus-circle" /> {{ $t("room.removeSeat") }}
+            <button
+              type="button"
+              class="button"
+              :disabled="!canRemoveSeat"
+              @click="removeSeat"
+            >
+              <font-awesome-icon icon="minus-circle" />
+              {{ $t("room.removeSeat") }}
             </button>
             <button type="button" class="button" @click="randomizeSeatings">
               <font-awesome-icon icon="dice" /> {{ $t("menu.randomize") }}
             </button>
             <button type="button" class="button" @click="clearPlayers">
-              <font-awesome-icon icon="trash-alt" /> {{ $t("room.clearPlayers") }}
+              <font-awesome-icon icon="trash-alt" />
+              {{ $t("room.clearPlayers") }}
             </button>
           </div>
         </details>
 
         <details class="room-control-group">
-          <summary class="room-control-group-title">{{ $t("room.scriptSettings") }}</summary>
+          <summary class="room-control-group-title">
+            {{ $t("room.scriptSettings") }}
+          </summary>
           <div class="room-control-inline-actions">
             <button type="button" class="button" @click="chooseScript">
-              <font-awesome-icon icon="theater-masks" /> {{ $t("menu.selectScript") }}
-            </button>
-            <button type="button" class="button" @click="syncRoomScript">
-              <font-awesome-icon icon="sync-alt" /> {{ $t("room.syncScript") }}
+              <font-awesome-icon icon="theater-masks" />
+              {{ $t("menu.selectScript") }}
             </button>
           </div>
         </details>
 
         <details class="room-control-group">
-          <summary class="room-control-group-title">{{ $t("room.roleSettings") }}</summary>
+          <summary class="room-control-group-title">
+            {{ $t("room.roleSettings") }}
+          </summary>
           <div class="room-control-inline-actions two-column">
             <button type="button" class="button" @click="assignRoles">
               <font-awesome-icon icon="random" /> {{ $t("menu.chooseAssign") }}
@@ -211,7 +294,8 @@
               <font-awesome-icon icon="dragon" /> {{ $t("menu.addFabled") }}
             </button>
             <button type="button" class="button demon" @click="distributeRoles">
-              <font-awesome-icon icon="theater-masks" /> {{ $t("menu.sendCharacters") }}
+              <font-awesome-icon icon="theater-masks" />
+              {{ $t("menu.sendCharacters") }}
             </button>
             <button type="button" class="button" @click="clearRoles">
               <font-awesome-icon icon="trash-alt" /> {{ $t("room.clearRoles") }}
@@ -220,32 +304,66 @@
         </details>
 
         <details class="room-control-group voice-control-group" open>
-          <summary class="room-control-group-title">{{ $t("voice.storytellerControls") }}</summary>
+          <summary class="room-control-group-title">
+            {{ $t("voice.storytellerControls") }}
+          </summary>
           <div class="room-control-inline-actions two-column">
-            <button type="button" class="button" @click="setVoiceMuteAll(!voice.state.muteAll)">
-              <font-awesome-icon :icon="voice.state.muteAll ? 'volume-up' : 'volume-mute'" />
-              {{ voice.state.muteAll ? $t("voice.unmuteAll") : $t("voice.muteAll") }}
+            <button
+              type="button"
+              class="button"
+              @click="setVoiceMuteAll(!voice.state.muteAll)"
+            >
+              <font-awesome-icon
+                :icon="voice.state.muteAll ? 'volume-up' : 'volume-mute'"
+              />
+              {{
+                voice.state.muteAll
+                  ? $t("voice.unmuteAll")
+                  : $t("voice.muteAll")
+              }}
             </button>
-            <button type="button" class="button demon" :disabled="recallActive" @click="startVoiceRecall">
+            <button
+              type="button"
+              class="button demon"
+              :disabled="recallActive"
+              @click="startVoiceRecall"
+            >
               <font-awesome-icon icon="users" /> {{ $t("voice.recallAll") }}
             </button>
           </div>
         </details>
 
         <details class="room-control-group">
-          <summary class="room-control-group-title">{{ $t("room.roomSettings") }}</summary>
+          <summary class="room-control-group-title">
+            {{ $t("room.roomSettings") }}
+          </summary>
           <div class="room-control-note-editor">
             <label>{{ $t("room.note") }}</label>
-            <input :value="room.createForm.note" type="text" maxlength="80" @input="updateRoomNote($event.target.value)" />
+            <input
+              :value="room.createForm.note"
+              type="text"
+              maxlength="80"
+              @input="updateRoomNote($event.target.value)"
+            />
             <button type="button" class="button" @click="saveRoomNote">
               {{ $t("room.save") }}
             </button>
           </div>
           <div class="status-row room-control-status-row">
-            <button type="button" class="button" :class="{ townsfolk: room.current.status !== 'playing' }" @click="setRoomStatus('waiting')">
+            <button
+              type="button"
+              class="button"
+              :class="{ townsfolk: room.current.status !== 'playing' }"
+              @click="setRoomStatus('waiting')"
+            >
               {{ $t("room.waiting") }}
             </button>
-            <button type="button" class="button" :class="{ townsfolk: room.current.status === 'playing' }" @click="setRoomStatus('playing')">
+            <button
+              type="button"
+              class="button"
+              :class="{ townsfolk: room.current.status === 'playing' }"
+              @click="setRoomStatus('playing')"
+            >
               {{ $t("room.playing") }}
             </button>
           </div>
@@ -253,7 +371,9 @@
       </template>
 
       <details class="room-control-group danger-actions">
-        <summary class="room-control-group-title">{{ $t("room.dangerActions") }}</summary>
+        <summary class="room-control-group-title">
+          {{ $t("room.dangerActions") }}
+        </summary>
         <div class="room-control-inline-actions">
           <button type="button" class="button demon" @click="leaveSession">
             {{ $t("menu.leaveSession") }}
@@ -270,7 +390,7 @@ import { mapMutations, mapState } from "vuex";
 export default {
   data() {
     return {
-      selectedInviteIds: []
+      selectedInviteIds: [],
     };
   },
   computed: {
@@ -290,7 +410,9 @@ export default {
       return this.$store.getters["voice/ownId"];
     },
     ownVoiceChannelId() {
-      const participant = this.voice.state.participants.find(({ id }) => id === this.ownVoiceId);
+      const participant = this.voice.state.participants.find(
+        ({ id }) => id === this.ownVoiceId,
+      );
       return participant ? participant.currentChannelId : "main";
     },
     canVoiceSpeak() {
@@ -307,16 +429,18 @@ export default {
       if (this.ownVoiceId !== "host") {
         targets.push({ id: "host", name: this.$t("privateChat.host") });
       }
-      return targets.concat(this.room.players
-        .filter(player => player.id && player.id !== this.ownVoiceId)
-        .map(player => ({ id: player.id, name: player.name || player.id })));
+      return targets.concat(
+        this.room.players
+          .filter((player) => player.id && player.id !== this.ownVoiceId)
+          .map((player) => ({ id: player.id, name: player.name || player.id })),
+      );
     },
     canCreateVoiceInvite() {
       return !this.recallActive && this.selectedInviteIds.length > 0;
     },
     voiceErrorText() {
       return this.$t(`voice.errors.${this.voice.error}`) || this.voice.error;
-    }
+    },
   },
   methods: {
     close() {
@@ -347,9 +471,6 @@ export default {
           }
         }
       }, 2000);
-    },
-    syncRoomScript() {
-      this.$store.commit("room/update", this.room.createForm);
     },
     setRoomStatus(status) {
       this.$store.commit("room/update", { status });
@@ -405,7 +526,9 @@ export default {
     createVoiceInvite() {
       if (!this.canCreateVoiceInvite) return;
       this.$store.commit("voice/setEnabled", true);
-      this.$store.commit("voice/createInvite", { invitedIds: this.selectedInviteIds });
+      this.$store.commit("voice/createInvite", {
+        invitedIds: this.selectedInviteIds,
+      });
       this.selectedInviteIds = [];
     },
     respondVoiceInvite(inviteId, accept) {
@@ -415,30 +538,43 @@ export default {
     canJoinVoiceChannel(channel) {
       if (!channel) return false;
       if (channel.id === "main") return true;
-      return !this.session.isSpectator || channel.memberIds.includes(this.ownVoiceId);
+      return (
+        !this.session.isSpectator || channel.memberIds.includes(this.ownVoiceId)
+      );
     },
     voiceChannelName(channel) {
-      if (!channel || channel.id === "main") return this.$t("voice.mainChannel");
+      if (!channel || channel.id === "main")
+        return this.$t("voice.mainChannel");
       const names = channel.memberIds
-        .filter(id => id !== "host")
-        .map(id => this.voiceParticipantName(id));
+        .filter((id) => id !== "host")
+        .map((id) => this.voiceParticipantName(id));
       return names.length ? names.join(" / ") : this.$t("voice.privateChannel");
     },
     voiceChannelMembers(channel) {
-      if (!channel || !channel.memberIds.length) return this.$t("voice.emptyChannel");
-      return channel.memberIds.map(id => this.voiceParticipantName(id)).join(" / ");
+      if (!channel || !channel.memberIds.length)
+        return this.$t("voice.emptyChannel");
+      return channel.memberIds
+        .map((id) => this.voiceParticipantName(id))
+        .join(" / ");
     },
     voiceParticipantName(id) {
-      const participant = this.voice.state.participants.find(item => item.id === id);
+      const participant = this.voice.state.participants.find(
+        (item) => item.id === id,
+      );
       if (participant && participant.name) return participant.name;
       if (id === "host") return this.$t("privateChat.host");
       return id;
     },
     inviteSenderName(invite) {
-      return this.$t("voice.inviteFrom", { name: this.voiceParticipantName(invite.fromId) });
+      return this.$t("voice.inviteFrom", {
+        name: this.voiceParticipantName(invite.fromId),
+      });
     },
     joinVoiceChannel(channelId) {
-      this.$store.commit(channelId === "main" ? "voice/leaveChannel" : "voice/joinChannel", channelId);
+      this.$store.commit(
+        channelId === "main" ? "voice/leaveChannel" : "voice/joinChannel",
+        channelId,
+      );
     },
     setVoiceMuteAll(value) {
       this.$store.commit("voice/setMuteAll", value);
@@ -453,8 +589,8 @@ export default {
       this.$store.commit("session/setGameStartedAt", Date.now());
       this.toggleModal("roomControl");
     },
-    ...mapMutations(["openModalOverlay", "toggleModal"])
-  }
+    ...mapMutations(["openModalOverlay", "toggleModal"]),
+  },
 };
 </script>
 
@@ -469,11 +605,16 @@ export default {
   padding: 0.55em;
   color: #dcc4a1;
   border-left: 2px solid #3d2e26;
-  background:
-    radial-gradient(circle at 50% 0%, rgba(92, 26, 22, 0.26), transparent 28%),
+  background: radial-gradient(
+      circle at 50% 0%,
+      rgba(92, 26, 22, 0.26),
+      transparent 28%
+    ),
     linear-gradient(180deg, rgba(24, 18, 15, 0.96), rgba(9, 7, 6, 0.96)),
     #120f0e;
-  box-shadow: -20px 0 48px rgba(0, 0, 0, 0.72), inset 1px 0 0 rgba(255, 236, 190, 0.05);
+  box-shadow:
+    -20px 0 48px rgba(0, 0, 0, 0.72),
+    inset 1px 0 0 rgba(255, 236, 190, 0.05);
   font-family: "STKaiti", "KaiTi", "STSong", "SimSun", serif;
   font-size: 0.86em;
   overflow-y: auto;
@@ -937,7 +1078,9 @@ summary {
 
 .room-control-slide-enter-active,
 .room-control-slide-leave-active {
-  transition: transform 180ms ease, opacity 180ms ease;
+  transition:
+    transform 180ms ease,
+    opacity 180ms ease;
 }
 
 .room-control-slide-enter,
@@ -959,6 +1102,13 @@ summary {
 
   .room-control-header h3 {
     font-size: 1.02em;
+  }
+
+  .icon-button {
+    width: 2.1em;
+    min-width: 2.1em;
+    height: 2.1em;
+    font-size: 1.38em;
   }
 
   .room-control-summary {

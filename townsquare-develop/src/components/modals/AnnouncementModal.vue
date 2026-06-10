@@ -6,7 +6,8 @@
       </header>
 
       <div v-if="loading" class="state">
-        <font-awesome-icon icon="spinner" spin /> {{ $t("announcements.loading") }}
+        <font-awesome-icon icon="spinner" spin />
+        {{ $t("announcements.loading") }}
       </div>
       <div v-else-if="error" class="state error">
         {{ error }}
@@ -14,21 +15,39 @@
       <div v-else-if="!announcements.length" class="state">
         {{ $t("announcements.empty") }}
       </div>
-      <article v-else-if="selectedAnnouncement" class="announcement-detail" :class="selectedAnnouncement.type">
-        <button class="back-button" type="button" @click="selectedAnnouncement = null">
+      <article
+        v-else-if="selectedAnnouncement"
+        class="announcement-detail"
+        :class="selectedAnnouncement.type"
+      >
+        <button
+          class="back-button"
+          type="button"
+          @click="selectedAnnouncement = null"
+        >
           <font-awesome-icon icon="undo" /> {{ $t("announcements.backToList") }}
         </button>
         <div class="card-head">
           <span class="type">{{ typeText(selectedAnnouncement.type) }}</span>
           <span v-if="selectedAnnouncement.version" class="item-version">
-            {{ $t("announcements.applicableVersion", { version: selectedAnnouncement.version }) }}
+            {{
+              $t("announcements.applicableVersion", {
+                version: selectedAnnouncement.version,
+              })
+            }}
           </span>
         </div>
         <h4>{{ selectedAnnouncement.title }}</h4>
-        <p v-if="selectedAnnouncement.summary" class="summary">{{ selectedAnnouncement.summary }}</p>
+        <p v-if="selectedAnnouncement.summary" class="summary">
+          {{ selectedAnnouncement.summary }}
+        </p>
         <div class="content">{{ selectedAnnouncement.content }}</div>
         <footer v-if="selectedAnnouncement.publishTime" class="time">
-          {{ $t("announcements.publishedAt", { time: formatTime(selectedAnnouncement.publishTime) }) }}
+          {{
+            $t("announcements.publishedAt", {
+              time: formatTime(selectedAnnouncement.publishTime),
+            })
+          }}
         </footer>
       </article>
       <div v-else class="announcement-list">
@@ -47,7 +66,9 @@
               </span>
             </div>
             <h4>{{ item.title }}</h4>
-            <p class="summary">{{ item.summary || shortContent(item.content) }}</p>
+            <p class="summary">
+              {{ item.summary || shortContent(item.content) }}
+            </p>
           </div>
           <font-awesome-icon class="detail-icon" icon="hand-point-right" />
         </article>
@@ -68,14 +89,14 @@ export default {
       announcements: [],
       selectedAnnouncement: null,
       loading: false,
-      error: ""
+      error: "",
     };
   },
   computed: mapState(["modals"]),
   watch: {
     "modals.announcement"(visible) {
       if (visible) this.loadAnnouncements();
-    }
+    },
   },
   mounted() {
     if (this.modals.announcement) this.loadAnnouncements();
@@ -88,7 +109,9 @@ export default {
       try {
         const res = await getPublicWebAnnouncements({ pageSize: 10 });
         if (!res || !res.success) {
-          throw new Error((res && res.message) || this.$t("announcements.failed"));
+          throw new Error(
+            (res && res.message) || this.$t("announcements.failed"),
+          );
         }
         this.announcements = (res.data && res.data.list) || [];
       } catch (error) {
@@ -104,7 +127,9 @@ export default {
       return this.$t(`announcements.types.${type || "notice"}`);
     },
     shortContent(content) {
-      const text = String(content || "").trim().replace(/\s+/g, " ");
+      const text = String(content || "")
+        .trim()
+        .replace(/\s+/g, " ");
       return text.length > 72 ? `${text.slice(0, 72)}...` : text;
     },
     formatTime(value) {
@@ -117,8 +142,8 @@ export default {
       const mm = String(date.getMinutes()).padStart(2, "0");
       return `${y}-${m}-${d} ${hh}:${mm}`;
     },
-    ...mapMutations(["toggleModal"])
-  }
+    ...mapMutations(["toggleModal"]),
+  },
 };
 </script>
 
@@ -202,7 +227,9 @@ export default {
   justify-content: space-between;
   gap: 16px;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
 
   &:hover {
     background: rgba(24, 19, 16, 0.94);

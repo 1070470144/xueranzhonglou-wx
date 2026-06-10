@@ -1,21 +1,40 @@
 <template>
   <transition name="voice-invite-pop">
-    <aside v-if="session.sessionId && (activeInvite || inviteRejection)" class="voice-invite-confirm" role="dialog" aria-live="polite">
+    <aside
+      v-if="session.sessionId && (activeInvite || inviteRejection)"
+      class="voice-invite-confirm"
+      role="dialog"
+      aria-live="polite"
+    >
       <div class="voice-invite-confirm-header">
         <small>{{ $t("voice.invitations") }}</small>
         <span>{{ activeInvite ? pendingInvites.length : "!" }}</span>
       </div>
-      <strong>{{ activeInvite ? inviteSenderName(activeInvite) : inviteRejectionText }}</strong>
+      <strong>{{
+        activeInvite ? inviteSenderName(activeInvite) : inviteRejectionText
+      }}</strong>
       <div v-if="activeInvite" class="voice-invite-confirm-actions">
-        <button type="button" class="button townsfolk" @click="respondVoiceInvite(activeInvite.id, true)">
+        <button
+          type="button"
+          class="button townsfolk"
+          @click="respondVoiceInvite(activeInvite.id, true)"
+        >
           {{ $t("voice.accept") }}
         </button>
-        <button type="button" class="button" @click="respondVoiceInvite(activeInvite.id, false)">
+        <button
+          type="button"
+          class="button"
+          @click="respondVoiceInvite(activeInvite.id, false)"
+        >
           {{ $t("voice.reject") }}
         </button>
       </div>
       <div v-else class="voice-invite-confirm-actions single-action">
-        <button type="button" class="button townsfolk" @click="dismissInviteRejection">
+        <button
+          type="button"
+          class="button townsfolk"
+          @click="dismissInviteRejection"
+        >
           {{ $t("voice.dismiss") }}
         </button>
       </div>
@@ -40,9 +59,11 @@ export default {
     },
     inviteRejectionText() {
       if (!this.inviteRejection) return "";
-      const name = this.inviteRejection.rejectedByName || this.voiceParticipantName(this.inviteRejection.rejectedById);
+      const name =
+        this.inviteRejection.rejectedByName ||
+        this.voiceParticipantName(this.inviteRejection.rejectedById);
       return this.$t("voice.rejectedBy", { name });
-    }
+    },
   },
   methods: {
     respondVoiceInvite(inviteId, accept) {
@@ -53,15 +74,19 @@ export default {
       this.$store.commit("voice/dismissInviteRejection");
     },
     voiceParticipantName(id) {
-      const participant = this.voice.state.participants.find(item => item.id === id);
+      const participant = this.voice.state.participants.find(
+        (item) => item.id === id,
+      );
       if (participant && participant.name) return participant.name;
       if (id === "host") return this.$t("privateChat.host");
       return id;
     },
     inviteSenderName(invite) {
-      return this.$t("voice.inviteFrom", { name: this.voiceParticipantName(invite.fromId) });
-    }
-  }
+      return this.$t("voice.inviteFrom", {
+        name: this.voiceParticipantName(invite.fromId),
+      });
+    },
+  },
 };
 </script>
 
@@ -77,10 +102,15 @@ export default {
   border: 1px solid #6b4a18;
   border-left: 3px solid #d4af37;
   border-radius: 2px;
-  background:
-    radial-gradient(circle at 18% 0%, rgba(139, 38, 32, 0.28), transparent 42%),
+  background: radial-gradient(
+      circle at 18% 0%,
+      rgba(139, 38, 32, 0.28),
+      transparent 42%
+    ),
     linear-gradient(180deg, rgba(24, 18, 15, 0.96), rgba(9, 7, 6, 0.96));
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 236, 190, 0.06);
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.62),
+    inset 0 1px 0 rgba(255, 236, 190, 0.06);
   font-family: "STKaiti", "KaiTi", "STSong", "SimSun", serif;
   transform: translateY(-50%);
 }
@@ -167,7 +197,9 @@ export default {
 
 .voice-invite-pop-enter-active,
 .voice-invite-pop-leave-active {
-  transition: opacity 160ms ease, transform 160ms ease;
+  transition:
+    opacity 160ms ease,
+    transform 160ms ease;
 }
 
 .voice-invite-pop-enter,

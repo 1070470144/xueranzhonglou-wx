@@ -8,7 +8,7 @@ export function getScriptList({ page = 1, pageSize = 50 } = {}) {
   return callScriptService("getScriptList", {
     page,
     pageSize,
-    status: "published"
+    status: "published",
   });
 }
 
@@ -16,7 +16,7 @@ export function searchScripts({ keyword = "", page = 1, pageSize = 50 } = {}) {
   return callScriptService("searchScripts", {
     keyword,
     page,
-    pageSize
+    pageSize,
   });
 }
 

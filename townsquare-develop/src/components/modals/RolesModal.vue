@@ -1,17 +1,19 @@
 <template>
-  <Modal
-    class="roles"
-    v-if="modals.roles && nonTravelers >= 5"
-    @close="close"
-  >
+  <Modal class="roles" v-if="modals.roles && nonTravelers >= 5" @close="close">
     <div class="roles-picker-topline">
       <span>{{ selectedRoles }} / {{ nonTravelers }}</span>
-      <strong>{{ $t("modals.selectCharacters", { count: nonTravelers }) }}</strong>
+      <strong>{{
+        $t("modals.selectCharacters", { count: nonTravelers })
+      }}</strong>
       <span>{{ $t("modals.shuffleCharacters") }}</span>
     </div>
 
     <div class="roles-picker-board">
-      <section class="role-team-row" v-for="(teamRoles, team) in roleSelection" :key="team">
+      <section
+        class="role-team-row"
+        v-for="(teamRoles, team) in roleSelection"
+        :key="team"
+      >
         <div class="role-register-bar" :class="[team]">
           <span>{{ teamLabel(team) }}</span>
           <strong>
@@ -34,7 +36,10 @@
                 @click.stop="role.selected--"
               />
               <span>{{ role.selected > 1 ? "x" + role.selected : "" }}</span>
-              <font-awesome-icon icon="plus-circle" @click.stop="role.selected++" />
+              <font-awesome-icon
+                icon="plus-circle"
+                @click.stop="role.selected++"
+              />
             </div>
           </li>
         </ul>
@@ -57,7 +62,7 @@
           class="button primary-role-action"
           @click="assignRoles"
           :class="{
-            disabled: selectedRoles > nonTravelers || !selectedRoles
+            disabled: selectedRoles > nonTravelers || !selectedRoles,
           }"
         >
           <font-awesome-icon icon="people-arrows" />
@@ -78,39 +83,39 @@ import gameJSON from "./../../game";
 import Token from "./../Token";
 import { mapGetters, mapMutations, mapState } from "vuex";
 
-const randomElement = arr => arr[Math.floor(Math.random() * arr.length)];
+const randomElement = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
 export default {
   components: {
     Token,
-    Modal
+    Modal,
   },
-  data: function() {
+  data: function () {
     return {
       roleSelection: {},
       game: gameJSON,
-      allowMultiple: false
+      allowMultiple: false,
     };
   },
   computed: {
-    selectedRoles: function() {
+    selectedRoles: function () {
       return Object.values(this.roleSelection)
-        .map(roles => roles.reduce((a, { selected }) => a + selected, 0))
+        .map((roles) => roles.reduce((a, { selected }) => a + selected, 0))
         .reduce((a, b) => a + b, 0);
     },
-    hasSelectedSetupRoles: function() {
-      return Object.values(this.roleSelection).some(roles =>
-        roles.some(role => role.selected && role.setup)
+    hasSelectedSetupRoles: function () {
+      return Object.values(this.roleSelection).some((roles) =>
+        roles.some((role) => role.selected && role.setup),
       );
     },
     ...mapState(["roles", "modals"]),
     ...mapState("players", ["players"]),
-    ...mapGetters({ nonTravelers: "players/nonTravelers" })
+    ...mapGetters({ nonTravelers: "players/nonTravelers" }),
   },
   methods: {
     selectRandomRoles() {
       this.roleSelection = {};
-      this.roles.forEach(role => {
+      this.roles.forEach((role) => {
         if (!this.roleSelection[role.team]) {
           this.$set(this.roleSelection, role.team, []);
         }
@@ -120,11 +125,11 @@ export default {
       delete this.roleSelection["traveler"];
       const playerCount = Math.max(5, this.nonTravelers);
       const composition = this.game[playerCount - 5];
-      Object.keys(composition).forEach(team => {
+      Object.keys(composition).forEach((team) => {
         for (let x = 0; x < composition[team]; x++) {
           if (this.roleSelection[team]) {
             const available = this.roleSelection[team].filter(
-              role => !role.selected
+              (role) => !role.selected,
             );
             if (available.length) {
               randomElement(available).selected = 1;
@@ -137,23 +142,23 @@ export default {
       if (this.selectedRoles <= this.nonTravelers && this.selectedRoles) {
         // generate list of selected roles and randomize it
         const roles = Object.values(this.roleSelection)
-          .map(roles =>
+          .map((roles) =>
             roles
               // duplicate roles selected more than once and filter unselected
-              .reduce((a, r) => [...a, ...Array(r.selected).fill(r)], [])
+              .reduce((a, r) => [...a, ...Array(r.selected).fill(r)], []),
           )
           // flatten into a single array
           .reduce((a, b) => [...a, ...b], [])
-          .map(a => [Math.random(), a])
+          .map((a) => [Math.random(), a])
           .sort((a, b) => a[0] - b[0])
-          .map(a => a[1]);
-        this.players.forEach(player => {
+          .map((a) => a[1]);
+        this.players.forEach((player) => {
           if (player.role.team !== "traveler" && roles.length) {
             const value = roles.pop();
             this.$store.commit("players/update", {
               player,
               property: "role",
-              value
+              value,
             });
           }
         });
@@ -168,13 +173,13 @@ export default {
         townsfolk: "镇民",
         outsider: "外来者",
         minion: "爪牙",
-        demon: "恶魔"
+        demon: "恶魔",
       };
       return labels[team] || team;
     },
-    ...mapMutations(["closeModal"])
+    ...mapMutations(["closeModal"]),
   },
-  mounted: function() {
+  mounted: function () {
     if (!Object.keys(this.roleSelection).length) {
       this.selectRandomRoles();
     }
@@ -182,8 +187,8 @@ export default {
   watch: {
     roles() {
       this.selectRandomRoles();
-    }
-  }
+    },
+  },
 };
 </script>
 
@@ -194,8 +199,11 @@ export default {
   &.modal-backdrop,
   .modal-backdrop {
     z-index: 120;
-    background:
-      radial-gradient(circle at 50% 12%, rgba(96, 24, 20, 0.18), transparent 32%),
+    background: radial-gradient(
+        circle at 50% 12%,
+        rgba(96, 24, 20, 0.18),
+        transparent 32%
+      ),
       rgba(9, 7, 6, 0.56);
   }
 
@@ -208,8 +216,11 @@ export default {
     color: #dcc4a1;
     border: 0;
     border-radius: 0;
-    background:
-      radial-gradient(circle at 50% 0%, rgba(92, 26, 22, 0.22), transparent 28%),
+    background: radial-gradient(
+        circle at 50% 0%,
+        rgba(92, 26, 22, 0.22),
+        transparent 28%
+      ),
       rgba(12, 9, 8, 0.72);
     box-shadow: 0 22px 70px rgba(0, 0, 0, 0.62);
     backdrop-filter: blur(3px);
@@ -247,7 +258,10 @@ export default {
 
 .roles-picker-topline {
   display: grid;
-  grid-template-columns: minmax(5.5em, 0.85fr) minmax(0, 2.6fr) minmax(5.5em, 0.85fr);
+  grid-template-columns: minmax(5.5em, 0.85fr) minmax(0, 2.6fr) minmax(
+      5.5em,
+      0.85fr
+    );
   gap: 0.75em;
   align-items: end;
   min-height: 3.15em;
@@ -255,8 +269,11 @@ export default {
   padding: 0 4.2em 0.38em;
   color: #b8a082;
   border-bottom: 3px double #4a3b32;
-  background:
-    radial-gradient(circle at 50% 0%, rgba(92, 26, 22, 0.26), transparent 28%),
+  background: radial-gradient(
+      circle at 50% 0%,
+      rgba(92, 26, 22, 0.26),
+      transparent 28%
+    ),
     transparent;
 }
 
@@ -294,7 +311,9 @@ export default {
   border: 2px solid #3d2e26;
   border-radius: 2px;
   background: rgba(18, 14, 12, 0.78);
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.78), inset 0 1px 0 rgba(255, 236, 190, 0.05);
+  box-shadow:
+    0 0 20px rgba(0, 0, 0, 0.78),
+    inset 0 1px 0 rgba(255, 236, 190, 0.05);
   backdrop-filter: blur(5px);
 }
 
@@ -350,15 +369,26 @@ export default {
   font-size: 0.86em;
 }
 
-.role-register-bar.townsfolk strong { color: $townsfolk; }
-.role-register-bar.outsider strong { color: $outsider; }
-.role-register-bar.minion strong { color: $minion; }
-.role-register-bar.demon strong { color: $demon; }
+.role-register-bar.townsfolk strong {
+  color: $townsfolk;
+}
+.role-register-bar.outsider strong {
+  color: $outsider;
+}
+.role-register-bar.minion strong {
+  color: $minion;
+}
+.role-register-bar.demon strong {
+  color: $demon;
+}
 
 ul.tokens {
   position: static;
   display: grid !important;
-  grid-template-columns: repeat(auto-fit, minmax(var(--role-token-size), var(--role-token-size)));
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(var(--role-token-size), var(--role-token-size))
+  );
   gap: var(--role-token-gap-y) var(--role-token-gap-x);
   align-content: center;
   justify-content: center;
@@ -383,7 +413,10 @@ ul.tokens {
     margin: 0;
     aspect-ratio: 1;
     opacity: 0.48;
-    transition: opacity 180ms, transform 180ms, filter 180ms;
+    transition:
+      opacity 180ms,
+      transform 180ms,
+      filter 180ms;
     &.selected {
       opacity: 1;
       filter: saturate(1.12);
@@ -395,19 +428,29 @@ ul.tokens {
       }
     }
     &.townsfolk {
-      box-shadow: 0 0 10px $townsfolk, 0 0 10px #004cff;
+      box-shadow:
+        0 0 10px $townsfolk,
+        0 0 10px #004cff;
     }
     &.outsider {
-      box-shadow: 0 0 10px $outsider, 0 0 10px $outsider;
+      box-shadow:
+        0 0 10px $outsider,
+        0 0 10px $outsider;
     }
     &.minion {
-      box-shadow: 0 0 10px $minion, 0 0 10px $minion;
+      box-shadow:
+        0 0 10px $minion,
+        0 0 10px $minion;
     }
     &.demon {
-      box-shadow: 0 0 10px $demon, 0 0 10px $demon;
+      box-shadow:
+        0 0 10px $demon,
+        0 0 10px $demon;
     }
     &.traveler {
-      box-shadow: 0 0 10px $traveler, 0 0 10px $traveler;
+      box-shadow:
+        0 0 10px $traveler,
+        0 0 10px $traveler;
     }
     &:hover {
       transform: scale(1.035);
@@ -464,7 +507,9 @@ ul.tokens {
   border: 1px solid #3d2e26;
   border-radius: 2px;
   background: rgba(18, 14, 12, 0.62);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 236, 190, 0.04);
+  box-shadow:
+    0 4px 14px rgba(0, 0, 0, 0.62),
+    inset 0 1px 0 rgba(255, 236, 190, 0.04);
 }
 
 .roles .modal {
@@ -554,7 +599,9 @@ ul.tokens {
 .button-group .primary-role-action {
   border-color: #d4af37;
   background: linear-gradient(#b8860b, #946b07 48%, #5c4204);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.8),
+    inset 0 1px 1px rgba(255, 255, 255, 0.2);
 }
 
 .button-group .button.disabled {
@@ -601,8 +648,15 @@ ul.tokens {
     font-size: 0.68em;
   }
 
+  .roles-picker-board {
+    display: block;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+  }
+
   .role-team-row {
     grid-template-columns: 4.9em minmax(0, 1fr);
+    min-height: 8.2em;
   }
 
   .role-register-bar {
@@ -619,9 +673,11 @@ ul.tokens {
   }
 
   ul.tokens {
-    padding: 0.24em 0.28em;
-    --role-token-size: clamp(1.96em, 9.4vw, 2.52em);
-    --role-token-gap-x: clamp(0.16em, 1vw, 0.28em);
+    align-content: start;
+    padding: 0.36em 0.32em 1em;
+    overflow: visible !important;
+    --role-token-size: clamp(4.9em, 23.5vw, 6.3em);
+    --role-token-gap-x: clamp(0.14em, 1vw, 0.24em);
     --role-token-gap-y: clamp(0.14em, 1vw, 0.26em);
   }
 

@@ -14,7 +14,14 @@ export class VoicePeerManager {
     this.canSpeak = true;
   }
 
-  async sync({ ownId, channelId, members = [], enabled, micEnabled, canSpeak }) {
+  async sync({
+    ownId,
+    channelId,
+    members = [],
+    enabled,
+    micEnabled,
+    canSpeak,
+  }) {
     this.ownId = ownId || this.ownId;
     this.channelId = channelId || "main";
     this.enabled = !!enabled;
@@ -31,15 +38,17 @@ export class VoicePeerManager {
     this.applyMicrophoneState();
 
     const targetIds = members
-      .map(member => member && member.id)
-      .filter(id => id && id !== this.ownId);
+      .map((member) => member && member.id)
+      .filter((id) => id && id !== this.ownId);
     this.memberIds = new Set(targetIds);
     this.peers.forEach((peer, peerId) => {
       if (!targetIds.includes(peerId)) this.closePeer(peerId);
     });
 
     await Promise.all(
-      targetIds.map(peerId => this.ensurePeer(peerId, this.shouldInitiate(peerId)))
+      targetIds.map((peerId) =>
+        this.ensurePeer(peerId, this.shouldInitiate(peerId)),
+      ),
     );
   }
 
@@ -54,7 +63,11 @@ export class VoicePeerManager {
       await peer.pc.setLocalDescription(answer);
       this.sendSignal({
         toId: fromId,
-        signal: { type: "answer", channelId: this.channelId, description: peer.pc.localDescription }
+        signal: {
+          type: "answer",
+          channelId: this.channelId,
+          description: peer.pc.localDescription,
+        },
       });
       return;
     }
@@ -73,14 +86,16 @@ export class VoicePeerManager {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       throw new Error("microphone_not_supported");
     }
-    this.localStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    this.localStream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+    });
     this.applyMicrophoneState();
     return this.localStream;
   }
 
   applyMicrophoneState() {
     if (!this.localStream) return;
-    this.localStream.getAudioTracks().forEach(track => {
+    this.localStream.getAudioTracks().forEach((track) => {
       track.enabled = this.enabled && this.micEnabled && this.canSpeak;
     });
   }
@@ -92,15 +107,21 @@ export class VoicePeerManager {
     const peer = { id: peerId, pc, audio: null, offered: false };
     this.peers.set(peerId, peer);
 
-    this.localStream.getTracks().forEach(track => pc.addTrack(track, this.localStream));
-    pc.onicecandidate = event => {
+    this.localStream
+      .getTracks()
+      .forEach((track) => pc.addTrack(track, this.localStream));
+    pc.onicecandidate = (event) => {
       if (!event.candidate) return;
       this.sendSignal({
         toId: peerId,
-        signal: { type: "candidate", channelId: this.channelId, candidate: event.candidate }
+        signal: {
+          type: "candidate",
+          channelId: this.channelId,
+          candidate: event.candidate,
+        },
       });
     };
-    pc.ontrack = event => this.attachRemoteStream(peer, event.streams[0]);
+    pc.ontrack = (event) => this.attachRemoteStream(peer, event.streams[0]);
     pc.onconnectionstatechange = () => {
       this.onStatus({ peerId, state: pc.connectionState });
       if (["closed", "failed", "disconnected"].includes(pc.connectionState)) {
@@ -120,7 +141,11 @@ export class VoicePeerManager {
     await peer.pc.setLocalDescription(offer);
     this.sendSignal({
       toId: peerId,
-      signal: { type: "offer", channelId: this.channelId, description: peer.pc.localDescription }
+      signal: {
+        type: "offer",
+        channelId: this.channelId,
+        description: peer.pc.localDescription,
+      },
     });
   }
 
@@ -151,12 +176,12 @@ export class VoicePeerManager {
   }
 
   closePeers() {
-    Array.from(this.peers.keys()).forEach(peerId => this.closePeer(peerId));
+    Array.from(this.peers.keys()).forEach((peerId) => this.closePeer(peerId));
   }
 
   stopLocalStream() {
     if (!this.localStream) return;
-    this.localStream.getTracks().forEach(track => track.stop());
+    this.localStream.getTracks().forEach((track) => track.stop());
     this.localStream = null;
   }
 

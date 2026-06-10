@@ -3,7 +3,8 @@
     <img src="static/apple-icon.png" alt="" class="logo" />
     <div>
       {{ $t("intro.welcomePrefix") }}
-      <b>{{ $t("intro.title") }}</b>{{ $t("intro.welcomeSuffix") }}
+      <b>{{ $t("intro.title") }}</b
+      >{{ $t("intro.welcomeSuffix") }}
       {{ $t("intro.addPlayersPrefix") }}
       <span class="button" @click="toggleMenu">
         <font-awesome-icon icon="cog" /> {{ $t("intro.menu") }}
@@ -11,7 +12,9 @@
       {{ $t("intro.addPlayersSuffix") }}<br />
       <div class="footer">
         {{ $t("intro.footerPrefix") }}
-        <a href="https://github.com/bra1n/townsquare" target="_blank">{{ $t("intro.github") }}</a>
+        <a href="https://github.com/bra1n/townsquare" target="_blank">{{
+          $t("intro.github")
+        }}</a>
         {{ $t("intro.footerSuffix") }}
       </div>
     </div>
@@ -22,7 +25,7 @@
 import { mapMutations } from "vuex";
 
 export default {
-  methods: mapMutations(["toggleMenu"])
+  methods: mapMutations(["toggleMenu"]),
 };
 </script>
 

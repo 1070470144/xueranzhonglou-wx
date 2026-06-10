@@ -30,7 +30,7 @@ import Modal from "./Modal";
 
 export default {
   components: {
-    Modal
+    Modal,
   },
   computed: {
     currentSeatName() {
@@ -38,11 +38,11 @@ export default {
       return seat && seat.name ? seat.name : "";
     },
     ...mapState(["modals", "session"]),
-    ...mapState("players", ["players"])
+    ...mapState("players", ["players"]),
   },
   data() {
     return {
-      name: ""
+      name: "",
     };
   },
   watch: {
@@ -52,7 +52,7 @@ export default {
       this.$nextTick(() => {
         if (this.$refs.input) this.$refs.input.focus();
       });
-    }
+    },
   },
   methods: {
     save() {
@@ -64,8 +64,8 @@ export default {
     close() {
       this.toggleModal("playerName");
     },
-    ...mapMutations(["toggleModal"])
-  }
+    ...mapMutations(["toggleModal"]),
+  },
 };
 </script>
 

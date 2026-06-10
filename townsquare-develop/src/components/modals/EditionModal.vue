@@ -28,12 +28,22 @@
         @touchend="handleTouchEnd"
       >
         <div v-if="pullDistance > 0" class="state-line pull-state">
-          {{ pullDistance >= pullRefreshThreshold ? galleryText("releaseToRefresh") : galleryText("pullToRefresh") }}
+          {{
+            pullDistance >= pullRefreshThreshold
+              ? galleryText("releaseToRefresh")
+              : galleryText("pullToRefresh")
+          }}
         </div>
         <div v-if="loading && !galleryScripts.length" class="state-line">
-          <font-awesome-icon icon="spinner" spin /> {{ $t("modals.loadingScripts") }}
+          <font-awesome-icon icon="spinner" spin />
+          {{ $t("modals.loadingScripts") }}
         </div>
-        <div v-else-if="error && !galleryScripts.length" class="state-line error">{{ error }}</div>
+        <div
+          v-else-if="error && !galleryScripts.length"
+          class="state-line error"
+        >
+          {{ error }}
+        </div>
         <button
           v-else
           v-for="script in galleryScripts"
@@ -43,19 +53,28 @@
           @click="applyGalleryScript(script)"
         >
           <span class="script-cover" :style="scriptCoverStyle(script)">
-            <font-awesome-icon v-if="!getScriptImage(script)" icon="theater-masks" />
+            <font-awesome-icon
+              v-if="!getScriptImage(script)"
+              icon="theater-masks"
+            />
           </span>
           <span class="script-content">
             <span class="script-title">{{ script.title || script.name }}</span>
-            <span class="script-author">{{ script.author || $t("modals.unknownAuthor") }}</span>
+            <span class="script-author">{{
+              script.author || $t("modals.unknownAuthor")
+            }}</span>
             <span v-if="script.description" class="script-description">
               {{ script.description }}
             </span>
             <span class="script-meta">{{ getScriptMeta(script) }}</span>
           </span>
         </button>
-        <div v-if="loading && galleryScripts.length" class="state-line more-state">
-          <font-awesome-icon icon="spinner" spin /> {{ $t("modals.loadingScripts") }}
+        <div
+          v-if="loading && galleryScripts.length"
+          class="state-line more-state"
+        >
+          <font-awesome-icon icon="spinner" spin />
+          {{ $t("modals.loadingScripts") }}
         </div>
         <button
           v-else-if="!loading && !error && hasMore && galleryScripts.length"
@@ -65,16 +84,23 @@
         >
           {{ galleryText("loadMore") }}
         </button>
-        <div v-if="error && galleryScripts.length" class="state-line error more-state">
+        <div
+          v-if="error && galleryScripts.length"
+          class="state-line error more-state"
+        >
           {{ error }}
         </div>
-        <div v-if="!loading && !error && !galleryScripts.length" class="state-line">
+        <div
+          v-if="!loading && !error && !galleryScripts.length"
+          class="state-line"
+        >
           {{ $t("modals.noScriptsFound") }}
         </div>
       </div>
       <div class="button-group">
         <div class="button" @click="view = 'custom'">
-          <font-awesome-icon icon="file-upload" /> {{ $t("common.customScriptCharacters") }}
+          <font-awesome-icon icon="file-upload" />
+          {{ $t("common.customScriptCharacters") }}
         </div>
       </div>
     </template>
@@ -83,13 +109,13 @@
       <div class="custom">
         <h3>{{ $t("modals.loadCustomTitle") }}</h3>
         {{ $t("modals.loadCustomDescription") }}
-        <a href="https://script.bloodontheclocktower.com/" target="_blank"
-          >{{ $t("modals.scriptTool") }}</a
-        >
+        <a href="https://script.bloodontheclocktower.com/" target="_blank">{{
+          $t("modals.scriptTool")
+        }}</a>
         <template v-if="$i18n.locale === 'en-US'">
-          and then upload the generated "custom-list.json" either directly here or
-          provide a URL to such a hosted JSON file.
-        </template><br />
+          and then upload the generated "custom-list.json" either directly here
+          or provide a URL to such a hosted JSON file. </template
+        ><br />
         <br />
         {{ $t("modals.customCharactersDescription") }}
         <a
@@ -117,13 +143,15 @@
         />
         <div class="button-group">
           <div class="button" @click="openUpload">
-            <font-awesome-icon icon="file-upload" /> {{ $t("common.uploadJson") }}
+            <font-awesome-icon icon="file-upload" />
+            {{ $t("common.uploadJson") }}
           </div>
           <div class="button" @click="promptURL">
             <font-awesome-icon icon="link" /> {{ $t("common.enterUrl") }}
           </div>
           <div class="button" @click="readFromClipboard">
-            <font-awesome-icon icon="clipboard" /> {{ $t("modals.useClipboard") }}
+            <font-awesome-icon icon="clipboard" />
+            {{ $t("modals.useClipboard") }}
           </div>
           <div class="button" @click="view = 'gallery'">
             <font-awesome-icon icon="undo" /> {{ $t("common.back") }}
@@ -140,14 +168,14 @@ import Modal from "./Modal";
 import {
   getScriptDetail,
   getScriptList,
-  searchScripts
+  searchScripts,
 } from "@/services/scripts";
 
 export default {
   components: {
-    Modal
+    Modal,
   },
-  data: function() {
+  data: function () {
     return {
       view: "gallery",
       searchText: "",
@@ -167,29 +195,29 @@ export default {
       scripts: [
         [
           "Deadly Penance Day",
-          "https://gist.githubusercontent.com/bra1n/0337cc44c6fd2c44f7589256ed5486d2/raw/16be38fa3c01aaf49827303ac80577bdb52c0b25/penanceday.json"
+          "https://gist.githubusercontent.com/bra1n/0337cc44c6fd2c44f7589256ed5486d2/raw/16be38fa3c01aaf49827303ac80577bdb52c0b25/penanceday.json",
         ],
         [
           "Catfishing 11.1",
-          "https://gist.githubusercontent.com/bra1n/8a5ec41a7bbf945f6b7dfc1cef72b569/raw/a312ab93c2f302e0ef83c8b65a4e8e82760fda3a/catfishing.json"
+          "https://gist.githubusercontent.com/bra1n/8a5ec41a7bbf945f6b7dfc1cef72b569/raw/a312ab93c2f302e0ef83c8b65a4e8e82760fda3a/catfishing.json",
         ],
         [
           "On Thin Ice (Teensyville)",
-          "https://gist.githubusercontent.com/bra1n/8dacd9f2abc6f428331ea1213ab153f5/raw/0cacbcaf8ed9bddae0cca25a9ada97e9958d868b/on-thin-ice.json"
+          "https://gist.githubusercontent.com/bra1n/8dacd9f2abc6f428331ea1213ab153f5/raw/0cacbcaf8ed9bddae0cca25a9ada97e9958d868b/on-thin-ice.json",
         ],
         [
           "Race To The Bottom (Teensyville)",
-          "https://gist.githubusercontent.com/bra1n/63e1354cb3dc9d4032bcd0623dc48888/raw/5acb0eedcc0a67a64a99c7e0e6271de0b7b2e1b2/race-to-the-bottom.json"
+          "https://gist.githubusercontent.com/bra1n/63e1354cb3dc9d4032bcd0623dc48888/raw/5acb0eedcc0a67a64a99c7e0e6271de0b7b2e1b2/race-to-the-bottom.json",
         ],
         [
           "Frankenstein's Mayor by Ted (Teensyville)",
-          "https://gist.githubusercontent.com/bra1n/32c52b422cc01b934a4291eeb81dbcee/raw/5bf770693bbf7aff5e86601c82ca4af3222f4ba6/Frankensteins_Mayor_by_Ted.json"
+          "https://gist.githubusercontent.com/bra1n/32c52b422cc01b934a4291eeb81dbcee/raw/5bf770693bbf7aff5e86601c82ca4af3222f4ba6/Frankensteins_Mayor_by_Ted.json",
         ],
         [
           "Vigormortis High School (Teensyville)",
-          "https://gist.githubusercontent.com/bra1n/1f65bd4a999524719d5dabe98c3c2d27/raw/22bbec6bf56a51a7459e5ae41ed47e41971c5445/VigormortisHighSchool.json"
-        ]
-      ]
+          "https://gist.githubusercontent.com/bra1n/1f65bd4a999524719d5dabe98c3c2d27/raw/22bbec6bf56a51a7459e5ae41ed47e41971c5445/VigormortisHighSchool.json",
+        ],
+      ],
     };
   },
   computed: mapState(["modals"]),
@@ -199,7 +227,7 @@ export default {
         this.view = "gallery";
         this.refreshGalleryScripts();
       }
-    }
+    },
   },
   beforeDestroy() {
     if (this.searchTimer) clearTimeout(this.searchTimer);
@@ -213,13 +241,13 @@ export default {
         refresh: "刷新",
         loadMore: "加载更多",
         pullToRefresh: "下拉刷新",
-        releaseToRefresh: "松开刷新"
+        releaseToRefresh: "松开刷新",
       };
       const en = {
         refresh: "Refresh",
         loadMore: "Load more",
         pullToRefresh: "Pull to refresh",
-        releaseToRefresh: "Release to refresh"
+        releaseToRefresh: "Release to refresh",
       };
       return (this.$i18n.locale === "en-US" ? en : zh)[key] || key;
     },
@@ -230,14 +258,20 @@ export default {
       try {
         const keyword = this.searchText.trim();
         const res = keyword
-          ? await searchScripts({ keyword, page: this.page, pageSize: this.pageSize })
+          ? await searchScripts({
+              keyword,
+              page: this.page,
+              pageSize: this.pageSize,
+            })
           : await getScriptList({ page: this.page, pageSize: this.pageSize });
         if (!res || !res.success || !res.data) {
-          throw new Error((res && res.message) || this.$t("modals.loadScriptsFailed"));
+          throw new Error(
+            (res && res.message) || this.$t("modals.loadScriptsFailed"),
+          );
         }
-        const list = (res.data.list || []).map(script => ({
+        const list = (res.data.list || []).map((script) => ({
           ...script,
-          id: script.id || script._id
+          id: script.id || script._id,
         }));
         this.galleryScripts = list;
         this.totalScripts = Number(res.data.total) || list.length;
@@ -277,18 +311,26 @@ export default {
       try {
         const keyword = this.searchText.trim();
         const res = keyword
-          ? await searchScripts({ keyword, page: this.page, pageSize: this.pageSize })
+          ? await searchScripts({
+              keyword,
+              page: this.page,
+              pageSize: this.pageSize,
+            })
           : await getScriptList({ page: this.page, pageSize: this.pageSize });
         if (!res || !res.success || !res.data) {
-          throw new Error((res && res.message) || this.$t("modals.loadScriptsFailed"));
+          throw new Error(
+            (res && res.message) || this.$t("modals.loadScriptsFailed"),
+          );
         }
-        const list = (res.data.list || []).map(script => ({
+        const list = (res.data.list || []).map((script) => ({
           ...script,
-          id: script.id || script._id
+          id: script.id || script._id,
         }));
         this.galleryScripts = this.galleryScripts.concat(list);
-        this.totalScripts = Number(res.data.total) || this.galleryScripts.length;
-        this.hasMore = this.galleryScripts.length < this.totalScripts && list.length > 0;
+        this.totalScripts =
+          Number(res.data.total) || this.galleryScripts.length;
+        this.hasMore =
+          this.galleryScripts.length < this.totalScripts && list.length > 0;
       } catch (error) {
         this.page = Math.max(1, this.page - 1);
         this.error = this.resolveScriptError(error);
@@ -353,7 +395,9 @@ export default {
       try {
         const res = await getScriptDetail(script.id || script._id);
         if (!res || !res.success || !res.data || !res.data.script) {
-          throw new Error((res && res.message) || this.$t("modals.loadScriptFailed"));
+          throw new Error(
+            (res && res.message) || this.$t("modals.loadScriptFailed"),
+          );
         }
         const roles = this.extractScriptRoles(res.data.script);
         this.parseRoles(roles);
@@ -390,7 +434,7 @@ export default {
         value.roles,
         value.jsonData,
         value.data,
-        value.script
+        value.script,
       ];
       for (const candidate of candidates) {
         const roles = this.findScriptRoleArray(candidate, depth + 1);
@@ -406,7 +450,10 @@ export default {
       if (/failed to fetch|network|timeout/i.test(message)) {
         return this.$t("login.networkError");
       }
-      return message.replace(/^\[script-service\]:\s*/, "") || this.$t("modals.loadScriptsFailed");
+      return (
+        message.replace(/^\[script-service\]:\s*/, "") ||
+        this.$t("modals.loadScriptsFailed")
+      );
     },
     openUpload() {
       this.$refs.upload.click();
@@ -455,17 +502,22 @@ export default {
     },
     parseRoles(roles) {
       if (!roles || !roles.length) return;
-      roles = roles.map(role => (typeof role === "string" ? { id: role } : role));
+      roles = roles.map((role) =>
+        typeof role === "string" ? { id: role } : role,
+      );
       const metaIndex = roles.findIndex(({ id }) => id === "_meta");
       let meta = {};
       if (metaIndex > -1) {
         meta = roles.splice(metaIndex, 1).pop();
       }
       this.$store.commit("setCustomRoles", roles);
-      this.$store.commit("setEdition", Object.assign({}, meta, { id: "custom" }));
-      if (roles.some(role => this.$store.state.fabled.has(role.id || role))) {
+      this.$store.commit(
+        "setEdition",
+        Object.assign({}, meta, { id: "custom" }),
+      );
+      if (roles.some((role) => this.$store.state.fabled.has(role.id || role))) {
         const fabled = [];
-        roles.forEach(role => {
+        roles.forEach((role) => {
           if (this.$store.state.fabled.has(role.id || role)) {
             fabled.push(this.$store.state.fabled.get(role.id || role));
           }
@@ -474,8 +526,8 @@ export default {
       }
       this.view = "gallery";
     },
-    ...mapMutations(["closeModal", "toggleModal"])
-  }
+    ...mapMutations(["closeModal", "toggleModal"]),
+  },
 };
 </script>
 
@@ -498,11 +550,16 @@ export default {
     color: #dcc4a1;
     border: 2px solid #3d2e26;
     border-radius: 2px;
-    background:
-      radial-gradient(circle at 50% 0%, rgba(92, 26, 22, 0.22), transparent 28%),
+    background: radial-gradient(
+        circle at 50% 0%,
+        rgba(92, 26, 22, 0.22),
+        transparent 28%
+      ),
       linear-gradient(180deg, rgba(24, 18, 15, 0.96), rgba(9, 7, 6, 0.96)),
       #120f0e;
-    box-shadow: 0 22px 58px rgba(0, 0, 0, 0.72), inset 0 1px 0 rgba(255, 236, 190, 0.05);
+    box-shadow:
+      0 22px 58px rgba(0, 0, 0, 0.72),
+      inset 0 1px 0 rgba(255, 236, 190, 0.05);
     font-family: "STKaiti", "KaiTi", "STSong", "SimSun", serif;
     font-size: 0.9em;
   }
@@ -611,7 +668,9 @@ export default {
   padding: 0.45em;
   text-align: left;
   overflow: hidden;
-  transition: background 160ms, color 160ms;
+  transition:
+    background 160ms,
+    color 160ms;
 
   &:nth-child(even) {
     background: rgba(12, 9, 8, 0.7);
@@ -630,7 +689,11 @@ export default {
   width: 3.15em;
   height: 3.15em;
   color: rgba(255, 248, 231, 0.72);
-  background: linear-gradient(145deg, rgba($townsfolk, 0.7), rgba($demon, 0.62));
+  background: linear-gradient(
+    145deg,
+    rgba($townsfolk, 0.7),
+    rgba($demon, 0.62)
+  );
   background-position: center;
   background-size: cover;
   border: 1px solid #3d2e26;
@@ -720,8 +783,12 @@ ul.editions .edition {
   width: 30%;
   margin: 5px;
   font-size: 120%;
-  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000,
-    1px 1px 0 #000, 0 0 5px rgba(0, 0, 0, 0.75);
+  text-shadow:
+    -1px -1px 0 #000,
+    1px -1px 0 #000,
+    -1px 1px 0 #000,
+    1px 1px 0 #000,
+    0 0 5px rgba(0, 0, 0, 0.75);
   cursor: pointer;
   &:hover {
     color: red;
