@@ -129,7 +129,7 @@ export default {
   width: min(720px, 78vw);
   max-height: 72vh;
   overflow-y: auto;
-  padding: 6px 6px 14px;
+  padding: 0 0.1em 0.2em;
 }
 
 .announcement-header {
@@ -142,8 +142,10 @@ export default {
 
   h3 {
     margin: 0;
-    font-size: 30px;
+    color: #fff8e7;
+    font-size: 1.45em;
     line-height: 1.2;
+    letter-spacing: 0.1em;
   }
 }
 
@@ -160,7 +162,7 @@ export default {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  color: #eee;
+  color: #dcc4a1;
 }
 
 .error {
@@ -176,9 +178,10 @@ export default {
 .announcement-list-item,
 .announcement-detail {
   padding: 14px 16px;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  border: 1px solid #3d2e26;
+  background: rgba(18, 15, 13, 0.86);
+  box-shadow: inset 0 1px 0 rgba(255, 236, 190, 0.04);
 
   &.important {
     border-color: rgba(255, 89, 89, 0.62);
@@ -202,8 +205,8 @@ export default {
   transition: background 0.15s ease, border-color 0.15s ease;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.13);
-    border-color: rgba(255, 255, 255, 0.32);
+    background: rgba(24, 19, 16, 0.94);
+    border-color: rgba(212, 175, 55, 0.58);
   }
 }
 
@@ -214,7 +217,7 @@ export default {
 
 .detail-icon {
   flex: 0 0 auto;
-  color: #d8d8d8;
+  color: #d4af37;
 }
 
 .back-button {
@@ -224,16 +227,16 @@ export default {
   height: 30px;
   margin: 0 0 12px;
   padding: 0 10px;
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.08);
-  color: white;
+  border: 1px solid #8b6508;
+  border-radius: 2px;
+  background: #2a1c09;
+  color: #fff8e7;
   cursor: pointer;
   font: inherit;
 
   &:hover {
-    border-color: rgba(255, 255, 255, 0.42);
-    background: rgba(255, 255, 255, 0.14);
+    border-color: #d4af37;
+    background: #3a260b;
   }
 }
 
@@ -250,25 +253,28 @@ export default {
   align-items: center;
   height: 24px;
   padding: 0 8px;
-  border-radius: 4px;
-  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(124, 94, 70, 0.72);
+  border-radius: 2px;
+  background: rgba(5, 4, 4, 0.62);
+  color: #d4af37;
   font-size: 14px;
 }
 
 h4 {
   margin: 0 0 8px;
+  color: #fff8e7;
   font-size: 22px;
   line-height: 1.25;
 }
 
 .summary {
   margin: 0 0 10px;
-  color: #dedede;
+  color: rgba(247, 240, 223, 0.78);
   font-size: 16px;
 }
 
 .content {
-  color: white;
+  color: #f7f0df;
   font-size: 17px;
   line-height: 1.65;
   white-space: pre-wrap;
@@ -289,8 +295,7 @@ h4 {
     width: calc(100vw - 20px);
     max-width: calc(100vw - 20px);
     max-height: calc(100dvh - 88px);
-    padding: 10px;
-    border-radius: 8px;
+    border-radius: 2px;
   }
 
   ::v-deep .modal > .top-right-buttons {
@@ -336,7 +341,7 @@ h4 {
   .announcement-list-item,
   .announcement-detail {
     padding: 10px;
-    border-radius: 7px;
+    border-radius: 2px;
   }
 
   .announcement-list-item {

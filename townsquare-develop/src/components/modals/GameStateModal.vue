@@ -124,18 +124,22 @@ export default {
 @import "../../vars.scss";
 
 h3 {
-  margin: 0 40px;
+  margin-bottom: 0.8em;
 }
 
 textarea {
-  background: transparent;
-  color: white;
+  background: rgba(5, 4, 4, 0.62);
+  color: #f7f0df;
   white-space: pre-wrap;
   word-break: break-all;
-  border: 1px solid rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(124, 94, 70, 0.88);
+  border-radius: 2px;
   width: 60vw;
   height: 30vh;
   max-width: 100%;
-  margin: 5px 0;
+  margin: 0 0 0.8em;
+  padding: 0.68em;
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.58);
+  font-family: "Consolas", "Courier New", monospace;
 }
 </style>

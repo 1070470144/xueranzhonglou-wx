@@ -172,16 +172,22 @@ export default {
 <style lang="scss" scoped>
 @import "../../vars.scss";
 
+.web-login {
+  ::v-deep .modal {
+    width: min(360px, calc(100vw - 3em));
+  }
+}
+
 h3 {
-  margin: 0 40px 10px;
+  margin-bottom: 0.85em;
+  text-align: center;
 }
 
 .login-body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 280px;
-  max-width: 70vw;
+  width: 100%;
   text-align: center;
 }
 
@@ -193,31 +199,41 @@ h3 {
   width: 230px;
   height: 230px;
   max-width: 100%;
-  border: 1px solid rgba(255, 255, 255, 0.35);
-  background: white;
+  padding: 0.32em;
+  border: 1px solid #3d2e26;
+  border-radius: 2px;
+  background: rgba(18, 15, 13, 0.86);
+  box-shadow: inset 0 1px 0 rgba(255, 236, 190, 0.05), 0 8px 22px rgba(0, 0, 0, 0.48);
 }
 
 .qr-wrap img {
   display: block;
   width: 220px;
   height: 220px;
+  border: 0.24em solid #f7f0df;
+  background: #f7f0df;
 }
 
 .qr-placeholder {
-  color: #222;
+  color: #d4af37;
   font-size: 40px;
 }
 
 p {
-  margin: 12px 0 4px;
+  margin: 0.9em 0 0.3em;
+  color: #fff8e7;
 }
 
 small {
   display: block;
-  color: rgba(255, 255, 255, 0.75);
+  color: #c0a88a;
 }
 
 .error {
   color: $demon;
+}
+
+.button-group {
+  margin-top: 0.95em;
 }
 </style>

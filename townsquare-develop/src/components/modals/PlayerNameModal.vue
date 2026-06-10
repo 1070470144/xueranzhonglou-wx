@@ -72,41 +72,50 @@ export default {
 <style lang="scss" scoped>
 @import "../../vars.scss";
 
+.player-name-modal {
+  ::v-deep .modal {
+    width: min(390px, calc(100vw - 3em));
+  }
+}
+
 h3 {
-  margin: 0 40px 12px;
+  margin-bottom: 0.85em;
 }
 
 form {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  min-width: 280px;
+  gap: 0.55em;
+  min-width: min(300px, calc(100vw - 5em));
 }
 
 label,
 small {
-  color: white;
+  color: #c0a88a;
+}
+
+small {
+  color: rgba(220, 196, 161, 0.78);
 }
 
 input {
-  color: white;
-  background: rgba(0, 0, 0, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: 4px;
-  padding: 8px;
+  min-height: 2.45em;
+  padding: 0.48em 0.58em;
+  border: 1px solid rgba(124, 94, 70, 0.88);
+  border-radius: 2px;
+  background: rgba(5, 4, 4, 0.62);
+  color: #f7f0df;
   font: inherit;
 }
 
 .button-group {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
-  margin-top: 8px;
+  gap: 0.5em;
+  margin-top: 0.5em;
 }
 
 button.button {
-  border: 0;
-  color: white;
   cursor: pointer;
 }
 </style>

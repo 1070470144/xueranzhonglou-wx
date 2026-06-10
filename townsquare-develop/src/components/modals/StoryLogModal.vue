@@ -535,10 +535,16 @@ export default {
   position: fixed;
   inset: 0;
   z-index: 110;
-  background: rgba(0, 0, 0, 0.25);
+  background:
+    radial-gradient(circle at 78% 14%, rgba(96, 24, 20, 0.16), transparent 30%),
+    rgba(9, 7, 6, 0.38);
+  backdrop-filter: blur(1px);
 }
 
 .story-log-panel {
+  --story-panel: rgba(12, 9, 8, 0.82);
+  --story-surface: rgba(18, 15, 13, 0.86);
+
   position: absolute;
   top: 0;
   right: 0;
@@ -547,24 +553,44 @@ export default {
   width: 430px;
   max-width: 92vw;
   height: 100%;
-  padding: 12px;
-  color: white;
-  background: rgba(0, 0, 0, 0.92);
-  box-shadow: -4px 0 20px #000;
+  padding: 0;
+  color: #dcc4a1;
+  border-left: 2px solid #3d2e26;
+  background: var(--story-panel);
+  box-shadow: -18px 0 54px rgba(0, 0, 0, 0.62), inset 1px 0 0 rgba(255, 236, 190, 0.05);
+  backdrop-filter: blur(4px);
+  font-family: "STKaiti", "KaiTi", "STSong", "SimSun", serif;
 }
 
 header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  min-height: 3.2em;
+  margin-bottom: 0;
+  padding: 0.55em 0.78em;
+  border-bottom: 1px solid #3d2e26;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(92, 26, 22, 0.22), transparent 36%),
+    rgba(18, 14, 12, 0.9);
+
+  h3 {
+    margin: 0;
+    color: #fff8e7;
+    font-size: 1.15em;
+    letter-spacing: 0.12em;
+  }
 
   button {
-    color: white;
+    color: #dcc4a1;
     background: transparent;
     border: 0;
     cursor: pointer;
     font-size: 110%;
+
+    &:hover {
+      color: #fff8e7;
+    }
   }
 }
 
@@ -573,19 +599,19 @@ header {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 8px;
-  padding: 6px 8px;
-  background: rgba($townsfolk, 0.18);
-  border: 1px solid rgba($townsfolk, 0.45);
-  border-radius: 6px;
+  margin: 0;
+  padding: 0.7em 0.78em;
+  background: rgba(18, 15, 13, 0.86);
+  border-bottom: 1px solid #3d2e26;
+  border-radius: 0;
   font-size: 82%;
 
   span {
-    color: rgba(255, 255, 255, 0.72);
+    color: #c0a88a;
   }
 
   strong {
-    color: white;
+    color: #fff8e7;
     white-space: nowrap;
   }
 }
@@ -594,8 +620,11 @@ header {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   align-items: center;
-  gap: 6px;
-  margin-bottom: 10px;
+  gap: 0.42em;
+  margin: 0;
+  padding: 0.72em 0.78em;
+  border-bottom: 1px solid #3d2e26;
+  background: rgba(18, 15, 13, 0.68);
   font-size: 80%;
 
   button {
@@ -620,7 +649,7 @@ header {
   gap: 4px;
 
   span {
-    color: rgba(255, 255, 255, 0.72);
+    color: #c0a88a;
     white-space: nowrap;
   }
 
@@ -635,9 +664,9 @@ header {
   justify-content: space-between;
   min-height: 32px;
   padding: 0 6px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 4px;
+  background: rgba(5, 4, 4, 0.42);
+  border: 1px solid #3d2e26;
+  border-radius: 2px;
 
   select {
     max-width: 170px;
@@ -653,20 +682,22 @@ header {
 
 .phase-tabs {
   display: flex;
-  gap: 6px;
-  margin-bottom: 8px;
+  gap: 0;
+  margin-bottom: 0;
   overflow-x: auto;
-  padding-bottom: 4px;
+  padding: 0;
+  border-bottom: 1px solid #3d2e26;
+  background: rgba(18, 15, 13, 0.86);
 
   button {
     flex: 0 0 auto;
     min-width: 70px;
-    border-color: rgba(255, 255, 255, 0.2);
+    border: 0;
+    border-right: 1px solid #3d2e26;
 
     &.active {
-      color: white;
-      background: rgba($townsfolk, 0.45);
-      border-color: $townsfolk;
+      color: #fff8e7;
+      background: linear-gradient(#8a2721, #581612 54%, #2d0c09);
     }
   }
 }
@@ -674,9 +705,11 @@ header {
 button,
 select,
 textarea {
-  color: white;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #f7f0df;
+  background: rgba(5, 4, 4, 0.62);
+  border: 1px solid rgba(124, 94, 70, 0.88);
+  border-radius: 2px;
+  font-family: inherit;
 }
 
 option {
@@ -689,29 +722,30 @@ button {
   padding: 4px 6px;
 
   &:hover {
-    color: red;
-    border-color: red;
+    color: #fff8e7;
+    border-color: #d4af37;
   }
 }
 
 .log-list {
   flex: 1;
   overflow-y: auto;
-  padding-right: 4px;
+  padding: 0.72em 0.78em;
+  background: rgba(12, 9, 8, 0.52);
 }
 
 .empty {
   margin-top: 30px;
-  color: rgba(255, 255, 255, 0.65);
+  color: rgba(220, 196, 161, 0.72);
   text-align: center;
 }
 
 .log-entry {
   margin-bottom: 8px;
   padding: 8px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 6px;
+  background: var(--story-surface);
+  border: 1px solid #3d2e26;
+  border-radius: 2px;
 
   strong {
     display: block;
@@ -720,7 +754,7 @@ button {
 
   p {
     margin: 6px 0 0;
-    color: rgba(255, 255, 255, 0.82);
+    color: rgba(247, 240, 223, 0.78);
     font-size: 84%;
     white-space: pre-wrap;
   }
@@ -756,7 +790,10 @@ footer {
   display: grid;
   grid-template-columns: 120px 1fr auto;
   gap: 6px;
-  margin-top: 8px;
+  margin-top: 0;
+  padding: 0.72em 0.78em;
+  border-top: 1px solid #3d2e26;
+  background: rgba(18, 15, 14, 0.92);
 
   textarea {
     min-height: 62px;

@@ -149,39 +149,72 @@ export default {
   align-items: center;
   justify-content: center;
   z-index: 110;
-  background: rgba(0, 0, 0, 0.55);
+  padding: 1.2em;
+  background:
+    radial-gradient(circle at 50% 12%, rgba(96, 24, 20, 0.18), transparent 32%),
+    rgba(9, 7, 6, 0.58);
+  backdrop-filter: blur(2px);
 }
 
 .record-panel {
+  --record-panel: rgba(12, 9, 8, 0.78);
+  --record-surface: rgba(18, 15, 13, 0.86);
+
   width: min(460px, calc(100vw - 28px));
   max-height: calc(100vh - 28px);
   overflow: auto;
-  padding: 18px;
-  border: 3px solid black;
-  border-radius: 8px;
-  background: rgba(18, 18, 18, 0.96);
-  color: white;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7);
+  padding: 0;
+  border: 2px solid #3d2e26;
+  border-radius: 2px;
+  background: var(--record-panel);
+  color: #dcc4a1;
+  box-shadow: 0 22px 70px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 236, 190, 0.05);
+  backdrop-filter: blur(4px);
+  font-family: "STKaiti", "KaiTi", "STSong", "SimSun", serif;
 
   header,
   footer {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 10px;
+    gap: 0.75em;
+  }
+
+  header {
+    min-height: 3.2em;
+    padding: 0.55em 0.78em;
+    border-bottom: 1px solid #3d2e26;
+    background:
+      radial-gradient(circle at 50% 0%, rgba(92, 26, 22, 0.22), transparent 36%),
+      rgba(18, 14, 12, 0.9);
+  }
+
+  footer {
+    justify-content: flex-end;
+    padding: 0.72em 0.78em 0.78em;
+    border-top: 1px solid #3d2e26;
+    background: rgba(18, 15, 14, 0.92);
   }
 
   h3 {
-    font-size: 30px;
+    margin: 0;
+    color: #fff8e7;
+    font-size: 1.28em;
+    letter-spacing: 0.1em;
+    line-height: 1;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
   }
 
   button {
     cursor: pointer;
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    border-radius: 4px;
-    padding: 7px 12px;
-    color: white;
-    background: rgba(255, 255, 255, 0.08);
+    min-height: 2.1em;
+    padding: 0.18em 0.78em;
+    border: 1px solid #8b6508;
+    border-radius: 2px;
+    color: #fff8e7;
+    background: #2a1c09;
+    font-family: inherit;
+    font-weight: 700;
 
     &:disabled {
       cursor: not-allowed;
@@ -191,46 +224,58 @@ export default {
 
   .primary,
   .winner-select button.active {
-    border-color: $townsfolk;
-    background: $townsfolk;
+    border-color: #d4af37;
+    background: linear-gradient(#b8860b, #946b07 48%, #5c4204);
   }
 }
 
 .summary {
   display: grid;
-  gap: 10px;
-  margin: 18px 0;
+  margin: 0;
+  background: var(--record-surface);
 
   div {
     display: flex;
     justify-content: space-between;
-    gap: 12px;
-    padding-bottom: 8px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.16);
+    gap: 0.75em;
+    padding: 0.72em 0.78em;
+    border-bottom: 1px solid rgba(61, 46, 38, 0.78);
   }
 
   span {
-    color: rgba(255, 255, 255, 0.72);
+    color: #c0a88a;
+    font-weight: 700;
+  }
+
+  strong {
+    color: #f7f0df;
+    text-align: right;
   }
 }
 
 .winner-select {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 8px;
-  margin-bottom: 16px;
+  gap: 0.5em;
+  padding: 0.78em;
+  border-bottom: 1px solid #3d2e26;
+  background: rgba(18, 15, 13, 0.72);
 
   > span {
-    color: rgba(255, 255, 255, 0.72);
+    color: #c0a88a;
+    font-weight: 700;
   }
 }
 
 .warning {
-  margin: 0 0 16px;
+  margin: 0;
+  padding: 0.78em;
   color: #ffb4a8;
+  border-bottom: 1px solid #3d2e26;
+  background: rgba(18, 15, 13, 0.62);
 
   &.muted {
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(220, 196, 161, 0.82);
   }
 }
 </style>

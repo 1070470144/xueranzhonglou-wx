@@ -117,11 +117,12 @@ export default {
 
 .clear {
   position: absolute;
-  left: 20px;
-  top: 15px;
+  left: 1em;
+  top: 0.82em;
   cursor: pointer;
+  color: #dcc4a1;
   &:hover {
-    color: red;
+    color: #fff8e7;
   }
 }
 
@@ -131,36 +132,61 @@ export default {
   align-items: center;
   justify-content: center;
   align-content: center;
+  gap: 0.6em;
+  margin-bottom: 0.8em;
 }
 
 .option {
-  color: white;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  min-height: 2em;
+  padding: 0 0.62em;
+  color: #dcc4a1;
+  border: 1px solid #3d2e26;
+  background: rgba(18, 15, 13, 0.86);
   text-decoration: none;
-  margin: 0 15px;
+  margin: 0;
   &:hover {
-    color: red;
+    color: #fff8e7;
+    border-color: #d4af37;
     cursor: pointer;
   }
 }
 
 h3 {
-  margin: 0 40px 0 10px;
+  margin: 0 2.4em 0.8em 1.5em;
   svg {
     vertical-align: middle;
   }
 }
 
 table {
-  border-spacing: 10px 0;
+  width: 100%;
+  min-width: 650px;
+  border-collapse: collapse;
+  border: 1px solid #3d2e26;
+  background: rgba(18, 15, 13, 0.86);
   margin-left: auto;
   margin-right: auto;
 }
 
+tr + tr {
+  border-top: 1px solid rgba(61, 46, 38, 0.72);
+}
+
+td {
+  padding: 0.48em 0.62em;
+  color: rgba(247, 240, 223, 0.86);
+  vertical-align: top;
+}
+
 thead td {
+  color: #c0a88a;
   font-weight: bold;
-  border-bottom: 1px solid white;
+  border-bottom: 1px solid #3d2e26;
   text-align: center;
-  padding: 0 3px;
+  background: rgba(5, 4, 4, 0.38);
 }
 
 tbody {

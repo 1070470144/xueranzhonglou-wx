@@ -83,9 +83,9 @@
     <div class="fabled" :class="{ closed: !isFabledOpen }" v-if="fabled.length">
       <h3>
         <span>{{ $t("townSquare.fabled") }}</span>
-        <font-awesome-icon icon="times-circle" @click.stop="toggleFabled" />
-        <font-awesome-icon icon="plus-circle" @click.stop="toggleFabled" />
       </h3>
+      <font-awesome-icon icon="times-circle" @click.stop="toggleFabled" />
+      <font-awesome-icon icon="plus-circle" @click.stop="toggleFabled" />
       <ul>
         <li
           v-for="(role, index) in fabled"
@@ -724,14 +724,6 @@ export default {
     h3 span {
       display: none;
     }
-    h3 svg.fa-plus-circle {
-      position: absolute;
-      top: 50%;
-      right: auto;
-      left: 50%;
-      margin-left: 0;
-      transform: translate(-50%, -50%);
-    }
     ul {
       display: none;
     }
@@ -836,14 +828,6 @@ export default {
     display: none;
   }
 
-  #townsquare > .fabled.closed h3 svg.fa-plus-circle {
-    position: absolute;
-    top: 50%;
-    right: auto;
-    left: 50%;
-    margin-left: 0;
-    transform: translate(-50%, -50%);
-  }
 
   #townsquare > .fabled {
     top: max(54px, calc(env(safe-area-inset-top) + 48px));

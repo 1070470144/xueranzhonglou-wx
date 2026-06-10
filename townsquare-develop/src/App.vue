@@ -288,79 +288,52 @@ ul {
   align-items: center;
   justify-content: center;
   align-content: center;
+  gap: 0.35em;
   .button {
-    margin: 5px 0;
-    border-radius: 0;
-    &:first-child {
-      border-top-left-radius: 15px;
-      border-bottom-left-radius: 15px;
-    }
-    &:last-child {
-      border-top-right-radius: 15px;
-      border-bottom-right-radius: 15px;
-    }
+    margin: 0;
   }
 }
 .button {
-  padding: 0;
-  border: solid 0.125em transparent;
-  border-radius: 15px;
-  box-shadow: inset 0 1px 1px #9c9c9c, 0 0 10px #000;
-  background: radial-gradient(
-        at 0 -15%,
-        rgba(#fff, 0.07) 70%,
-        rgba(#fff, 0) 71%
-      )
-      0 0/ 80% 90% no-repeat content-box,
-    linear-gradient(#4e4e4e, #040404) content-box,
-    linear-gradient(#292929, #010101) border-box;
-  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.1em;
+  padding: 0.18em 0.78em;
+  border: 1px solid #8b6508;
+  border-radius: 2px;
+  box-shadow: inset 0 1px 0 rgba(255, 236, 190, 0.06), 0 2px 8px rgba(0, 0, 0, 0.55);
+  background: #2a1c09;
+  color: #fff8e7;
   font-weight: bold;
-  text-shadow: 1px 1px rgba(0, 0, 0, 0.5);
-  line-height: 170%;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7);
+  line-height: 1.2;
   margin: 5px auto;
   cursor: pointer;
   transition: all 200ms;
   white-space: nowrap;
   &:hover {
-    color: red;
+    color: #ffffff;
+    border-color: #d4af37;
+    background: #3a260b;
   }
   &.disabled {
-    color: gray;
+    color: #7f705f;
     cursor: default;
-    opacity: 0.75;
-  }
-  &:before,
-  &:after {
-    content: " ";
-    display: inline-block;
-    width: 10px;
-    height: 10px;
+    opacity: 0.58;
   }
   &.townsfolk {
-    background: radial-gradient(
-          at 0 -15%,
-          rgba(255, 255, 255, 0.07) 70%,
-          rgba(255, 255, 255, 0) 71%
-        )
-        0 0/80% 90% no-repeat content-box,
-      linear-gradient(#0031ad, rgba(5, 0, 0, 0.22)) content-box,
-      linear-gradient(#292929, #001142) border-box;
-    box-shadow: inset 0 1px 1px #002c9c, 0 0 10px #000;
+    border-color: #5f789f;
+    background: linear-gradient(#20375e, #172845 54%, #0b1525);
+    box-shadow: inset 0 1px 0 rgba(210, 228, 255, 0.16), 0 2px 8px rgba(0, 0, 0, 0.55);
     &:hover:not(.disabled) {
-      color: #008cf7;
+      color: #ffffff;
+      border-color: #94b4e4;
     }
   }
   &.demon {
-    background: radial-gradient(
-          at 0 -15%,
-          rgba(255, 255, 255, 0.07) 70%,
-          rgba(255, 255, 255, 0) 71%
-        )
-        0 0/80% 90% no-repeat content-box,
-      linear-gradient(#ad0000, rgba(5, 0, 0, 0.22)) content-box,
-      linear-gradient(#292929, #420000) border-box;
-    box-shadow: inset 0 1px 1px #9c0000, 0 0 10px #000;
+    border-color: #d4af37;
+    background: linear-gradient(#b8860b, #946b07 48%, #5c4204);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.2);
   }
 }
 

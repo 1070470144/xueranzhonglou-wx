@@ -1340,7 +1340,20 @@ export default {
     min-height: 2.55em;
   }
   .join-room-form {
-    min-height: 24em;
+    grid-template-rows: auto auto auto;
+    height: auto;
+    min-height: 0;
+  }
+  .create-room-form.join-room-form {
+    grid-template-rows: auto auto auto;
+    height: auto;
+    min-height: 0;
+    max-height: calc(100vh - 7em);
+  }
+  .join-room-scroll {
+    grid-row: 2;
+    overflow: visible;
+    padding-bottom: 0;
   }
   .join-room-form .selected-room-card {
     padding: 0.72em 0.78em;
@@ -1392,14 +1405,15 @@ export default {
     color: #fff8e7;
   }
   .join-room-footer {
+    grid-row: 3;
     justify-content: center;
   }
   .join-room-footer .create-primary-action {
     min-width: 8.5em;
-    min-height: 0.65em;
-    height: 0.65em;
+    min-height: 2.1em;
+    height: 2.1em;
     padding: 0 1.2em;
-    line-height: 0.65em;
+    line-height: 2.1em;
   }
   .room-submodal-layer {
     position: absolute;
@@ -2002,8 +2016,8 @@ export default {
     .join-room-footer .create-primary-action {
       width: auto;
       min-width: 8.5em;
-      height: 0.65em;
-      min-height: 0.65em;
+      height: 2.1em;
+      min-height: 2.1em;
     }
     .room-notice-list,
     .room-list-column {
