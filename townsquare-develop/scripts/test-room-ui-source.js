@@ -83,15 +83,15 @@ assert(
   "room lobby should use transparent surfaces around the hall without fading text and controls"
 );
 assert(
-  modalSource.includes('class="button icon-button hall-refresh" @click="refresh"'),
+  modalSource.includes("hall-refresh") && modalSource.includes('@click="refresh"'),
   "room lobby toolbar should keep the functional refresh action"
 );
 
 assert(
-  modalSource.includes("{ 'room-lobby-list': mode === 'list' || mode === 'create' || mode === 'join' }") &&
+  /'room-lobby-list':\s*mode === 'list' \|\| mode === 'create' \|\| mode === 'join'/.test(modalSource) &&
     modalSource.includes('v-if="mode === \'list\' || mode === \'create\' || mode === \'join\'"') &&
-    modalSource.includes('class="room-submodal-layer"') &&
-    modalSource.includes('@click.self="backToList"'),
+    /v-if="mode === 'create'"[\s\S]*?class="room-submodal-layer"[\s\S]*?@click\.self="backToList"/.test(modalSource) &&
+    /v-if="mode === 'join' && selectedRoom"[\s\S]*?class="room-submodal-layer"[\s\S]*?@click\.self="backToList"/.test(modalSource),
   "room creation should be a secondary overlay above the hall list, not a full modal replacement"
 );
 
@@ -155,7 +155,7 @@ assert(
 );
 
 assert(
-  modalSource.includes('class="button create-script-action" @click="chooseScript"') &&
+  /class="button create-script-action"[\s\S]*?@click="chooseScript"/.test(modalSource) &&
     modalSource.includes('$t("room.script")') &&
     modalSource.includes('$t("room.chooseScript")') &&
     modalSource.includes('this.$store.commit("openModalOverlay", "edition")') &&
@@ -288,7 +288,7 @@ assert(appSource.includes('import RoomLobbyModal from "@/components/modals/RoomL
   "room-control-drawer",
   "roomControl",
   "room.isHost",
-  "copySessionUrl",
+  "copyShareLink",
   "chooseScript",
   "assignRoles",
   "distributeRoles",
@@ -301,6 +301,13 @@ assert(appSource.includes('import RoomLobbyModal from "@/components/modals/RoomL
   "room.waiting",
   "room.playing"
 ].forEach(needle => assert(controlSource.includes(needle), `missing room control ${needle}`));
+
+assert(
+  controlSource.includes("URLSearchParams") &&
+    controlSource.includes('params.set("room"') &&
+    controlSource.includes('params.set("invite"'),
+  "room control should copy a share link containing room id and invite token"
+);
 
 assert(appSource.includes("<RoomControlDrawer />"));
 assert(appSource.includes('import RoomControlDrawer from "@/components/RoomControlDrawer";'));

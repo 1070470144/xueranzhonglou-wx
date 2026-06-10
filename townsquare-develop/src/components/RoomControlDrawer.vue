@@ -52,8 +52,8 @@
         v-if="room.isHost"
         class="room-control-actions room-control-command-grid"
       >
-        <button type="button" class="button" @click="copySessionUrl">
-          <font-awesome-icon icon="copy" /> {{ $t("menu.copyPlayerLink") }}
+        <button type="button" class="button" @click="copyShareLink">
+          <font-awesome-icon icon="copy" /> {{ $t("menu.copyShareLink") }}
         </button>
         <button type="button" class="button" @click="chooseScript">
           <font-awesome-icon icon="theater-masks" />
@@ -72,8 +72,8 @@
         v-else
         class="room-control-actions room-control-command-grid guest-actions"
       >
-        <button type="button" class="button" @click="copySessionUrl">
-          <font-awesome-icon icon="copy" /> {{ $t("menu.copyPlayerLink") }}
+        <button type="button" class="button" @click="copyShareLink">
+          <font-awesome-icon icon="copy" /> {{ $t("menu.copyShareLink") }}
         </button>
         <button type="button" class="button" @click="toggleModal('playerName')">
           <font-awesome-icon icon="user-edit" />
@@ -449,9 +449,14 @@ export default {
     statusText(status) {
       return this.$t(status === "playing" ? "room.playing" : "room.waiting");
     },
-    copySessionUrl() {
+    copyShareLink() {
       const url = window.location.href.split("#")[0];
-      navigator.clipboard.writeText(`${url}#${this.session.sessionId}`);
+      const params = new URLSearchParams();
+      params.set("room", this.session.sessionId);
+      if (this.room.current && this.room.current.inviteToken) {
+        params.set("invite", this.room.current.inviteToken);
+      }
+      navigator.clipboard.writeText(`${url}#${params.toString()}`);
     },
     chooseScript() {
       this.openModalOverlay("edition");

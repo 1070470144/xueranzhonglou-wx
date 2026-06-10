@@ -32,6 +32,7 @@ const serverSource = fs.readFileSync(
   "_startRoomRequestTimeout",
   "connection_timeout",
   "_applyRoomJoined",
+  "_syncRoomPlayers",
   "_isRoomSession",
   "room/clearRoom",
   "_isApplyingRoomSnapshot",
@@ -53,7 +54,8 @@ const serverSource = fs.readFileSync(
   'case "room/create"',
   'case "room/join"',
   'case "room/update"',
-  'case "room/kick"'
+  'case "room/kick"',
+  "parseRoomShareHash"
 ].forEach(needle => assert(socketSource.includes(needle), `missing ${needle}`));
 
 assert(
@@ -115,6 +117,11 @@ assert(
 );
 
 assert(
+  /case "room:players":[\s\S]*?this\._syncRoomPlayers\(params\)/.test(socketSource),
+  "room player snapshots should refresh the storyteller online-player cache after reconnect"
+);
+
+assert(
   /if \(isSpectator\)[\s\S]*?this\._sendDirect\([\s\S]*?"host"[\s\S]*?"getGamestate"/.test(
     applyRoomJoinedSource
   ),
@@ -124,6 +131,12 @@ assert(
 assert(
   socketSource.includes('this._send("room:state:get", {})'),
   "storyteller reconnect should request room state from the server"
+);
+
+assert(
+  /parseRoomShareHash[\s\S]*?URLSearchParams[\s\S]*?inviteToken/.test(socketSource) &&
+    /const sharedRoom[\s\S]*?room\/updateJoinForm[\s\S]*?room\/join/.test(socketSource),
+  "opening a room share hash should automatically join with invite token"
 );
 
 assert(

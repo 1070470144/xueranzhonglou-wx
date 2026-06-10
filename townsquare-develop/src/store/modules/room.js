@@ -13,6 +13,7 @@ const emptyJoinForm = () => ({
   roomId: "",
   playerName: "",
   password: "",
+  inviteToken: "",
 });
 
 const state = () => ({

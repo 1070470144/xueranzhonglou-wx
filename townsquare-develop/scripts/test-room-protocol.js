@@ -192,6 +192,7 @@ async function run() {
       visibility: "private",
       password: "secret"
     });
+    assert(room.inviteToken, "room summary includes invite token for host", room);
 
     const missingPassword = new TestClient("missing-password", `protocol-missing-${suffix}`);
     clients.push(missingPassword);
@@ -232,6 +233,21 @@ async function run() {
     });
     const [, joinPayload] = await validPlayer.waitFor("room:join:ok");
     assert(joinPayload.room.id === room.id, "valid private join succeeds", joinPayload.room);
+
+    const invitedPlayer = new TestClient("invite-token-player", `protocol-invite-${suffix}`);
+    clients.push(invitedPlayer);
+    await invitedPlayer.connect();
+    invitedPlayer.send("room:join", {
+      roomId: room.id,
+      playerName: "Invite Token Player",
+      inviteToken: room.inviteToken
+    });
+    const [, inviteJoinPayload] = await invitedPlayer.waitFor("room:join:ok");
+    assert(
+      inviteJoinPayload.room.id === room.id,
+      "valid invite token joins private room without password",
+      inviteJoinPayload.room
+    );
 
     validPlayer.send("claim", [0, validPlayer.playerId]);
     await host.waitFor(

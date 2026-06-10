@@ -85,7 +85,7 @@ function closeStaleRooms() {
 
 function sendRoomSnapshot(ws, room) {
   sendJson(ws, "room:state", {
-    room: rooms.summarize(room),
+    room: rooms.summarize(room, { includeInviteToken: true }),
     scriptJson: room.scriptJson
   });
   sendRoomPlayerList(room);
@@ -348,7 +348,7 @@ wss.on("connection", function connection(ws, req) {
             ws.isLobby = false;
             registerVoiceParticipant(room, ws);
             sendJson(ws, "room:create:ok", {
-              room: rooms.summarize(room),
+              room: rooms.summarize(room, { includeInviteToken: true }),
               scriptJson: room.scriptJson
             });
             sendVoiceState(room);
@@ -359,14 +359,15 @@ wss.on("connection", function connection(ws, req) {
             const room = rooms.verifyJoin({
               roomId: params.roomId,
               playerId: ws.playerId,
-              password: params.password
+              password: params.password,
+              inviteToken: params.inviteToken
             });
             rooms.addPlayer(room.id, ws, params.playerName);
             moveClientToChannel(ws, room.id);
             ws.isLobby = false;
             registerVoiceParticipant(room, ws);
             sendJson(ws, "room:join:ok", {
-              room: rooms.summarize(room),
+              room: rooms.summarize(room, { includeInviteToken: true }),
               scriptJson: room.scriptJson
             });
             sendRoomPlayerList(room);
@@ -380,7 +381,7 @@ wss.on("connection", function connection(ws, req) {
             rooms.updateRoom(room.id, params);
             registerVoiceParticipant(room, ws);
             sendJson(ws, "room:update:ok", {
-              room: rooms.summarize(room),
+              room: rooms.summarize(room, { includeInviteToken: true }),
               scriptJson: room.scriptJson
             });
             room.players.forEach(({ ws: playerWs }) => {

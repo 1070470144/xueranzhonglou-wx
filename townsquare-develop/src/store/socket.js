@@ -2,6 +2,18 @@ import { t } from "../i18n";
 import { getAuthUserSnapshot } from "../services/auth";
 import { buildBluffMessages, hydrateBluffs } from "../services/bluffs";
 
+function parseRoomShareHash(hash) {
+  const raw = String(hash || "").replace(/^#/, "");
+  if (!raw) return null;
+  const params = new URLSearchParams(raw);
+  const roomId = params.get("room");
+  if (!roomId) return { roomId: raw, inviteToken: "" };
+  return {
+    roomId,
+    inviteToken: params.get("invite") || "",
+  };
+}
+
 class LiveSession {
   constructor(store) {
     this._wss =
@@ -195,6 +207,7 @@ class LiveSession {
         }
         break;
       case "room:players":
+        this._syncRoomPlayers(params);
         this._store.commit("room/setPlayers", params);
         break;
       case "room:kicked":
@@ -797,6 +810,14 @@ class LiveSession {
         this._isSpectator ? playerIdOrCount : Object.keys(this._players).length,
       );
     }
+  }
+
+  _syncRoomPlayers(players = []) {
+    if (this._isSpectator || !Array.isArray(players)) return;
+    const now = new Date().getTime();
+    players.forEach((player) => {
+      if (player && player.id) this._players[player.id] = now;
+    });
   }
 
   /**
@@ -1424,10 +1445,26 @@ export default (store) => {
   });
 
   // check for session Id in hash
-  const sessionId = window.location.hash.substr(1);
-  if (sessionId) {
+  const sharedRoom = parseRoomShareHash(window.location.hash);
+  if (sharedRoom) {
+    const playerName =
+      (
+        store.state.session.playerName ||
+        localStorage.getItem("playerName") ||
+        "玩家"
+      ).trim() || "玩家";
     store.commit("session/setSpectator", true);
-    store.commit("session/setSessionId", sessionId);
+    store.commit("session/setPlayerName", playerName);
+    store.commit("room/updateJoinForm", {
+      roomId: sharedRoom.roomId,
+      inviteToken: sharedRoom.inviteToken,
+      playerName,
+    });
+    store.commit("room/join", {
+      roomId: sharedRoom.roomId,
+      inviteToken: sharedRoom.inviteToken,
+      playerName,
+    });
     store.commit("toggleGrimoire", false);
   }
 };

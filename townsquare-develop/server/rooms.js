@@ -62,8 +62,12 @@ function normalizeNote(value) {
     .substr(0, MAX_NOTE_LENGTH);
 }
 
-function summarize(room) {
-  return {
+function createInviteToken() {
+  return crypto.randomBytes(18).toString("base64url");
+}
+
+function summarize(room, options = {}) {
+  const summary = {
     id: room.id,
     name: room.name,
     visibility: room.visibility,
@@ -78,6 +82,8 @@ function summarize(room) {
     hasVoiceUrl: !!room.voiceUrl,
     updatedAt: room.updatedAt
   };
+  if (options.includeInviteToken) summary.inviteToken = room.inviteToken;
+  return summary;
 }
 
 function createRoom({ host, name, hostName = "", note = "", visibility = "public", password = "", maxPlayers, scriptJson = "", scriptName = "", status = "waiting", voiceUrl = "" }) {
@@ -96,6 +102,7 @@ function createRoom({ host, name, hostName = "", note = "", visibility = "public
     maxPlayers: normalizeMaxPlayers(maxPlayers),
     host,
     hostDisconnectedAt: 0,
+    inviteToken: createInviteToken(),
     hostName: sanitizeDisplayName(hostName, DEFAULT_HOST_NAME),
     note: normalizeNote(note),
     players: new Map(),
@@ -132,11 +139,15 @@ function getRoom(id) {
   return rooms.get(sanitizeId(id));
 }
 
-function verifyJoin({ roomId, playerId, password }) {
+function verifyJoin({ roomId, playerId, password, inviteToken }) {
   const room = getRoom(roomId);
   if (!room) throw new Error("room_not_found");
   if (room.bannedPlayerIds.has(playerId)) throw new Error("banned");
   if (room.players.size >= room.maxPlayers) throw new Error("room_full");
+  if (room.visibility === "private" && inviteToken) {
+    if (inviteToken !== room.inviteToken) throw new Error("invalid_invite");
+    return room;
+  }
   if (room.visibility === "private" && room.passwordHash !== passwordHash(password)) {
     throw new Error(password ? "invalid_password" : "password_required");
   }

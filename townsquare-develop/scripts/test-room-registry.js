@@ -36,6 +36,8 @@ assert.strictEqual(rooms.listRooms()[0].passwordHash, undefined);
 assert.strictEqual(rooms.listRooms()[0].hostName, "Storyteller Alice");
 assert.strictEqual(rooms.listRooms()[0].note, "Seat 2 by the window");
 assert.strictEqual(rooms.listRooms()[0].status, "waiting");
+assert.strictEqual(typeof room.inviteToken, "string");
+assert(room.inviteToken.length >= 24, "private rooms should have a strong invite token");
 
 assert.throws(
   () => rooms.verifyJoin({ roomId: room.id, playerId: "p1", password: "bad" }),
@@ -43,6 +45,13 @@ assert.throws(
 );
 assert.doesNotThrow(() =>
   rooms.verifyJoin({ roomId: room.id, playerId: "p1", password: "secret" })
+);
+assert.doesNotThrow(() =>
+  rooms.verifyJoin({ roomId: room.id, playerId: "p1-token", inviteToken: room.inviteToken })
+);
+assert.throws(
+  () => rooms.verifyJoin({ roomId: room.id, playerId: "p1-bad-token", inviteToken: "bad-token" }),
+  /invalid_invite/
 );
 rooms.addPlayer(room.id, makePlayer("p1"), "Alice");
 assert.strictEqual(rooms.listRooms()[0].playerCount, 1);
