@@ -61,9 +61,14 @@ function assertVoiceInvariants(state, label) {
   const memberships = new Map();
   state.channels.forEach(channel => {
     if (channel.type === "private") {
-      assert(channel.memberIds.size > 0, "private channels should not be empty", {
+      const hasPendingInvite = Array.from(state.invitations.values()).some(
+        invite => invite.channelId === channel.id && invite.status === "pending"
+      );
+      assert(channel.memberIds.size >= 2 || hasPendingInvite, "private channels should not be stranded", {
         label,
-        channelId: channel.id
+        channelId: channel.id,
+        memberIds: Array.from(channel.memberIds),
+        hasPendingInvite
       });
     }
     channel.memberIds.forEach(memberId => {

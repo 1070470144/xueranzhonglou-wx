@@ -7,7 +7,8 @@ const sourcePath = path.join(__dirname, "../src/services/voicePeer.js");
 const source = fs
   .readFileSync(sourcePath, "utf8")
   .replace("export class VoicePeerManager", "class VoicePeerManager")
-  .replace("export default VoicePeerManager;", "module.exports = { VoicePeerManager };");
+  .replace("export function normalizeVoiceError", "function normalizeVoiceError")
+  .replace("export default VoicePeerManager;", "module.exports = { VoicePeerManager, normalizeVoiceError };");
 
 const fakeTrack = {
   enabled: false,
@@ -73,9 +74,21 @@ const sandbox = {
   RTCPeerConnection: FakeRTCPeerConnection
 };
 vm.runInNewContext(source, sandbox, { filename: sourcePath });
-const { VoicePeerManager } = sandbox.module.exports;
+const { VoicePeerManager, normalizeVoiceError } = sandbox.module.exports;
 
 (async () => {
+  assert.strictEqual(
+    normalizeVoiceError(new Error("Permission denied")),
+    "microphone_permission_denied",
+    "browser permission denied errors should use a stable translation key"
+  );
+
+  assert.strictEqual(
+    normalizeVoiceError({ name: "NotAllowedError", message: "The request is not allowed" }),
+    "microphone_permission_denied",
+    "NotAllowedError should use the microphone permission translation key"
+  );
+
   const sentSignals = [];
   const manager = new VoicePeerManager({ sendSignal: payload => sentSignals.push(payload) });
 

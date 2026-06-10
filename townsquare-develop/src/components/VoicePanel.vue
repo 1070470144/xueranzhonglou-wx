@@ -4,7 +4,7 @@
 
 <script>
 import { mapState } from "vuex";
-import VoicePeerManager from "@/services/voicePeer";
+import VoicePeerManager, { normalizeVoiceError } from "@/services/voicePeer";
 
 export default {
   data() {
@@ -91,7 +91,7 @@ export default {
           canSpeak: this.canSpeak,
         });
       } catch (error) {
-        this.$store.commit("voice/setError", error && error.message);
+        this.$store.commit("voice/setError", normalizeVoiceError(error));
         this.$store.commit("voice/setEnabled", false);
       }
     },
@@ -104,7 +104,7 @@ export default {
           try {
             await this.manager.handleSignal(signal);
           } catch (error) {
-            this.$store.commit("voice/setError", error && error.message);
+            this.$store.commit("voice/setError", normalizeVoiceError(error));
           }
           this.$store.commit("voice/shiftSignal");
         }

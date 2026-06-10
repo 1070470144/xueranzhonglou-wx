@@ -73,7 +73,17 @@ function moveParticipantToChannel(state, participantId, channelId) {
 
 function closeEmptyPrivateChannels(state) {
   Array.from(state.channels.values()).forEach(channel => {
-    if (channel.type !== "private" || channel.memberIds.size) return;
+    if (channel.type !== "private") return;
+    const hasPendingInvite = Array.from(state.invitations.values()).some(
+      invite => invite.channelId === channel.id && invite.status === "pending"
+    );
+    if (hasPendingInvite || channel.memberIds.size >= 2) return;
+    channel.memberIds.forEach(memberId => {
+      const participant = state.participants.get(memberId);
+      if (!participant) return;
+      participant.currentChannelId = MAIN_CHANNEL_ID;
+      state.channels.get(MAIN_CHANNEL_ID).memberIds.add(memberId);
+    });
     state.channels.delete(channel.id);
     state.invitations.forEach(invite => {
       if (invite.channelId === channel.id && invite.status === "pending") {
@@ -181,6 +191,7 @@ function respondInvite(state, { participantId, inviteId, accept, now = Date.now(
   }
   participant.updatedAt = now;
   finalizeInvitation(invite);
+  closeEmptyPrivateChannels(state);
   return summarizeInvite(invite);
 }
 

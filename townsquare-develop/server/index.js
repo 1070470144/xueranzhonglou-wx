@@ -52,6 +52,7 @@ function sendJson(ws, command, params) {
 }
 
 function broadcastRoomList() {
+  closeStaleRooms();
   const payload = rooms.listRooms();
   wss.clients.forEach(client => {
     if (client.readyState === WebSocket.OPEN && client.isLobby) {
@@ -64,6 +65,17 @@ function sendRoomClosed(room) {
   room.players.forEach(({ ws }) =>
     sendJson(ws, "room:closed", { roomId: room.id })
   );
+}
+
+function closeStaleRooms() {
+  const closedRooms = rooms.closeRoomsWhere(
+    room => !room.host || room.host.readyState !== WebSocket.OPEN
+  );
+  closedRooms.forEach(room => {
+    clearTimeout(room.voiceRecallTimer);
+    sendRoomClosed(room);
+  });
+  return closedRooms.length;
 }
 
 function sendRoomPlayerList(room) {
@@ -279,6 +291,7 @@ wss.on("connection", function connection(ws, req) {
         switch (command) {
           case "room:list":
             ws.isLobby = true;
+            closeStaleRooms();
             sendJson(ws, "room:list:update", rooms.listRooms());
             return;
           case "room:create": {
@@ -565,6 +578,7 @@ const interval = setInterval(function ping() {
       delete channels[channel];
     }
   }
+  if (closeStaleRooms()) broadcastRoomList();
 }, PING_INTERVAL);
 
 // handle server shutdown

@@ -117,6 +117,16 @@ function listRooms() {
     .sort((a, b) => b.updatedAt - a.updatedAt);
 }
 
+function closeRoomsWhere(predicate) {
+  const closedRooms = [];
+  rooms.forEach(room => {
+    if (!predicate(room)) return;
+    rooms.delete(room.id);
+    closedRooms.push(room);
+  });
+  return closedRooms;
+}
+
 function getRoom(id) {
   return rooms.get(sanitizeId(id));
 }
@@ -236,6 +246,7 @@ module.exports = {
   removePlayerConnection,
   kickPlayer,
   closeRoom,
+  closeRoomsWhere,
   summarize,
   extractScriptName
 };

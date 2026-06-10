@@ -159,4 +159,17 @@ assert.strictEqual(
 );
 duplicatePrefixRooms.forEach(resetRoom);
 
+room = rooms.createRoom({
+  host: { playerId: "stale-host", readyState: 3 },
+  name: "Stale Host Room",
+  visibility: "public"
+});
+const staleRoomId = room.id;
+const closedStaleRooms = rooms.closeRoomsWhere(
+  candidate => candidate.host && candidate.host.readyState !== 1
+);
+assert.strictEqual(closedStaleRooms.length, 1);
+assert.strictEqual(closedStaleRooms[0].id, staleRoomId);
+assert.strictEqual(rooms.getRoom(staleRoomId), undefined);
+
 console.log("room registry tests passed");

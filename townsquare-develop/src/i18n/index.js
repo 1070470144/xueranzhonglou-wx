@@ -228,6 +228,8 @@ const messages = {
       recallNotice: "说书人正在召回所有玩家，请准备返回主频道。",
       errors: {
         microphone_not_supported: "当前浏览器不支持麦克风。",
+        microphone_permission_denied:
+          "麦克风权限被拒绝。请在浏览器地址栏或系统设置中允许麦克风后重试。",
         not_channel_member: "你不能进入该私聊频道。",
         recall_in_progress: "召回进行中，暂时不能发起或接受私聊。",
         host_only: "只有说书人可以执行该操作。",
@@ -682,6 +684,8 @@ const messages = {
         "The storyteller is recalling everyone to the main channel.",
       errors: {
         microphone_not_supported: "This browser does not support microphones.",
+        microphone_permission_denied:
+          "Microphone permission was denied. Allow microphone access in your browser or system settings, then try again.",
         not_channel_member: "You cannot enter that private channel.",
         recall_in_progress: "Recall is in progress. Private chats are paused.",
         host_only: "Only the storyteller can do that.",

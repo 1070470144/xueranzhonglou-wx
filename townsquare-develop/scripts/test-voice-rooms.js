@@ -60,6 +60,59 @@ function createThreePersonVoiceState() {
   const invite = voiceRooms.createInvite(state, {
     fromId: "p1",
     invitedIds: ["p2"],
+    now: 1320
+  });
+  voiceRooms.respondInvite(state, {
+    participantId: "p2",
+    inviteId: invite.id,
+    accept: false,
+    now: 1330
+  });
+
+  const snapshot = voiceRooms.summarize(state);
+  assert.deepStrictEqual(
+    snapshot.channels.map(channel => channel.id),
+    ["main"]
+  );
+  assert.deepStrictEqual(memberIds(snapshot, "main"), ["host", "p1", "p2"]);
+  assert.strictEqual(
+    snapshot.participants.find(item => item.id === "p1").currentChannelId,
+    "main"
+  );
+}
+
+{
+  const state = createThreePersonVoiceState();
+  const invite = voiceRooms.createInvite(state, {
+    fromId: "p1",
+    invitedIds: ["p2"],
+    now: 1340
+  });
+  voiceRooms.respondInvite(state, {
+    participantId: "p2",
+    inviteId: invite.id,
+    accept: true,
+    now: 1350
+  });
+  voiceRooms.unregisterParticipant(state, "p2");
+
+  const snapshot = voiceRooms.summarize(state);
+  assert.deepStrictEqual(
+    snapshot.channels.map(channel => channel.id),
+    ["main"]
+  );
+  assert.deepStrictEqual(memberIds(snapshot, "main"), ["host", "p1"]);
+  assert.strictEqual(
+    snapshot.participants.find(item => item.id === "p1").currentChannelId,
+    "main"
+  );
+}
+
+{
+  const state = createThreePersonVoiceState();
+  const invite = voiceRooms.createInvite(state, {
+    fromId: "p1",
+    invitedIds: ["p2"],
     now: 1200
   });
 

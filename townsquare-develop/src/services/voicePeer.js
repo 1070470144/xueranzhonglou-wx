@@ -1,5 +1,18 @@
 const ICE_SERVERS = [{ urls: "stun:stun.l.google.com:19302" }];
 
+export function normalizeVoiceError(error) {
+  const name = error && error.name;
+  const message = error && error.message ? error.message : String(error || "");
+  if (
+    name === "NotAllowedError" ||
+    name === "PermissionDeniedError" ||
+    /permission denied|not allowed|denied/i.test(message)
+  ) {
+    return "microphone_permission_denied";
+  }
+  return message || "unknown_error";
+}
+
 export class VoicePeerManager {
   constructor({ sendSignal, onStatus } = {}) {
     this.sendSignal = sendSignal || (() => {});
