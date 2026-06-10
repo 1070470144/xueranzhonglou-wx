@@ -61,12 +61,6 @@
         <li class="tabs" :class="tab">
           <font-awesome-icon icon="book-open" @click="tab = 'grimoire'" />
           <font-awesome-icon icon="broadcast-tower" @click="tab = 'session'" />
-          <font-awesome-icon
-            icon="users"
-            v-if="!session.isSpectator"
-            @click="tab = 'players'"
-          />
-          <font-awesome-icon icon="theater-masks" @click="tab = 'characters'" />
           <font-awesome-icon icon="question" @click="tab = 'help'" />
         </li>
 
@@ -181,10 +175,17 @@
             {{ $t("menu.liveSession") }}
           </li>
           <template v-if="!session.sessionId">
+            <li @click="toggleModal('roomLobby')">
+              {{ $t("room.openLobby") }}<em><font-awesome-icon icon="users" /></em>
+            </li>
             <li @click="hostSession">{{ $t("menu.host") }}<em>[H]</em></li>
             <li @click="joinSession">{{ $t("menu.join") }}<em>[J]</em></li>
           </template>
           <template v-else>
+            <li @click="toggleModal('roomControl')">
+              {{ $t("room.manage") }}
+              <em>{{ room.current ? room.current.name : session.sessionId }}</em>
+            </li>
             <li v-if="session.ping">
               {{
                 $t("menu.delayTo", {
@@ -194,14 +195,6 @@
                 })
               }}
               <em>{{ session.ping }}ms</em>
-            </li>
-            <li @click="copySessionUrl">
-              {{ $t("menu.copyPlayerLink") }}
-              <em><font-awesome-icon icon="copy"/></em>
-            </li>
-            <li v-if="!session.isSpectator" @click="distributeRoles">
-              {{ $t("menu.sendCharacters") }}
-              <em><font-awesome-icon icon="theater-masks"/></em>
             </li>
             <li
               v-if="session.voteHistory.length || !session.isSpectator"
@@ -214,44 +207,6 @@
               <em>{{ session.sessionId }}</em>
             </li>
           </template>
-        </template>
-
-        <template v-if="tab === 'players' && !session.isSpectator">
-          <!-- Users -->
-          <li class="headline">{{ $t("menu.players") }}</li>
-          <li @click="addPlayer" v-if="players.length < 20">{{ $t("menu.add") }}<em>[A]</em></li>
-          <li @click="randomizeSeatings" v-if="players.length > 2">
-            {{ $t("menu.randomize") }}
-            <em><font-awesome-icon icon="dice"/></em>
-          </li>
-          <li @click="clearPlayers" v-if="players.length">
-            {{ $t("menu.removeAll") }}
-            <em><font-awesome-icon icon="trash-alt"/></em>
-          </li>
-        </template>
-
-        <template v-if="tab === 'characters'">
-          <!-- Characters -->
-          <li class="headline">{{ $t("menu.characters") }}</li>
-          <li v-if="!session.isSpectator" @click="toggleModal('edition')">
-            {{ $t("menu.selectScript") }}
-            <em>[E]</em>
-          </li>
-          <li
-            @click="toggleModal('roles')"
-            v-if="!session.isSpectator && players.length > 4"
-          >
-            {{ $t("menu.chooseAssign") }}
-            <em>[C]</em>
-          </li>
-          <li v-if="!session.isSpectator" @click="toggleModal('fabled')">
-            {{ $t("menu.addFabled") }}
-            <em><font-awesome-icon icon="dragon"/></em>
-          </li>
-          <li @click="clearRoles" v-if="players.length">
-            {{ $t("menu.removeAll") }}
-            <em><font-awesome-icon icon="trash-alt"/></em>
-          </li>
         </template>
 
         <template v-if="tab === 'help'">
@@ -304,8 +259,11 @@ const ANNOUNCEMENT_READ_KEY = "townsquare.webAnnouncement.readKey";
 
 export default {
   computed: {
-    ...mapState(["grimoire", "session", "edition"]),
-    ...mapState("players", ["players"])
+    ...mapState(["grimoire", "session", "edition", "room"]),
+    ...mapState("players", ["players"]),
+    isRoomSession() {
+      return !!this.room.current;
+    }
   },
   data() {
     return {
@@ -376,19 +334,6 @@ export default {
       const link = url + "#" + this.session.sessionId;
       navigator.clipboard.writeText(link);
     },
-    distributeRoles() {
-      if (this.session.isSpectator) return;
-      const popup = this.$t("menu.confirmDistribute");
-      if (confirm(popup)) {
-        this.$store.commit("session/distributeRoles", true);
-        setTimeout(
-          (() => {
-            this.$store.commit("session/distributeRoles", false);
-          }).bind(this),
-          2000
-        );
-      }
-    },
     imageOptIn() {
       const popup = this.$t("menu.confirmCustomImages");
       if (this.grimoire.isImageOptIn || confirm(popup)) {
@@ -436,27 +381,6 @@ export default {
         this.$store.commit("players/add", trimmed);
       }
     },
-    randomizeSeatings() {
-      if (this.session.isSpectator) return;
-      if (confirm(this.$t("menu.confirmRandomize"))) {
-        this.$store.dispatch("players/randomize");
-      }
-    },
-    clearPlayers() {
-      if (this.session.isSpectator) return;
-      if (confirm(this.$t("menu.confirmClearPlayers"))) {
-        // abort vote if in progress
-        if (this.session.nomination) {
-          this.$store.commit("session/nomination");
-        }
-        this.$store.commit("players/clear");
-      }
-    },
-    clearRoles() {
-      if (confirm(this.$t("menu.confirmClearRoles"))) {
-        this.$store.dispatch("players/clearRoles");
-      }
-    },
     toggleNight() {
       this.$store.commit("toggleNight");
       if (this.grimoire.isNight) {
@@ -500,7 +424,7 @@ export default {
   z-index: 75;
 
   svg {
-    filter: drop-shadow(0 0 5px rgba(0, 0, 0, 1));
+    filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.9));
     &.success {
       animation: greenToWhite 1s normal forwards;
       animation-iteration-count: 1;
@@ -508,21 +432,32 @@ export default {
   }
 
   > span {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2em;
     cursor: pointer;
     z-index: 5;
-    margin-top: 7px;
-    margin-left: 10px;
+    min-height: 1.45em;
+    margin-top: 4px;
+    margin-left: 5px;
+    padding: 0 0.38em;
+    font-size: 0.82em;
+    color: #dcc4a1;
+    border: 1px solid #3d2e26;
+    border-radius: 2px;
+    background: rgba(12, 9, 8, 0.78);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 236, 190, 0.05);
   }
 
   span.nomlog-summary {
-    color: $townsfolk;
+    color: #d4af37;
   }
 
   span.session {
-    color: $demon;
+    color: #dcc4a1;
     &.spectator {
-      color: $townsfolk;
+      color: #d4af37;
     }
     &.reconnecting {
       animation: blink 1s infinite;
@@ -533,9 +468,9 @@ export default {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    color: white;
-    min-width: 54px;
+    gap: 3px;
+    color: #dcc4a1;
+    min-width: 3.8em;
     text-align: center;
     white-space: nowrap;
   }
@@ -553,7 +488,7 @@ export default {
 
   span.auth-summary {
     max-width: 140px;
-    color: white;
+    color: #dcc4a1;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -576,6 +511,7 @@ export default {
   position: absolute;
   right: 0;
   top: 0;
+  z-index: 10;
 
   &.open {
     transform: rotate(0deg);
@@ -583,21 +519,27 @@ export default {
 
   > svg {
     cursor: pointer;
-    background: rgba(0, 0, 0, 0.5);
-    border: 3px solid black;
+    color: #dcc4a1;
+    background: rgba(12, 9, 8, 0.82);
+    border: 2px solid #3d2e26;
     width: 40px;
     height: 50px;
     margin-bottom: -8px;
     border-bottom: 0;
-    border-radius: 10px 10px 0 0;
+    border-radius: 2px 2px 0 0;
     padding: 5px 5px 15px;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 236, 190, 0.05);
+
+    &:hover {
+      color: #fff8e7;
+    }
   }
 
   a {
-    color: white;
+    color: #f7f0df;
     text-decoration: none;
     &:hover {
-      color: red;
+      color: #fff8e7;
     }
   }
 
@@ -608,15 +550,19 @@ export default {
     margin: 0;
     flex-direction: column;
     overflow: hidden;
-    box-shadow: 0 0 10px black;
-    border: 3px solid black;
-    border-radius: 10px 0 10px 10px;
+    box-shadow: 0 18px 54px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 236, 190, 0.05);
+    border: 2px solid #3d2e26;
+    border-radius: 2px 0 2px 2px;
+    background: rgba(12, 9, 8, 0.76);
+    backdrop-filter: blur(4px);
+    font-family: "STKaiti", "KaiTi", "STSong", "SimSun", serif;
 
     li {
       padding: 2px 5px;
-      color: white;
+      color: #dcc4a1;
       text-align: left;
-      background: rgba(0, 0, 0, 0.7);
+      background: rgba(18, 15, 13, 0.72);
+      border-bottom: 1px solid rgba(61, 46, 38, 0.78);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -629,13 +575,14 @@ export default {
           flex-grow: 1;
           flex-shrink: 0;
           height: 35px;
-          border-bottom: 3px solid black;
-          border-right: 3px solid black;
+          color: #b8a082;
+          border-bottom: 1px solid #3d2e26;
+          border-right: 1px solid #3d2e26;
           padding: 5px 0;
           cursor: pointer;
           transition: color 250ms;
           &:hover {
-            color: red;
+            color: #fff8e7;
           }
           &:last-child {
             border-right: 0;
@@ -646,17 +593,15 @@ export default {
         &.characters .fa-theater-masks,
         &.session .fa-broadcast-tower,
         &.help .fa-question {
-          background: linear-gradient(
-            to bottom,
-            $townsfolk 0%,
-            rgba(0, 0, 0, 0.5) 100%
-          );
+          color: #fff8e7;
+          background: linear-gradient(#8a2721, #581612 54%, #2d0c09);
         }
       }
 
       &:not(.headline):not(.tabs):hover {
         cursor: pointer;
-        color: red;
+        color: #fff8e7;
+        background: rgba(32, 27, 25, 0.95);
       }
 
       em {
@@ -669,16 +614,16 @@ export default {
       &.language {
         button {
           color: white;
-          background: transparent;
-          border: 1px solid rgba(255, 255, 255, 0.35);
+          background: rgba(5, 4, 4, 0.46);
+          border: 1px solid rgba(124, 94, 70, 0.88);
           cursor: pointer;
           margin-left: 4px;
           padding: 1px 4px;
 
           &:hover,
           &.active {
-            color: red;
-            border-color: red;
+            color: #fff8e7;
+            border-color: #d4af37;
           }
         }
       }
@@ -693,11 +638,40 @@ export default {
       justify-content: center;
       background: linear-gradient(
         to right,
-        $townsfolk 0%,
-        rgba(0, 0, 0, 0.5) 20%,
-        rgba(0, 0, 0, 0.5) 80%,
-        $demon 100%
+        rgba(212, 175, 55, 0.55) 0%,
+        rgba(18, 14, 12, 0.92) 20%,
+        rgba(18, 14, 12, 0.92) 80%,
+        rgba(92, 26, 22, 0.72) 100%
       );
+    }
+  }
+}
+
+@media (max-width: 600px) {
+  #controls {
+    right: 0;
+    padding-right: 0;
+  }
+
+  .menu {
+    position: fixed;
+    top: 5px;
+    right: 5px;
+    width: 50px;
+    transform: none;
+    transform-origin: calc(100% - 20px) 22px;
+
+    &.open {
+      width: min(220px, calc(100vw - 10px));
+    }
+
+    &:not(.open) ul {
+      display: none;
+    }
+
+    ul {
+      max-height: calc(100vh - 55px);
+      overflow-y: auto;
     }
   }
 }

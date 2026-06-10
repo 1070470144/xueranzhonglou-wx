@@ -2,6 +2,7 @@ const fs = require("fs");
 const https = require("https");
 const WebSocket = require("ws");
 const client = require("prom-client");
+const rooms = require("./rooms");
 
 // Create a Registry which registers the metrics
 const register = new client.Registry();
@@ -11,7 +12,7 @@ register.setDefaultLabels({
 });
 
 const PING_INTERVAL = 30000; // 30 seconds
-const defaultAllowedOriginPattern = /^https?:\/\/([^.]+\.github\.io|localhost|clocktower\.online|eddbra1nprivatetownsquare\.xyz|([^.]+\.)?xuerantools\.org)/i;
+const defaultAllowedOriginPattern = /^https?:\/\/([^.]+\.github\.io|localhost|127\.0\.0\.1|\[::1\]|10(?:\.\d{1,3}){3}|192\.168(?:\.\d{1,3}){2}|172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2}|clocktower\.online|eddbra1nprivatetownsquare\.xyz|([^.]+\.)?xuerantools\.org)(?::\d+)?(?:\/|$)/i;
 const allowedOrigins = (process.env.TOWNSQUARE_ALLOWED_ORIGINS || "")
   .split(",")
   .map(origin => origin.trim().replace(/\/$/, ""))
@@ -40,6 +41,52 @@ const wss = new WebSocket.Server({
 });
 
 function noop() {}
+
+function sendJson(ws, command, params) {
+  if (ws && ws.readyState === WebSocket.OPEN) {
+    ws.send(JSON.stringify([command, params]));
+    metrics.messages_outgoing.inc();
+  }
+}
+
+function broadcastRoomList() {
+  const payload = rooms.listRooms();
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN && client.isLobby) {
+      sendJson(client, "room:list:update", payload);
+    }
+  });
+}
+
+function sendRoomClosed(room) {
+  room.players.forEach(({ ws }) =>
+    sendJson(ws, "room:closed", { roomId: room.id })
+  );
+}
+
+function sendRoomPlayerList(room) {
+  const players = Array.from(room.players.entries()).map(([id, player]) => ({
+    id,
+    name: player.name
+  }));
+  sendJson(room.host, "room:players", players);
+}
+
+function sendRoomError(ws, command, err) {
+  sendJson(ws, command, {
+    reason: err && err.message ? err.message : "unknown_error"
+  });
+}
+
+function moveClientToChannel(ws, channel) {
+  if (ws.channel && channels[ws.channel]) {
+    channels[ws.channel] = channels[ws.channel].filter(client => client !== ws);
+  }
+  ws.channel = channel;
+  ws.roomId = channel;
+  if (!channels[channel]) channels[channel] = [];
+  if (!channels[channel].includes(ws)) channels[channel].push(ws);
+}
 
 // calculate latency on heartbeat
 function heartbeat() {
@@ -118,8 +165,11 @@ wss.on("connection", function connection(ws, req) {
   const url = req.url.toLocaleLowerCase().split("/");
   ws.playerId = url.pop();
   ws.channel = url.pop();
+  ws.isLobby = ws.channel === "lobby";
+  ws.roomId = ws.isLobby ? "" : ws.channel;
   // check for another host on this channel
   if (
+    !ws.isLobby &&
     ws.playerId === "host" &&
     channels[ws.channel] &&
     channels[ws.channel].some(
@@ -159,6 +209,101 @@ wss.on("connection", function connection(ws, req) {
       metrics.connection_terminated_spam.inc();
       return;
     }
+
+    let parsedMessage;
+    try {
+      parsedMessage = JSON.parse(data);
+    } catch (e) {
+      console.log("ignoring invalid JSON message", ws.channel, ws.playerId);
+      return;
+    }
+    const command = parsedMessage && parsedMessage[0];
+    const params = (parsedMessage && parsedMessage[1]) || {};
+
+    if (command && command.indexOf("room:") === 0) {
+      try {
+        switch (command) {
+          case "room:list":
+            ws.isLobby = true;
+            sendJson(ws, "room:list:update", rooms.listRooms());
+            return;
+          case "room:create": {
+            const room = rooms.createRoom({
+              host: ws,
+              name: params.name,
+              hostName: params.hostName,
+              note: params.note,
+              visibility: params.visibility,
+              password: params.password,
+              maxPlayers: params.maxPlayers,
+              scriptJson: params.scriptJson,
+              scriptName: params.scriptName,
+              status: params.status,
+              voiceUrl: params.voiceUrl
+            });
+            moveClientToChannel(ws, room.id);
+            ws.playerId = "host";
+            ws.isLobby = false;
+            sendJson(ws, "room:create:ok", {
+              room: rooms.summarize(room),
+              scriptJson: room.scriptJson
+            });
+            broadcastRoomList();
+            return;
+          }
+          case "room:join": {
+            const room = rooms.verifyJoin({
+              roomId: params.roomId,
+              playerId: ws.playerId,
+              password: params.password
+            });
+            rooms.addPlayer(room.id, ws, params.playerName);
+            moveClientToChannel(ws, room.id);
+            ws.isLobby = false;
+            sendJson(ws, "room:join:ok", {
+              room: rooms.summarize(room),
+              scriptJson: room.scriptJson
+            });
+            sendRoomPlayerList(room);
+            broadcastRoomList();
+            return;
+          }
+          case "room:update": {
+            const room = rooms.getRoom(ws.roomId);
+            if (!room || room.host !== ws) throw new Error("host_only");
+            rooms.updateRoom(room.id, params);
+            sendJson(ws, "room:update:ok", {
+              room: rooms.summarize(room),
+              scriptJson: room.scriptJson
+            });
+            room.players.forEach(({ ws: playerWs }) => {
+              sendJson(playerWs, "room:update", {
+                room: rooms.summarize(room),
+                scriptJson: room.scriptJson
+              });
+            });
+            broadcastRoomList();
+            return;
+          }
+          case "room:kick": {
+            const room = rooms.getRoom(ws.roomId);
+            if (!room || room.host !== ws) throw new Error("host_only");
+            const player = rooms.kickPlayer(room.id, params.playerId);
+            if (player && player.ws) {
+              sendJson(player.ws, "room:kicked", { roomId: room.id });
+              player.ws.close(1000, "kicked");
+            }
+            sendRoomPlayerList(room);
+            broadcastRoomList();
+            return;
+          }
+        }
+      } catch (e) {
+        sendRoomError(ws, `${command}:error`, e);
+        return;
+      }
+    }
+
     const messageType = data
       .toLocaleLowerCase()
       .substr(1)
@@ -221,6 +366,20 @@ wss.on("connection", function connection(ws, req) {
           }
         });
         break;
+    }
+  });
+  ws.on("close", function closed() {
+    if (!ws.roomId) return;
+    const room = rooms.getRoom(ws.roomId);
+    if (!room) return;
+    if (room.host === ws) {
+      const closedRoom = rooms.closeRoom(room.id);
+      if (closedRoom) sendRoomClosed(closedRoom);
+      broadcastRoomList();
+    } else {
+      rooms.removePlayerConnection(room.id, ws.playerId, ws);
+      sendRoomPlayerList(room);
+      broadcastRoomList();
     }
   });
 });

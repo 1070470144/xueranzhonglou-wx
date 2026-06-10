@@ -169,6 +169,7 @@ export default store => {
         break;
       case "players/add":
       case "players/addMany":
+      case "players/setCount":
       case "players/update":
       case "players/remove":
       case "players/clear":

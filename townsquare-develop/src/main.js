@@ -15,6 +15,7 @@ const faIcons = [
   "BroadcastTower",
   "Chair",
   "CheckSquare",
+  "ChevronDown",
   "CloudMoon",
   "Cog",
   "Copy",

@@ -41,6 +41,8 @@
     <PlayerNameModal />
     <StoryLogModal />
     <PrivateChatModal />
+    <RoomLobbyModal />
+    <RoomControlDrawer />
     <Gradients />
     <span id="version">v{{ version }}</span>
   </div>
@@ -68,10 +70,14 @@ import LoginModal from "@/components/modals/LoginModal";
 import PlayerNameModal from "@/components/modals/PlayerNameModal";
 import StoryLogModal from "@/components/modals/StoryLogModal";
 import PrivateChatModal from "@/components/modals/PrivateChatModal";
+import RoomLobbyModal from "@/components/modals/RoomLobbyModal";
+import RoomControlDrawer from "@/components/RoomControlDrawer";
 
 export default {
   components: {
     AnnouncementModal,
+    RoomControlDrawer,
+    RoomLobbyModal,
     PrivateChatModal,
     StoryLogModal,
     PlayerNameModal,

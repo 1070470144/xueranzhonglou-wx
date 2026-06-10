@@ -529,10 +529,13 @@ export default {
     top: 10px;
   }
   left: 10px;
-  background: rgba(0, 0, 0, 0.5);
-  border-radius: 10px;
-  border: 3px solid black;
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.5));
+  color: #dcc4a1;
+  background: rgba(12, 9, 8, 0.72);
+  border-radius: 2px;
+  border: 2px solid #3d2e26;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 236, 190, 0.05);
+  backdrop-filter: blur(3px);
+  filter: none;
   transform-origin: bottom left;
   transform: scale(1);
   opacity: 1;
@@ -543,20 +546,30 @@ export default {
     position: absolute;
     top: 10px;
     right: 10px;
+    color: #dcc4a1;
     cursor: pointer;
     &.fa-plus-circle {
       display: none;
     }
     &:hover {
-      color: red;
+      color: #fff8e7;
     }
   }
   h3 {
-    margin: 5px 1vh 0;
+    min-height: 2.1em;
+    margin: 0;
+    padding: 0.35em 2.2em 0.3em 0.75em;
     display: flex;
     align-items: center;
     align-content: center;
     justify-content: center;
+    color: #fff8e7;
+    border-bottom: 1px solid #3d2e26;
+    background:
+      radial-gradient(circle at 50% 0%, rgba(92, 26, 22, 0.22), transparent 36%),
+      rgba(18, 14, 12, 0.9);
+    font-size: 1em;
+    letter-spacing: 0.08em;
     span {
       flex-grow: 1;
       overflow: hidden;
@@ -574,16 +587,33 @@ export default {
         display: none;
       }
       &:hover path {
-        fill: url(#demon);
-        stroke-width: 30px;
-        stroke: white;
+        fill: #fff8e7;
+        stroke-width: 0;
       }
     }
+  }
+  &.bluffs > h3 {
+    display: none;
+  }
+  &.fabled > h3 {
+    padding-right: 2.4em;
+  }
+  &.fabled > h3 svg.fa-times-circle {
+    position: absolute;
+    top: 0.55em;
+    right: 0.65em;
+    margin-left: 0;
+    color: #dcc4a1;
+  }
+  &.fabled > h3 svg.fa-times-circle:hover {
+    color: #fff8e7;
   }
   ul {
     display: flex;
     align-items: center;
     justify-content: center;
+    margin: 0;
+    padding: 0.35em 0.45em 0.45em;
     li {
       width: 14vh;
       height: 14vh;
@@ -594,37 +624,43 @@ export default {
   }
   .bluff-tabs {
     display: flex;
-    gap: 4px;
-    padding: 6px 36px 0 8px;
+    gap: 0;
+    padding: 0;
+    border-bottom: 1px solid #3d2e26;
+    background: rgba(18, 15, 13, 0.86);
 
     button {
       cursor: pointer;
-      color: white;
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.25);
-      border-radius: 4px;
-      padding: 2px 6px;
+      color: #b8a082;
+      background: transparent;
+      border: 0;
+      border-right: 1px solid #3d2e26;
+      border-radius: 0;
+      padding: 0.35em 0.7em;
       font: inherit;
+      font-size: 0.86em;
       white-space: nowrap;
 
       &.active {
-        background: rgba($demon, 0.65);
-        border-color: rgba(255, 255, 255, 0.75);
+        color: #fff8e7;
+        background: linear-gradient(#8a2721, #581612 54%, #2d0c09);
       }
     }
   }
   .lunatic-bluff-target {
     display: flex;
-    padding: 0 8px 7px;
+    padding: 0.45em 0.55em 0.55em;
+    border-top: 1px solid rgba(61, 46, 38, 0.78);
+    background: rgba(18, 15, 13, 0.72);
 
     select {
       width: 100%;
       min-height: 0;
-      color: white;
-      background: rgba(0, 0, 0, 0.65);
-      border: 1px solid rgba(255, 255, 255, 0.35);
-      border-radius: 4px;
-      height: 24px;
+      color: #f7f0df;
+      background: rgba(5, 4, 4, 0.62);
+      border: 1px solid rgba(124, 94, 70, 0.88);
+      border-radius: 2px;
+      height: 2em;
     }
   }
   &.vertical-bluff-tabs {
@@ -660,10 +696,10 @@ export default {
     }
   }
   &.closed {
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
-    min-height: 32px;
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    min-height: 34px;
 
     svg.fa-times-circle {
       display: none;
@@ -679,6 +715,25 @@ export default {
     ul {
       margin: 0;
       padding: 0;
+    }
+    h3 {
+      min-height: 0;
+      border: 0;
+      background: transparent;
+    }
+    h3 span {
+      display: none;
+    }
+    h3 svg.fa-plus-circle {
+      position: absolute;
+      top: 50%;
+      right: auto;
+      left: 50%;
+      margin-left: 0;
+      transform: translate(-50%, -50%);
+    }
+    ul {
+      display: none;
     }
     ul li {
       width: 0;
@@ -715,7 +770,7 @@ export default {
 
     h3 {
       min-height: 24px;
-      margin: 2px 7px 0;
+      margin: 0;
       padding-right: 22px;
       font-size: clamp(12px, 3.4vw, 16px);
       line-height: 1.2;
@@ -727,8 +782,8 @@ export default {
           margin-left: 6px;
         }
         &.fa-times-circle {
-          top: 6px;
-          right: 6px;
+          top: 0.45em;
+          right: 0.55em;
         }
       }
     }
@@ -753,12 +808,53 @@ export default {
     }
   }
 
+  #townsquare > .bluffs.closed,
+  #townsquare > .fabled.closed {
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+    min-height: 34px;
+    max-width: 34px;
+    border-radius: 2px;
+  }
+
+  #townsquare > .bluffs.closed ul,
+  #townsquare > .fabled.closed ul {
+    display: none;
+    padding: 0;
+  }
+
+  #townsquare > .bluffs.closed h3,
+  #townsquare > .fabled.closed h3 {
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  #townsquare > .fabled.closed h3 span {
+    display: none;
+  }
+
+  #townsquare > .fabled.closed h3 svg.fa-plus-circle {
+    position: absolute;
+    top: 50%;
+    right: auto;
+    left: 50%;
+    margin-left: 0;
+    transform: translate(-50%, -50%);
+  }
+
   #townsquare > .fabled {
     top: max(54px, calc(env(safe-area-inset-top) + 48px));
   }
 
   #townsquare > .bluffs {
     bottom: max(56px, calc(env(safe-area-inset-bottom) + 48px));
+  }
+
+  #townsquare > .bluffs > h3 {
+    display: none;
   }
 }
 

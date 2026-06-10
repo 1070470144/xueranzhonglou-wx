@@ -206,7 +206,7 @@ export default {
   },
   methods: {
     close() {
-      this.toggleModal("edition");
+      this.closeModal("edition");
     },
     galleryText(key) {
       const zh = {
@@ -474,7 +474,7 @@ export default {
       }
       this.view = "gallery";
     },
-    ...mapMutations(["toggleModal"])
+    ...mapMutations(["closeModal", "toggleModal"])
   }
 };
 </script>
@@ -483,44 +483,93 @@ export default {
 @import "../../vars.scss";
 
 .script-modal {
+  &.modal-backdrop,
+  .modal-backdrop {
+    z-index: 120;
+    background: rgba(0, 0, 0, 0.34);
+  }
+
+  ::v-deep .modal {
+    width: min(1010px, calc(100vw - 2em));
+    max-width: min(1010px, calc(100vw - 2em));
+    min-height: min(430px, calc(100vh - 2em));
+    max-height: min(82vh, 620px);
+    padding: 0.65em;
+    color: #dcc4a1;
+    border: 2px solid #3d2e26;
+    border-radius: 2px;
+    background:
+      radial-gradient(circle at 50% 0%, rgba(92, 26, 22, 0.22), transparent 28%),
+      linear-gradient(180deg, rgba(24, 18, 15, 0.96), rgba(9, 7, 6, 0.96)),
+      #120f0e;
+    box-shadow: 0 22px 58px rgba(0, 0, 0, 0.72), inset 0 1px 0 rgba(255, 236, 190, 0.05);
+    font-family: "STKaiti", "KaiTi", "STSong", "SimSun", serif;
+    font-size: 0.9em;
+  }
+
+  ::v-deep .modal > .top-right-buttons {
+    top: 0.55em;
+    right: 0.55em;
+    display: flex;
+    gap: 0.28em;
+  }
+
+  ::v-deep .modal > .top-right-buttons > .top-right-button {
+    width: 1.15em;
+    color: #dcc4a1;
+  }
+
+  ::v-deep .modal > .slot {
+    min-height: 0;
+  }
+
   h3 {
-    margin-top: 0;
+    min-height: 3.2em;
+    margin: 0 2.8em 0.58em;
+    padding: 0.72em 0 0.45em;
+    color: #d4af37;
+    border-bottom: 3px double #4a3b32;
+    font-size: 1.16em;
+    letter-spacing: 0.08em;
     text-align: center;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
   }
 }
 
 .search-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
   align-items: center;
-  gap: 8px;
-  width: 420px;
-  max-width: 70vw;
-  margin: 0 auto 10px;
-  padding: 6px 8px;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.35);
+  gap: 0.42em;
+  width: auto;
+  max-width: none;
+  min-height: 2.45em;
+  margin: 0 0 0.62em;
+  padding: 0.36em 0.5em;
+  background: rgba(18, 15, 13, 0.72);
+  border: 1px solid #3d2e26;
+  box-shadow: inset 0 1px 0 rgba(255, 236, 190, 0.04);
 
   input {
-    flex: 1;
     min-width: 0;
-    color: white;
+    color: #fff8e7;
     background: transparent;
     border: 0;
     outline: 0;
+    font: inherit;
   }
 }
 
 .refresh-button {
   display: inline-flex;
-  flex: 0 0 28px;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  color: white;
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 4px;
+  width: 1.9em;
+  height: 1.8em;
+  color: #dcc4a1;
+  background: #1d1816;
+  border: 1px solid #3d2e26;
+  border-radius: 2px;
   cursor: pointer;
 
   &:disabled {
@@ -531,53 +580,62 @@ export default {
 
 .script-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 10px;
-  width: 720px;
-  max-width: 74vw;
-  max-height: 430px;
+  grid-template-columns: repeat(auto-fill, minmax(15em, 18em));
+  gap: 0.55em;
+  align-content: start;
+  justify-content: start;
+  width: auto;
+  max-width: none;
+  min-height: 14em;
+  max-height: min(46vh, 330px);
   overflow-y: auto;
   overscroll-behavior: contain;
-  margin: 0 auto 10px;
-  padding: 2px;
+  margin: 0 0 0.62em;
+  padding: 0.55em;
+  border: 1px solid #3d2e26;
+  background: rgba(18, 15, 13, 0.58);
 }
 
 .script-card {
-  display: flex;
-  align-items: stretch;
+  display: grid;
+  grid-template-columns: 3.8em minmax(0, 1fr);
+  align-items: center;
+  gap: 0.48em;
   width: 100%;
-  min-height: 126px;
-  color: white;
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 6px;
+  min-height: 5.2em;
+  color: #dcc4a1;
+  background: rgba(16, 13, 11, 0.7);
+  border: 1px solid #3d2e26;
+  border-radius: 2px;
   cursor: pointer;
-  padding: 8px;
+  padding: 0.45em;
   text-align: left;
   overflow: hidden;
-  transition: border-color 160ms, background 160ms, transform 160ms;
+  transition: background 160ms, color 160ms;
+
+  &:nth-child(even) {
+    background: rgba(12, 9, 8, 0.7);
+  }
 
   &:hover {
-    background: rgba(0, 0, 0, 0.62);
-    border-color: rgba($townsfolk, 0.85);
-    transform: translateY(-1px);
+    color: #fff8e7;
+    background: #201b19;
   }
 }
 
 .script-cover {
   display: flex;
-  flex: 0 0 76px;
   align-items: center;
   justify-content: center;
-  min-height: 108px;
-  margin-right: 10px;
-  color: rgba(255, 255, 255, 0.72);
+  width: 3.15em;
+  height: 3.15em;
+  color: rgba(255, 248, 231, 0.72);
   background: linear-gradient(145deg, rgba($townsfolk, 0.7), rgba($demon, 0.62));
   background-position: center;
   background-size: cover;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 4px;
-  font-size: 160%;
+  border: 1px solid #3d2e26;
+  border-radius: 2px;
+  font-size: 130%;
 }
 
 .script-content {
@@ -589,9 +647,10 @@ export default {
 
 .script-title {
   display: block;
-  margin-bottom: 2px;
+  margin-bottom: 0.12em;
+  color: #fff8e7;
   font-weight: bold;
-  line-height: 1.2;
+  line-height: 1.15;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -600,8 +659,8 @@ export default {
 .script-author,
 .script-meta {
   display: block;
-  color: rgba(255, 255, 255, 0.68);
-  font-size: 70%;
+  color: #b8a082;
+  font-size: 72%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -609,9 +668,9 @@ export default {
 
 .script-description {
   display: -webkit-box;
-  margin: 6px 0;
-  color: rgba(255, 255, 255, 0.82);
-  font-size: 78%;
+  margin: 0.25em 0;
+  color: #c0a88a;
+  font-size: 76%;
   line-height: 1.25;
   overflow: hidden;
   -webkit-line-clamp: 2;
@@ -624,9 +683,9 @@ export default {
 
 .state-line {
   grid-column: 1 / -1;
-  padding: 18px 8px;
+  padding: 1.2em 0.6em;
   text-align: center;
-  color: rgba(255, 255, 255, 0.8);
+  color: #c0a88a;
 }
 
 .pull-state,
@@ -636,13 +695,13 @@ export default {
 
 .load-more-button {
   width: 100%;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 6px;
+  background: #1d1816;
+  border: 1px solid #3d2e26;
+  border-radius: 2px;
   cursor: pointer;
 
   &:hover {
-    border-color: rgba($townsfolk, 0.85);
+    border-color: #6b4a18;
   }
 }
 
@@ -671,6 +730,7 @@ ul.editions .edition {
 
 .custom {
   text-align: center;
+  color: #dcc4a1;
   input[type="file"] {
     display: none;
   }
@@ -683,8 +743,56 @@ ul.editions .edition {
     text-align: left;
     margin: 10px auto;
     li:hover {
-      color: red;
+      color: #d4af37;
     }
+  }
+}
+
+.button-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35em;
+  justify-content: center;
+}
+
+.button-group .button {
+  min-height: 1.62em;
+  margin: 0;
+  padding: 0.16em 0.52em;
+  color: #fff8e7;
+  border: 1px solid #8b6508;
+  border-radius: 2px;
+  background: linear-gradient(#8b6508, #5c4204);
+  box-shadow: inset 0 1px 0 rgba(255, 236, 190, 0.06);
+  font-size: 0.82em;
+}
+
+@media (max-width: 640px) {
+  .script-modal {
+    ::v-deep .modal {
+      width: calc(100vw - 1em);
+      max-width: calc(100vw - 1em);
+      min-height: min(430px, calc(100vh - 1em));
+      padding: 0.5em;
+    }
+
+    h3 {
+      margin-left: 2.6em;
+      margin-right: 2.6em;
+      min-height: 2.8em;
+      font-size: 1.05em;
+    }
+  }
+
+  .script-card {
+    grid-template-columns: 3.35em minmax(0, 1fr);
+    min-height: 3.85em;
+    padding: 0.35em 0.45em;
+  }
+
+  .script-cover {
+    width: 2.9em;
+    height: 2.9em;
   }
 }
 </style>

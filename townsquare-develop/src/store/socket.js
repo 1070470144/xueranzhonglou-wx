@@ -15,6 +15,10 @@ class LiveSession {
     this._pingInterval = 30 * 1000; // 30 seconds between pings
     this._pingTimer = null;
     this._reconnectTimer = null;
+    this._roomRequestTimer = null;
+    this._isJoiningRoom = false;
+    this._isRoomSession = false;
+    this._isApplyingRoomSnapshot = false;
     this._players = {}; // map of players connected to a session
     this._playerAuthSnapshots = {}; // map of player IDs to web login snapshots
     this._pings = {}; // map of player IDs to ping
@@ -51,6 +55,8 @@ class LiveSession {
           3 * 1000
         );
       } else {
+        if (this._isRoomSession) this._store.commit("room/clearRoom");
+        this._isRoomSession = false;
         this._store.commit("session/setSessionId", "");
         if (err.reason) alert(err.reason);
       }
@@ -67,6 +73,21 @@ class LiveSession {
     if (this._socket && this._socket.readyState === 1) {
       this._socket.send(JSON.stringify([command, params]));
     }
+  }
+
+  _sendWhenOpen(command, params) {
+    if (!this._socket) return;
+    if (this._socket.readyState === 1) {
+      this._send(command, params);
+      return;
+    }
+    this._socket.addEventListener(
+      "open",
+      () => {
+        this._send(command, params);
+      },
+      { once: true }
+    );
   }
 
   /**
@@ -132,6 +153,52 @@ class LiveSession {
       console.log("unsupported socket message", data);
     }
     switch (command) {
+      case "room:list:update":
+        this._store.commit("room/setList", params);
+        break;
+      case "room:create:ok":
+        this._clearRoomRequestTimeout();
+        this._applyRoomJoined(params, false);
+        break;
+      case "room:join:ok":
+        this._clearRoomRequestTimeout();
+        this._applyRoomJoined(params, true);
+        break;
+      case "room:create:error":
+      case "room:join:error":
+      case "room:update:error":
+      case "room:kick:error":
+        this._clearRoomRequestTimeout();
+        this._store.commit("room/setError", params && params.reason);
+        this._store.commit("room/setLoading", false);
+        break;
+      case "room:update":
+      case "room:update:ok":
+        this._store.commit("room/setCurrent", params && params.room);
+        this._store.commit("room/setLoading", false);
+        this.ensureRoomSeats(params && params.room);
+        if (params && params.scriptJson) {
+          this._isApplyingRoomSnapshot = true;
+          try {
+            this._loadRoomScript(params.scriptJson);
+          } finally {
+            this._isApplyingRoomSnapshot = false;
+          }
+        }
+        break;
+      case "room:players":
+        this._store.commit("room/setPlayers", params);
+        break;
+      case "room:kicked":
+        alert(t("room.errors.kicked"));
+        this._store.commit("room/clearRoom");
+        this._store.commit("session/setSessionId", "");
+        break;
+      case "room:closed":
+        alert(t("room.errors.closed"));
+        this._store.commit("room/clearRoom");
+        this._store.commit("session/setSessionId", "");
+        break;
       case "getGamestate":
         this.sendGamestate(params);
         break;
@@ -251,6 +318,23 @@ class LiveSession {
     this._store.commit("session/setPing", 0);
     this._isSpectator = this._store.state.session.isSpectator;
     this._open(channel);
+  }
+
+  isConnectedTo(channel) {
+    return (
+      this._socket &&
+      this._socket.readyState === 1 &&
+      this._store.state.session.sessionId === channel
+    );
+  }
+
+  isLobbyConnected() {
+    return (
+      this._socket &&
+      this._socket.readyState === 1 &&
+      this._store.state.session.sessionId === "" &&
+      !this._store.state.room.current
+    );
   }
 
   syncAuthPlayer() {
@@ -655,6 +739,20 @@ class LiveSession {
           delete this._pings[player];
         }
       }
+      // store new player data before clearing claimed seats so a first claim is not immediately removed
+      if (playerIdOrCount) {
+        this._players[playerIdOrCount] = now;
+        const ping = parseInt(latency, 10);
+        if (ping && ping > 0 && ping < 30 * 1000) {
+          // ping to Players
+          this._pings[playerIdOrCount] = ping;
+          const pings = Object.values(this._pings);
+          this._store.commit(
+            "session/setPing",
+            Math.round(pings.reduce((a, b) => a + b, 0) / pings.length)
+          );
+        }
+      }
       // remove claimed seats from players that are no longer connected
       this._store.state.players.players.forEach(player => {
         if (player.id && !this._players[player.id]) {
@@ -670,20 +768,6 @@ class LiveSession {
           });
         }
       });
-      // store new player data
-      if (playerIdOrCount) {
-        this._players[playerIdOrCount] = now;
-        const ping = parseInt(latency, 10);
-        if (ping && ping > 0 && ping < 30 * 1000) {
-          // ping to Players
-          this._pings[playerIdOrCount] = ping;
-          const pings = Object.values(this._pings);
-          this._store.commit(
-            "session/setPing",
-            Math.round(pings.reduce((a, b) => a + b, 0) / pings.length)
-          );
-        }
-      }
     } else if (latency) {
       // ping to ST
       this._store.commit("session/setPing", parseInt(latency, 10));
@@ -719,7 +803,9 @@ class LiveSession {
   claimSeat(seat) {
     if (!this._isSpectator) return;
     const players = this._store.state.players.players;
-    if (players.length > seat && (seat < 0 || !players[seat].id)) {
+    const seatIsAvailable =
+      players.length > seat && (seat < 0 || !players[seat].id);
+    if (seatIsAvailable) {
       this._send("claim", [seat, this._store.state.session.playerId]);
       this.syncAuthPlayer();
     }
@@ -769,7 +855,7 @@ class LiveSession {
       });
     }
     // update player session list as if this was a ping
-    this._handlePing([true, value, 0]);
+    this._handlePing([value, 0]);
   }
 
   /**
@@ -960,6 +1046,151 @@ class LiveSession {
     this._send("remove", payload);
   }
 
+  requestRoomList() {
+    this._ensureLobbySocket();
+    this._sendWhenOpen("room:list", {});
+  }
+
+  createRoom(payload) {
+    this._ensureLobbySocket();
+    this._store.commit("room/setLoading", true);
+    this._store.commit("room/setError", "");
+    this._startRoomRequestTimeout();
+    this._sendWhenOpen("room:create", this._withCurrentScript(payload));
+  }
+
+  joinRoom(payload) {
+    if (!this._store.state.session.playerId) {
+      this._store.commit(
+        "session/setPlayerId",
+        Math.random()
+          .toString(36)
+          .substr(2)
+      );
+    }
+    this._ensureLobbySocket();
+    this._store.commit("room/setLoading", true);
+    this._store.commit("room/setError", "");
+    this._startRoomRequestTimeout();
+    this._sendWhenOpen("room:join", {
+      ...payload,
+      playerId: this._store.state.session.playerId
+    });
+  }
+
+  updateRoom(payload) {
+    if (this._isSpectator) return;
+    this._store.commit("room/setLoading", true);
+    this._store.commit("room/setError", "");
+    this._send("room:update", this._withCurrentScript(payload));
+  }
+
+  kickRoomPlayer(playerId) {
+    if (this._isSpectator) return;
+    this._send("room:kick", { playerId });
+  }
+
+  _ensureLobbySocket() {
+    if (this.isLobbyConnected()) return;
+    this.disconnect();
+    const playerId =
+      this._store.state.session.playerId ||
+      Math.random()
+        .toString(36)
+        .substr(2);
+    this._store.commit("session/setPlayerId", playerId);
+    this._socket = new WebSocket(`${this._wss}lobby/${playerId}`);
+    this._socket.addEventListener("message", this._handleMessage.bind(this));
+    this._socket.onopen = () => this._send("room:list", {});
+    this._socket.onclose = () => {
+      this._socket = null;
+      clearInterval(this._pingTimer);
+      this._pingTimer = null;
+    };
+  }
+
+  _applyRoomJoined({ room, scriptJson } = {}, isSpectator) {
+    if (!room || !room.id) return;
+    this._isSpectator = isSpectator;
+    this._isJoiningRoom = true;
+    this._store.commit("session/claimSeat", -1);
+    this._store.commit("session/clearVoteHistory");
+    if (isSpectator) this._store.commit("players/clear");
+    this._isRoomSession = true;
+    this._store.commit("session/setSpectator", isSpectator);
+    this._store.commit("session/setGameStartedAt", Date.now());
+    this._store.commit("session/setSessionId", room.id);
+    this._store.commit("room/setCurrent", room);
+    this._store.commit("room/setHost", !isSpectator);
+    this._store.commit("room/setLoading", false);
+    this._store.commit("toggleGrimoire", false);
+    if (!isSpectator) this.ensureRoomSeats(room);
+    this._isApplyingRoomSnapshot = true;
+    try {
+      if (scriptJson) this._loadRoomScript(scriptJson);
+    } finally {
+      this._isApplyingRoomSnapshot = false;
+    }
+    if (isSpectator) {
+      this._sendDirect("host", "getGamestate", this._store.state.session.playerId);
+      this.syncAuthPlayer();
+    }
+  }
+
+  ensureRoomSeats(room) {
+    if (this._isSpectator || !room) return;
+    const maxPlayers = Math.min(20, Math.max(1, parseInt(room.maxPlayers, 10) || 10));
+    this._store.commit("players/setCount", maxPlayers);
+  }
+
+  _loadRoomScript(scriptJson) {
+    try {
+      const script =
+        typeof scriptJson === "string" ? JSON.parse(scriptJson) : scriptJson;
+      if (!script) return;
+      if (Array.isArray(script)) {
+        const edition = script.find(item => item && item.id === "_meta") || {
+          id: "custom",
+          name: "Custom Script"
+        };
+        const roles = script.filter(item => item && item.id !== "_meta");
+        this._store.commit("setEdition", edition);
+        this._store.commit("setCustomRoles", roles);
+        return;
+      }
+      this._store.commit("setEdition", script);
+    } catch (error) {
+      console.log("could not load room script", error);
+    }
+  }
+
+  _startRoomRequestTimeout() {
+    this._clearRoomRequestTimeout();
+    this._roomRequestTimer = setTimeout(() => {
+      this._store.commit("room/setLoading", false);
+      this._store.commit("room/setError", "connection_timeout");
+    }, 8000);
+  }
+
+  _clearRoomRequestTimeout() {
+    clearTimeout(this._roomRequestTimer);
+    this._roomRequestTimer = null;
+  }
+
+  _withCurrentScript(payload = {}) {
+    const { edition } = this._store.state;
+    const roles = this._store.getters.customRolesStripped || [];
+    const scriptJson = JSON.stringify([
+      edition && edition.isOfficial ? { id: "_meta", name: edition.name, author: edition.author } : edition,
+      ...roles
+    ]);
+    return {
+      ...payload,
+      scriptName: (edition && (edition.name || edition.id)) || "No Script",
+      scriptJson
+    };
+  }
+
   /**
    * Send a private chat message to one connected participant in the same room.
    * @param payload
@@ -982,16 +1213,39 @@ export default store => {
 
   // listen to mutations
   store.subscribe(({ type, payload }, state) => {
+    if (session._isApplyingRoomSnapshot) return;
     switch (type) {
       case "session/setSessionId":
+        if (session._isJoiningRoom) {
+          session._isJoiningRoom = false;
+          return;
+        }
+        session._isRoomSession = false;
         if (state.session.sessionId) {
+          if (session.isConnectedTo(state.session.sessionId)) return;
           store.commit("privateChat/clear");
           session.connect(state.session.sessionId);
         } else {
           window.location.hash = "";
           store.commit("privateChat/clear");
+          store.commit("room/clearRoom");
           session.disconnect();
         }
+        break;
+      case "room/requestList":
+        session.requestRoomList();
+        break;
+      case "room/create":
+        session.createRoom(payload);
+        break;
+      case "room/join":
+        session.joinRoom(payload);
+        break;
+      case "room/update":
+        session.updateRoom(payload);
+        break;
+      case "room/kick":
+        session.kickRoomPlayer(payload);
         break;
       case "privateChat/sendMessage":
         session.sendPrivateChat(payload);
@@ -1031,6 +1285,9 @@ export default store => {
         break;
       case "setEdition":
         session.sendEdition();
+        if (state.room.current && state.room.isHost) {
+          session.updateRoom(state.room.createForm);
+        }
         break;
       case "players/setFabled":
         session.sendFabled();
@@ -1054,6 +1311,7 @@ export default store => {
       case "players/clear":
       case "players/add":
       case "players/addMany":
+      case "players/setCount":
         session.sendGamestate("", true);
         break;
       case "players/update":

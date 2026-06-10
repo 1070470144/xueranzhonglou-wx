@@ -7,6 +7,7 @@ import players from "./modules/players";
 import session from "./modules/session";
 import storyLog from "./modules/storyLog";
 import privateChat from "./modules/privateChat";
+import room from "./modules/room";
 import editionJSON from "../editions.json";
 import rolesJSON from "../roles.json";
 import fabledJSON from "../fabled.json";
@@ -99,7 +100,8 @@ export default new Vuex.Store({
     players,
     session,
     storyLog,
-    privateChat
+    privateChat,
+    room
   },
   state: {
     grimoire: {
@@ -127,6 +129,8 @@ export default new Vuex.Store({
       reminder: false,
       role: false,
       roles: false,
+      roomControl: false,
+      roomLobby: false,
       storyLog: false,
       voteHistory: false
     },
@@ -190,6 +194,12 @@ export default new Vuex.Store({
         if (modal === name) continue;
         modals[modal] = false;
       }
+    },
+    openModalOverlay({ modals }, name) {
+      if (name) modals[name] = true;
+    },
+    closeModal({ modals }, name) {
+      if (name) modals[name] = false;
     },
     /**
      * Store custom roles

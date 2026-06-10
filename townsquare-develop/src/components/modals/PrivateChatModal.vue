@@ -14,7 +14,7 @@
       <header>
         <h3>{{ $t("privateChat.title") }}</h3>
         <button type="button" @click="close">
-          <font-awesome-icon icon="times" />
+          <font-awesome-icon icon="times-circle" />
         </button>
       </header>
 
@@ -36,25 +36,27 @@
         </nav>
 
         <div v-if="!targets.length" class="empty-state">
-          {{ $t("privateChat.noTargets") }}
+            {{ $t("privateChat.noTargets") }}
         </div>
-        <section v-else ref="messages" class="messages">
-          <div v-if="!messages.length" class="empty-state compact">
-            {{ $t("privateChat.empty") }}
-          </div>
-          <article
-            v-for="message in messages"
-            :key="message.id"
-            class="message"
-            :class="message.direction"
-          >
-            <div class="meta">
-              <span>{{ message.direction === "out" ? $t("privateChat.me") : message.fromName }}</span>
-              <time>{{ formatTime(message.createdAt) }}</time>
+        <div class="chat-body">
+          <section v-if="targets.length" ref="messages" class="messages">
+            <div v-if="!messages.length" class="empty-state compact">
+              {{ $t("privateChat.empty") }}
             </div>
-            <p>{{ message.content }}</p>
-          </article>
-        </section>
+            <article
+              v-for="message in messages"
+              :key="message.id"
+              class="message"
+              :class="message.direction"
+            >
+              <div class="meta">
+                <span>{{ message.direction === "out" ? $t("privateChat.me") : message.fromName }}</span>
+                <time>{{ formatTime(message.createdAt) }}</time>
+              </div>
+              <p>{{ message.content }}</p>
+            </article>
+          </section>
+        </div>
 
         <footer>
           <textarea
@@ -210,16 +212,17 @@ export default {
   min-width: 48px;
   height: 42px;
   padding: 0 12px;
-  color: white;
+  color: #dcc4a1;
   cursor: pointer;
-  background: rgba(0, 0, 0, 0.78);
-  border: 2px solid rgba(255, 255, 255, 0.28);
-  border-radius: 21px;
-  box-shadow: 0 0 14px #000;
+  background: rgba(12, 9, 8, 0.82);
+  border: 2px solid #3d2e26;
+  border-radius: 2px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 236, 190, 0.05);
 
   &.active {
-    background: rgba($townsfolk, 0.55);
-    border-color: $townsfolk;
+    color: #fff8e7;
+    background: rgba(18, 14, 12, 0.92);
+    border-color: #d4af37;
   }
 
   &.unread:after {
@@ -248,42 +251,64 @@ export default {
   max-width: 92vw;
   height: 540px;
   max-height: 78vh;
-  padding: 12px;
-  color: white;
-  background: rgba(0, 0, 0, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 8px;
-  box-shadow: 0 0 20px #000;
+  padding: 0;
+  overflow: hidden;
+  color: #dcc4a1;
+  background: rgba(12, 9, 8, 0.76);
+  border: 2px solid #3d2e26;
+  border-radius: 2px;
+  box-shadow: 0 18px 54px rgba(0, 0, 0, 0.62), inset 0 1px 0 rgba(255, 236, 190, 0.05);
+  backdrop-filter: blur(4px);
+  font-family: "STKaiti", "KaiTi", "STSong", "SimSun", serif;
 }
 
 header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 10px;
+  min-height: 3.1em;
+  margin-bottom: 0;
+  padding: 0.55em 0.7em;
+  border-bottom: 1px solid #3d2e26;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(92, 26, 22, 0.22), transparent 36%),
+    rgba(18, 14, 12, 0.9);
+
+  h3 {
+    margin: 0;
+    color: #fff8e7;
+    font-size: 1.15em;
+    letter-spacing: 0.12em;
+  }
 
   button {
-    color: white;
+    color: #dcc4a1;
     background: transparent;
     border: 0;
     cursor: pointer;
     font-size: 110%;
+
+    &:hover {
+      color: #fff8e7;
+    }
   }
 }
 
 textarea,
 button {
-  color: white;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #f7f0df;
+  background: rgba(5, 4, 4, 0.62);
+  border: 1px solid rgba(124, 94, 70, 0.88);
 }
 
 .chat-tabs {
   display: flex;
-  gap: 6px;
-  margin-bottom: 10px;
+  gap: 0;
+  margin-bottom: 0;
   overflow-x: auto;
-  padding-bottom: 4px;
+  padding: 0;
+  border-bottom: 1px solid #3d2e26;
+  background: rgba(18, 15, 13, 0.86);
 
   button {
     flex: 0 0 auto;
@@ -295,12 +320,14 @@ button {
     height: 30px;
     padding: 0 9px;
     cursor: pointer;
-    border-color: rgba(255, 255, 255, 0.2);
+    color: #b8a082;
+    border: 0;
+    border-right: 1px solid #3d2e26;
+    background: transparent;
 
     &.active {
-      color: white;
-      background: rgba($townsfolk, 0.45);
-      border-color: $townsfolk;
+      color: #fff8e7;
+      background: linear-gradient(#8a2721, #581612 54%, #2d0c09);
     }
 
     span {
@@ -320,15 +347,25 @@ button {
   }
 }
 
+.chat-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: rgba(18, 15, 13, 0.62);
+}
+
 .messages {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding: 4px 2px 8px;
+  padding: 0.65em 0.6em 0.8em;
+  background: transparent;
 }
 
 .empty-state {
   margin: 30px 0;
-  color: rgba(255, 255, 255, 0.65);
+  color: rgba(247, 240, 223, 0.64);
   text-align: center;
   font-size: 86%;
 
@@ -341,14 +378,14 @@ button {
   width: 86%;
   margin-bottom: 8px;
   padding: 8px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 6px;
+  background: rgba(5, 4, 4, 0.52);
+  border: 1px solid rgba(124, 94, 70, 0.52);
+  border-radius: 2px;
 
   &.out {
     margin-left: auto;
-    background: rgba($townsfolk, 0.22);
-    border-color: rgba($townsfolk, 0.45);
+    background: rgba(92, 26, 22, 0.34);
+    border-color: rgba(212, 175, 55, 0.45);
   }
 
   &.in {
@@ -357,7 +394,7 @@ button {
 
   p {
     margin: 4px 0 0;
-    color: rgba(255, 255, 255, 0.9);
+    color: rgba(247, 240, 223, 0.9);
     font-size: 86%;
     line-height: 1.35;
     white-space: pre-wrap;
@@ -378,7 +415,10 @@ footer {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 6px;
-  margin-top: 8px;
+  margin-top: 0;
+  padding: 0.65em;
+  border-top: 1px solid #3d2e26;
+  background: rgba(18, 15, 13, 0.86);
 
   textarea {
     min-height: 64px;
@@ -387,7 +427,13 @@ footer {
 
   button {
     min-width: 82px;
+    min-height: 32px;
+    align-self: end;
     cursor: pointer;
+    border-color: #d4af37;
+    border-radius: 2px;
+    background: linear-gradient(#b8860b, #946b07 48%, #5c4204);
+    color: #fff8e7;
 
     &:disabled {
       cursor: default;
@@ -395,8 +441,8 @@ footer {
     }
 
     &:not(:disabled):hover {
-      color: red;
-      border-color: red;
+      color: #fff8e7;
+      border-color: #fff8e7;
     }
   }
 }

@@ -254,6 +254,7 @@ export default store => {
         });
         break;
       case "players/set":
+      case "players/setCount":
         handlePlayersSet(store, beforePlayers, clonePlayers(state.players.players));
         break;
       case "players/update":

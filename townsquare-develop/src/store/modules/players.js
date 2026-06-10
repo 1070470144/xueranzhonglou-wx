@@ -12,6 +12,14 @@ const NEWPLAYER = {
   authUser: null
 };
 
+const MAX_PLAYERS = 20;
+const DEFAULT_PLAYER_LABEL = "\u73a9\u5bb6";
+
+const normalizePlayerCount = count => {
+  const parsed = Number.parseInt(count, 10);
+  return Number.isFinite(parsed) ? Math.max(0, Math.min(MAX_PLAYERS, parsed)) : 0;
+};
+
 const state = () => ({
   players: [],
   fabled: [],
@@ -140,8 +148,20 @@ const mutations = {
       name
     });
   },
+  setCount(state, count) {
+    const targetCount = normalizePlayerCount(count);
+    if (state.players.length > targetCount) {
+      state.players.splice(targetCount);
+    }
+    for (let index = state.players.length; index < targetCount; index++) {
+      state.players.push({
+        ...NEWPLAYER,
+        name: `${DEFAULT_PLAYER_LABEL} ${index + 1}`
+      });
+    }
+  },
   addMany(state, { count, startIndex = state.players.length } = {}) {
-    const amount = Math.max(0, Math.min(20 - state.players.length, count || 0));
+    const amount = Math.max(0, Math.min(MAX_PLAYERS - state.players.length, count || 0));
     for (let index = 0; index < amount; index++) {
       state.players.push({
         ...NEWPLAYER,

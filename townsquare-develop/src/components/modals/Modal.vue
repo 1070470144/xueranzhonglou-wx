@@ -97,11 +97,14 @@ export default {
     z-index: 100;
     top: 15px;
     right: 20px;
+    display: flex;
+    gap: 0.28em;
     > .top-right-button {
       cursor: pointer;
       width: 28px;
+      color: #dcc4a1;
       &:hover {
-        color: red;
+        color: #fff8e7;
       }
     }
   }
