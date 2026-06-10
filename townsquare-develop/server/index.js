@@ -36,8 +36,9 @@ if (process.env.NODE_ENV !== "development") {
 }
 
 const server = https.createServer(options);
+const developmentPort = Number(process.env.TOWNSQUARE_WS_PORT || 8081);
 const wss = new WebSocket.Server({
-  ...(process.env.NODE_ENV === "development" ? { port: 8081 } : { server }),
+  ...(process.env.NODE_ENV === "development" ? { port: developmentPort } : { server }),
   verifyClient: info => isAllowedOrigin(info.origin)
 });
 

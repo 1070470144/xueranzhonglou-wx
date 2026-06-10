@@ -542,12 +542,20 @@ export default {
   transition: all 200ms ease-in-out;
   z-index: 50;
 
-  > svg {
+  > svg.fa-times-circle,
+  > svg.fa-plus-circle {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 8px;
+    right: 8px;
+    z-index: 30;
+    width: 1.15em;
+    height: 1.15em;
     color: #dcc4a1;
     cursor: pointer;
+    border-radius: 50%;
+    background: rgba(12, 9, 8, 0.84);
+    box-shadow: 0 0 0 2px rgba(12, 9, 8, 0.72);
+    pointer-events: auto;
     &.fa-plus-circle {
       display: none;
     }
@@ -598,22 +606,12 @@ export default {
   &.fabled > h3 {
     padding-right: 2.4em;
   }
-  &.fabled > h3 svg.fa-times-circle {
-    position: absolute;
-    top: 0.55em;
-    right: 0.65em;
-    margin-left: 0;
-    color: #dcc4a1;
-  }
-  &.fabled > h3 svg.fa-times-circle:hover {
-    color: #fff8e7;
-  }
   ul {
     display: flex;
     align-items: center;
     justify-content: center;
     margin: 0;
-    padding: 0.35em 0.45em 0.45em;
+    padding: 0.35em 2.65em 0.45em 0.45em;
     li {
       width: 14vh;
       height: 14vh;
@@ -780,9 +778,18 @@ export default {
       }
     }
 
+    > svg.fa-times-circle,
+    > svg.fa-plus-circle {
+      top: 7px;
+      right: 7px;
+      z-index: 30;
+      width: 16px;
+      height: 16px;
+    }
+
     ul {
       margin: 0;
-      padding: 0 5px 5px;
+      padding: 0 34px 5px 5px;
       justify-content: flex-start;
 
       li {

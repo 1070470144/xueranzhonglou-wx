@@ -2,11 +2,14 @@ const assert = require("assert");
 const WebSocket = require("ws");
 
 process.env.NODE_ENV = "development";
+process.env.TOWNSQUARE_WS_PORT = process.env.TOWNSQUARE_WS_PORT || "18082";
 require("../server/index");
+
+const WS_URL = process.env.ROOM_WEBSOCKET_TEST_URL || `ws://localhost:${process.env.TOWNSQUARE_WS_PORT}`;
 
 function connect(path) {
   return new Promise((resolve, reject) => {
-    const ws = new WebSocket(`ws://localhost:8081/${path}`, {
+    const ws = new WebSocket(`${WS_URL}/${path}`, {
       headers: { Origin: "http://localhost" }
     });
     ws.once("open", () => resolve(ws));

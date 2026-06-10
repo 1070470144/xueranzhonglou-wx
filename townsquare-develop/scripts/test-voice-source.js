@@ -6,9 +6,15 @@ const serverSource = fs.readFileSync(path.join(__dirname, "../server/index.js"),
 const socketSource = fs.readFileSync(path.join(__dirname, "../src/store/socket.js"), "utf8");
 const storeSource = fs.readFileSync(path.join(__dirname, "../src/store/index.js"), "utf8");
 const appSource = fs.readFileSync(path.join(__dirname, "../src/App.vue"), "utf8");
+const stressStatePath = path.join(__dirname, "test-voice-rooms-stress.js");
+const stressSocketPath = path.join(__dirname, "test-voice-websocket-stress.js");
+
+assert(fs.existsSync(stressStatePath), "voice room state stress test should exist");
+assert(fs.existsSync(stressSocketPath), "voice websocket stress test should exist");
 
 [
   'const voiceRooms = require("./voiceRooms")',
+  "TOWNSQUARE_WS_PORT",
   "sendVoiceState(room)",
   "registerVoiceParticipant(room, ws)",
   'command.indexOf("voice:") === 0',

@@ -83,6 +83,17 @@ function closeEmptyPrivateChannels(state) {
   });
 }
 
+function finalizeInvitation(invite) {
+  if (!invite || invite.status !== "pending") return;
+  if (!invite.invitedIds.size) {
+    invite.status = "expired";
+    return;
+  }
+  if (invite.acceptedIds.size + invite.rejectedIds.size >= invite.invitedIds.size) {
+    invite.status = "closed";
+  }
+}
+
 function registerParticipant(state, { id, name, isHost = false, now = Date.now() }) {
   const participantId = String(id || "");
   if (!participantId) throw new Error("invalid_participant");
@@ -107,6 +118,7 @@ function registerParticipant(state, { id, name, isHost = false, now = Date.now()
 function unregisterParticipant(state, participantId) {
   state.participants.delete(participantId);
   state.channels.forEach(channel => channel.memberIds.delete(participantId));
+  state.channels.forEach(channel => channel.invitedIds.delete(participantId));
   state.invitations.forEach(invite => {
     invite.invitedIds.delete(participantId);
     invite.acceptedIds.delete(participantId);
@@ -114,6 +126,7 @@ function unregisterParticipant(state, participantId) {
     if (invite.fromId === participantId && invite.status === "pending") {
       invite.status = "expired";
     }
+    finalizeInvitation(invite);
   });
   closeEmptyPrivateChannels(state);
 }
@@ -167,9 +180,7 @@ function respondInvite(state, { participantId, inviteId, accept, now = Date.now(
     invite.acceptedIds.delete(participant.id);
   }
   participant.updatedAt = now;
-  if (invite.acceptedIds.size + invite.rejectedIds.size >= invite.invitedIds.size) {
-    invite.status = "closed";
-  }
+  finalizeInvitation(invite);
   return summarizeInvite(invite);
 }
 
