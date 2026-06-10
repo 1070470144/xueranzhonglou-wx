@@ -409,30 +409,30 @@ export default {
   #townsquare {
     height: 100dvh;
     min-height: 100svh;
-    padding: max(64px, env(safe-area-inset-top)) 22px
-      max(72px, env(safe-area-inset-bottom));
+    padding: max(52px, env(safe-area-inset-top)) 14px
+      max(50px, env(safe-area-inset-bottom));
     align-items: center;
     overflow: hidden;
   }
 
   .circle {
-    width: min(100%, calc(100vw - 64px));
-    height: min(100%, calc(100vw - 64px));
-    max-width: 520px;
-    max-height: 520px;
+    width: min(calc(100vw - 22px), calc(100dvh - 112px), 560px);
+    height: min(calc(100vw - 22px), calc(100dvh - 112px), 560px);
+    max-width: none;
+    max-height: none;
     position: relative;
   }
 }
 
 @media (orientation: portrait) and (max-width: 420px) {
   #townsquare {
-    padding-left: 18px;
-    padding-right: 18px;
+    padding-left: 10px;
+    padding-right: 10px;
   }
 
   .circle {
-    width: min(100%, calc(100vw - 54px));
-    height: min(100%, calc(100vw - 54px));
+    width: min(calc(100vw - 16px), calc(100dvh - 104px), 540px);
+    height: min(calc(100vw - 16px), calc(100dvh - 104px), 540px);
   }
 }
 
