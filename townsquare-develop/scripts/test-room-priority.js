@@ -2,7 +2,14 @@ const fs = require("fs");
 const path = require("path");
 const WebSocket = require("ws");
 
-const WS_URL = process.env.ROOM_TEST_WS_URL || "ws://localhost:8081";
+process.env.NODE_ENV = "development";
+process.env.TOWNSQUARE_WS_PORT = process.env.TOWNSQUARE_WS_PORT || "18085";
+process.env.TOWNSQUARE_HOST_RECONNECT_GRACE_MS =
+  process.env.TOWNSQUARE_HOST_RECONNECT_GRACE_MS || "250";
+if (!process.env.ROOM_TEST_WS_URL) require("../server/index");
+
+const WS_URL =
+  process.env.ROOM_TEST_WS_URL || `ws://localhost:${process.env.TOWNSQUARE_WS_PORT}`;
 const ORIGIN = process.env.ROOM_TEST_ORIGIN || "http://localhost:8080";
 const REQUEST_TIMEOUT = Number(process.env.ROOM_TEST_TIMEOUT || 5000);
 const MAX_PLAYERS = 20;
@@ -201,20 +208,30 @@ async function runHostCloseWithPlayersScenario() {
   }
 
   host.close();
-  for (const player of players) {
-    const [, payload] = await player.waitFor("room:closed");
-    assert(payload.roomId === room.id, "player receives room:closed when host leaves", payload);
-  }
   await waitForRoomList(watcher, room.id, false);
-  assert(true, "host close removes occupied room from list", { roomId: room.id });
+  assert(true, "host-disconnected occupied room is hidden during reconnect grace", {
+    roomId: room.id
+  });
 
   const rejoin = new TestClient("close-rejoin", `close-rejoin-${suffix}`);
   await rejoin.connect();
   const [rejoinCommand, rejoinPayload] = await joinRoom(rejoin, room.id, "After Close");
   assert(
-    rejoinCommand === "room:join:error" && rejoinPayload.reason === "room_not_found",
-    "players cannot rejoin closed room",
+    rejoinCommand === "room:join:error" && rejoinPayload.reason === "host_disconnected",
+    "new players cannot join while host is disconnected during reconnect grace",
     rejoinPayload
+  );
+
+  for (const player of players) {
+    const [, payload] = await player.waitFor("room:closed");
+    assert(payload.roomId === room.id, "player receives room:closed when host grace expires", payload);
+  }
+
+  const [expiredCommand, expiredPayload] = await joinRoom(rejoin, room.id, "After Expiry");
+  assert(
+    expiredCommand === "room:join:error" && expiredPayload.reason === "room_not_found",
+    "players cannot rejoin after disconnected host room expires",
+    expiredPayload
   );
 
   [...players, watcher, rejoin].forEach(client => client.close());
@@ -342,6 +359,7 @@ async function main() {
   await runMaxPlayerBoundaryScenario();
   await runRoomUpdatePlayerSyncScenario();
   writeLog("PASS", "room priority tests completed", { logPath });
+  process.exit(0);
 }
 
 main().catch(error => {

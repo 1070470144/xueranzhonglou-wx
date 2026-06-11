@@ -86,6 +86,12 @@ function summarize(room, options = {}) {
   return summary;
 }
 
+function clearPlayerDisconnectTimer(player) {
+  if (!player || !player.disconnectTimer) return;
+  clearTimeout(player.disconnectTimer);
+  player.disconnectTimer = null;
+}
+
 function createRoom({ host, name, hostName = "", note = "", visibility = "public", password = "", maxPlayers, scriptJson = "", scriptName = "", status = "waiting", voiceUrl = "" }) {
   const cleanName = String(name || "").trim();
   if (!cleanName) throw new Error("invalid_room_name");
@@ -121,6 +127,7 @@ function createRoom({ host, name, hostName = "", note = "", visibility = "public
 
 function listRooms() {
   return Array.from(rooms.values())
+    .filter(room => !room.hostDisconnectedAt)
     .map(summarize)
     .sort((a, b) => b.updatedAt - a.updatedAt);
 }
@@ -129,6 +136,7 @@ function closeRoomsWhere(predicate) {
   const closedRooms = [];
   rooms.forEach(room => {
     if (!predicate(room)) return;
+    room.players.forEach(clearPlayerDisconnectTimer);
     rooms.delete(room.id);
     closedRooms.push(room);
   });
@@ -142,8 +150,10 @@ function getRoom(id) {
 function verifyJoin({ roomId, playerId, password, inviteToken }) {
   const room = getRoom(roomId);
   if (!room) throw new Error("room_not_found");
+  if (room.hostDisconnectedAt) throw new Error("host_disconnected");
   if (room.bannedPlayerIds.has(playerId)) throw new Error("banned");
-  if (room.players.size >= room.maxPlayers) throw new Error("room_full");
+  const existingPlayer = room.players.get(playerId);
+  if (!existingPlayer && room.players.size >= room.maxPlayers) throw new Error("room_full");
   if (room.visibility === "private" && inviteToken) {
     if (inviteToken !== room.inviteToken) throw new Error("invalid_invite");
     return room;
@@ -159,7 +169,15 @@ function addPlayer(roomId, ws, playerName) {
   if (!room) throw new Error("room_not_found");
   const cleanName = String(playerName || "").trim();
   if (!cleanName) throw new Error("invalid_player_name");
-  room.players.set(ws.playerId, { ws, name: cleanName, joinedAt: Date.now() });
+  const existingPlayer = room.players.get(ws.playerId);
+  clearPlayerDisconnectTimer(existingPlayer);
+  room.players.set(ws.playerId, {
+    ws,
+    name: cleanName,
+    joinedAt: existingPlayer ? existingPlayer.joinedAt : Date.now(),
+    disconnectedAt: 0,
+    disconnectTimer: null
+  });
   room.updatedAt = Date.now();
   return room;
 }
@@ -217,12 +235,23 @@ function removePlayer(roomId, playerId) {
 
 function removePlayerConnection(roomId, playerId, ws) {
   const room = getRoom(roomId);
-  if (!room) return null;
+  if (!room) return { room: null, player: null, removed: false };
   const player = room.players.get(playerId);
-  if (!player || player.ws !== ws) return room;
+  if (!player || player.ws !== ws) return { room, player: null, removed: false };
+  clearPlayerDisconnectTimer(player);
   room.players.delete(playerId);
   room.updatedAt = Date.now();
-  return room;
+  return { room, player, removed: true };
+}
+
+function markPlayerDisconnected(roomId, playerId, ws, disconnectedAt = Date.now()) {
+  const room = getRoom(roomId);
+  if (!room) return { room: null, player: null, marked: false };
+  const player = room.players.get(playerId);
+  if (!player || player.ws !== ws) return { room, player: null, marked: false };
+  player.disconnectedAt = disconnectedAt;
+  room.updatedAt = disconnectedAt;
+  return { room, player, marked: true };
 }
 
 function kickPlayer(roomId, playerId) {
@@ -230,6 +259,7 @@ function kickPlayer(roomId, playerId) {
   if (!room) throw new Error("room_not_found");
   room.bannedPlayerIds.add(playerId);
   const player = room.players.get(playerId);
+  clearPlayerDisconnectTimer(player);
   room.players.delete(playerId);
   room.updatedAt = Date.now();
   return player;
@@ -238,6 +268,7 @@ function kickPlayer(roomId, playerId) {
 function closeRoom(roomId) {
   const room = getRoom(roomId);
   if (!room) return null;
+  room.players.forEach(clearPlayerDisconnectTimer);
   rooms.delete(room.id);
   return room;
 }
@@ -256,6 +287,7 @@ module.exports = {
   updateRoom,
   removePlayer,
   removePlayerConnection,
+  markPlayerDisconnected,
   kickPlayer,
   closeRoom,
   closeRoomsWhere,

@@ -25,6 +25,7 @@ export class VoicePeerManager {
     this.enabled = false;
     this.micEnabled = false;
     this.canSpeak = true;
+    this.pendingSignals = [];
   }
 
   async sync({
@@ -35,16 +36,27 @@ export class VoicePeerManager {
     micEnabled,
     canSpeak,
   }) {
+    const nextChannelId = channelId || "main";
+    const channelChanged = !!this.channelId && this.channelId !== nextChannelId;
     this.ownId = ownId || this.ownId;
-    this.channelId = channelId || "main";
+    this.channelId = nextChannelId;
     this.enabled = !!enabled;
     this.canSpeak = canSpeak !== false;
     this.micEnabled = !!micEnabled && this.canSpeak;
 
     if (!this.enabled || !this.ownId) {
+      this.pendingSignals = [];
       this.closePeers();
       this.stopLocalStream();
       return;
+    }
+
+    if (channelChanged) {
+      this.closePeers();
+      this.pendingSignals = this.pendingSignals.filter(
+        ({ signal }) =>
+          !signal || !signal.channelId || signal.channelId === this.channelId,
+      );
     }
 
     await this.ensureLocalStream();
@@ -63,15 +75,61 @@ export class VoicePeerManager {
         this.ensurePeer(peerId, this.shouldInitiate(peerId)),
       ),
     );
+    await this.flushPendingSignals();
   }
 
   async handleSignal({ fromId, signal } = {}) {
-    if (!this.enabled || !fromId || !signal) return;
-    if (signal.channelId && signal.channelId !== this.channelId) return;
-    if (!this.memberIds.has(fromId)) return;
+    if (!fromId || !signal) return;
+    if (this.ownId && fromId === this.ownId) return;
+    if (!this.canProcessSignal(fromId, signal)) {
+      this.queueSignal({ fromId, signal });
+      return;
+    }
+    await this.processSignal({ fromId, signal });
+  }
+
+  canProcessSignal(fromId, signal) {
+    return (
+      this.enabled &&
+      !!fromId &&
+      !!signal &&
+      (!signal.channelId || signal.channelId === this.channelId) &&
+      this.memberIds.has(fromId)
+    );
+  }
+
+  queueSignal(payload) {
+    const signalChannelId = payload.signal && payload.signal.channelId;
+    if (
+      signalChannelId &&
+      this.channelId &&
+      signalChannelId !== this.channelId &&
+      (!this.enabled || !this.memberIds.has(payload.fromId))
+    ) {
+      return;
+    }
+    this.pendingSignals.push(payload);
+    if (this.pendingSignals.length > 100) this.pendingSignals.shift();
+  }
+
+  async flushPendingSignals() {
+    if (!this.pendingSignals.length) return;
+    const pending = this.pendingSignals;
+    this.pendingSignals = [];
+    for (const payload of pending) {
+      if (this.canProcessSignal(payload.fromId, payload.signal)) {
+        await this.processSignal(payload);
+      } else {
+        this.queueSignal(payload);
+      }
+    }
+  }
+
+  async processSignal({ fromId, signal }) {
     const peer = await this.ensurePeer(fromId, false);
     if (signal.type === "offer") {
       await peer.pc.setRemoteDescription(signal.description);
+      await this.flushPeerCandidates(peer);
       const answer = await peer.pc.createAnswer();
       await peer.pc.setLocalDescription(answer);
       this.sendSignal({
@@ -87,10 +145,11 @@ export class VoicePeerManager {
     if (signal.type === "answer") {
       if (peer.pc.signalingState !== "have-local-offer") return;
       await peer.pc.setRemoteDescription(signal.description);
+      await this.flushPeerCandidates(peer);
       return;
     }
     if (signal.type === "candidate" && signal.candidate) {
-      await peer.pc.addIceCandidate(signal.candidate);
+      await this.addIceCandidate(peer, signal.candidate);
     }
   }
 
@@ -100,7 +159,11 @@ export class VoicePeerManager {
       throw new Error("microphone_not_supported");
     }
     this.localStream = await navigator.mediaDevices.getUserMedia({
-      audio: true,
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true,
+      },
     });
     this.applyMicrophoneState();
     return this.localStream;
@@ -117,7 +180,13 @@ export class VoicePeerManager {
     if (this.peers.has(peerId)) return this.peers.get(peerId);
     await this.ensureLocalStream();
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
-    const peer = { id: peerId, pc, audio: null, offered: false };
+    const peer = {
+      id: peerId,
+      pc,
+      audio: null,
+      offered: false,
+      pendingCandidates: [],
+    };
     this.peers.set(peerId, peer);
 
     this.localStream
@@ -172,6 +241,25 @@ export class VoicePeerManager {
       document.body.appendChild(peer.audio);
     }
     peer.audio.srcObject = stream;
+    const playResult = peer.audio.play && peer.audio.play();
+    if (playResult && playResult.catch) playResult.catch(() => {});
+  }
+
+  async addIceCandidate(peer, candidate) {
+    if (!peer.pc.remoteDescription) {
+      peer.pendingCandidates.push(candidate);
+      return;
+    }
+    await peer.pc.addIceCandidate(candidate);
+  }
+
+  async flushPeerCandidates(peer) {
+    if (!peer.pendingCandidates.length) return;
+    const candidates = peer.pendingCandidates;
+    peer.pendingCandidates = [];
+    for (const candidate of candidates) {
+      await peer.pc.addIceCandidate(candidate);
+    }
   }
 
   shouldInitiate(peerId) {

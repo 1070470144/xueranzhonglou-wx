@@ -133,9 +133,12 @@ class LiveSession {
         this._store.state.session.playerId,
       );
     } else if (this._store.state.room.current) {
-      this.sendGamestate();
+      this._send("room:state:get", {});
     } else {
       this._send("room:state:get", {});
+    }
+    if (this._isRoomSession || this._store.state.room.current) {
+      this.requestVoiceState();
     }
     this._ping();
     this.syncAuthPlayer();

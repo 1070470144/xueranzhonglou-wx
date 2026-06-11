@@ -14,6 +14,7 @@ register.setDefaultLabels({
 
 const PING_INTERVAL = 30000; // 30 seconds
 const HOST_RECONNECT_GRACE_MS = Number(process.env.TOWNSQUARE_HOST_RECONNECT_GRACE_MS || 30000);
+const PLAYER_RECONNECT_GRACE_MS = Number(process.env.TOWNSQUARE_PLAYER_RECONNECT_GRACE_MS || 5000);
 const defaultAllowedOriginPattern = /^https?:\/\/([^.]+\.github\.io|localhost|127\.0\.0\.1|\[::1\]|10(?:\.\d{1,3}){3}|192\.168(?:\.\d{1,3}){2}|172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2}|clocktower\.online|eddbra1nprivatetownsquare\.xyz|([^.]+\.)?xuerantools\.org)(?::\d+)?(?:\/|$)/i;
 const allowedOrigins = (process.env.TOWNSQUARE_ALLOWED_ORIGINS || "")
   .split(",")
@@ -93,6 +94,8 @@ function sendRoomSnapshot(ws, room) {
 }
 
 function reclaimHostConnection(ws, room) {
+  clearTimeout(room.hostReconnectTimer);
+  room.hostReconnectTimer = null;
   room.host = ws;
   room.hostDisconnectedAt = 0;
   moveClientToChannel(ws, room.id);
@@ -568,7 +571,7 @@ wss.on("connection", function connection(ws, req) {
         break;
     }
   });
-  ws.on("close", function closed() {
+  ws.on("close", function closed(code) {
     if (!ws.roomId) return;
     const room = rooms.getRoom(ws.roomId);
     if (!room) return;
@@ -586,8 +589,31 @@ wss.on("connection", function connection(ws, req) {
       }, HOST_RECONNECT_GRACE_MS);
       broadcastRoomList();
     } else {
-      rooms.removePlayerConnection(room.id, ws.playerId, ws);
-      if (room.voiceState) voiceRooms.unregisterParticipant(room.voiceState, ws.playerId);
+      if (code === 1000) {
+        const result = rooms.removePlayerConnection(room.id, ws.playerId, ws);
+        if (result.removed && room.voiceState) {
+          voiceRooms.unregisterParticipant(room.voiceState, ws.playerId);
+        }
+        sendRoomPlayerList(room);
+        sendVoiceState(room);
+        broadcastRoomList();
+        return;
+      }
+      const result = rooms.markPlayerDisconnected(room.id, ws.playerId, ws);
+      if (!result.marked) return;
+      result.player.disconnectTimer = setTimeout(() => {
+        const activeRoom = rooms.getRoom(room.id);
+        if (!activeRoom) return;
+        const player = activeRoom.players.get(ws.playerId);
+        if (!player || player.ws !== ws || !player.disconnectedAt) return;
+        const removal = rooms.removePlayerConnection(activeRoom.id, ws.playerId, ws);
+        if (removal.removed && activeRoom.voiceState) {
+          voiceRooms.unregisterParticipant(activeRoom.voiceState, ws.playerId);
+        }
+        sendRoomPlayerList(activeRoom);
+        sendVoiceState(activeRoom);
+        broadcastRoomList();
+      }, PLAYER_RECONNECT_GRACE_MS);
       sendRoomPlayerList(room);
       sendVoiceState(room);
       broadcastRoomList();

@@ -181,4 +181,18 @@ assert.strictEqual(closedStaleRooms.length, 1);
 assert.strictEqual(closedStaleRooms[0].id, staleRoomId);
 assert.strictEqual(rooms.getRoom(staleRoomId), undefined);
 
+room = rooms.createRoom({
+  host: makeHost("reconnect-grace-host"),
+  name: "Reconnect Grace Room",
+  visibility: "public"
+});
+room.hostDisconnectedAt = Date.now();
+assert.strictEqual(
+  rooms.listRooms().some(candidate => candidate.id === room.id),
+  false,
+  "rooms waiting for host reconnect should not remain visible in the lobby"
+);
+assert.strictEqual(rooms.getRoom(room.id), room);
+resetRoom(room);
+
 console.log("room registry tests passed");

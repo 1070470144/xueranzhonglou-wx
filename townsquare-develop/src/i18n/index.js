@@ -294,6 +294,7 @@ const messages = {
         room_full: "房间已满。",
         password_required: "请输入房间密码。",
         invalid_password: "房间密码错误。",
+        host_disconnected: "主持人暂时断线，房间正在等待重连。",
         banned: "你已被移出该房间，暂时不能重新加入。",
         duplicate_host: "该房间已经有主持人。",
         host_only: "只有房主可以执行该操作。",
@@ -752,6 +753,8 @@ const messages = {
         room_full: "This room is full.",
         password_required: "Password required.",
         invalid_password: "Wrong password.",
+        host_disconnected:
+          "The host is temporarily disconnected. Wait for them to reconnect.",
         banned: "You were removed from this room and cannot rejoin yet.",
         duplicate_host: "This room already has a host.",
         host_only: "Only the host can do that.",

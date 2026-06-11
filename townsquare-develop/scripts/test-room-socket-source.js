@@ -134,6 +134,42 @@ assert(
 );
 
 assert(
+  /_onOpen\(\)[\s\S]*?this\._store\.state\.room\.current[\s\S]*?this\._send\("room:state:get", \{\}\)/.test(
+    socketSource
+  ),
+  "storyteller room socket reopen should request room state when recovering an existing room"
+);
+
+const onOpenStart = socketSource.indexOf("_onOpen() {");
+const onOpenEnd = socketSource.indexOf("\n  /**\n   * Send a ping", onOpenStart);
+const onOpenSource = socketSource.slice(onOpenStart, onOpenEnd);
+const recoveringRoomStart = onOpenSource.indexOf(
+  "this._store.state.room.current"
+);
+const recoveringRoomEnd = onOpenSource.indexOf("} else {", recoveringRoomStart);
+const recoveringRoomSource = onOpenSource.slice(
+  recoveringRoomStart,
+  recoveringRoomEnd
+);
+
+assert(
+  recoveringRoomSource.includes('this._send("room:state:get", {})'),
+  "storyteller socket reopen for an existing room should pull the authoritative room snapshot"
+);
+
+assert(
+  !recoveringRoomSource.includes("this.sendGamestate()"),
+  "storyteller socket reopen should not broadcast stale local gamestate before room state recovery"
+);
+
+assert(
+  /_onOpen\(\)[\s\S]*?this\._sendDirect\([\s\S]*?"host"[\s\S]*?"getGamestate"[\s\S]*?this\.requestVoiceState\(\)/.test(
+    socketSource
+  ),
+  "player room socket reopen should request host gamestate and voice state"
+);
+
+assert(
   /parseRoomShareHash[\s\S]*?URLSearchParams[\s\S]*?inviteToken/.test(socketSource) &&
     /const sharedRoom[\s\S]*?room\/updateJoinForm[\s\S]*?room\/join/.test(socketSource),
   "opening a room share hash should automatically join with invite token"
