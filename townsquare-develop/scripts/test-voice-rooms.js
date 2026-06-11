@@ -143,6 +143,23 @@ function createThreePersonVoiceState() {
 
 {
   const state = createThreePersonVoiceState();
+  voiceRooms.setSpeaking(state, { participantId: "p1", speaking: true });
+  const snapshot = voiceRooms.summarize(state);
+  assert.strictEqual(snapshot.participants.find(item => item.id === "p1").speaking, true);
+  assert.strictEqual(snapshot.participants.find(item => item.id === "p2").speaking, false);
+}
+
+{
+  const state = createThreePersonVoiceState();
+  voiceRooms.setSpeaking(state, { participantId: "p1", speaking: true });
+  voiceRooms.setMuteAll(state, { byId: "host", value: true });
+  const snapshot = voiceRooms.summarize(state);
+  assert.strictEqual(snapshot.participants.find(item => item.id === "p1").speaking, false);
+  assert.strictEqual(snapshot.participants.find(item => item.id === "host").speaking, false);
+}
+
+{
+  const state = createThreePersonVoiceState();
   const invite = voiceRooms.createInvite(state, {
     fromId: "p1",
     invitedIds: ["p2"],

@@ -30,6 +30,7 @@ const stats = {
   inviteRejects: 0,
   rejectionNotices: 0,
   signalForwards: 0,
+  speakingSyncs: 0,
   expectedErrors: 0,
   recalls: 0,
   disconnectChecks: 0,
@@ -226,6 +227,11 @@ function channelForParticipant(state, participantId) {
   return participant && participant.currentChannelId;
 }
 
+function speakingForParticipant(state, participantId) {
+  const participant = (state.participants || []).find(item => item.id === participantId);
+  return participant && participant.speaking === true;
+}
+
 async function waitForVoiceState(client, predicate, timeout = REQUEST_TIMEOUT) {
   return client.waitForNext((command, params) => command === "voice:state" && predicate(params), timeout);
 }
@@ -291,6 +297,23 @@ async function exerciseRoom(group, index) {
   const [, forwardedSignal] = await b.waitForNext("voice:signal");
   assert(forwardedSignal.fromId === a.playerId, "voice signal forwards inside private channel", forwardedSignal);
   stats.signalForwards += 1;
+
+  a.send("voice:speaking:set", { speaking: true });
+  const [, speakingState] = await waitForVoiceState(b, params => speakingForParticipant(params, a.playerId) === true);
+  assert(speakingForParticipant(speakingState, a.playerId) === true, "voice speaking state turns yellow on other clients", {
+    room: group.room.id,
+    participantId: a.playerId
+  });
+  a.send("voice:speaking:set", { speaking: false });
+  const [, silentState] = await waitForVoiceState(b, params => {
+    const participant = (params.participants || []).find(item => item.id === a.playerId);
+    return participant && participant.speaking === false;
+  });
+  assert(speakingForParticipant(silentState, a.playerId) === false, "voice speaking state turns red on other clients", {
+    room: group.room.id,
+    participantId: a.playerId
+  });
+  stats.speakingSyncs += 1;
 
   a.send("voice:signal", {
     toId: c.playerId,

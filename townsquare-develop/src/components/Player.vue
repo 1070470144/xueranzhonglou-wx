@@ -12,6 +12,7 @@
           'vote-yes': session.votes[index],
           'vote-lock': voteLocked,
           'token-upside-down': isTokenUpsideDown,
+          'night-active': this.nightNavigation.currentSeatIndex === this.index,
         },
         player.role.team,
       ]"
@@ -107,6 +108,16 @@
       <div class="name" @click="toggleMenu" :class="{ active: isMenuOpen }">
         <span>{{ displayName }}</span>
         <font-awesome-icon icon="venus-mars" v-if="player.pronouns" />
+        <font-awesome-icon
+          v-if="showVoiceStatusIcon"
+          icon="volume-up"
+          class="seat-voice-icon"
+          :class="{
+            'seat-speaking-icon': isVoiceSpeaking,
+            'seat-voice-inactive': !isVoiceSpeaking,
+          }"
+          :title="$t('voice.speaking')"
+        />
         <div class="pronouns" v-if="player.pronouns">
           <span>{{ player.pronouns }}</span>
         </div>
@@ -229,8 +240,8 @@ export default {
     },
   },
   computed: {
-    ...mapState("players", ["players"]),
-    ...mapState(["grimoire", "session"]),
+    ...mapState("players", ["players", "nightNavigation"]),
+    ...mapState(["grimoire", "session", "voice"]),
     ...mapGetters({ nightOrder: "players/nightOrder" }),
     index: function () {
       return this.players.indexOf(this.player);
@@ -238,6 +249,23 @@ export default {
     displayName: function () {
       if (!this.player.name) return "";
       return `${this.index + 1}.${this.player.name}`;
+    },
+    showVoiceStatusIcon: function () {
+      return !!(this.session.sessionId && this.player.id);
+    },
+    isVoiceSpeaking: function () {
+      if (!this.player.id || !this.voice || !this.voice.state) return false;
+      if (
+        this.player.id === this.session.playerId &&
+        this.session.isSpectator &&
+        this.voice.speaking
+      ) {
+        return true;
+      }
+      const participant = this.voice.state.participants.find(
+        (participant) => participant.id === this.player.id,
+      );
+      return !!(participant && participant.speaking);
     },
     menuStyle: function () {
       return this.menuOffsetY
@@ -591,6 +619,22 @@ export default {
   backface-visibility: hidden;
 }
 
+.player.night-active .token {
+  animation: nightActionPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes nightActionPulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 7px rgba(255, 226, 46, 0.72))
+      drop-shadow(0 0 18px rgba(255, 245, 120, 0.46));
+  }
+  50% {
+    filter: drop-shadow(0 0 13px rgba(255, 226, 46, 0.96))
+      drop-shadow(0 0 30px rgba(255, 245, 120, 0.72));
+  }
+}
+
 .player.token-upside-down .token {
   transform: perspective(400px) rotateY(0deg) rotate(180deg);
 }
@@ -795,6 +839,7 @@ li.move:not(.from) .player .overlay svg.move {
 
 /***** Player name *****/
 .player > .name {
+  position: relative;
   right: 10%;
   display: flex;
   justify-content: center;
@@ -860,6 +905,42 @@ li.move:not(.from) .player .overlay svg.move {
       margin-left: 2px;
       left: 100%;
     }
+  }
+}
+
+.player > .name .seat-voice-icon {
+  position: absolute;
+  top: -1.08em;
+  right: -0.18em;
+  width: 1em;
+  height: 1em;
+  pointer-events: none;
+  z-index: 20;
+}
+
+.player > .name .seat-speaking-icon {
+  color: #ffd94a;
+  filter: drop-shadow(0 0 3px black)
+    drop-shadow(0 0 7px rgba(255, 217, 74, 0.85));
+  animation: voice-speaking-pulse 0.72s ease-in-out infinite;
+}
+
+.player > .name .seat-voice-inactive {
+  color: #d64535;
+  filter: drop-shadow(0 0 3px black)
+    drop-shadow(0 0 5px rgba(214, 69, 53, 0.78));
+  opacity: 0.88;
+}
+
+@keyframes voice-speaking-pulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.12);
   }
 }
 

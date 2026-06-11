@@ -26,6 +26,7 @@ assert(fs.existsSync(stressSocketPath), "voice websocket stress test should exis
   'case "voice:muteAll:set"',
   'case "voice:recall:start"',
   'case "voice:recall:execute"',
+  'case "voice:speaking:set"',
   'case "voice:signal"',
   'sendJson(targetWs, "voice:signal"',
   'sendJson(findRoomClient(room, rejectedInvite.fromId), "voice:invite:rejected"',
@@ -49,6 +50,7 @@ assert(fs.existsSync(stressSocketPath), "voice websocket stress test should exis
   "setVoiceMuteAll(value)",
   "startVoiceRecall()",
   "executeVoiceRecall()",
+  "setVoiceSpeaking(payload)",
   "sendVoiceSignal(payload)",
   'case "voice/requestState"',
   'case "voice/createInvite"',
@@ -58,8 +60,14 @@ assert(fs.existsSync(stressSocketPath), "voice websocket stress test should exis
   'case "voice/setMuteAll"',
   'case "voice/startRecall"',
   'case "voice/executeRecall"',
+  'case "voice/sendSpeakingState"',
   'case "voice/sendSignal"'
 ].forEach(needle => assert(socketSource.includes(needle), `socket missing ${needle}`));
+
+[
+  '_send("voice:speaking:set"',
+  "speaking: !!(payload && payload.speaking)"
+].forEach(needle => assert(socketSource.includes(needle), `voice speaking socket missing ${needle}`));
 
 assert(storeSource.includes('import voice from "./modules/voice"'), "store should import voice module");
 assert(storeSource.includes("voice"), "store should register voice module");

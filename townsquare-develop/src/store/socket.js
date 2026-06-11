@@ -1171,6 +1171,12 @@ class LiveSession {
     this._send("voice:recall:execute", {});
   }
 
+  setVoiceSpeaking(payload) {
+    this._send("voice:speaking:set", {
+      speaking: !!(payload && payload.speaking),
+    });
+  }
+
   sendVoiceSignal(payload) {
     if (!payload || !payload.toId || !payload.signal) return;
     this._send("voice:signal", payload);
@@ -1369,6 +1375,9 @@ export default (store) => {
         break;
       case "voice/executeRecall":
         session.executeVoiceRecall();
+        break;
+      case "voice/sendSpeakingState":
+        session.setVoiceSpeaking(payload);
         break;
       case "voice/sendSignal":
         session.sendVoiceSignal(payload);

@@ -1,5 +1,8 @@
 <template>
   <div id="controls">
+    <span v-if="voiceHintText" class="voice-hint" :title="voiceHintText">
+      {{ voiceHintText }}
+    </span>
     <span
       class="nomlog-summary"
       v-show="session.voteHistory.length && session.sessionId"
@@ -270,6 +273,12 @@ import { getPublicWebAnnouncements } from "@/services/announcements";
 const ANNOUNCEMENT_READ_KEY = "townsquare.webAnnouncement.readKey";
 
 export default {
+  props: {
+    voiceHintText: {
+      type: String,
+      default: "",
+    },
+  },
   computed: {
     ...mapState(["grimoire", "session", "edition", "room"]),
     ...mapState("players", ["players"]),
@@ -456,13 +465,17 @@ export default {
     align-items: center;
     justify-content: center;
     gap: 0.2em;
+    box-sizing: border-box;
     cursor: pointer;
     z-index: 5;
-    min-height: 1.45em;
+    height: 26px;
+    min-height: 0;
+    line-height: 1;
+    vertical-align: top;
     margin-top: 4px;
     margin-left: 5px;
-    padding: 0 0.38em;
-    font-size: 0.82em;
+    padding: 0 8px;
+    font-size: 16px;
     color: #dcc4a1;
     border: 1px solid #3d2e26;
     border-radius: 2px;
@@ -495,6 +508,15 @@ export default {
     min-width: 3.8em;
     text-align: center;
     white-space: nowrap;
+  }
+
+  span.voice-hint {
+    max-width: 9.5em;
+    cursor: default;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    pointer-events: none;
   }
 
   .announcement-dot {
@@ -699,6 +721,12 @@ export default {
     min-width: 1.9em;
     max-width: 1.9em;
     padding: 0;
+  }
+
+  #controls span.voice-hint {
+    max-width: 6em;
+    min-width: 0;
+    padding: 0 0.32em;
   }
 
   #controls span.announcement-summary > span {

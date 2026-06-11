@@ -571,6 +571,38 @@ async function testRemoteStreamCreatesAudioAndStartsPlayback() {
   assert.strictEqual(createdAudioElements[0].playCalls, 1);
 }
 
+async function testListenVolumeAppliesToExistingAndFutureAudio() {
+  const { VoicePeerManager, createdAudioElements } = loadVoicePeerManager();
+  const manager = new VoicePeerManager({ sendSignal: () => {} });
+
+  manager.setListenVolume(0.35);
+  await manager.sync({
+    ownId: "player-1",
+    channelId: "main",
+    members: [{ id: "player-1" }, { id: "player-2" }],
+    enabled: true,
+    micEnabled: true,
+    canSpeak: true,
+  });
+  manager.peers.get("player-2").pc.ontrack({ streams: [{ id: "remote-stream" }] });
+
+  assert.strictEqual(createdAudioElements[0].volume, 0.35);
+  manager.setListenVolume(0.8);
+  assert.strictEqual(createdAudioElements[0].volume, 0.8);
+}
+
+async function testSpeakingDetectionApiIsWired() {
+  const sourcePath = path.join(__dirname, "..", "src", "services", "voicePeer.js");
+  const source = fs.readFileSync(sourcePath, "utf8");
+  [
+    "onSpeakingChange",
+    "startSpeakingDetection",
+    "stopSpeakingDetection",
+    "sampleSpeakingLevel",
+    "setSpeaking(false)",
+  ].forEach((needle) => assert(source.includes(needle), `voice peer missing ${needle}`));
+}
+
 async function testRepeatedRemoteTracksReuseAudioElement() {
   const { VoicePeerManager, createdAudioElements } = loadVoicePeerManager();
   const manager = new VoicePeerManager({ sendSignal: () => {} });
@@ -752,6 +784,8 @@ async function run() {
   await testEarlyCandidateWaitsForRemoteDescription();
   await testEarlyCandidateWaitsForRemoteAnswer();
   await testRemoteStreamCreatesAudioAndStartsPlayback();
+  await testListenVolumeAppliesToExistingAndFutureAudio();
+  await testSpeakingDetectionApiIsWired();
   await testRepeatedRemoteTracksReuseAudioElement();
   await testRemotePlaybackFailureDoesNotBreakPeer();
   await testLeavingChannelClosesPeerAndRemovesAudio();

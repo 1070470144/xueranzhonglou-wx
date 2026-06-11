@@ -66,6 +66,53 @@
           <font-awesome-icon icon="theater-masks" />
           {{ $t("menu.sendCharacters") }}
         </button>
+        <div class="night-navigation">
+          <div
+            class="night-navigation-mode"
+            role="group"
+            :aria-label="$t('room.nightNavigation')"
+          >
+            <button
+              type="button"
+              class="button"
+              :class="{ townsfolk: nightNavigation.mode === 'first' }"
+              @click="setNightNavigationMode('first')"
+            >
+              {{ $t("room.firstNight") }}
+            </button>
+            <button
+              type="button"
+              class="button"
+              :class="{ townsfolk: nightNavigation.mode === 'other' }"
+              @click="setNightNavigationMode('other')"
+            >
+              {{ $t("room.otherNights") }}
+            </button>
+          </div>
+          <div class="night-navigation-stepper">
+            <button
+              type="button"
+              class="button"
+              :disabled="!nightNavigationQueue.length"
+              @click="previousNightAction"
+            >
+              <font-awesome-icon icon="step-backward" />
+              {{ $t("room.previousNightAction") }}
+            </button>
+            <span class="night-navigation-current">
+              {{ currentNightNavigationLabel }}
+            </span>
+            <button
+              type="button"
+              class="button demon"
+              :disabled="!nightNavigationQueue.length"
+              @click="nextNightAction"
+            >
+              <font-awesome-icon icon="step-forward" />
+              {{ $t("room.nextNightAction") }}
+            </button>
+          </div>
+        </div>
       </section>
 
       <section
@@ -121,6 +168,7 @@
             {{ voice.enabled ? $t("voice.disconnect") : $t("voice.connect") }}
           </button>
           <button
+            v-if="voice.talkMode === 'free'"
             type="button"
             class="button"
             :class="{ townsfolk: voice.micEnabled && canVoiceSpeak }"
@@ -139,6 +187,56 @@
             }}
           </button>
         </div>
+
+        <div
+          class="voice-mode-toggle"
+          role="group"
+          :aria-label="$t('voice.talkMode')"
+        >
+          <button
+            type="button"
+            class="button"
+            :class="{ townsfolk: voice.talkMode === 'free' }"
+            @click="setTalkMode('free')"
+          >
+            {{ $t("voice.freeTalk") }}
+          </button>
+          <button
+            type="button"
+            class="button"
+            :class="{ townsfolk: voice.talkMode === 'pushToTalk' }"
+            @click="setTalkMode('pushToTalk')"
+          >
+            {{ $t("voice.pushToTalk") }}
+          </button>
+        </div>
+
+        <button
+          v-if="voice.talkMode === 'pushToTalk'"
+          type="button"
+          class="button voice-hold-button"
+          :class="{ townsfolk: voice.pushToTalkActive && canVoiceSpeak }"
+          :disabled="!voice.enabled || !canVoiceSpeak"
+          @pointerdown.prevent="setPushToTalkActive(true)"
+          @pointerup.prevent="setPushToTalkActive(false)"
+          @pointercancel.prevent="setPushToTalkActive(false)"
+          @pointerleave.prevent="setPushToTalkActive(false)"
+        >
+          <font-awesome-icon icon="volume-up" />
+          {{ $t("voice.holdToTalk") }}
+        </button>
+
+        <label class="voice-volume-control">
+          <span>{{ $t("voice.listenVolume") }}</span>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            :value="Math.round(voice.listenVolume * 100)"
+            @input="setListenVolume($event.target.value / 100)"
+          />
+          <strong>{{ Math.round(voice.listenVolume * 100) }}%</strong>
+        </label>
 
         <div
           v-if="pendingInvites.length"
@@ -395,7 +493,7 @@ export default {
   },
   computed: {
     ...mapState(["modals", "room", "session", "voice"]),
-    ...mapState("players", ["players"]),
+    ...mapState("players", ["players", "nightNavigation"]),
     canEditSeats() {
       return !this.session.isSpectator && !this.session.lockedVote;
     },
@@ -441,6 +539,23 @@ export default {
     voiceErrorText() {
       return this.$t(`voice.errors.${this.voice.error}`) || this.voice.error;
     },
+    nightNavigationQueue() {
+      return this.$store.getters["players/nightActionQueue"](
+        this.nightNavigation.mode,
+      );
+    },
+    currentNightNavigationEntry() {
+      return this.nightNavigationQueue.find(
+        (entry) => entry.seatIndex === this.nightNavigation.currentSeatIndex,
+      );
+    },
+    currentNightNavigationLabel() {
+      const entry = this.currentNightNavigationEntry;
+      if (!entry) return this.$t("room.noNightActions");
+      return `${entry.order}. ${entry.role.name || entry.role.id} - ${
+        entry.player.name || this.$t("room.unnamedPlayer")
+      }`;
+    },
   },
   methods: {
     close() {
@@ -476,6 +591,35 @@ export default {
           }
         }
       }, 2000);
+    },
+    setNightNavigationMode(mode) {
+      this.$store.commit("players/setNightNavigationMode", mode);
+    },
+    previousNightAction() {
+      this.moveNightAction(-1);
+    },
+    nextNightAction() {
+      this.moveNightAction(1);
+    },
+    moveNightAction(direction) {
+      const queue = this.nightNavigationQueue;
+      if (!queue.length) {
+        this.$store.commit("players/clearNightNavigation");
+        return;
+      }
+      const currentIndex = queue.findIndex(
+        (entry) => entry.seatIndex === this.nightNavigation.currentSeatIndex,
+      );
+      const nextIndex =
+        currentIndex < 0
+          ? direction > 0
+            ? 0
+            : queue.length - 1
+          : (currentIndex + direction + queue.length) % queue.length;
+      this.$store.commit(
+        "players/setNightNavigationSeat",
+        queue[nextIndex].seatIndex,
+      );
     },
     setRoomStatus(status) {
       this.$store.commit("room/update", { status });
@@ -527,6 +671,15 @@ export default {
     toggleMic() {
       if (!this.canVoiceSpeak) return;
       this.$store.commit("voice/setMicEnabled", !this.voice.micEnabled);
+    },
+    setTalkMode(mode) {
+      this.$store.commit("voice/setTalkMode", mode);
+    },
+    setPushToTalkActive(value) {
+      this.$store.commit("voice/setPushToTalkActive", value);
+    },
+    setListenVolume(value) {
+      this.$store.commit("voice/setListenVolume", value);
     },
     createVoiceInvite() {
       if (!this.canCreateVoiceInvite) return;
@@ -791,6 +944,42 @@ dd {
   gap: 0.22em;
 }
 
+.night-navigation {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 0.22em;
+  padding: 0.24em;
+  border: 1px solid #3d2e26;
+  background: rgba(12, 9, 8, 0.62);
+}
+
+.night-navigation-mode,
+.night-navigation-stepper {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.22em;
+}
+
+.night-navigation-stepper {
+  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.2fr) minmax(0, 0.9fr);
+}
+
+.night-navigation-current {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 1.58em;
+  padding: 0 0.32em;
+  color: #fff8e7;
+  border: 1px solid #3d2e26;
+  background: rgba(5, 4, 4, 0.46);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.76em;
+}
+
 .room-control-command-grid.guest-actions,
 .room-control-inline-actions:not(.two-column) {
   grid-template-columns: minmax(0, 1fr);
@@ -981,6 +1170,45 @@ summary {
   font-size: 0.76em;
   font-weight: 700;
   letter-spacing: 0;
+}
+
+.voice-mode-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.22em;
+  padding: 0.28em;
+  border-top: 1px solid #261d19;
+}
+
+.voice-mode-toggle .button,
+.voice-hold-button {
+  width: calc(100% - 0.56em);
+  margin: 0.28em;
+}
+
+.voice-mode-toggle .button {
+  width: auto;
+  margin: 0;
+}
+
+.voice-volume-control {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr) 3em;
+  align-items: center;
+  gap: 0.42em;
+  padding: 0.32em 0.48em 0.46em;
+  border-top: 1px solid #261d19;
+  color: #b8a082;
+  font-size: 0.76em;
+}
+
+.voice-volume-control input {
+  min-width: 0;
+}
+
+.voice-volume-control strong {
+  color: #fff8e7;
+  text-align: right;
 }
 
 .room-control-note-editor {

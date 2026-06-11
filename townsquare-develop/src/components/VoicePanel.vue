@@ -19,9 +19,14 @@ export default {
     ...mapState("voice", {
       voiceEnabled: (state) => state.enabled,
       micEnabled: (state) => state.micEnabled,
+      speaking: (state) => state.speaking,
+      listenVolume: (state) => state.listenVolume,
       pendingSignals: (state) => state.pendingSignals,
       signalNonce: (state) => state.signalNonce,
     }),
+    effectiveMicEnabled() {
+      return this.$store.getters["voice/effectiveMicEnabled"];
+    },
     ownId() {
       return this.$store.getters["voice/ownId"];
     },
@@ -42,8 +47,18 @@ export default {
     },
   },
   watch: {
-    voiceEnabled: "syncVoice",
+    voiceEnabled() {
+      this.syncVoice();
+      this.syncSpeakingIntent();
+    },
     micEnabled: "syncVoice",
+    effectiveMicEnabled() {
+      this.syncVoice();
+      this.syncSpeakingIntent();
+    },
+    listenVolume(value) {
+      if (this.manager) this.manager.setListenVolume(value);
+    },
     currentChannelId: "syncVoice",
     currentMemberSignature: "syncVoice",
     signalNonce: "flushSignals",
@@ -51,12 +66,14 @@ export default {
       if (!value && this.micEnabled)
         this.$store.commit("voice/setMicEnabled", false);
       this.syncVoice();
+      this.syncSpeakingIntent();
     },
     "session.sessionId"(sessionId) {
       if (sessionId) {
         this.requestVoiceState();
         return;
       }
+      this.publishSpeakingState(false);
       if (this.manager) this.manager.destroy();
     },
   },
@@ -66,10 +83,13 @@ export default {
       onStatus: (status) => {
         this.$set(this.peerStatus, status.peerId, status.state);
       },
+      onSpeakingChange: () => this.syncSpeakingIntent(),
     });
+    this.manager.setListenVolume(this.listenVolume);
     if (this.session.sessionId) this.requestVoiceState();
   },
   beforeDestroy() {
+    this.publishSpeakingState(false);
     if (this.manager) this.manager.destroy();
   },
   methods: {
@@ -79,6 +99,18 @@ export default {
     sendSignal(payload) {
       this.$store.commit("voice/sendSignal", payload);
     },
+    publishSpeakingState(speaking) {
+      this.$store.commit("voice/setSpeaking", {
+        speaking,
+        participantId: this.ownId,
+      });
+      this.$store.commit("voice/sendSpeakingState", { speaking });
+    },
+    syncSpeakingIntent() {
+      const speaking =
+        this.voiceEnabled && this.canSpeak && this.effectiveMicEnabled;
+      this.publishSpeakingState(speaking);
+    },
     async syncVoice() {
       if (!this.manager) return;
       try {
@@ -87,7 +119,7 @@ export default {
           channelId: this.currentChannelId,
           members: this.currentMembers,
           enabled: this.voiceEnabled,
-          micEnabled: this.micEnabled,
+          micEnabled: this.effectiveMicEnabled,
           canSpeak: this.canSpeak,
         });
       } catch (error) {

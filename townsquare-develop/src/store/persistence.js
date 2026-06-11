@@ -91,6 +91,15 @@ export default (store) => {
       Number(localStorage.getItem("gameStartedAt")) || Date.now(),
     );
   }
+  if (localStorage.getItem("voiceTalkMode")) {
+    store.commit("voice/setTalkMode", localStorage.getItem("voiceTalkMode"));
+  }
+  if (localStorage.getItem("voiceListenVolume")) {
+    store.commit(
+      "voice/setListenVolume",
+      Number(localStorage.getItem("voiceListenVolume")),
+    );
+  }
 
   // listen to mutations
   store.subscribe(({ type, payload }, state) => {
@@ -223,6 +232,12 @@ export default (store) => {
         } else {
           localStorage.removeItem("playerName");
         }
+        break;
+      case "voice/setTalkMode":
+        localStorage.setItem("voiceTalkMode", state.voice.talkMode);
+        break;
+      case "voice/setListenVolume":
+        localStorage.setItem("voiceListenVolume", state.voice.listenVolume);
         break;
     }
   });

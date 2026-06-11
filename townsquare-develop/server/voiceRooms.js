@@ -71,6 +71,12 @@ function moveParticipantToChannel(state, participantId, channelId) {
   return participant;
 }
 
+function clearMutedSpeaking(state) {
+  state.participants.forEach(participant => {
+    if (!participant.isHost && state.muteAll) participant.speaking = false;
+  });
+}
+
 function closeEmptyPrivateChannels(state) {
   Array.from(state.channels.values()).forEach(channel => {
     if (channel.type !== "private") return;
@@ -113,6 +119,7 @@ function registerParticipant(state, { id, name, isHost = false, now = Date.now()
     name: normalizeName(name, isHost ? state.hostName : "Player"),
     isHost: !!isHost,
     currentChannelId: existing ? existing.currentChannelId : MAIN_CHANNEL_ID,
+    speaking: existing ? existing.speaking === true : false,
     joinedAt: existing ? existing.joinedAt : now,
     updatedAt: now
   };
@@ -211,12 +218,19 @@ function leaveChannel(state, { participantId }) {
 function setMuteAll(state, { byId, value }) {
   requireHost(state, byId);
   state.muteAll = !!value;
+  clearMutedSpeaking(state);
   return state.muteAll;
 }
 
 function canSpeak(state, participantId) {
   const participant = requireParticipant(state, participantId);
   return participant.isHost || !state.muteAll;
+}
+
+function setSpeaking(state, { participantId, speaking }) {
+  const participant = requireParticipant(state, participantId);
+  participant.speaking = speaking === true && canSpeak(state, participant.id);
+  return participant.speaking;
 }
 
 function startRecall(state, { byId, now = Date.now(), delayMs = RECALL_DELAY_MS }) {
@@ -234,6 +248,7 @@ function executeRecall(state, { byId, now = Date.now() }) {
   state.participants.forEach(participant => {
     state.channels.forEach(channel => channel.memberIds.delete(participant.id));
     participant.currentChannelId = MAIN_CHANNEL_ID;
+    participant.speaking = false;
     state.channels.get(MAIN_CHANNEL_ID).memberIds.add(participant.id);
   });
   Array.from(state.channels.keys()).forEach(channelId => {
@@ -274,7 +289,8 @@ function summarizeParticipant(participant) {
     id: participant.id,
     name: participant.name,
     isHost: participant.isHost,
-    currentChannelId: participant.currentChannelId
+    currentChannelId: participant.currentChannelId,
+    speaking: participant.speaking === true
   };
 }
 
@@ -306,6 +322,7 @@ module.exports = {
   joinChannel,
   leaveChannel,
   setMuteAll,
+  setSpeaking,
   canSpeak,
   startRecall,
   executeRecall,

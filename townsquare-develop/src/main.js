@@ -46,6 +46,8 @@ const faIcons = [
   "Skull",
   "Spinner",
   "Square",
+  "StepBackward",
+  "StepForward",
   "SyncAlt",
   "TheaterMasks",
   "Times",

@@ -28,6 +28,10 @@ const state = () => ({
   bluffs: [],
   lunaticBluffs: [],
   lunaticBluffPlayerIndex: -1,
+  nightNavigation: {
+    mode: "first",
+    currentSeatIndex: -1,
+  },
 });
 
 const getters = {
@@ -75,6 +79,25 @@ const getters = {
     });
     return nightOrder;
   },
+  nightActionQueue:
+    ({ players }) =>
+    (mode = "first") => {
+      const normalizedMode = mode === "other" ? "other" : "first";
+      const orderKey = normalizedMode === "other" ? "otherNight" : "firstNight";
+      return players
+        .map((player, seatIndex) => {
+          const role = player.role || {};
+          return {
+            seatIndex,
+            player,
+            role,
+            order: Number(role[orderKey]) || 0,
+            mode: normalizedMode,
+          };
+        })
+        .filter((entry) => entry.order > 0 && entry.role.id)
+        .sort((a, b) => a.order - b.order || a.seatIndex - b.seatIndex);
+    },
 };
 
 const actions = {
@@ -122,6 +145,7 @@ const mutations = {
     state.lunaticBluffs = [];
     state.lunaticBluffPlayerIndex = -1;
     state.fabled = [];
+    state.nightNavigation.currentSeatIndex = -1;
   },
   set(state, players = []) {
     state.players = players;
@@ -209,6 +233,18 @@ const mutations = {
   },
   setLunaticBluffPlayerIndex(state, index = -1) {
     state.lunaticBluffPlayerIndex = index;
+  },
+  setNightNavigationMode(state, mode = "first") {
+    state.nightNavigation.mode = mode === "other" ? "other" : "first";
+    state.nightNavigation.currentSeatIndex = -1;
+  },
+  setNightNavigationSeat(state, seatIndex = -1) {
+    state.nightNavigation.currentSeatIndex = Number.isInteger(seatIndex)
+      ? seatIndex
+      : -1;
+  },
+  clearNightNavigation(state) {
+    state.nightNavigation.currentSeatIndex = -1;
   },
   setFabled(state, { index, fabled } = {}) {
     if (index !== undefined) {

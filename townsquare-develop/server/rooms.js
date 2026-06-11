@@ -67,6 +67,13 @@ function createInviteToken() {
 }
 
 function summarize(room, options = {}) {
+  const onlinePlayerCount = Array.from(room.players.values()).filter(
+    player =>
+      player &&
+      !player.disconnectedAt &&
+      player.ws &&
+      player.ws.readyState === 1
+  ).length;
   const summary = {
     id: room.id,
     name: room.name,
@@ -74,7 +81,7 @@ function summarize(room, options = {}) {
     isPrivate: room.visibility === "private",
     hostName: room.hostName,
     note: room.note,
-    playerCount: room.players.size,
+    playerCount: onlinePlayerCount,
     maxPlayers: room.maxPlayers,
     scriptName: room.scriptName,
     status: room.status,

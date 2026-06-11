@@ -244,10 +244,12 @@ async function runReconnectScenario() {
 async function runPlayerDisconnectGraceScenario() {
   const suffix = Date.now().toString(36);
   const host = new TestClient("grace-host", `grace-host-${suffix}`);
+  const lobby = new TestClient("grace-lobby-watcher", `grace-lobby-${suffix}`);
   const first = new TestClient("grace-player-original", `grace-player-${suffix}`);
   const second = new TestClient("grace-player-reconnect", first.playerId);
 
   await host.connect();
+  await lobby.connect();
   const room = await createRoom(host, `Player Grace ${suffix}`);
 
   await first.connect();
@@ -269,6 +271,20 @@ async function runPlayerDisconnectGraceScenario() {
     duringGrace.length === 1,
     "player disconnect grace should not drop the player immediately",
     duringGrace
+  );
+  lobby.send("room:list", {});
+  const [, roomsDuringGrace] = await lobby.waitForNext(
+    (nextCommand, params) =>
+      nextCommand === "room:list:update" &&
+      Array.isArray(params) &&
+      params.some(item => item.id === room.id),
+    REQUEST_TIMEOUT * 2
+  );
+  const roomDuringGrace = roomsDuringGrace.find(item => item.id === room.id);
+  assert(
+    roomDuringGrace.playerCount === 0,
+    "lobby online count excludes disconnected players during reconnect grace",
+    roomDuringGrace
   );
 
   await second.connect();
@@ -300,6 +316,7 @@ async function runPlayerDisconnectGraceScenario() {
   );
 
   second.close();
+  lobby.close();
   host.close();
   await delay(200);
 }

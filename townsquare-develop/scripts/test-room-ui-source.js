@@ -73,13 +73,16 @@ assert(modalSource.includes("<span>钟楼大厅</span>"), "room lobby topline sh
 assert(!modalSource.includes("线上集会 · 钟楼大厅"), "room lobby topline should not show the old gathering prefix");
 
 assert(!modalSource.includes("hall-footer-note"), "room lobby list tools should not show the spectator explanatory note");
-assert(!modalSource.includes('grid-area: note'), "room lobby list tools should not reserve a note row");
+assert(
+  !/\.hall-bottom-bar\s*\{[^}]*grid-area:\s*note;/.test(modalSource),
+  "room lobby list tools should not reserve a note row"
+);
 assert(!modalSource.includes("footer-join-placeholder"), "room lobby toolbar should not render a non-functional join placeholder");
 assert(
   modalSource.includes("--hall-glass-panel") &&
     modalSource.includes("--hall-glass-surface") &&
     modalSource.includes("--hall-glass-core") &&
-    !/\.room-lobby-list\s*\{[\s\S]*?opacity\s*:/.test(modalSource),
+    !/\.room-lobby-list\s*\{[^}]*opacity\s*:/.test(modalSource),
   "room lobby should use transparent surfaces around the hall without fading text and controls"
 );
 assert(
@@ -259,6 +262,70 @@ assert(
     modalSource.includes('class="button pagination-next"') &&
     modalSource.includes('grid-template-columns: max-content minmax(0, 1fr) max-content'),
   "pagination arrows should sit at the far left and far right of the list footer"
+);
+
+const mobileLobbyBlock = modalSource.match(/@media \(max-width: 640px\) \{[\s\S]*?^  \}/m);
+assert(mobileLobbyBlock, "room lobby should keep a dedicated mobile layout block");
+const mobileLobbyCss = mobileLobbyBlock[0];
+const mobileLobbySlotBlock = mobileLobbyCss.match(/&\.room-lobby-list \.modal > \.slot\s*\{[\s\S]*?\n    \}/);
+assert(
+  /\.hall-topline\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\) auto;[\s\S]*?grid-template-areas:\s*"title count";[\s\S]*?min-height:\s*2\.35em;/.test(
+    mobileLobbyCss
+  ),
+  "mobile lobby topline should be a compact single-row title and count"
+);
+assert(
+  /\.hall-topline span:first-child\s*\{[\s\S]*?display:\s*none;/.test(mobileLobbyCss) &&
+    /\.hall-topline strong\s*\{[\s\S]*?grid-area:\s*title;/.test(mobileLobbyCss) &&
+    /\.hall-topline span:last-child\s*\{[\s\S]*?grid-area:\s*count;/.test(mobileLobbyCss),
+  "mobile lobby should hide the decorative hall label and keep title/count in one row"
+);
+assert(
+  /\.hall-bottom-bar\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\) auto;[\s\S]*?grid-template-areas:[\s\S]*?"search search"[\s\S]*?"actions actions";/.test(
+    mobileLobbyCss
+  ) &&
+    /\.hall-footer-actions\s*\{[\s\S]*?justify-content:\s*flex-end;/.test(mobileLobbyCss),
+  "mobile lobby controls should give search its own row and keep actions compact"
+);
+assert(
+  /&\.room-lobby-list \.modal\s*\{[\s\S]*?height:\s*min\(76vh,\s*640px\);[\s\S]*?height:\s*min\(76dvh,\s*640px\);[\s\S]*?min-height:\s*min\(620px,\s*calc\(100vh - 24px\)\);/.test(
+    mobileLobbyCss
+  ) &&
+    mobileLobbySlotBlock &&
+    mobileLobbySlotBlock[0].includes("flex: 1 1 auto;") &&
+    mobileLobbySlotBlock[0].includes("height: 100%;") &&
+    mobileLobbySlotBlock[0].includes("min-height: 0;") &&
+    /\.room-hall\s*\{[\s\S]*?height:\s*100%;[\s\S]*?min-height:\s*0;/.test(mobileLobbyCss) &&
+    /\.hall-board\s*\{[\s\S]*?height:\s*100%;/.test(mobileLobbyCss) &&
+    /\.room-notice-list,[\s\S]*?\.room-list-column\s*\{[\s\S]*?height:\s*100%;[\s\S]*?display:\s*grid;[\s\S]*?grid-template-rows:\s*auto minmax\(0,\s*1fr\) auto;/.test(
+      mobileLobbyCss
+    ) &&
+    /\.room-notice-list,[\s\S]*?\.room-list-column\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\);/.test(
+      mobileLobbyCss
+    ),
+  "mobile lobby should keep a fixed-height hall so filtered and empty states do not resize the dialog"
+);
+assert(
+  /\.room-pagination:has\(\.page-button:only-child\)\s*\{[\s\S]*?min-height:\s*0;[\s\S]*?padding:\s*0;/.test(
+    mobileLobbyCss
+  ),
+  "mobile lobby should collapse low-value pagination chrome when there is only one page"
+);
+assert(
+  /\.room-list\s*\{[\s\S]*?display:\s*flex;[\s\S]*?flex-direction:\s*column;[\s\S]*?flex-wrap:\s*nowrap;[\s\S]*?align-content:\s*stretch;[\s\S]*?align-items:\s*stretch;[\s\S]*?justify-content:\s*flex-start;[\s\S]*?width:\s*100%;[\s\S]*?height:\s*100%;[\s\S]*?max-height:\s*none;/.test(
+    mobileLobbyCss
+  ) &&
+    /\.room-list\s*\{[\s\S]*?grid-column:\s*1 \/ -1;[\s\S]*?justify-self:\s*stretch;/.test(mobileLobbyCss) &&
+    /\.hall-empty-row\s*\{[\s\S]*?grid-column:\s*1 \/ -1;[\s\S]*?height:\s*100%;[\s\S]*?width:\s*100%;[\s\S]*?min-width:\s*0;[\s\S]*?justify-self:\s*stretch;[\s\S]*?align-self:\s*stretch;[\s\S]*?min-height:\s*0;/.test(
+      mobileLobbyCss
+    ),
+  "mobile lobby list and empty state should fill the fixed board height"
+);
+assert(
+  /\.room-row-meta\s*\{[\s\S]*?grid-template-columns:\s*minmax\(3\.6em,\s*auto\) minmax\(0,\s*1fr\) minmax\(\s*4em,\s*max-content\s*\);/.test(
+    mobileLobbyCss
+  ),
+  "mobile room cards should keep count, status, and join action on a stable compact row"
 );
 
 assert(

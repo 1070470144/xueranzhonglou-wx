@@ -1,7 +1,6 @@
 <template>
   <div
     id="app"
-    @keyup="keyup"
     tabindex="-1"
     :class="{
       night: grimoire.isNight,
@@ -27,7 +26,7 @@
       <Vote v-if="session.nomination"></Vote>
     </transition>
     <TownSquare></TownSquare>
-    <Menu ref="menu"></Menu>
+    <Menu ref="menu" :voice-hint-text="voiceHintText"></Menu>
     <EditionModal />
     <FabledModal />
     <RolesModal />
@@ -104,10 +103,27 @@ export default {
     Gradients,
   },
   computed: {
-    ...mapState(["grimoire", "session", "modals"]),
+    ...mapState(["grimoire", "session", "modals", "voice"]),
     ...mapState("players", ["players"]),
     locale() {
       return this.$i18n.locale;
+    },
+    ownVoiceId() {
+      return this.$store.getters["voice/ownId"];
+    },
+    storytellerSpeaking() {
+      const host = this.voice.state.participants.find(
+        (participant) => participant.id === "host",
+      );
+      return !!(host && host.speaking && this.ownVoiceId !== "host");
+    },
+    voiceHintText() {
+      if (!this.session.sessionId || !this.voice.enabled) return "";
+      if (this.voice.speaking) return this.$t("voice.speaking");
+      if (this.storytellerSpeaking) return this.$t("voice.storytellerSpeaking");
+      return this.voice.talkMode === "pushToTalk"
+        ? this.$t("voice.pushToTalkHint")
+        : this.$t("voice.freeTalk");
     },
   },
   watch: {
@@ -121,6 +137,19 @@ export default {
   },
   mounted() {
     this.updatePageTitle();
+    window.addEventListener("keydown", this.keydown);
+    window.addEventListener("keyup", this.keyup);
+    window.addEventListener("blur", this.releasePushToTalk);
+    document.addEventListener("visibilitychange", this.handleVisibilityChange);
+  },
+  beforeDestroy() {
+    window.removeEventListener("keydown", this.keydown);
+    window.removeEventListener("keyup", this.keyup);
+    window.removeEventListener("blur", this.releasePushToTalk);
+    document.removeEventListener(
+      "visibilitychange",
+      this.handleVisibilityChange,
+    );
   },
   methods: {
     updatePageTitle() {
@@ -128,9 +157,20 @@ export default {
         this.grimoire.isPublic ? "app.titlePublic" : "app.titleGrimoire",
       );
     },
-    keyup({ key, ctrlKey, metaKey }) {
-      if (ctrlKey || metaKey) return;
-      const normalizedKey = key.toLocaleLowerCase();
+    keydown(event) {
+      if (event.key !== "F2" || event.repeat) return;
+      if (this.voice.talkMode !== "pushToTalk" || !this.voice.enabled) return;
+      event.preventDefault();
+      this.$store.commit("voice/setPushToTalkActive", true);
+    },
+    keyup(event) {
+      if (event.key === "F2") {
+        event.preventDefault();
+        this.releasePushToTalk();
+        return;
+      }
+      if (event.ctrlKey || event.metaKey) return;
+      const normalizedKey = event.key.toLocaleLowerCase();
       if (this.hasOpenModal()) {
         if (normalizedKey === "escape") this.$store.commit("toggleModal");
         return;
@@ -177,6 +217,14 @@ export default {
     },
     hasOpenModal() {
       return Object.keys(this.modals).some((name) => this.modals[name]);
+    },
+    releasePushToTalk() {
+      if (this.voice.pushToTalkActive) {
+        this.$store.commit("voice/setPushToTalkActive", false);
+      }
+    },
+    handleVisibilityChange() {
+      if (document.hidden) this.releasePushToTalk();
     },
   },
 };

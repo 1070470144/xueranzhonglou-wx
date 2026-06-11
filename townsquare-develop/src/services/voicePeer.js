@@ -14,9 +14,10 @@ export function normalizeVoiceError(error) {
 }
 
 export class VoicePeerManager {
-  constructor({ sendSignal, onStatus } = {}) {
+  constructor({ sendSignal, onStatus, onSpeakingChange } = {}) {
     this.sendSignal = sendSignal || (() => {});
     this.onStatus = onStatus || (() => {});
+    this.onSpeakingChange = onSpeakingChange || (() => {});
     this.ownId = "";
     this.channelId = "";
     this.localStream = null;
@@ -26,6 +27,14 @@ export class VoicePeerManager {
     this.micEnabled = false;
     this.canSpeak = true;
     this.pendingSignals = [];
+    this.listenVolume = 1;
+    this.audioContext = null;
+    this.analyser = null;
+    this.analyserBuffer = null;
+    this.speaking = false;
+    this.speakingAboveSince = 0;
+    this.speakingBelowSince = 0;
+    this.speakingTimer = null;
   }
 
   async sync({
@@ -166,14 +175,107 @@ export class VoicePeerManager {
       },
     });
     this.applyMicrophoneState();
+    this.startSpeakingDetection();
     return this.localStream;
   }
 
   applyMicrophoneState() {
     if (!this.localStream) return;
+    const active = this.enabled && this.micEnabled && this.canSpeak;
     this.localStream.getAudioTracks().forEach((track) => {
-      track.enabled = this.enabled && this.micEnabled && this.canSpeak;
+      track.enabled = active;
     });
+    if (!active) this.setSpeaking(false);
+  }
+
+  setListenVolume(value) {
+    const number = Number(value);
+    this.listenVolume = Number.isFinite(number)
+      ? Math.min(1, Math.max(0, number))
+      : 1;
+    this.peers.forEach((peer) => {
+      if (peer.audio) peer.audio.volume = this.listenVolume;
+    });
+  }
+
+  startSpeakingDetection() {
+    if (this.analyser || !this.localStream) return;
+    const AudioContextCtor =
+      typeof window !== "undefined" &&
+      (window.AudioContext || window.webkitAudioContext);
+    if (!AudioContextCtor) return;
+    try {
+      this.audioContext = new AudioContextCtor();
+      const source = this.audioContext.createMediaStreamSource(
+        this.localStream,
+      );
+      this.analyser = this.audioContext.createAnalyser();
+      this.analyser.fftSize = 512;
+      source.connect(this.analyser);
+      this.analyserBuffer = new Uint8Array(this.analyser.fftSize);
+      this.speakingTimer = window.setInterval(
+        () => this.sampleSpeakingLevel(),
+        50,
+      );
+    } catch (error) {
+      this.stopSpeakingDetection();
+    }
+  }
+
+  sampleSpeakingLevel(now = Date.now()) {
+    if (!this.analyser || !this.analyserBuffer) return;
+    if (!(this.enabled && this.micEnabled && this.canSpeak)) {
+      this.setSpeaking(false);
+      return;
+    }
+
+    this.analyser.getByteTimeDomainData(this.analyserBuffer);
+    let total = 0;
+    for (let index = 0; index < this.analyserBuffer.length; index += 1) {
+      const centered = (this.analyserBuffer[index] - 128) / 128;
+      total += centered * centered;
+    }
+    const level = Math.sqrt(total / this.analyserBuffer.length);
+    const isLoud = level > 0.06;
+
+    if (isLoud) {
+      this.speakingBelowSince = 0;
+      if (!this.speakingAboveSince) this.speakingAboveSince = now;
+      if (!this.speaking && now - this.speakingAboveSince >= 150) {
+        this.setSpeaking(true);
+      }
+      return;
+    }
+
+    this.speakingAboveSince = 0;
+    if (!this.speakingBelowSince) this.speakingBelowSince = now;
+    if (this.speaking && now - this.speakingBelowSince >= 500) {
+      this.setSpeaking(false);
+    }
+  }
+
+  setSpeaking(value) {
+    const nextValue = !!value;
+    if (this.speaking === nextValue) return;
+    this.speaking = nextValue;
+    this.onSpeakingChange(nextValue);
+  }
+
+  stopSpeakingDetection() {
+    if (this.speakingTimer && typeof window !== "undefined") {
+      window.clearInterval(this.speakingTimer);
+    }
+    this.speakingTimer = null;
+    if (this.audioContext && this.audioContext.close) {
+      const closeResult = this.audioContext.close();
+      if (closeResult && closeResult.catch) closeResult.catch(() => {});
+    }
+    this.audioContext = null;
+    this.analyser = null;
+    this.analyserBuffer = null;
+    this.speakingAboveSince = 0;
+    this.speakingBelowSince = 0;
+    this.setSpeaking(false);
   }
 
   async ensurePeer(peerId, initiate) {
@@ -237,6 +339,7 @@ export class VoicePeerManager {
       peer.audio = document.createElement("audio");
       peer.audio.autoplay = true;
       peer.audio.playsInline = true;
+      peer.audio.volume = this.listenVolume;
       peer.audio.dataset.voicePeer = peer.id;
       document.body.appendChild(peer.audio);
     }
@@ -282,12 +385,14 @@ export class VoicePeerManager {
 
   stopLocalStream() {
     if (!this.localStream) return;
+    this.stopSpeakingDetection();
     this.localStream.getTracks().forEach((track) => track.stop());
     this.localStream = null;
   }
 
   destroy() {
     this.closePeers();
+    this.stopSpeakingDetection();
     this.stopLocalStream();
   }
 }

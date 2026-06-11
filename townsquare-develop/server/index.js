@@ -470,6 +470,13 @@ wss.on("connection", function connection(ws, req) {
             voiceRooms.setMuteAll(state, { byId: ws.playerId, value: params.value });
             sendVoiceState(room);
             return;
+          case "voice:speaking:set":
+            voiceRooms.setSpeaking(state, {
+              participantId: ws.playerId,
+              speaking: params.speaking === true
+            });
+            sendVoiceState(room);
+            return;
           case "voice:recall:start": {
             const recall = voiceRooms.startRecall(state, {
               byId: ws.playerId,
