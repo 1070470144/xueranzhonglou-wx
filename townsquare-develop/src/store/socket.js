@@ -849,6 +849,7 @@ class LiveSession {
       players.length > seat && (seat < 0 || !players[seat].id);
     if (seatIsAvailable) {
       this._send("claim", [seat, this._store.state.session.playerId]);
+      this.sendClaimedPlayerName(seat);
       this.syncAuthPlayer();
     }
   }

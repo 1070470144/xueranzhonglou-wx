@@ -110,6 +110,13 @@ assert(
 );
 
 assert(
+  /claimSeat\(seat\)[\s\S]*?this\._send\("claim", \[seat, this\._store\.state\.session\.playerId\]\);[\s\S]*?this\.sendClaimedPlayerName\(seat\);/.test(
+    socketSource
+  ),
+  "claiming a room seat should immediately send the player's chosen name instead of waiting for a later sync"
+);
+
+assert(
   socketSource.includes("if (session._isApplyingRoomSnapshot) return") &&
     socketSource.indexOf("if (session._isApplyingRoomSnapshot) return") <
       socketSource.indexOf("if (state.session.sessionId)"),
