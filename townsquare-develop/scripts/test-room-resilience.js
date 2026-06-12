@@ -202,10 +202,25 @@ async function runSeatConflictScenario() {
   await b.connect();
   await joinRoom(a, room.id, "Seat A");
   await joinRoom(b, room.id, "Seat B");
+  const baseline = host.messages.length;
   a.send("claim", [0, a.playerId]);
   b.send("claim", [0, b.playerId]);
-  const first = await host.waitForNext((command, params) => command === "claim" && Array.isArray(params) && params[0] === 0);
-  const second = await host.waitForNext((command, params) => command === "claim" && Array.isArray(params) && params[0] === 0);
+  let claims = [];
+  while (claims.length < 2) {
+    claims = host.messages
+      .slice(baseline)
+      .filter(
+        ([command, params]) =>
+          command === "claim" && Array.isArray(params) && params[0] === 0,
+      );
+    if (claims.length < 2) {
+      await host.waitForNext(
+        (command, params) =>
+          command === "claim" && Array.isArray(params) && params[0] === 0,
+      );
+    }
+  }
+  const [first, second] = claims;
   assert(first[1][1] !== second[1][1], "simultaneous same-seat claims both reach host for host-side resolution", { first: first[1], second: second[1] });
   a.close();
   b.close();

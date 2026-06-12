@@ -73,9 +73,9 @@ assert(
   "auto bluff fill should prefer two townsfolk and one outsider, falling back to townsfolk",
 );
 assert(
-  rolesModalSource.includes('this.$store.dispatch("players/autoFillBluffs"') &&
-    rolesModalSource.indexOf('this.$store.dispatch("players/autoFillBluffs"') <
-      rolesModalSource.indexOf('this.$store.commit("closeModal", "roles")'),
+  /if \(this\.grimoire\.roleDrawEnabled\) \{[\s\S]*?roleDraw\/setConfiguredPool[\s\S]*?closeModal[\s\S]*?return;[\s\S]*?\}[\s\S]*?players\/update[\s\S]*?this\.\$store\.dispatch\("players\/autoFillBluffs"[\s\S]*?this\.\$store\.commit\("closeModal", "roles"\)/.test(
+    rolesModalSource,
+  ),
   "role assignment should fill bluffs before closing the modal",
 );
 ["settings", "statusEffects", "statusEffectsOn", "statusEffectsOff"].forEach((key) =>

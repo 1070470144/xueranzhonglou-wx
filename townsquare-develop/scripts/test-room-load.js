@@ -50,8 +50,30 @@ function writeLog(level, message, data) {
     data
   });
   fs.appendFileSync(logPath, `${line}\n`);
-  const suffix = data === undefined ? "" : ` ${JSON.stringify(data)}`;
+  const suffix = data === undefined ? "" : ` ${JSON.stringify(compactConsoleData(data))}`;
   console.log(`[${level}] ${message}${suffix}`);
+}
+
+function compactConsoleData(data) {
+  if (
+    data &&
+    data.command === "room:list:update" &&
+    Array.isArray(data.params)
+  ) {
+    return {
+      command: data.command,
+      roomCount: data.params.length,
+      sampleRoomIds: data.params.slice(0, 5).map(room => room.id)
+    };
+  }
+  if (data && data.command === "room:players" && Array.isArray(data.params)) {
+    return {
+      command: data.command,
+      playerCount: data.params.length,
+      samplePlayerIds: data.params.slice(0, 5).map(player => player.id)
+    };
+  }
+  return data;
 }
 
 function recordError(stage, error, data = {}) {
