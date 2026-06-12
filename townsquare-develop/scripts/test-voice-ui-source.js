@@ -269,6 +269,41 @@ assert(
   "player seats should show yellow speaker while speaking and red speaker while not speaking"
 );
 
+assert(
+  /@media \(max-width:\s*640px\)[\s\S]*?\.room-control-drawer\s*\{[\s\S]*?width:\s*100vw/.test(drawerSource),
+  "mobile room control drawer should use the full viewport width instead of a narrow cramped panel"
+);
+
+assert(
+  /@media \(max-width:\s*640px\)[\s\S]*?\.room-control-drawer\s*\{[\s\S]*?font-size:\s*0\.9em/.test(drawerSource),
+  "mobile room control drawer should keep readable text instead of shrinking the whole panel too far"
+);
+
+assert(
+  /@media \(max-width:\s*640px\)[\s\S]*?\.room-control-summary\s*\{[\s\S]*?grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/.test(drawerSource),
+  "mobile room control summary should stay as a compact three-column status row"
+);
+
+assert(
+  /@media \(max-width:\s*640px\)[\s\S]*?\.room-control-overview\s+\.room-control-register\s*\{[\s\S]*?display:\s*grid[\s\S]*?grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/.test(drawerSource),
+  "mobile room control overview should compress host, script, and note into a single compact row"
+);
+
+assert(
+  /@media \(max-width:\s*640px\)[\s\S]*?\.room-control-command-grid:not\(\.guest-actions\),[\s\S]*?\.room-control-inline-actions\.two-column[\s\S]*?\{[\s\S]*?grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/.test(drawerSource),
+  "mobile room control primary actions should remain two columns to reduce vertical crowding"
+);
+
+assert(
+  /@media \(max-width:\s*640px\)[\s\S]*?\.room-control-actions \.button,[\s\S]*?\.room-control-group \.button,[\s\S]*?\.room-control-status-row \.button\s*\{[\s\S]*?min-height:\s*2\.2em[\s\S]*?font-size:\s*0\.86em/.test(drawerSource),
+  "mobile room control buttons should remain large enough to read and tap"
+);
+
+assert(
+  /@media \(max-width:\s*640px\)[\s\S]*?\.room-control-group-title\s*\{[\s\S]*?min-height:\s*2em/.test(drawerSource),
+  "mobile room control group titles should not be too thin"
+);
+
 assert(mainSource.includes('"VolumeUp"'), "main icons should keep volume icon available");
 assert(mainSource.includes('"VolumeMute"'), "main icons should keep mute icon available");
 

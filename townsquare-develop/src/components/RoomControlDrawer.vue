@@ -1260,43 +1260,155 @@ summary {
 
 @media (max-width: 640px) {
   .room-control-drawer {
-    width: min(400px, 96vw);
-    padding: 0.42em;
+    width: 100vw;
+    padding: 0.36em;
+    border-left: 0;
+    font-size: 0.9em;
   }
 
   .room-control-header {
-    min-height: 2.9em;
-    padding: 0.28em 0.32em 0.38em 0.46em;
+    min-height: 2.6em;
+    padding: 0.28em 0.34em 0.34em 0.46em;
   }
 
   .room-control-header h3 {
-    font-size: 1.02em;
+    margin-top: 0.02em;
+    font-size: 1.04em;
   }
 
   .icon-button {
-    width: 2.1em;
-    min-width: 2.1em;
-    height: 2.1em;
-    font-size: 1.38em;
+    width: 1.8em;
+    min-width: 1.8em;
+    height: 1.8em;
+    font-size: 1.18em;
   }
 
   .room-control-summary {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    margin: 0.28em 0;
   }
 
   .room-control-summary > span + span {
-    border-left: 0;
-    border-top: 1px solid #3d2e26;
+    border-left: 1px solid #3d2e26;
+    border-top: 0;
+  }
+
+  .room-control-summary > span,
+  .room-control-pill {
+    min-height: 1.72em;
+    font-size: 0.78em;
+  }
+
+  .room-control-overview {
+    margin-bottom: 0.28em;
+  }
+
+  .room-control-overview .room-control-register {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .room-control-register div {
-    grid-template-columns: 5.2em minmax(0, 1fr);
+    display: block;
+    min-height: 2.55em;
+    border-right: 1px solid #261d19;
+    border-bottom: 0;
   }
 
-  .room-control-command-grid,
-  .room-control-inline-actions.two-column,
+  .room-control-register div:last-child {
+    border-right: 0;
+  }
+
+  .room-control-register dt,
+  .room-control-register dd {
+    display: block;
+    padding: 0 0.36em;
+    line-height: 1.15;
+  }
+
+  .room-control-register dt {
+    padding-top: 0.28em;
+    font-size: 0.76em;
+  }
+
+  .room-control-register dd {
+    padding-top: 0.16em;
+    font-size: 0.82em;
+  }
+
+  .room-control-command-grid:not(.guest-actions),
+  .room-control-inline-actions.two-column {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .room-control-command-grid.guest-actions,
   .room-control-status-row {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .room-control-actions {
+    margin-bottom: 0.28em;
+  }
+
+  .room-control-actions .button,
+  .room-control-group .button,
+  .room-control-status-row .button {
+    min-height: 2.2em;
+    padding: 0 0.42em;
+    font-size: 0.86em;
+  }
+
+  .night-navigation {
+    gap: 0.18em;
+    padding: 0.18em;
+  }
+
+  .night-navigation-current {
+    min-height: 2em;
+    font-size: 0.82em;
+  }
+
+  .room-control-group {
+    margin-bottom: 0.28em;
+  }
+
+  .room-control-group-title {
+    min-height: 2em;
+    padding: 0.36em 0.5em;
+    letter-spacing: 0.04em;
+  }
+
+  .room-control-player-list,
+  .room-control-inline-actions,
+  .room-control-note-editor,
+  .room-control-status-row,
+  .room-control-voice-list {
+    padding: 0.2em;
+  }
+
+  .voice-volume-control {
+    grid-template-columns: 4.2em minmax(0, 1fr) 3em;
+    gap: 0.34em;
+    padding: 0.34em 0.42em 0.42em;
+    font-size: 0.8em;
+  }
+
+  .room-control-voice-list li,
+  .room-control-player-list li {
+    min-height: 2em;
+    padding: 0.2em 0.34em;
+  }
+
+  .room-control-voice-targets {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.18em;
+    padding: 0.2em;
+  }
+
+  .room-control-voice-targets label {
+    min-height: 2.05em;
+    padding: 0 0.42em;
+    font-size: 0.84em;
   }
 }
 </style>
