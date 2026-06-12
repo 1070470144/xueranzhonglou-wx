@@ -42,6 +42,7 @@
     <PrivateChatModal />
     <VoicePanel ref="voicePanel" />
     <VoiceInviteConfirm />
+    <RoleDrawInviteConfirm />
     <RoomLobbyModal />
     <RoomControlDrawer />
     <Gradients />
@@ -73,6 +74,7 @@ import StoryLogModal from "@/components/modals/StoryLogModal";
 import PrivateChatModal from "@/components/modals/PrivateChatModal";
 import VoicePanel from "@/components/VoicePanel";
 import VoiceInviteConfirm from "@/components/VoiceInviteConfirm";
+import RoleDrawInviteConfirm from "@/components/RoleDrawInviteConfirm";
 import RoomLobbyModal from "@/components/modals/RoomLobbyModal";
 import RoomControlDrawer from "@/components/RoomControlDrawer";
 
@@ -81,6 +83,7 @@ export default {
     AnnouncementModal,
     RoomControlDrawer,
     RoomLobbyModal,
+    RoleDrawInviteConfirm,
     VoiceInviteConfirm,
     VoicePanel,
     PrivateChatModal,

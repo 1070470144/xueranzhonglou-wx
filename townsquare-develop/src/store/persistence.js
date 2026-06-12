@@ -17,6 +17,15 @@ export default (store) => {
   if (localStorage.getItem("statusEffects") === "0") {
     store.commit("toggleStatusEffects", false);
   }
+  if (localStorage.getItem("roleDrawEnabled") === "1") {
+    store.commit("toggleRoleDraw", true);
+  }
+  if (localStorage.getItem("roleDrawOptions")) {
+    store.commit(
+      "roleDraw/setOptions",
+      JSON.parse(localStorage.getItem("roleDrawOptions")),
+    );
+  }
   if (localStorage.getItem("imageOptIn") === "0") {
     store.commit("toggleImageOptIn", false);
   }
@@ -140,6 +149,18 @@ export default (store) => {
         localStorage.setItem(
           "statusEffects",
           state.grimoire.statusEffectsEnabled ? "1" : "0",
+        );
+        break;
+      case "toggleRoleDraw":
+        localStorage.setItem(
+          "roleDrawEnabled",
+          state.grimoire.roleDrawEnabled ? "1" : "0",
+        );
+        break;
+      case "roleDraw/setOptions":
+        localStorage.setItem(
+          "roleDrawOptions",
+          JSON.stringify(state.roleDraw.options),
         );
         break;
       case "toggleImageOptIn":

@@ -334,6 +334,9 @@ class LiveSession {
       case "playerName":
         this._updatePlayerName(params);
         break;
+      case "roleDraw:draw":
+        this._handleRoleDrawRequest(params);
+        break;
     }
   }
 
@@ -430,7 +433,7 @@ class LiveSession {
         isLightweight,
       });
     } else {
-      const { session, grimoire } = this._store.state;
+      const { session, grimoire, roleDraw } = this._store.state;
       const { fabled } = this._store.state.players;
       this.sendEdition(playerId);
       this._sendDirect(playerId, "gs", {
@@ -443,7 +446,28 @@ class LiveSession {
         isVoteInProgress: session.isVoteInProgress,
         markedPlayer: session.markedPlayer,
         fabled: fabled.map((f) => (f.isCustom ? f : { id: f.id })),
+        roleDrawSnapshot: roleDraw,
         ...(session.nomination ? { votes: session.votes } : {}),
+      });
+      // If the role draw has already completed and a specific player is reconnecting,
+      // resend their role directly — they may have missed the original distributeRoles broadcast.
+      if (playerId && roleDraw.completed) {
+        this._resendRoleToPlayer(playerId);
+      }
+    }
+  }
+
+  _resendRoleToPlayer(playerId) {
+    if (this._isSpectator) return;
+    const players = this._store.state.players.players;
+    const index = players.findIndex((p) => p.id === playerId);
+    if (index < 0) return;
+    const player = players[index];
+    if (player.role && player.role.id && player.role.team !== "traveler") {
+      this._sendDirect(playerId, "player", {
+        index,
+        property: "role",
+        value: player.role.id,
       });
     }
   }
@@ -467,6 +491,7 @@ class LiveSession {
       isVoteInProgress,
       markedPlayer,
       fabled,
+      roleDrawSnapshot,
     } = data;
     const players = this._store.state.players.players;
     // adjust number of players
@@ -524,12 +549,18 @@ class LiveSession {
       this._store.commit("players/setFabled", {
         fabled: fabled.map((f) => this._store.state.fabled.get(f.id) || f),
       });
+      this._store.commit("roleDraw/applySnapshot", roleDrawSnapshot || {});
+    } else if (roleDrawSnapshot) {
+      this._store.commit("roleDraw/applySnapshot", roleDrawSnapshot);
     }
     // Restore claimedSeat from the full gamestate snapshot (important after page refresh).
     const myPlayerId = this._store.state.session.playerId;
     if (myPlayerId) {
       const seatedIndex = gamestate.findIndex((s) => s.id === myPlayerId);
-      if (seatedIndex >= 0 && this._store.state.session.claimedSeat !== seatedIndex) {
+      if (
+        seatedIndex >= 0 &&
+        this._store.state.session.claimedSeat !== seatedIndex
+      ) {
         this._store.commit("session/setClaimedSeatLocal", seatedIndex);
       }
     }
@@ -614,6 +645,38 @@ class LiveSession {
     if (Object.keys(message).length) {
       this._send("direct", message);
     }
+  }
+
+  sendRoleDrawSnapshot() {
+    if (this._isSpectator) return;
+    this._send("gs", {
+      gamestate: this._gamestate,
+      isLightweight: true,
+      roleDrawSnapshot: this._store.state.roleDraw,
+    });
+  }
+
+  requestRoleDraw() {
+    if (!this._isSpectator) return;
+    this._sendDirect("host", "roleDraw:draw", {
+      playerId: this._store.state.session.playerId,
+      seatIndex: this._store.state.session.claimedSeat,
+    });
+  }
+
+  _handleRoleDrawRequest({ playerId, seatIndex } = {}) {
+    if (this._isSpectator) return;
+    const currentSeatIndex = this._store.getters["roleDraw/currentSeatIndex"];
+    const player = this._store.state.players.players[currentSeatIndex];
+    if (
+      currentSeatIndex < 0 ||
+      seatIndex !== currentSeatIndex ||
+      !player ||
+      player.id !== playerId
+    ) {
+      return;
+    }
+    this._store.dispatch("roleDraw/drawForCurrent");
   }
 
   _updateLunaticBluffs(bluffs = []) {
@@ -1252,7 +1315,9 @@ class LiveSession {
     this._isJoiningRoom = true;
     // Sync name BEFORE claimSeat(-1) so sendClaimedPlayerName uses the correct name.
     if (isSpectator) {
-      const joinPlayerName = (this._store.state.room.joinForm.playerName || "").trim();
+      const joinPlayerName = (
+        this._store.state.room.joinForm.playerName || ""
+      ).trim();
       if (joinPlayerName) {
         this._store.commit("session/setPlayerName", joinPlayerName);
       }
@@ -1293,10 +1358,7 @@ class LiveSession {
       20,
       Math.max(1, parseInt(room.maxPlayers, 10) || 10),
     );
-    // Only grow seats, never shrink — the host may have manually added more seats.
-    if (this._store.state.players.players.length < maxPlayers) {
-      this._store.commit("players/setCount", maxPlayers);
-    }
+    this._store.commit("players/setCount", maxPlayers);
   }
 
   _loadRoomScript(scriptJson) {
@@ -1439,6 +1501,19 @@ export default (store) => {
       case "voice/sendSignal":
         session.sendVoiceSignal(payload);
         break;
+      case "roleDraw/requestDraw":
+        session.requestRoleDraw();
+        break;
+      case "roleDraw/start":
+      case "roleDraw/drawCurrent":
+      case "roleDraw/cancel":
+      case "roleDraw/setConfiguredPool":
+      case "roleDraw/setOptions":
+        session.sendRoleDrawSnapshot();
+        if (type === "roleDraw/drawCurrent" && state.roleDraw.completed) {
+          session.distributeRoles();
+        }
+        break;
       case "session/claimSeat":
         session.claimSeat(payload);
         break;
@@ -1520,8 +1595,8 @@ export default (store) => {
       (
         store.state.session.playerName ||
         localStorage.getItem("playerName") ||
-        "玩家"
-      ).trim() || "玩家";
+        "鐜╁"
+      ).trim() || "鐜╁";
     store.commit("session/setSpectator", true);
     store.commit("session/setPlayerName", playerName);
     store.commit("room/updateJoinForm", {

@@ -179,6 +179,17 @@
               }}
             </em>
           </li>
+          <li @click="toggleRoleDraw">
+            {{ $t("roleDraw.simulateRoleDraw") }}
+            <em>
+              <font-awesome-icon
+                :icon="[
+                  'fas',
+                  grimoire.roleDrawEnabled ? 'check-square' : 'square',
+                ]"
+              />
+            </em>
+          </li>
           <li @click="toggleStatic">
             {{ $t("menu.disableAnimations") }}
             <em
@@ -439,6 +450,7 @@ export default {
       "toggleNightOrder",
       "toggleStatic",
       "toggleStatusEffects",
+      "toggleRoleDraw",
       "setZoom",
       "toggleModal",
     ]),

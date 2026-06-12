@@ -66,7 +66,7 @@ assert(
   "players setCount should persist the replaced scene seat list"
 );
 assert(
-  /case "players\/set":[\s\S]*?case "players\/setCount":[\s\S]*?handlePlayersSet\(store, beforePlayers, clonePlayers\(state\.players\.players\)\)/.test(storyLogSource),
+  /case "players\/set":[\s\S]*?case "players\/setCount":[\s\S]*?handlePlayersSet\(\s*store,\s*beforePlayers,\s*clonePlayers\(state\.players\.players\)/.test(storyLogSource),
   "players setCount should be recorded as a whole player-list change"
 );
 

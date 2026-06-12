@@ -108,7 +108,17 @@ export default {
         roles.some((role) => role.selected && role.setup),
       );
     },
-    ...mapState(["roles", "modals"]),
+    selectedRolePool() {
+      return Object.values(this.roleSelection)
+        .map((roles) =>
+          roles.reduce((selected, role) => {
+            if (!role.selected) return selected;
+            return selected.concat(Array(role.selected).fill(role.id));
+          }, []),
+        )
+        .reduce((a, b) => [...a, ...b], []);
+    },
+    ...mapState(["roles", "modals", "grimoire"]),
     ...mapState("players", ["players"]),
     ...mapGetters({ nonTravelers: "players/nonTravelers" }),
   },
@@ -139,6 +149,14 @@ export default {
     },
     assignRoles() {
       if (this.selectedRoles <= this.nonTravelers && this.selectedRoles) {
+        if (this.grimoire.roleDrawEnabled) {
+          this.$store.commit(
+            "roleDraw/setConfiguredPool",
+            this.selectedRolePool,
+          );
+          this.$store.commit("closeModal", "roles");
+          return;
+        }
         // generate list of selected roles and randomize it
         const roles = Object.values(this.roleSelection)
           .map((roles) =>

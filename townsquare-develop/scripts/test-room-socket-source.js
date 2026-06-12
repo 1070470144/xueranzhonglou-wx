@@ -91,6 +91,17 @@ assert(
     socketSource.includes("room.maxPlayers"),
   "creating a room as storyteller should set local player seats to the room player count instead of appending seats"
 );
+const ensureRoomSeatsStart = socketSource.indexOf("ensureRoomSeats(room) {");
+const ensureRoomSeatsEnd = socketSource.indexOf("\n  _loadRoomScript", ensureRoomSeatsStart);
+const ensureRoomSeatsSource = socketSource.slice(
+  ensureRoomSeatsStart,
+  ensureRoomSeatsEnd
+);
+assert(
+  ensureRoomSeatsSource.includes('commit("players/setCount", maxPlayers)') &&
+    !ensureRoomSeatsSource.includes("length < maxPlayers"),
+  "room seat sync should shrink stale seats when a new room has fewer max players"
+);
 
 assert(
   socketSource.includes('case "room:update"') &&

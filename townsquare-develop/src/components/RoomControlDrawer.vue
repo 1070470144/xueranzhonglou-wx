@@ -62,7 +62,12 @@
         <button type="button" class="button" @click="assignRoles">
           <font-awesome-icon icon="random" /> {{ $t("menu.chooseAssign") }}
         </button>
-        <button type="button" class="button demon" @click="distributeRoles">
+        <button
+          type="button"
+          class="button demon"
+          :disabled="sendCharactersDisabled"
+          @click="distributeRoles"
+        >
           <font-awesome-icon icon="theater-masks" />
           {{ $t("menu.sendCharacters") }}
         </button>
@@ -352,12 +357,112 @@
             <button type="button" class="button" @click="toggleModal('fabled')">
               <font-awesome-icon icon="dragon" /> {{ $t("menu.addFabled") }}
             </button>
-            <button type="button" class="button demon" @click="distributeRoles">
+            <button
+              type="button"
+              class="button demon"
+              :disabled="sendCharactersDisabled"
+              @click="distributeRoles"
+            >
               <font-awesome-icon icon="theater-masks" />
               {{ $t("menu.sendCharacters") }}
             </button>
             <button type="button" class="button" @click="clearRoles">
               <font-awesome-icon icon="trash-alt" /> {{ $t("room.clearRoles") }}
+            </button>
+          </div>
+        </details>
+
+        <details
+          v-if="grimoire.roleDrawEnabled"
+          class="room-control-group role-draw-control"
+          open
+        >
+          <summary class="room-control-group-title">
+            {{ $t("roleDraw.title") }}
+          </summary>
+          <div class="role-draw-status">
+            <span>{{
+              $t("roleDraw.poolCount", {
+                count: roleDraw.configuredPool.length,
+              })
+            }}</span>
+            <span>{{ roleDrawRemaining }}</span>
+          </div>
+          <div class="room-control-note-editor role-draw-options">
+            <label>{{ $t("roleDraw.startSeat") }}</label>
+            <input
+              type="number"
+              min="1"
+              :max="players.length || 1"
+              v-model.number="roleDrawOptions.startSeat"
+              @change="saveRoleDrawOptions"
+            />
+            <button
+              type="button"
+              class="button"
+              @click="toggleRoleDrawDirection"
+            >
+              {{ directionLabel }}
+            </button>
+          </div>
+          <label class="role-draw-check">
+            <input
+              type="checkbox"
+              v-model="roleDrawOptions.manualDrawEnabled"
+              @change="saveRoleDrawOptions"
+            />
+            <span>{{ $t("roleDraw.manualDefaultRandom") }}</span>
+          </label>
+          <label class="role-draw-check">
+            <input
+              type="checkbox"
+              v-model="roleDrawOptions.autoDrawEnabled"
+              @change="saveRoleDrawOptions"
+            />
+            <span>{{ $t("roleDraw.autoDefaultRandom") }}</span>
+          </label>
+          <div
+            v-if="roleDrawOptions.autoDrawEnabled"
+            class="room-control-note-editor role-draw-options"
+          >
+            <label>{{ $t("roleDraw.autoDrawSeconds") }}</label>
+            <input
+              type="number"
+              min="5"
+              max="600"
+              v-model.number="roleDrawOptions.autoDrawSeconds"
+              @change="saveRoleDrawOptions"
+            />
+            <button type="button" class="button" @click="saveRoleDrawOptions">
+              {{ $t("room.save") }}
+            </button>
+          </div>
+          <div class="room-control-inline-actions two-column">
+            <button
+              type="button"
+              class="button demon"
+              :disabled="!canStartRoleDraw"
+              @click="startRoleDraw"
+            >
+              {{ $t("roleDraw.start") }}
+            </button>
+            <button
+              type="button"
+              class="button"
+              :disabled="
+                !roleDraw.active || !roleDraw.options.manualDrawEnabled
+              "
+              @click="helpCurrentPlayerDraw"
+            >
+              {{ $t("roleDraw.helpCurrentPlayerDraw") }}
+            </button>
+            <button
+              type="button"
+              class="button"
+              :disabled="!roleDraw.active"
+              @click="cancelRoleDraw"
+            >
+              {{ $t("common.cancel") }}
             </button>
           </div>
         </details>
@@ -450,13 +555,25 @@ export default {
   data() {
     return {
       selectedInviteIds: [],
+      roleDrawOptions: {
+        startSeat: 1,
+        direction: "forward",
+        manualDrawEnabled: false,
+        autoDrawEnabled: false,
+        autoDrawSeconds: 30,
+      },
     };
+  },
+  mounted() {
+    this.roleDrawOptions = { ...this.roleDraw.options };
+    this.scheduleRoleDrawTimeout();
   },
   beforeDestroy() {
     if (this._distributeTimer) clearTimeout(this._distributeTimer);
+    if (this._roleDrawTimer) clearTimeout(this._roleDrawTimer);
   },
   computed: {
-    ...mapState(["modals", "room", "session", "voice"]),
+    ...mapState(["modals", "room", "session", "voice", "grimoire", "roleDraw"]),
     ...mapState("players", ["players", "nightNavigation"]),
     canEditSeats() {
       return !this.session.isSpectator && !this.session.lockedVote;
@@ -503,7 +620,7 @@ export default {
     voiceErrorText() {
       const key = `voice.errors.${this.voice.error}`;
       const translated = this.$t(key);
-      return translated !== key ? translated : (this.voice.error || key);
+      return translated !== key ? translated : this.voice.error || key;
     },
     nightNavigationQueue() {
       return this.$store.getters["players/nightActionQueue"](
@@ -522,6 +639,40 @@ export default {
         entry.player.name || this.$t("room.unnamedPlayer")
       }`;
     },
+    canStartRoleDraw() {
+      return (
+        this.grimoire.roleDrawEnabled &&
+        this.roleDraw.configuredPool.length > 0 &&
+        this.players.length > 0
+      );
+    },
+    sendCharactersDisabled() {
+      return (
+        this.grimoire.roleDrawEnabled &&
+        !this.roleDrawOptions.manualDrawEnabled &&
+        !this.roleDrawOptions.autoDrawEnabled
+      );
+    },
+    roleDrawRemaining() {
+      return this.$t("roleDraw.remaining", {
+        count: this.$store.getters["roleDraw/remainingCount"],
+      });
+    },
+    directionLabel() {
+      return this.roleDrawOptions.direction === "reverse"
+        ? this.$t("roleDraw.reverse")
+        : this.$t("roleDraw.forward");
+    },
+  },
+  watch: {
+    "roleDraw.options": {
+      deep: true,
+      handler(options) {
+        this.roleDrawOptions = { ...options };
+      },
+    },
+    "roleDraw.turnStartedAt": "scheduleRoleDrawTimeout",
+    "roleDraw.active": "scheduleRoleDrawTimeout",
   },
   methods: {
     close() {
@@ -537,7 +688,9 @@ export default {
       if (this.room.current && this.room.current.inviteToken) {
         params.set("invite", this.room.current.inviteToken);
       }
-      navigator.clipboard.writeText(`${url}#${params.toString()}`).catch(() => {});
+      navigator.clipboard
+        .writeText(`${url}#${params.toString()}`)
+        .catch(() => {});
     },
     chooseScript() {
       this.openModalOverlay("edition");
@@ -629,7 +782,52 @@ export default {
     clearRoles() {
       if (confirm(this.$t("menu.confirmClearRoles"))) {
         this.$store.dispatch("players/clearRoles");
+        this.$store.commit("roleDraw/cancel");
       }
+    },
+    saveRoleDrawOptions() {
+      this.$store.commit("roleDraw/setOptions", {
+        ...this.roleDrawOptions,
+        playerCount: this.players.length,
+      });
+    },
+    toggleRoleDrawDirection() {
+      this.roleDrawOptions.direction =
+        this.roleDrawOptions.direction === "reverse" ? "forward" : "reverse";
+      this.saveRoleDrawOptions();
+    },
+    startRoleDraw() {
+      this.saveRoleDrawOptions();
+      this.$store.dispatch("roleDraw/startDraw", this.roleDrawOptions);
+      this.scheduleRoleDrawTimeout();
+    },
+    helpCurrentPlayerDraw() {
+      if (!this.roleDraw.active || !this.roleDraw.options.manualDrawEnabled)
+        return;
+      this.$store.dispatch("roleDraw/drawForCurrent");
+    },
+    cancelRoleDraw() {
+      this.$store.commit("roleDraw/cancel");
+    },
+    scheduleRoleDrawTimeout() {
+      if (this._roleDrawTimer) clearTimeout(this._roleDrawTimer);
+      this._roleDrawTimer = null;
+      if (
+        !this.room.isHost ||
+        !this.roleDraw.active ||
+        !this.roleDraw.options.autoDrawEnabled
+      ) {
+        return;
+      }
+      const timeoutMs =
+        Math.max(5, this.roleDraw.options.autoDrawSeconds) * 1000;
+      const elapsed = Date.now() - this.roleDraw.turnStartedAt;
+      this._roleDrawTimer = setTimeout(
+        () => {
+          this.$store.dispatch("roleDraw/drawForCurrent");
+        },
+        Math.max(0, timeoutMs - elapsed),
+      );
     },
     toggleVoice() {
       const nextValue = !this.voice.enabled;

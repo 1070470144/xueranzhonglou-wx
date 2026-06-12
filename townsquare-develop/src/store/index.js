@@ -9,6 +9,7 @@ import storyLog from "./modules/storyLog";
 import privateChat from "./modules/privateChat";
 import room from "./modules/room";
 import voice from "./modules/voice";
+import roleDraw from "./modules/roleDraw";
 import editionJSON from "../editions.json";
 import rolesJSON from "../roles.json";
 import fabledJSON from "../fabled.json";
@@ -108,6 +109,7 @@ export default new Vuex.Store({
     privateChat,
     room,
     voice,
+    roleDraw,
   },
   state: {
     grimoire: {
@@ -119,6 +121,7 @@ export default new Vuex.Store({
       isMuted: false,
       isImageOptIn: true,
       statusEffectsEnabled: true,
+      roleDrawEnabled: false,
       zoom: 0,
       background: "",
     },
@@ -191,6 +194,7 @@ export default new Vuex.Store({
     toggleNightOrder: toggle("isNightOrder"),
     toggleStatic: toggle("isStatic"),
     toggleStatusEffects: toggle("statusEffectsEnabled"),
+    toggleRoleDraw: toggle("roleDrawEnabled"),
     toggleNight: toggle("isNight"),
     toggleGrimoire: toggle("isPublic"),
     toggleImageOptIn: toggle("isImageOptIn"),
