@@ -1,4 +1,38 @@
-const ICE_SERVERS = [{ urls: "stun:stun.l.google.com:19302" }];
+function splitList(value) {
+  return String(value || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+export function buildIceServers(env = process.env) {
+  const stunUrls = splitList(
+    env.VUE_APP_VOICE_STUN_URLS || "stun:stun.l.google.com:19302",
+  );
+  const turnUrls = splitList(env.VUE_APP_VOICE_TURN_URLS);
+  const iceServers = [];
+
+  if (stunUrls.length) {
+    iceServers.push({ urls: stunUrls.length === 1 ? stunUrls[0] : stunUrls });
+  }
+
+  if (turnUrls.length) {
+    const turnServer = {
+      urls: turnUrls.length === 1 ? turnUrls[0] : turnUrls,
+    };
+    if (env.VUE_APP_VOICE_TURN_USERNAME) {
+      turnServer.username = env.VUE_APP_VOICE_TURN_USERNAME;
+    }
+    if (env.VUE_APP_VOICE_TURN_CREDENTIAL) {
+      turnServer.credential = env.VUE_APP_VOICE_TURN_CREDENTIAL;
+    }
+    iceServers.push(turnServer);
+  }
+
+  return iceServers;
+}
+
+const ICE_SERVERS = buildIceServers();
 const RESTART_DELAY_FAILED_MS = 500;
 const RESTART_DELAY_DISCONNECTED_MS = 3000;
 
@@ -416,10 +450,7 @@ export class VoicePeerManager {
 
   async restartPeer(peerId) {
     const peer = this.peers.get(peerId);
-    if (
-      peer &&
-      ["connected", "connecting"].includes(peer.pc.connectionState)
-    ) {
+    if (peer && ["connected", "connecting"].includes(peer.pc.connectionState)) {
       return;
     }
     this.closePeer(peerId);
@@ -478,7 +509,11 @@ export class VoicePeerManager {
   removeAudioUnlock() {
     if (!this.audioUnlockHandler) return;
     if (typeof document !== "undefined" && document.removeEventListener) {
-      document.removeEventListener("pointerdown", this.audioUnlockHandler, true);
+      document.removeEventListener(
+        "pointerdown",
+        this.audioUnlockHandler,
+        true,
+      );
       document.removeEventListener("keydown", this.audioUnlockHandler, true);
     }
     this.audioUnlockHandler = null;
