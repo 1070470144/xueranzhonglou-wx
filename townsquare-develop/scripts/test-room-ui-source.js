@@ -350,6 +350,12 @@ assert(
 
 assert(appSource.includes("<RoomLobbyModal />"));
 assert(appSource.includes('import RoomLobbyModal from "@/components/modals/RoomLobbyModal";'));
+assert(
+  appSource.includes("const key = event && event.key;") &&
+    appSource.includes('if (typeof key !== "string") return;') &&
+    appSource.includes("const normalizedKey = key.toLocaleLowerCase();"),
+  "global keyup handler should ignore keyboard events without a string key"
+);
 
 [
   "room-control-drawer",

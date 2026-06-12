@@ -30,6 +30,8 @@ function loadVoicePeerManager({ playRejects = false } = {}) {
   const sandbox = {
     module: { exports: {} },
     exports: {},
+    setTimeout,
+    clearTimeout,
     navigator: {
       mediaDevices: {
         getUserMedia: async (constraints) => {
@@ -771,6 +773,70 @@ async function testReenablingVoiceCreatesFreshLocalStream() {
   assert.strictEqual(fakeTracks[1].enabled, true);
 }
 
+async function testConcurrentSyncsCreateSinglePeerConnection() {
+  const { VoicePeerManager, createdPeerConnections } = loadVoicePeerManager();
+  const sentSignals = [];
+  const manager = new VoicePeerManager({
+    sendSignal: (payload) => sentSignals.push(payload),
+  });
+  const syncPayload = {
+    ownId: "player-1",
+    channelId: "main",
+    members: [{ id: "player-1" }, { id: "player-2" }],
+    enabled: true,
+    micEnabled: true,
+    canSpeak: true,
+  };
+
+  // 进房瞬间多个 watcher 同时触发 sync，不能创建重复连接
+  await Promise.all([
+    manager.sync(syncPayload),
+    manager.sync(syncPayload),
+    manager.sync(syncPayload),
+  ]);
+
+  assert.strictEqual(manager.peers.size, 1);
+  assert.strictEqual(createdPeerConnections.length, 1);
+  assert.strictEqual(
+    sentSignals.filter((item) => item.signal.type === "offer").length,
+    1,
+  );
+}
+
+async function testFailedConnectionIsAutomaticallyRestarted() {
+  const { VoicePeerManager, createdPeerConnections } = loadVoicePeerManager();
+  const sentSignals = [];
+  const manager = new VoicePeerManager({
+    sendSignal: (payload) => sentSignals.push(payload),
+  });
+
+  await manager.sync({
+    ownId: "player-1",
+    channelId: "main",
+    members: [{ id: "player-1" }, { id: "player-2" }],
+    enabled: true,
+    micEnabled: true,
+    canSpeak: true,
+  });
+  assert.strictEqual(createdPeerConnections.length, 1);
+
+  const firstPc = createdPeerConnections[0];
+  firstPc.connectionState = "failed";
+  firstPc.onconnectionstatechange();
+
+  await new Promise((resolve) => setTimeout(resolve, 700));
+
+  assert.strictEqual(createdPeerConnections.length, 2);
+  assert.strictEqual(
+    manager.peers.get("player-2").pc,
+    createdPeerConnections[1],
+  );
+  assert.strictEqual(
+    sentSignals.filter((item) => item.signal.type === "offer").length,
+    2,
+  );
+}
+
 async function run() {
   await testExistingVoiceBehavior();
   await testMicrophoneUsesEchoSafeConstraints();
@@ -792,6 +858,8 @@ async function run() {
   await testDisablingVoiceStopsStreamAndClearsPendingSignals();
   await testSelfSignalsAreIgnoredInsteadOfQueued();
   await testReenablingVoiceCreatesFreshLocalStream();
+  await testConcurrentSyncsCreateSinglePeerConnection();
+  await testFailedConnectionIsAutomaticallyRestarted();
 }
 
 run()

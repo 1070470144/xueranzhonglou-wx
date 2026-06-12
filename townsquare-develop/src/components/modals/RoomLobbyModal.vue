@@ -2149,8 +2149,9 @@ export default {
   .room-lobby {
     &.room-lobby-list.modal-backdrop,
     &.room-lobby-list .modal-backdrop {
-      align-items: flex-start;
-      padding-top: max(12px, env(safe-area-inset-top));
+      align-items: center;
+      padding-top: max(8px, env(safe-area-inset-top));
+      padding-bottom: max(8px, env(safe-area-inset-bottom));
     }
     .modal {
       max-width: calc(100vw - 16px);
@@ -2268,14 +2269,24 @@ export default {
       padding: 0;
     }
     .room-submodal-layer {
-      padding: 0.8em;
-      place-items: start center;
+      height: 100%;
+      min-height: 0;
+      max-height: calc(100dvh - 16px);
+      padding: 0.55em;
+      place-items: center;
+      overflow: hidden;
     }
     .create-room-form {
-      width: min(100%, calc(100vw - 1.6em));
-      height: calc(100vh - 2.8em);
-      max-height: calc(100vh - 2.8em);
+      width: min(100%, calc(100vw - 1.1em));
+      height: 100%;
+      min-height: 0;
+      max-height: 100%;
       overflow: hidden;
+    }
+    .create-room-scroll {
+      min-height: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
     .create-room-title {
       grid-template-columns: 36px minmax(0, 1fr) 36px;

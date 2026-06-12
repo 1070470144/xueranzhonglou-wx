@@ -33,6 +33,7 @@ class LiveSession {
     this._isApplyingRoomSnapshot = false;
     this._players = {}; // map of players connected to a session
     this._playerAuthSnapshots = {}; // map of player IDs to web login snapshots
+    this._pendingPlayerNames = {}; // map of early playerName messages waiting for seat claims
     this._pings = {}; // map of player IDs to ping
     // reconnect to previous session
     if (this._store.state.session.sessionId) {
@@ -350,6 +351,7 @@ class LiveSession {
     }
     this._pings = {};
     this._playerAuthSnapshots = {};
+    this._pendingPlayerNames = {};
     this._store.commit("session/setPlayerCount", 0);
     this._store.commit("session/setPing", 0);
     this._isSpectator = this._store.state.session.isSpectator;
@@ -389,6 +391,7 @@ class LiveSession {
   disconnect() {
     this._pings = {};
     this._playerAuthSnapshots = {};
+    this._pendingPlayerNames = {};
     this._store.commit("session/setPlayerCount", 0);
     this._store.commit("session/setPing", 0);
     this._store.commit("session/setReconnecting", false);
@@ -713,13 +716,35 @@ class LiveSession {
    */
   _updatePlayerName({ playerId, index, name } = {}) {
     if (this._isSpectator || !playerId || !name) return;
-    const player = this._store.state.players.players[index];
-    if (!player || player.id !== playerId) return;
+    const cleanName = name.trim().substr(0, 30);
+    if (!cleanName) return;
+    const players = this._store.state.players.players;
+    let player = players[index];
+    if (!player || player.id !== playerId) {
+      player = players.find((item) => item.id === playerId);
+    }
+    if (!player) {
+      this._pendingPlayerNames[playerId] = cleanName;
+      return;
+    }
     this._store.commit("players/update", {
       player,
       property: "name",
-      value: name.trim().substr(0, 30),
+      value: cleanName,
     });
+    delete this._pendingPlayerNames[playerId];
+  }
+
+  _applyPendingPlayerName(index, playerId) {
+    const name = this._pendingPlayerNames[playerId];
+    const player = this._store.state.players.players[index];
+    if (!name || !player || player.id !== playerId) return;
+    this._store.commit("players/update", {
+      player,
+      property: "name",
+      value: name,
+    });
+    delete this._pendingPlayerNames[playerId];
   }
 
   /**
@@ -896,6 +921,7 @@ class LiveSession {
         playerId: value,
         auth: this._playerAuthSnapshots[value],
       });
+      this._applyPendingPlayerName(index, value);
     }
     // update player session list as if this was a ping
     this._handlePing([value, 0]);

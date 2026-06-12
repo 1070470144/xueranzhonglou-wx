@@ -6,7 +6,7 @@ function makeHost(id = "host") {
 }
 
 function makePlayer(id) {
-  return { playerId: id };
+  return { playerId: id, readyState: 1 };
 }
 
 function resetRoom(room) {

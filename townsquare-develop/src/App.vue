@@ -164,13 +164,15 @@ export default {
       this.$store.commit("voice/setPushToTalkActive", true);
     },
     keyup(event) {
-      if (event.key === "F2") {
+      const key = event && event.key;
+      if (key === "F2") {
         event.preventDefault();
         this.releasePushToTalk();
         return;
       }
+      if (typeof key !== "string") return;
       if (event.ctrlKey || event.metaKey) return;
-      const normalizedKey = event.key.toLocaleLowerCase();
+      const normalizedKey = key.toLocaleLowerCase();
       if (this.hasOpenModal()) {
         if (normalizedKey === "escape") this.$store.commit("toggleModal");
         return;

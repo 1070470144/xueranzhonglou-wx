@@ -33,6 +33,8 @@ const serverSource = fs.readFileSync(
   "connection_timeout",
   "_applyRoomJoined",
   "_syncRoomPlayers",
+  "_pendingPlayerNames",
+  "_applyPendingPlayerName",
   "_isRoomSession",
   "room/clearRoom",
   "_isApplyingRoomSnapshot",
@@ -114,6 +116,20 @@ assert(
     socketSource
   ),
   "claiming a room seat should immediately send the player's chosen name instead of waiting for a later sync"
+);
+
+assert(
+  /_updatePlayerName\(\{ playerId, index, name \} = \{\}\)[\s\S]*?this\._pendingPlayerNames\[playerId\] = cleanName/.test(
+    socketSource
+  ),
+  "early playerName messages should be cached when they arrive before the claim seat update"
+);
+
+assert(
+  /_updateSeat\(\[index, value\]\)[\s\S]*?this\._applyPendingPlayerName\(index, value\)/.test(
+    socketSource
+  ),
+  "claim seat updates should apply any cached player name immediately after binding the player id"
 );
 
 assert(

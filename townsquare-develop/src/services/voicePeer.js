@@ -1,4 +1,6 @@
 const ICE_SERVERS = [{ urls: "stun:stun.l.google.com:19302" }];
+const RESTART_DELAY_FAILED_MS = 500;
+const RESTART_DELAY_DISCONNECTED_MS = 3000;
 
 export function normalizeVoiceError(error) {
   const name = error && error.name;
@@ -21,7 +23,11 @@ export class VoicePeerManager {
     this.ownId = "";
     this.channelId = "";
     this.localStream = null;
+    this.localStreamPromise = null;
+    this.streamGeneration = 0;
     this.peers = new Map();
+    this.peerPromises = new Map();
+    this.restartTimers = new Map();
     this.memberIds = new Set();
     this.enabled = false;
     this.micEnabled = false;
@@ -31,20 +37,33 @@ export class VoicePeerManager {
     this.audioContext = null;
     this.analyser = null;
     this.analyserBuffer = null;
+    this.audioUnlockHandler = null;
     this.speaking = false;
     this.speakingAboveSince = 0;
     this.speakingBelowSince = 0;
     this.speakingTimer = null;
+    this.syncQueue = Promise.resolve();
   }
 
-  async sync({
+  // sync 可能被多个 watcher 同时触发（进房瞬间 enabled/频道/成员一起变化），
+  // 串行执行避免并发创建重复的 RTCPeerConnection 导致信令交叉。
+  sync(payload) {
+    const run = this.syncQueue.then(() => this.runSync(payload));
+    this.syncQueue = run.then(
+      () => {},
+      () => {},
+    );
+    return run;
+  }
+
+  async runSync({
     ownId,
     channelId,
     members = [],
     enabled,
     micEnabled,
     canSpeak,
-  }) {
+  } = {}) {
     const nextChannelId = channelId || "main";
     const channelChanged = !!this.channelId && this.channelId !== nextChannelId;
     this.ownId = ownId || this.ownId;
@@ -137,6 +156,15 @@ export class VoicePeerManager {
   async processSignal({ fromId, signal }) {
     const peer = await this.ensurePeer(fromId, false);
     if (signal.type === "offer") {
+      if (peer.pc.signalingState !== "stable") {
+        // 信令冲突：回滚本地未完成的协商，接受对方的 offer
+        try {
+          await peer.pc.setLocalDescription({ type: "rollback" });
+        } catch (error) {
+          this.schedulePeerRestart(fromId, RESTART_DELAY_FAILED_MS);
+          return;
+        }
+      }
       await peer.pc.setRemoteDescription(signal.description);
       await this.flushPeerCandidates(peer);
       const answer = await peer.pc.createAnswer();
@@ -152,7 +180,14 @@ export class VoicePeerManager {
       return;
     }
     if (signal.type === "answer") {
-      if (peer.pc.signalingState !== "have-local-offer") return;
+      if (peer.pc.signalingState !== "have-local-offer") {
+        // answer 落在了错误的信令状态上，说明连接已经错乱；
+        // 若尚未连通则重建，避免留下一个永远无声的连接。
+        if (peer.pc.connectionState !== "connected") {
+          this.schedulePeerRestart(fromId, RESTART_DELAY_FAILED_MS);
+        }
+        return;
+      }
       await peer.pc.setRemoteDescription(signal.description);
       await this.flushPeerCandidates(peer);
       return;
@@ -162,21 +197,36 @@ export class VoicePeerManager {
     }
   }
 
-  async ensureLocalStream() {
-    if (this.localStream) return this.localStream;
+  ensureLocalStream() {
+    if (this.localStream) return Promise.resolve(this.localStream);
+    if (this.localStreamPromise) return this.localStreamPromise;
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-      throw new Error("microphone_not_supported");
+      return Promise.reject(new Error("microphone_not_supported"));
     }
-    this.localStream = await navigator.mediaDevices.getUserMedia({
-      audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true,
-      },
-    });
-    this.applyMicrophoneState();
-    this.startSpeakingDetection();
-    return this.localStream;
+    const generation = this.streamGeneration;
+    this.localStreamPromise = navigator.mediaDevices
+      .getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      })
+      .then((stream) => {
+        if (generation !== this.streamGeneration) {
+          // 等待授权期间语音被关闭，释放麦克风
+          stream.getTracks().forEach((track) => track.stop());
+          throw new Error("voice_disabled");
+        }
+        this.localStream = stream;
+        this.applyMicrophoneState();
+        this.startSpeakingDetection();
+        return stream;
+      })
+      .finally(() => {
+        this.localStreamPromise = null;
+      });
+    return this.localStreamPromise;
   }
 
   applyMicrophoneState() {
@@ -278,8 +328,30 @@ export class VoicePeerManager {
     this.setSpeaking(false);
   }
 
+  // 同一对端的并发创建（sync 与信令处理可能同时到达）必须复用同一个
+  // RTCPeerConnection，否则 answer/candidate 会落在被覆盖的连接上。
   async ensurePeer(peerId, initiate) {
-    if (this.peers.has(peerId)) return this.peers.get(peerId);
+    const existing = this.peers.get(peerId);
+    if (existing) {
+      if (initiate) await this.createOffer(peerId);
+      return existing;
+    }
+    const pending = this.peerPromises.get(peerId);
+    if (pending) {
+      const peer = await pending;
+      if (initiate && peer) await this.createOffer(peerId);
+      return peer;
+    }
+    const creation = this.createPeer(peerId, initiate);
+    this.peerPromises.set(peerId, creation);
+    try {
+      return await creation;
+    } finally {
+      this.peerPromises.delete(peerId);
+    }
+  }
+
+  async createPeer(peerId, initiate) {
     await this.ensureLocalStream();
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
     const peer = {
@@ -307,14 +379,52 @@ export class VoicePeerManager {
     };
     pc.ontrack = (event) => this.attachRemoteStream(peer, event.streams[0]);
     pc.onconnectionstatechange = () => {
+      if (this.peers.get(peerId) !== peer) return;
       this.onStatus({ peerId, state: pc.connectionState });
-      if (["closed", "failed", "disconnected"].includes(pc.connectionState)) {
-        this.closePeer(peerId);
+      if (pc.connectionState === "connected") {
+        this.cancelPeerRestart(peerId);
+        return;
+      }
+      if (["failed", "closed"].includes(pc.connectionState)) {
+        this.schedulePeerRestart(peerId, RESTART_DELAY_FAILED_MS);
+      } else if (pc.connectionState === "disconnected") {
+        // disconnected 常是瞬时抖动，给一个恢复窗口再重建
+        this.schedulePeerRestart(peerId, RESTART_DELAY_DISCONNECTED_MS);
       }
     };
 
     if (initiate) await this.createOffer(peerId);
     return peer;
+  }
+
+  schedulePeerRestart(peerId, delayMs) {
+    if (typeof setTimeout !== "function") return;
+    if (this.restartTimers.has(peerId)) return;
+    const timer = setTimeout(() => {
+      this.restartTimers.delete(peerId);
+      const restart = this.restartPeer(peerId);
+      if (restart && restart.catch) restart.catch(() => {});
+    }, delayMs);
+    this.restartTimers.set(peerId, timer);
+  }
+
+  cancelPeerRestart(peerId) {
+    if (!this.restartTimers.has(peerId)) return;
+    clearTimeout(this.restartTimers.get(peerId));
+    this.restartTimers.delete(peerId);
+  }
+
+  async restartPeer(peerId) {
+    const peer = this.peers.get(peerId);
+    if (
+      peer &&
+      ["connected", "connecting"].includes(peer.pc.connectionState)
+    ) {
+      return;
+    }
+    this.closePeer(peerId);
+    if (!this.enabled || !this.memberIds.has(peerId)) return;
+    await this.ensurePeer(peerId, this.shouldInitiate(peerId));
   }
 
   async createOffer(peerId) {
@@ -344,8 +454,45 @@ export class VoicePeerManager {
       document.body.appendChild(peer.audio);
     }
     peer.audio.srcObject = stream;
-    const playResult = peer.audio.play && peer.audio.play();
-    if (playResult && playResult.catch) playResult.catch(() => {});
+    this.playPeerAudio(peer);
+  }
+
+  playPeerAudio(peer) {
+    if (!peer.audio || !peer.audio.play) return;
+    const playResult = peer.audio.play();
+    if (playResult && playResult.catch) {
+      // 浏览器自动播放策略拦截时，等待下一次用户交互后重试
+      playResult.catch(() => this.registerAudioUnlock());
+    }
+  }
+
+  registerAudioUnlock() {
+    if (this.audioUnlockHandler) return;
+    if (typeof document === "undefined" || !document.addEventListener) return;
+    const handler = () => this.unlockAudio();
+    this.audioUnlockHandler = handler;
+    document.addEventListener("pointerdown", handler, true);
+    document.addEventListener("keydown", handler, true);
+  }
+
+  removeAudioUnlock() {
+    if (!this.audioUnlockHandler) return;
+    if (typeof document !== "undefined" && document.removeEventListener) {
+      document.removeEventListener("pointerdown", this.audioUnlockHandler, true);
+      document.removeEventListener("keydown", this.audioUnlockHandler, true);
+    }
+    this.audioUnlockHandler = null;
+  }
+
+  unlockAudio() {
+    this.removeAudioUnlock();
+    if (this.audioContext && this.audioContext.resume) {
+      const resumeResult = this.audioContext.resume();
+      if (resumeResult && resumeResult.catch) resumeResult.catch(() => {});
+    }
+    this.peers.forEach((peer) => {
+      if (peer.audio && peer.audio.paused !== false) this.playPeerAudio(peer);
+    });
   }
 
   async addIceCandidate(peer, candidate) {
@@ -353,7 +500,11 @@ export class VoicePeerManager {
       peer.pendingCandidates.push(candidate);
       return;
     }
-    await peer.pc.addIceCandidate(candidate);
+    try {
+      await peer.pc.addIceCandidate(candidate);
+    } catch (error) {
+      // 连接重建后残留的旧 candidate，忽略
+    }
   }
 
   async flushPeerCandidates(peer) {
@@ -361,7 +512,11 @@ export class VoicePeerManager {
     const candidates = peer.pendingCandidates;
     peer.pendingCandidates = [];
     for (const candidate of candidates) {
-      await peer.pc.addIceCandidate(candidate);
+      try {
+        await peer.pc.addIceCandidate(candidate);
+      } catch (error) {
+        // 忽略过期 candidate
+      }
     }
   }
 
@@ -370,6 +525,7 @@ export class VoicePeerManager {
   }
 
   closePeer(peerId) {
+    this.cancelPeerRestart(peerId);
     const peer = this.peers.get(peerId);
     if (!peer) return;
     if (peer.audio && peer.audio.parentNode) {
@@ -381,9 +537,12 @@ export class VoicePeerManager {
 
   closePeers() {
     Array.from(this.peers.keys()).forEach((peerId) => this.closePeer(peerId));
+    this.restartTimers.forEach((timer) => clearTimeout(timer));
+    this.restartTimers.clear();
   }
 
   stopLocalStream() {
+    this.streamGeneration += 1;
     if (!this.localStream) return;
     this.stopSpeakingDetection();
     this.localStream.getTracks().forEach((track) => track.stop());
@@ -392,6 +551,7 @@ export class VoicePeerManager {
 
   destroy() {
     this.closePeers();
+    this.removeAudioUnlock();
     this.stopSpeakingDetection();
     this.stopLocalStream();
   }
