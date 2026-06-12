@@ -61,6 +61,7 @@ assert(
   "autoDrawSeconds",
   "roleDrawRemaining",
   "roleDrawCurrentSeatLabel",
+  "roleDrawCountdownLabel",
   "roleDraw/setOptions",
   "roleDraw/startDraw",
   "roleDraw/drawForCurrent",
@@ -72,6 +73,18 @@ assert(
     controlSource,
   ),
   "role draw control should show which seat is currently drawing",
+);
+assert(
+  /class="role-draw-current"[\s\S]*?roleDrawCurrentSeatLabel[\s\S]*?roleDrawCountdownLabel/.test(
+    controlSource,
+  ),
+  "role draw current seat should render on its own line with countdown",
+);
+assert(
+  /roleDrawCountdownLabel\(\)[\s\S]*?roleDraw\.options\.autoDrawEnabled[\s\S]*?roleDraw\.turnStartedAt[\s\S]*?roleDraw\.countdown/.test(
+    controlSource,
+  ),
+  "role draw countdown should be derived from the active auto draw timeout",
 );
 assert(
   /sendCharactersDisabled\(\) \{[\s\S]*?this\.grimoire\.roleDrawEnabled[\s\S]*?!this\.roleDrawOptions\.manualDrawEnabled[\s\S]*?!this\.roleDrawOptions\.autoDrawEnabled[\s\S]*?\}/.test(
@@ -178,6 +191,7 @@ assert(
   "drawButton",
   "remaining",
   "currentSeat",
+  "countdown",
   "helpCurrentPlayerDraw",
 ].forEach((needle) =>
   assert(i18nSource.includes(needle), `i18n missing ${needle}`),

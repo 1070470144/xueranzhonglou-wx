@@ -134,6 +134,7 @@ const messages = {
       autoDrawSeconds: "等待秒数",
       helpCurrentPlayerDraw: "帮当前玩家随机抽取",
       currentSeat: "当前抽取 {seat} 号玩家",
+      countdown: "倒计时 {seconds} 秒",
     },
     login: {
       title: "网页登录",
@@ -627,6 +628,7 @@ const messages = {
       autoDrawSeconds: "Wait seconds",
       helpCurrentPlayerDraw: "Draw for current player",
       currentSeat: "Drawing seat {seat}",
+      countdown: "{seconds}s remaining",
     },
     login: {
       title: "Web Login",

@@ -387,7 +387,12 @@
               })
             }}</span>
             <span>{{ roleDrawRemaining }}</span>
-            <span v-if="roleDraw.active">{{ roleDrawCurrentSeatLabel }}</span>
+          </div>
+          <div v-if="roleDraw.active" class="role-draw-current">
+            <span>{{ roleDrawCurrentSeatLabel }}</span>
+            <span v-if="roleDrawCountdownLabel">{{
+              roleDrawCountdownLabel
+            }}</span>
           </div>
           <div class="room-control-note-editor role-draw-options">
             <label>{{ $t("roleDraw.startSeat") }}</label>
@@ -563,6 +568,7 @@ export default {
         autoDrawEnabled: false,
         autoDrawSeconds: 30,
       },
+      roleDrawNow: Date.now(),
     };
   },
   mounted() {
@@ -572,6 +578,7 @@ export default {
   beforeDestroy() {
     if (this._distributeTimer) clearTimeout(this._distributeTimer);
     if (this._roleDrawTimer) clearTimeout(this._roleDrawTimer);
+    if (this._roleDrawClock) clearInterval(this._roleDrawClock);
   },
   computed: {
     ...mapState(["modals", "room", "session", "voice", "grimoire", "roleDraw"]),
@@ -665,6 +672,23 @@ export default {
         seat: currentSeatIndex >= 0 ? currentSeatIndex + 1 : "-",
       });
     },
+    roleDrawCountdownLabel() {
+      if (
+        !this.roleDraw.active ||
+        !this.roleDraw.options.autoDrawEnabled ||
+        !this.roleDraw.turnStartedAt
+      ) {
+        return "";
+      }
+      const timeoutMs =
+        Math.max(5, this.roleDraw.options.autoDrawSeconds) * 1000;
+      const elapsedMs = this.roleDrawNow - this.roleDraw.turnStartedAt;
+      const remainingSeconds = Math.max(
+        0,
+        Math.ceil((timeoutMs - elapsedMs) / 1000),
+      );
+      return this.$t("roleDraw.countdown", { seconds: remainingSeconds });
+    },
     directionLabel() {
       return this.roleDrawOptions.direction === "reverse"
         ? this.$t("roleDraw.reverse")
@@ -676,6 +700,7 @@ export default {
       deep: true,
       handler(options) {
         this.roleDrawOptions = { ...options };
+        this.scheduleRoleDrawTimeout();
       },
     },
     "roleDraw.turnStartedAt": "scheduleRoleDrawTimeout",
@@ -819,6 +844,7 @@ export default {
     scheduleRoleDrawTimeout() {
       if (this._roleDrawTimer) clearTimeout(this._roleDrawTimer);
       this._roleDrawTimer = null;
+      this.scheduleRoleDrawClock();
       if (
         !this.room.isHost ||
         !this.roleDraw.active ||
@@ -835,6 +861,21 @@ export default {
         },
         Math.max(0, timeoutMs - elapsed),
       );
+    },
+    scheduleRoleDrawClock() {
+      if (this._roleDrawClock) clearInterval(this._roleDrawClock);
+      this._roleDrawClock = null;
+      this.roleDrawNow = Date.now();
+      if (
+        !this.roleDraw.active ||
+        !this.roleDraw.options.autoDrawEnabled ||
+        !this.roleDraw.turnStartedAt
+      ) {
+        return;
+      }
+      this._roleDrawClock = setInterval(() => {
+        this.roleDrawNow = Date.now();
+      }, 1000);
     },
     toggleVoice() {
       const nextValue = !this.voice.enabled;
@@ -1323,6 +1364,26 @@ summary {
 .full-width {
   width: calc(100% - 0.56em);
   margin: 0.28em;
+}
+
+.role-draw-status,
+.role-draw-current {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35em 0.65em;
+  padding: 0.18em 0.28em;
+  color: #dcc4a1;
+  font-size: 0.78em;
+  line-height: 1.35;
+}
+
+.role-draw-current {
+  padding-top: 0;
+  color: #fff8e7;
+}
+
+.role-draw-current span + span {
+  color: #c7a16b;
 }
 
 .room-control-voice-list {
