@@ -33,4 +33,9 @@ assert(
   "setSpeaking should update the matching participant as well as local voice.speaking"
 );
 
+assert(
+  /effectiveMicEnabled\(state\)\s*\{\s*return state\.micEnabled;\s*\}/.test(storeSource),
+  "effective mic state should only follow the mic toggle now that push-to-talk is removed from the UI"
+);
+
 console.log("voice store source tests passed");

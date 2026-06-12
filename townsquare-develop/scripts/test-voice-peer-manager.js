@@ -8,6 +8,7 @@ function createFakeTrack() {
     kind: "audio",
     enabled: false,
     stopped: false,
+    onended: null,
     stop() {
       this.stopped = true;
     },
@@ -23,6 +24,7 @@ function loadVoicePeerManager({ playRejects = false } = {}) {
   FakeRTCPeerConnection.instances = [];
   const source = fs
     .readFileSync(sourcePath, "utf8")
+    .replace(/export function buildIceServers/, "function buildIceServers")
     .replace(/export function normalizeVoiceError/, "function normalizeVoiceError")
     .replace(/export class VoicePeerManager/, "class VoicePeerManager")
     .replace(/export default VoicePeerManager;\s*$/, "")
@@ -30,6 +32,7 @@ function loadVoicePeerManager({ playRejects = false } = {}) {
   const sandbox = {
     module: { exports: {} },
     exports: {},
+    process: { env: {} },
     setTimeout,
     clearTimeout,
     navigator: {
@@ -93,10 +96,26 @@ class FakeRTCPeerConnection {
     this.remoteDescription = null;
     this.localDescription = null;
     this.candidates = [];
+    this.senders = [];
     FakeRTCPeerConnection.instances.push(this);
   }
 
-  addTrack() {}
+  addTrack(track) {
+    const sender = {
+      track,
+      replaceTrackCalls: [],
+      async replaceTrack(nextTrack) {
+        this.replaceTrackCalls.push(nextTrack);
+        this.track = nextTrack;
+      },
+    };
+    this.senders.push(sender);
+    return sender;
+  }
+
+  getSenders() {
+    return this.senders;
+  }
 
   async setRemoteDescription(description) {
     this.remoteDescription = description;
@@ -653,6 +672,92 @@ async function testRemotePlaybackFailureDoesNotBreakPeer() {
   assert.strictEqual(manager.peers.has("player-2"), true);
 }
 
+async function testVisibilityRestoreReplaysRemoteAudio() {
+  const { VoicePeerManager, createdAudioElements } = loadVoicePeerManager();
+  const manager = new VoicePeerManager({ sendSignal: () => {} });
+
+  await manager.sync({
+    ownId: "player-1",
+    channelId: "main",
+    members: [{ id: "player-1" }, { id: "player-2" }],
+    enabled: true,
+    micEnabled: true,
+    canSpeak: true,
+  });
+
+  manager.peers.get("player-2").pc.ontrack({ streams: [{ id: "remote-stream" }] });
+  manager.replayRemoteAudio();
+
+  assert.strictEqual(createdAudioElements[0].playCalls, 2);
+}
+
+async function testEndedMicrophoneTrackRefreshesStreamAndReplacesSenders() {
+  const {
+    VoicePeerManager,
+    fakeTrack,
+    fakeTracks,
+    mediaRequests,
+    createdPeerConnections,
+  } = loadVoicePeerManager();
+  const manager = new VoicePeerManager({ sendSignal: () => {} });
+
+  await manager.sync({
+    ownId: "player-1",
+    channelId: "main",
+    members: [{ id: "player-1" }, { id: "player-2" }],
+    enabled: true,
+    micEnabled: true,
+    canSpeak: true,
+  });
+
+  const sender = createdPeerConnections[0].getSenders()[0];
+  assert.strictEqual(sender.track, fakeTrack);
+
+  fakeTrack.onended();
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.strictEqual(mediaRequests.length, 2);
+  assert.strictEqual(fakeTracks.length, 2);
+  assert.strictEqual(sender.track, fakeTracks[1]);
+  assert.strictEqual(fakeTracks[1].enabled, true);
+  assert.strictEqual(sender.replaceTrackCalls[0], fakeTracks[1]);
+}
+
+async function testRepeatedConnectionFailuresEmitPermanentStatus() {
+  const { VoicePeerManager, createdPeerConnections } = loadVoicePeerManager();
+  const statuses = [];
+  const manager = new VoicePeerManager({
+    sendSignal: () => {},
+    onStatus: (status) => statuses.push(status),
+  });
+
+  await manager.sync({
+    ownId: "player-1",
+    channelId: "main",
+    members: [{ id: "player-1" }, { id: "player-2" }],
+    enabled: true,
+    micEnabled: true,
+    canSpeak: true,
+  });
+
+  for (let index = 0; index < 5; index += 1) {
+    const pc = createdPeerConnections[createdPeerConnections.length - 1];
+    pc.connectionState = "failed";
+    pc.onconnectionstatechange();
+    await new Promise((resolve) => setTimeout(resolve, 700));
+  }
+
+  assert(
+    statuses.some(
+      (status) =>
+        status.peerId === "player-2" &&
+        status.state === "failed_permanent" &&
+        status.reason === "voice_connection_failed",
+    ),
+    "repeated failed peer restarts should emit a permanent failure status",
+  );
+}
+
 async function testLeavingChannelClosesPeerAndRemovesAudio() {
   const { VoicePeerManager, createdAudioElements } = loadVoicePeerManager();
   const manager = new VoicePeerManager({ sendSignal: () => {} });
@@ -854,6 +959,9 @@ async function run() {
   await testSpeakingDetectionApiIsWired();
   await testRepeatedRemoteTracksReuseAudioElement();
   await testRemotePlaybackFailureDoesNotBreakPeer();
+  await testVisibilityRestoreReplaysRemoteAudio();
+  await testEndedMicrophoneTrackRefreshesStreamAndReplacesSenders();
+  await testRepeatedConnectionFailuresEmitPermanentStatus();
   await testLeavingChannelClosesPeerAndRemovesAudio();
   await testDisablingVoiceStopsStreamAndClearsPendingSignals();
   await testSelfSignalsAreIgnoredInsteadOfQueued();

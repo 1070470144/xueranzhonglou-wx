@@ -40,7 +40,7 @@
     <PlayerNameModal />
     <StoryLogModal />
     <PrivateChatModal />
-    <VoicePanel />
+    <VoicePanel ref="voicePanel" />
     <VoiceInviteConfirm />
     <RoomLobbyModal />
     <RoomControlDrawer />
@@ -121,9 +121,9 @@ export default {
       if (!this.session.sessionId || !this.voice.enabled) return "";
       if (this.voice.speaking) return this.$t("voice.speaking");
       if (this.storytellerSpeaking) return this.$t("voice.storytellerSpeaking");
-      return this.voice.talkMode === "pushToTalk"
-        ? this.$t("voice.pushToTalkHint")
-        : this.$t("voice.freeTalk");
+      return this.voice.micEnabled
+        ? this.$t("voice.micShortcutOn")
+        : this.$t("voice.micShortcutOff");
     },
   },
   watch: {
@@ -139,13 +139,11 @@ export default {
     this.updatePageTitle();
     window.addEventListener("keydown", this.keydown);
     window.addEventListener("keyup", this.keyup);
-    window.addEventListener("blur", this.releasePushToTalk);
     document.addEventListener("visibilitychange", this.handleVisibilityChange);
   },
   beforeDestroy() {
     window.removeEventListener("keydown", this.keydown);
     window.removeEventListener("keyup", this.keyup);
-    window.removeEventListener("blur", this.releasePushToTalk);
     document.removeEventListener(
       "visibilitychange",
       this.handleVisibilityChange,
@@ -159,17 +157,15 @@ export default {
     },
     keydown(event) {
       if (event.key !== "F2" || event.repeat) return;
-      if (this.voice.talkMode !== "pushToTalk" || !this.voice.enabled) return;
+      if (!this.voice.enabled || !this.$store.getters["voice/canSpeak"]) {
+        return;
+      }
       event.preventDefault();
-      this.$store.commit("voice/setPushToTalkActive", true);
+      this.$store.commit("voice/setMicEnabled", !this.voice.micEnabled);
     },
     keyup(event) {
       const key = event && event.key;
-      if (key === "F2") {
-        event.preventDefault();
-        this.releasePushToTalk();
-        return;
-      }
+      if (key === "F2") return;
       if (typeof key !== "string") return;
       if (event.ctrlKey || event.metaKey) return;
       const normalizedKey = key.toLocaleLowerCase();
@@ -220,13 +216,10 @@ export default {
     hasOpenModal() {
       return Object.keys(this.modals).some((name) => this.modals[name]);
     },
-    releasePushToTalk() {
-      if (this.voice.pushToTalkActive) {
-        this.$store.commit("voice/setPushToTalkActive", false);
-      }
-    },
     handleVisibilityChange() {
-      if (document.hidden) this.releasePushToTalk();
+      if (!document.hidden && this.$refs.voicePanel) {
+        this.$refs.voicePanel.replayRemoteAudio();
+      }
     },
   },
 };

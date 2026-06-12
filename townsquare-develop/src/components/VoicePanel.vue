@@ -144,6 +144,9 @@ export default {
         this.isFlushingSignals = false;
       }
     },
+    replayRemoteAudio() {
+      if (this.manager) this.manager.replayRemoteAudio();
+    },
   },
 };
 </script>

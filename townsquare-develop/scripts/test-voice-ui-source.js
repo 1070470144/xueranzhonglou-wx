@@ -88,10 +88,6 @@ assert(
 
 [
   "voice.entry",
-  "voice.talkMode",
-  "voice.freeTalk",
-  "voice.pushToTalk",
-  "voice.holdToTalk",
   "voice.listenVolume",
   "voice.connect",
   "voice.disconnect",
@@ -119,9 +115,15 @@ assert(
 
 [
   "voice.speaking",
-  "voice.pushToTalkHint",
   "voice.storytellerSpeaking",
+  "voice.micShortcutOn",
+  "voice.micShortcutOff",
 ].forEach(needle => assert(appSource.includes(needle), `App missing ${needle}`));
+
+assert(
+  !appSource.includes("voice.micToggleHint"),
+  "top-right voice hint should not use the long F2 toggle text"
+);
 
 [
   "voice:",
@@ -136,12 +138,27 @@ assert(
 ].forEach(needle => assert(i18nSource.includes(needle), `i18n missing ${needle}`));
 
 [
-  "voice-mode-toggle",
-  "voice-hold-button",
+  'micShortcutOn: "F2关麦"',
+  'micShortcutOff: "F2开麦"',
+  'micShortcutOn: "F2 mute"',
+  'micShortcutOff: "F2 unmute"',
+].forEach(needle => assert(i18nSource.includes(needle), `i18n missing short hint ${needle}`));
+
+[
   "voice-volume-control",
-  "setPushToTalkActive",
   "setListenVolume",
 ].forEach(needle => assert(drawerSource.includes(needle), `RoomControlDrawer missing ${needle}`));
+
+[
+  "voice-mode-toggle",
+  "voice-hold-button",
+  "setPushToTalkActive",
+  "setTalkMode",
+  "voice.talkMode",
+  "voice.freeTalk",
+  "voice.pushToTalk",
+  "voice.holdToTalk",
+].forEach(needle => assert(!drawerSource.includes(needle), `RoomControlDrawer should not include ${needle}`));
 
 [
   "voice-hint",
@@ -212,6 +229,22 @@ assert(
 assert(
   /syncSpeakingIntent\(\)[\s\S]*?effectiveMicEnabled[\s\S]*?voice\/sendSpeakingState/.test(source),
   "VoicePanel should publish speaking intent from the current talk state instead of waiting for detected audio"
+);
+
+assert(
+  /replayRemoteAudio\(\)[\s\S]*?manager\.replayRemoteAudio/.test(source),
+  "VoicePanel should expose a visibility restore hook that replays remote audio"
+);
+
+assert(
+  /keydown\(event\)[\s\S]*?event\.key !== "F2"[\s\S]*?voice\/setMicEnabled[\s\S]*?!this\.voice\.micEnabled/.test(appSource),
+  "F2 should toggle the microphone instead of acting as push-to-talk"
+);
+
+assert(
+  /<VoicePanel ref="voicePanel" \/>/.test(appSource) &&
+    /handleVisibilityChange\(\)[\s\S]*?!document\.hidden[\s\S]*?replayRemoteAudio/.test(appSource),
+  "App should replay remote voice audio when returning to the foreground"
 );
 
 [

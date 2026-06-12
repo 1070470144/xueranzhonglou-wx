@@ -35,6 +35,7 @@ export function buildIceServers(env = process.env) {
 const ICE_SERVERS = buildIceServers();
 const RESTART_DELAY_FAILED_MS = 500;
 const RESTART_DELAY_DISCONNECTED_MS = 3000;
+const MAX_RESTART_ATTEMPTS = 5;
 
 export function normalizeVoiceError(error) {
   const name = error && error.name;
@@ -62,6 +63,7 @@ export class VoicePeerManager {
     this.peers = new Map();
     this.peerPromises = new Map();
     this.restartTimers = new Map();
+    this.restartAttempts = new Map();
     this.memberIds = new Set();
     this.enabled = false;
     this.micEnabled = false;
@@ -253,6 +255,7 @@ export class VoicePeerManager {
           throw new Error("voice_disabled");
         }
         this.localStream = stream;
+        this.bindLocalTrackEndHandlers(stream);
         this.applyMicrophoneState();
         this.startSpeakingDetection();
         return stream;
@@ -261,6 +264,43 @@ export class VoicePeerManager {
         this.localStreamPromise = null;
       });
     return this.localStreamPromise;
+  }
+
+  bindLocalTrackEndHandlers(stream) {
+    stream.getAudioTracks().forEach((track) => {
+      track.onended = () => {
+        const refresh = this.refreshLocalStream();
+        if (refresh && refresh.catch) refresh.catch(() => {});
+      };
+    });
+  }
+
+  async refreshLocalStream() {
+    if (!this.enabled) return;
+    const previousStream = this.localStream;
+    this.localStream = null;
+    this.stopSpeakingDetection();
+    if (previousStream) {
+      previousStream.getTracks().forEach((track) => {
+        track.onended = null;
+        if (!track.stopped && track.readyState !== "ended") track.stop();
+      });
+    }
+    const stream = await this.ensureLocalStream();
+    const [audioTrack] = stream.getAudioTracks();
+    if (!audioTrack) return;
+    const replacements = [];
+    this.peers.forEach((peer) => {
+      if (!peer.pc.getSenders) return;
+      peer.pc
+        .getSenders()
+        .filter((sender) => sender.track && sender.track.kind === "audio")
+        .forEach((sender) => {
+          const result = sender.replaceTrack(audioTrack);
+          if (result && result.catch) replacements.push(result);
+        });
+    });
+    await Promise.all(replacements);
   }
 
   applyMicrophoneState() {
@@ -417,6 +457,7 @@ export class VoicePeerManager {
       this.onStatus({ peerId, state: pc.connectionState });
       if (pc.connectionState === "connected") {
         this.cancelPeerRestart(peerId);
+        this.restartAttempts.delete(peerId);
         return;
       }
       if (["failed", "closed"].includes(pc.connectionState)) {
@@ -434,6 +475,15 @@ export class VoicePeerManager {
   schedulePeerRestart(peerId, delayMs) {
     if (typeof setTimeout !== "function") return;
     if (this.restartTimers.has(peerId)) return;
+    const attempts = (this.restartAttempts.get(peerId) || 0) + 1;
+    this.restartAttempts.set(peerId, attempts);
+    if (attempts >= MAX_RESTART_ATTEMPTS) {
+      this.onStatus({
+        peerId,
+        state: "failed_permanent",
+        reason: "voice_connection_failed",
+      });
+    }
     const timer = setTimeout(() => {
       this.restartTimers.delete(peerId);
       const restart = this.restartPeer(peerId);
@@ -453,7 +503,7 @@ export class VoicePeerManager {
     if (peer && ["connected", "connecting"].includes(peer.pc.connectionState)) {
       return;
     }
-    this.closePeer(peerId);
+    this.closePeer(peerId, false);
     if (!this.enabled || !this.memberIds.has(peerId)) return;
     await this.ensurePeer(peerId, this.shouldInitiate(peerId));
   }
@@ -495,6 +545,10 @@ export class VoicePeerManager {
       // 浏览器自动播放策略拦截时，等待下一次用户交互后重试
       playResult.catch(() => this.registerAudioUnlock());
     }
+  }
+
+  replayRemoteAudio() {
+    this.peers.forEach((peer) => this.playPeerAudio(peer));
   }
 
   registerAudioUnlock() {
@@ -559,8 +613,9 @@ export class VoicePeerManager {
     return String(this.ownId).localeCompare(String(peerId)) < 0;
   }
 
-  closePeer(peerId) {
+  closePeer(peerId, resetAttempts = true) {
     this.cancelPeerRestart(peerId);
+    if (resetAttempts) this.restartAttempts.delete(peerId);
     const peer = this.peers.get(peerId);
     if (!peer) return;
     if (peer.audio && peer.audio.parentNode) {

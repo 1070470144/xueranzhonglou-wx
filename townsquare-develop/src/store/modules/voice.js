@@ -62,9 +62,7 @@ const getters = {
     return !state.state.muteAll || !rootState.session.isSpectator;
   },
   effectiveMicEnabled(state) {
-    return state.talkMode === "pushToTalk"
-      ? state.pushToTalkActive
-      : state.micEnabled;
+    return state.micEnabled;
   },
   pendingInvites(state, getters, rootState) {
     const id = ownId(rootState);

@@ -168,7 +168,6 @@
             {{ voice.enabled ? $t("voice.disconnect") : $t("voice.connect") }}
           </button>
           <button
-            v-if="voice.talkMode === 'free'"
             type="button"
             class="button"
             :class="{ townsfolk: voice.micEnabled && canVoiceSpeak }"
@@ -187,44 +186,6 @@
             }}
           </button>
         </div>
-
-        <div
-          class="voice-mode-toggle"
-          role="group"
-          :aria-label="$t('voice.talkMode')"
-        >
-          <button
-            type="button"
-            class="button"
-            :class="{ townsfolk: voice.talkMode === 'free' }"
-            @click="setTalkMode('free')"
-          >
-            {{ $t("voice.freeTalk") }}
-          </button>
-          <button
-            type="button"
-            class="button"
-            :class="{ townsfolk: voice.talkMode === 'pushToTalk' }"
-            @click="setTalkMode('pushToTalk')"
-          >
-            {{ $t("voice.pushToTalk") }}
-          </button>
-        </div>
-
-        <button
-          v-if="voice.talkMode === 'pushToTalk'"
-          type="button"
-          class="button voice-hold-button"
-          :class="{ townsfolk: voice.pushToTalkActive && canVoiceSpeak }"
-          :disabled="!voice.enabled || !canVoiceSpeak"
-          @pointerdown.prevent="setPushToTalkActive(true)"
-          @pointerup.prevent="setPushToTalkActive(false)"
-          @pointercancel.prevent="setPushToTalkActive(false)"
-          @pointerleave.prevent="setPushToTalkActive(false)"
-        >
-          <font-awesome-icon icon="volume-up" />
-          {{ $t("voice.holdToTalk") }}
-        </button>
 
         <label class="voice-volume-control">
           <span>{{ $t("voice.listenVolume") }}</span>
@@ -671,12 +632,6 @@ export default {
     toggleMic() {
       if (!this.canVoiceSpeak) return;
       this.$store.commit("voice/setMicEnabled", !this.voice.micEnabled);
-    },
-    setTalkMode(mode) {
-      this.$store.commit("voice/setTalkMode", mode);
-    },
-    setPushToTalkActive(value) {
-      this.$store.commit("voice/setPushToTalkActive", value);
     },
     setListenVolume(value) {
       this.$store.commit("voice/setListenVolume", value);
@@ -1170,25 +1125,6 @@ summary {
   font-size: 0.76em;
   font-weight: 700;
   letter-spacing: 0;
-}
-
-.voice-mode-toggle {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.22em;
-  padding: 0.28em;
-  border-top: 1px solid #261d19;
-}
-
-.voice-mode-toggle .button,
-.voice-hold-button {
-  width: calc(100% - 0.56em);
-  margin: 0.28em;
-}
-
-.voice-mode-toggle .button {
-  width: auto;
-  margin: 0;
 }
 
 .voice-volume-control {
