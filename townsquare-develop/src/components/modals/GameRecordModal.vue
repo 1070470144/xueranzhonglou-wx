@@ -116,7 +116,12 @@ export default {
   },
   watch: {
     "modals.gameRecord"(open) {
-      if (open) this.refresh();
+      if (open) {
+        this.refresh();
+      } else if (this.timer) {
+        clearInterval(this.timer);
+        this.timer = null;
+      }
     },
   },
   beforeDestroy() {

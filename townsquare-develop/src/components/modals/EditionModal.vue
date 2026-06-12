@@ -336,6 +336,10 @@ export default {
         this.error = this.resolveScriptError(error);
       } finally {
         this.loading = false;
+        if (this.pendingRefresh) {
+          this.pendingRefresh = false;
+          this.$nextTick(this.refreshGalleryScripts);
+        }
       }
     },
     handleScriptListScroll(event) {
@@ -471,6 +475,10 @@ export default {
           }
           this.$refs.upload.value = "";
         });
+        reader.addEventListener("error", () => {
+          alert(this.$t("modals.errorReadCustom", { message: reader.error && reader.error.message }));
+          this.$refs.upload.value = "";
+        });
         reader.readAsText(file);
       }
     },
@@ -481,21 +489,28 @@ export default {
       }
     },
     async handleURL(url) {
-      const res = await fetch(url);
-      if (res && res.json) {
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         try {
           const script = await res.json();
           this.parseRoles(script);
         } catch (e) {
           alert(this.$t("modals.errorLoadCustom", { message: e.message }));
         }
+      } catch (e) {
+        alert(this.$t("modals.errorLoadCustom", { message: e.message }));
       }
     },
     async readFromClipboard() {
-      const text = await navigator.clipboard.readText();
       try {
-        const roles = JSON.parse(text);
-        this.parseRoles(roles);
+        const text = await navigator.clipboard.readText();
+        try {
+          const roles = JSON.parse(text);
+          this.parseRoles(roles);
+        } catch (e) {
+          alert(this.$t("modals.errorReadCustom", { message: e.message }));
+        }
       } catch (e) {
         alert(this.$t("modals.errorReadCustom", { message: e.message }));
       }

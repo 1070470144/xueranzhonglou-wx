@@ -18,10 +18,7 @@
         </button>
       </header>
 
-      <div v-if="!session.sessionId" class="empty-state">
-        {{ $t("privateChat.noRoom") }}
-      </div>
-      <template v-else>
+      <template>
         <nav v-if="targets.length" class="chat-tabs">
           <button
             v-for="target in targets"

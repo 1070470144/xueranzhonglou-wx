@@ -93,7 +93,7 @@ export default {
       return availableRoles;
     },
     targetName() {
-      return this.playerIndex >= 0 && this.players.length
+      return this.playerIndex >= 0 && this.playerIndex < this.players.length
         ? this.players[this.playerIndex].name
         : this.$t("modals.bluffing");
     },

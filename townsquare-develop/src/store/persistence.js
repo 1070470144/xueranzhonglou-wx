@@ -14,6 +14,9 @@ export default (store) => {
   if (localStorage.getItem("static")) {
     store.commit("toggleStatic", true);
   }
+  if (localStorage.getItem("statusEffects") === "0") {
+    store.commit("toggleStatusEffects", false);
+  }
   if (localStorage.getItem("imageOptIn") === "0") {
     store.commit("toggleImageOptIn", false);
   }
@@ -132,6 +135,12 @@ export default (store) => {
         } else {
           localStorage.removeItem("static");
         }
+        break;
+      case "toggleStatusEffects":
+        localStorage.setItem(
+          "statusEffects",
+          state.grimoire.statusEffectsEnabled ? "1" : "0",
+        );
         break;
       case "toggleImageOptIn":
         if (state.grimoire.isImageOptIn) {

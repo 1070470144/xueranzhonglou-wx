@@ -64,21 +64,13 @@
         <li class="tabs" :class="tab">
           <font-awesome-icon icon="book-open" @click="tab = 'grimoire'" />
           <font-awesome-icon icon="broadcast-tower" @click="tab = 'session'" />
+          <font-awesome-icon icon="cog" @click="tab = 'settings'" />
           <font-awesome-icon icon="question" @click="tab = 'help'" />
         </li>
 
         <template v-if="tab === 'grimoire'">
           <!-- Grimoire -->
           <li class="headline">{{ $t("menu.grimoire") }}</li>
-          <li @click="toggleGrimoire" v-if="players.length">
-            <template v-if="!grimoire.isPublic">{{
-              $t("menu.charactersVisible")
-            }}</template>
-            <template v-if="grimoire.isPublic">{{
-              $t("menu.charactersHidden")
-            }}</template>
-            <em>[G]</em>
-          </li>
           <li @click="toggleNight" v-if="!session.isSpectator">
             <template v-if="!grimoire.isNight">{{
               $t("menu.switchToNight")
@@ -93,11 +85,50 @@
             <em><font-awesome-icon icon="clipboard" /></em>
           </li>
           <li
+            v-if="session.voteHistory.length || !session.isSpectator"
+            @click="toggleModal('voteHistory')"
+          >
+            {{ $t("menu.voteHistory") }}<em>[V]</em>
+          </li>
+          <li @click="toggleModal('reference')">
+            {{ $t("menu.referenceSheet") }}
+            <em>[R]</em>
+          </li>
+          <li @click="toggleModal('nightOrder')">
+            {{ $t("menu.nightOrderSheet") }}
+            <em>[N]</em>
+          </li>
+          <li
             @click="toggleModal('gameRecord')"
             v-if="!session.isSpectator && players.length"
           >
             保存战绩
             <em><font-awesome-icon icon="trophy" /></em>
+          </li>
+          <li @click="toggleModal('playerName')" v-if="session.isSpectator">
+            {{ $t("menu.changePlayerName") }}
+            <em><font-awesome-icon icon="user-edit" /></em>
+          </li>
+          <li v-if="authUser" @click="logoutWeb">
+            {{ authUser.nickname || $t("login.loggedIn") }}
+            <em><font-awesome-icon icon="times" /></em>
+          </li>
+          <li v-else @click="toggleModal('login')">
+            {{ $t("menu.webLogin") }}
+            <em><font-awesome-icon icon="user" /></em>
+          </li>
+        </template>
+
+        <template v-if="tab === 'settings'">
+          <li class="headline">{{ $t("menu.settings") }}</li>
+          <li @click="toggleGrimoire" v-if="players.length">
+            <template v-if="!grimoire.isPublic">{{
+              $t("menu.charactersVisible")
+            }}</template>
+            <template v-if="grimoire.isPublic">{{
+              $t("menu.charactersHidden")
+            }}</template>
+            <em>[G]</em>
           </li>
           <li @click="toggleNightOrder" v-if="players.length">
             {{ $t("menu.nightOrder") }}
@@ -138,16 +169,22 @@
                 ]"
             /></em>
           </li>
+          <li @click="toggleStatusEffects">
+            {{ $t("menu.statusEffects") }}
+            <em>
+              {{
+                grimoire.statusEffectsEnabled
+                  ? $t("menu.statusEffectsOn")
+                  : $t("menu.statusEffectsOff")
+              }}
+            </em>
+          </li>
           <li @click="toggleStatic">
             {{ $t("menu.disableAnimations") }}
             <em
               ><font-awesome-icon
                 :icon="['fas', grimoire.isStatic ? 'check-square' : 'square']"
             /></em>
-          </li>
-          <li @click="toggleModal('playerName')" v-if="session.isSpectator">
-            {{ $t("menu.changePlayerName") }}
-            <em><font-awesome-icon icon="user-edit" /></em>
           </li>
           <li @click="toggleMuted">
             {{ $t("menu.muteSounds") }}
@@ -169,14 +206,6 @@
                 {{ locale.label }}
               </button>
             </em>
-          </li>
-          <li v-if="authUser" @click="logoutWeb">
-            {{ authUser.nickname || $t("login.loggedIn") }}
-            <em><font-awesome-icon icon="times" /></em>
-          </li>
-          <li v-else @click="toggleModal('login')">
-            {{ $t("menu.webLogin") }}
-            <em><font-awesome-icon icon="user" /></em>
           </li>
         </template>
 
@@ -211,12 +240,6 @@
               }}
               <em>{{ session.ping }}ms</em>
             </li>
-            <li
-              v-if="session.voteHistory.length || !session.isSpectator"
-              @click="toggleModal('voteHistory')"
-            >
-              {{ $t("menu.voteHistory") }}<em>[V]</em>
-            </li>
             <li @click="leaveSession">
               {{ $t("menu.leaveSession") }}
               <em>{{ session.sessionId }}</em>
@@ -227,14 +250,6 @@
         <template v-if="tab === 'help'">
           <!-- Help -->
           <li class="headline">{{ $t("menu.help") }}</li>
-          <li @click="toggleModal('reference')">
-            {{ $t("menu.referenceSheet") }}
-            <em>[R]</em>
-          </li>
-          <li @click="toggleModal('nightOrder')">
-            {{ $t("menu.nightOrderSheet") }}
-            <em>[N]</em>
-          </li>
           <li @click="toggleModal('gameState')">
             {{ $t("menu.gameStateJson") }}
             <em><font-awesome-icon icon="file-code" /></em>
@@ -361,7 +376,7 @@ export default {
     copySessionUrl() {
       const url = window.location.href.split("#")[0];
       const link = url + "#" + this.session.sessionId;
-      navigator.clipboard.writeText(link);
+      navigator.clipboard.writeText(link).catch(() => {});
     },
     imageOptIn() {
       const popup = this.$t("menu.confirmCustomImages");
@@ -423,6 +438,7 @@ export default {
       "toggleMuted",
       "toggleNightOrder",
       "toggleStatic",
+      "toggleStatusEffects",
       "setZoom",
       "toggleModal",
     ]),
@@ -640,6 +656,7 @@ export default {
         &.players .fa-users,
         &.characters .fa-theater-masks,
         &.session .fa-broadcast-tower,
+        &.settings .fa-cog,
         &.help .fa-question {
           color: #fff8e7;
           background: linear-gradient(#8a2721, #581612 54%, #2d0c09);

@@ -452,6 +452,9 @@ export default {
       selectedInviteIds: [],
     };
   },
+  beforeDestroy() {
+    if (this._distributeTimer) clearTimeout(this._distributeTimer);
+  },
   computed: {
     ...mapState(["modals", "room", "session", "voice"]),
     ...mapState("players", ["players", "nightNavigation"]),
@@ -498,7 +501,9 @@ export default {
       return !this.recallActive && this.selectedInviteIds.length > 0;
     },
     voiceErrorText() {
-      return this.$t(`voice.errors.${this.voice.error}`) || this.voice.error;
+      const key = `voice.errors.${this.voice.error}`;
+      const translated = this.$t(key);
+      return translated !== key ? translated : (this.voice.error || key);
     },
     nightNavigationQueue() {
       return this.$store.getters["players/nightActionQueue"](
@@ -532,7 +537,7 @@ export default {
       if (this.room.current && this.room.current.inviteToken) {
         params.set("invite", this.room.current.inviteToken);
       }
-      navigator.clipboard.writeText(`${url}#${params.toString()}`);
+      navigator.clipboard.writeText(`${url}#${params.toString()}`).catch(() => {});
     },
     chooseScript() {
       this.openModalOverlay("edition");
@@ -544,7 +549,9 @@ export default {
       if (this.session.isSpectator) return;
       if (!confirm(this.$t("menu.confirmDistribute"))) return;
       this.$store.commit("session/distributeRoles", true);
-      setTimeout(() => {
+      if (this._distributeTimer) clearTimeout(this._distributeTimer);
+      this._distributeTimer = setTimeout(() => {
+        this._distributeTimer = null;
         this.$store.commit("session/distributeRoles", false);
         if (this.room.current && this.room.current.status !== "playing") {
           if (confirm(this.$t("room.confirmSetPlaying"))) {

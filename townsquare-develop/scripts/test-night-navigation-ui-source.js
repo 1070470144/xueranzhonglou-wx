@@ -98,15 +98,35 @@ assert(
   !playerSource.includes(".player.night-active:after"),
   "Night active highlight should not draw an oval pseudo-element",
 );
+const nightActiveTokenRule = playerSource.match(
+  /\.player\.night-active \.token\s*\{[\s\S]*?\}/,
+);
 assert(
-  !/\.player\.night-active[\s\S]*?radial-gradient/.test(playerSource),
+  nightActiveTokenRule,
+  "Night active token glow should have a dedicated token rule",
+);
+assert(
+  !nightActiveTokenRule[0].includes("radial-gradient"),
   "Night active highlight should not use a visible radial-gradient oval",
 );
 assert(
-  /\.player\.night-active \.token[\s\S]*?animation: nightActionPulse/.test(
+  nightActiveTokenRule[0].includes("animation: nightActionPulse"),
+  "Night active glow animation should live on the token glow",
+);
+assert(
+  /\.player\.night-active\.(?:poisoned-active|drunk-active|drunk-poisoned-active) \.token\s*\{[\s\S]*?animation:\s*nightActionPulse/.test(
     playerSource,
   ),
-  "Night active glow animation should live on the token glow",
+  "Night active glow should override drunk and poisoned token effects",
+);
+assert(
+  /\.player\.night-active\.poisoned-active \.token:before[\s\S]*?content:\s*none/.test(
+    playerSource,
+  ) &&
+    /\.player\.night-active\.drunk-active \.token:after[\s\S]*?content:\s*none/.test(
+      playerSource,
+    ),
+  "Night active glow should hide status pseudo-elements",
 );
 assert(
   playerSource.includes("rgba(255, 226, 46") &&

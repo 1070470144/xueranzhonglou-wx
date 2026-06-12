@@ -85,6 +85,7 @@ export default {
             (res && res.message) || this.$t("login.createFailed"),
           );
         }
+        if (!this.modals.login) return;
         this.ticket = res.data.ticket;
         this.expireTime = res.data.expireTime || 0;
         this.expireSeconds = this.getExpireSeconds();
@@ -93,6 +94,7 @@ export default {
           margin: 1,
           errorCorrectionLevel: "M",
         });
+        if (!this.modals.login) return;
         this.startTimers();
       } catch (error) {
         this.error = this.resolveError(error);

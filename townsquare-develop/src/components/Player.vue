@@ -13,6 +13,18 @@
           'vote-lock': voteLocked,
           'token-upside-down': isTokenUpsideDown,
           'night-active': this.nightNavigation.currentSeatIndex === this.index,
+          'poisoned-active':
+            this.statusEffectsEnabled &&
+            this.hasPoisonReminder &&
+            !this.hasDrunkReminder,
+          'drunk-active':
+            this.statusEffectsEnabled &&
+            this.hasDrunkReminder &&
+            !this.hasPoisonReminder,
+          'drunk-poisoned-active':
+            this.statusEffectsEnabled &&
+            this.hasDrunkReminder &&
+            this.hasPoisonReminder,
         },
         player.role.team,
       ]"
@@ -266,6 +278,71 @@ export default {
         (participant) => participant.id === this.player.id,
       );
       return !!(participant && participant.speaking);
+    },
+    reminderStatusEffects: function () {
+      const poisonRoles = [
+        "poisoner",
+        "pukka",
+        "vigormortis",
+        "nodashii",
+        "lleech",
+        "widow",
+        "snakecharmer",
+      ];
+      const drunkRoles = [
+        "drunk",
+        "sailor",
+        "innkeeper",
+        "courtier",
+        "philosopher",
+        "puzzlemaster",
+        "sweetheart",
+      ];
+      const poisonTextSignals = [
+        "Poisoned",
+        "poison",
+        "中毒",
+        "毒",
+        "普卡毒",
+        "亡骨魔毒",
+      ];
+      const drunkTextSignals = ["Drunk", "drunk", "醉酒", "酒鬼", "是酒鬼"];
+      const effects = { poison: false, drunk: false };
+
+      (this.player.reminders || []).forEach((reminder) => {
+        const name = `${reminder.name || ""}`;
+        const role = `${reminder.role || ""}`;
+        const hasPoisonText = poisonTextSignals.some((signal) =>
+          name.includes(signal),
+        );
+        const hasDrunkText = drunkTextSignals.some((signal) =>
+          name.includes(signal),
+        );
+
+        if (
+          hasPoisonText &&
+          (poisonRoles.includes(role) || !drunkRoles.includes(role))
+        ) {
+          effects.poison = true;
+        }
+        if (
+          hasDrunkText &&
+          (drunkRoles.includes(role) || !poisonRoles.includes(role))
+        ) {
+          effects.drunk = true;
+        }
+      });
+
+      return effects;
+    },
+    hasPoisonReminder: function () {
+      return this.reminderStatusEffects.poison;
+    },
+    hasDrunkReminder: function () {
+      return this.reminderStatusEffects.drunk;
+    },
+    statusEffectsEnabled: function () {
+      return this.grimoire.statusEffectsEnabled !== false;
     },
     menuStyle: function () {
       return this.menuOffsetY
@@ -623,6 +700,66 @@ export default {
   animation: nightActionPulse 1.6s ease-in-out infinite;
 }
 
+.player.poisoned-active .token {
+  animation: poisonTokenPulse 2.25s ease-in-out infinite;
+}
+
+.player.drunk-active .token {
+  animation:
+    drunkTokenWobble 2.15s ease-in-out infinite,
+    drunkTokenBreath 1.9s ease-in-out infinite;
+}
+
+.player.drunk-poisoned-active .token {
+  animation:
+    drunkTokenWobble 2.15s ease-in-out infinite,
+    drunkTokenBreath 1.9s ease-in-out infinite,
+    poisonTokenPulse 2.25s ease-in-out infinite;
+}
+
+.player.poisoned-active .token:before,
+.player.drunk-poisoned-active .token:before {
+  content: "";
+  position: absolute;
+  inset: 8%;
+  border-radius: 50%;
+  background: radial-gradient(
+      circle at 35% 35%,
+      rgba(64, 240, 92, 0.48),
+      transparent 18%
+    ),
+    radial-gradient(circle at 67% 65%, rgba(24, 145, 68, 0.42), transparent 23%);
+  mix-blend-mode: multiply;
+  animation: sickWash 2.85s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.player.drunk-active .token:after,
+.player.drunk-poisoned-active .token:after {
+  content: "";
+  position: absolute;
+  inset: -5%;
+  border: 4px solid rgba(91, 190, 255, 0.18);
+  border-radius: 50%;
+  filter: blur(1px);
+  animation: drunkTokenAfterimage 2.15s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.player.night-active.poisoned-active .token,
+.player.night-active.drunk-active .token,
+.player.night-active.drunk-poisoned-active .token {
+  animation: nightActionPulse 1.6s ease-in-out infinite;
+}
+
+.player.night-active.poisoned-active .token:before,
+.player.night-active.drunk-poisoned-active .token:before,
+.player.night-active.drunk-active .token:after,
+.player.night-active.drunk-poisoned-active .token:after {
+  content: none;
+}
+
 @keyframes nightActionPulse {
   0%,
   100% {
@@ -632,6 +769,64 @@ export default {
   50% {
     filter: drop-shadow(0 0 13px rgba(255, 226, 46, 0.96))
       drop-shadow(0 0 30px rgba(255, 245, 120, 0.72));
+  }
+}
+
+@keyframes poisonTokenPulse {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 5px rgba(60, 230, 88, 0.26));
+  }
+  50% {
+    filter: drop-shadow(0 0 15px rgba(60, 230, 88, 0.62));
+  }
+}
+
+@keyframes sickWash {
+  0%,
+  100% {
+    opacity: 0.26;
+    transform: translate(-4px, 3px) scale(0.95);
+  }
+  50% {
+    opacity: 0.68;
+    transform: translate(5px, -3px) scale(1.04);
+  }
+}
+
+@keyframes drunkTokenWobble {
+  0%,
+  100% {
+    transform: perspective(400px) rotateY(0deg) rotate(-2.5deg)
+      translate(-1px, 0);
+  }
+  50% {
+    transform: perspective(400px) rotateY(0deg) rotate(3deg)
+      translate(2px, -2px);
+  }
+}
+
+@keyframes drunkTokenBreath {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 8px rgba(82, 185, 255, 0.58))
+      drop-shadow(0 0 15px rgba(126, 103, 255, 0.36));
+  }
+  50% {
+    filter: drop-shadow(0 0 16px rgba(82, 185, 255, 0.58))
+      drop-shadow(0 0 30px rgba(126, 103, 255, 0.36));
+  }
+}
+
+@keyframes drunkTokenAfterimage {
+  0%,
+  100% {
+    opacity: 0.18;
+    transform: translateX(7px);
+  }
+  50% {
+    opacity: 0.34;
+    transform: translateX(-6px);
   }
 }
 
@@ -645,6 +840,13 @@ export default {
 
 #townsquare.public .circle .player.token-upside-down .token {
   transform: perspective(400px) rotateY(-180deg) rotate(180deg);
+}
+
+#townsquare.public .circle .player.poisoned-active .token,
+#townsquare.public .circle .player.drunk-active .token,
+#townsquare.public .circle .player.drunk-poisoned-active .token {
+  animation: none;
+  filter: none;
 }
 
 /****** Player choice icons *******/

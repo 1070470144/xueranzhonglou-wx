@@ -57,6 +57,11 @@ export default {
       input: "",
     };
   },
+  watch: {
+    "modals.gameState"(visible) {
+      if (visible) this.input = "";
+    },
+  },
   methods: {
     copy: function () {
       navigator.clipboard.writeText(this.input || this.gamestate);
@@ -72,7 +77,7 @@ export default {
         if (edition) {
           this.$store.commit("setEdition", edition);
         }
-        if (bluffs.length) {
+        if (bluffs && bluffs.length) {
           bluffs.forEach((role, index) => {
             this.$store.commit("players/setBluff", {
               index,

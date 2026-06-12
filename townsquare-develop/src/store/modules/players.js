@@ -22,6 +22,36 @@ const normalizePlayerCount = (count) => {
     : 0;
 };
 
+const shuffle = (items) =>
+  items
+    .map((item) => [Math.random(), item])
+    .sort((a, b) => a[0] - b[0])
+    .map(([, item]) => item);
+
+const chooseBluffRoles = (roles, seatedRoleIds) => {
+  const candidates = Array.from(roles.values()).filter(
+    (role) =>
+      role &&
+      role.id &&
+      role.team !== "traveler" &&
+      role.team !== "fabled" &&
+      !seatedRoleIds.has(role.id),
+  );
+  const byTeam = {
+    townsfolk: shuffle(candidates.filter((role) => role.team === "townsfolk")),
+    outsider: shuffle(candidates.filter((role) => role.team === "outsider")),
+  };
+  const hasOutsider = byTeam.outsider.length > 0;
+  const targetTeams = hasOutsider
+    ? ["townsfolk", "townsfolk", "outsider"]
+    : ["townsfolk", "townsfolk", "townsfolk"];
+
+  return targetTeams.reduce((selected, team) => {
+    const role = byTeam[team] && byTeam[team].shift();
+    return role ? [...selected, role] : selected;
+  }, []);
+};
+
 const state = () => ({
   players: [],
   fabled: [],
@@ -135,6 +165,25 @@ const actions = {
     }
     commit("set", players);
     commit("setBluff");
+  },
+  autoFillBluffs({ state, commit, rootState }) {
+    const seatedRoleIds = new Set(
+      state.players
+        .map((player) => player.role && player.role.id)
+        .filter(Boolean),
+    );
+    const roles = rootState.roles || new Map();
+    const demonBluffs = chooseBluffRoles(roles, seatedRoleIds);
+    const lunaticBluffs = chooseBluffRoles(roles, seatedRoleIds);
+
+    commit("setBluff");
+    demonBluffs.forEach((role, index) => {
+      commit("setBluff", { index, role });
+    });
+    commit("setLunaticBluff");
+    lunaticBluffs.forEach((role, index) => {
+      commit("setLunaticBluff", { index, role });
+    });
   },
 };
 

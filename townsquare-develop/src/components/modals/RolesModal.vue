@@ -119,8 +119,7 @@ export default {
         if (!this.roleSelection[role.team]) {
           this.$set(this.roleSelection, role.team, []);
         }
-        this.roleSelection[role.team].push(role);
-        this.$set(role, "selected", 0);
+        this.roleSelection[role.team].push({ ...role, selected: 0 });
       });
       delete this.roleSelection["traveler"];
       const playerCount = Math.max(5, this.nonTravelers);
@@ -162,6 +161,7 @@ export default {
             });
           }
         });
+        this.$store.dispatch("players/autoFillBluffs");
         this.$store.commit("closeModal", "roles");
       }
     },

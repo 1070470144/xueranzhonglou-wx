@@ -1,0 +1,400 @@
+<style>
+  .arena {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+  }
+  .concept {
+    position: relative;
+    min-height: 470px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    background:
+      linear-gradient(180deg, rgba(10, 16, 20, 0.5), rgba(3, 7, 9, 0.9)),
+      url("file:///C:/Users/mengmenglv/AppData/Local/Temp/codex-clipboard-c26044d0-2d33-444b-8990-82e894c3f925.png") center / cover;
+    cursor: pointer;
+  }
+  .concept:hover {
+    border-color: rgba(255, 255, 255, 0.34);
+  }
+  .scene {
+    position: relative;
+    height: 330px;
+  }
+  .seat {
+    position: absolute;
+    display: grid;
+    justify-items: center;
+    gap: 9px;
+  }
+  .seat.poison-seat {
+    left: 36px;
+    top: 44px;
+  }
+  .seat.drunk-seat {
+    right: 34px;
+    top: 100px;
+  }
+  .seat.both-seat {
+    left: 102px;
+    bottom: 28px;
+  }
+  .token-wrap {
+    position: relative;
+    width: 92px;
+    aspect-ratio: 1;
+  }
+  .token {
+    position: relative;
+    z-index: 2;
+    width: 92px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 5px solid #050505;
+    background:
+      radial-gradient(circle at 50% 44%, rgba(255, 255, 255, 0.86), rgba(218, 218, 211, 0.74) 43%, rgba(115, 115, 109, 0.64)),
+      repeating-linear-gradient(28deg, rgba(255, 255, 255, 0.12) 0 6px, rgba(0, 0, 0, 0.05) 6px 10px);
+    box-shadow: 0 4px 0 #101010, inset 0 0 18px rgba(255, 255, 255, 0.32);
+    display: grid;
+    place-items: center;
+    color: #101316;
+    font-size: 15px;
+    font-weight: 900;
+    text-align: center;
+    line-height: 1.05;
+  }
+  .label {
+    min-width: 112px;
+    padding: 6px 14px;
+    border: 5px solid #050505;
+    border-radius: 14px;
+    background: rgba(9, 32, 28, 0.94);
+    color: #fff;
+    font-size: 22px;
+    font-weight: 900;
+    line-height: 1;
+    text-align: center;
+  }
+  .reminder {
+    position: absolute;
+    z-index: 4;
+    width: 48px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 3px solid #16110a;
+    background: #efd88e;
+    display: grid;
+    place-items: center;
+    color: #16110a;
+    font-size: 13px;
+    font-weight: 900;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.55);
+  }
+  .poison-seat .reminder {
+    right: -28px;
+    bottom: 18px;
+  }
+  .drunk-seat .reminder {
+    left: -28px;
+    bottom: 18px;
+  }
+  .both-seat .reminder {
+    right: -30px;
+    top: 20px;
+  }
+  .fx {
+    position: absolute;
+    pointer-events: none;
+  }
+  .body {
+    padding: 15px 16px 18px;
+    background: linear-gradient(180deg, rgba(3, 7, 9, 0.3), rgba(3, 7, 9, 0.82));
+  }
+  .body h3 {
+    margin: 0 0 6px;
+    color: white;
+  }
+  .body p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.74);
+  }
+
+  /* A3: badge-style status above the unchanged token */
+  .badge .fx {
+    z-index: 5;
+    left: 50%;
+    top: -12px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    transform: translateX(-50%);
+    display: grid;
+    place-items: center;
+    font-size: 18px;
+    font-weight: 900;
+    border: 3px solid rgba(0, 0, 0, 0.82);
+    box-shadow: 0 2px 0 #111, 0 0 14px currentColor;
+    animation: badgePulse 1.8s ease-in-out infinite;
+  }
+  .badge .poison-fx {
+    color: #55ff79;
+    background: rgba(12, 60, 32, 0.92);
+  }
+  .badge .poison-fx::before {
+    content: "毒";
+  }
+  .badge .drunk-fx {
+    color: #6fc9ff;
+    background: rgba(25, 42, 92, 0.92);
+  }
+  .badge .drunk-fx::before {
+    content: "酒";
+  }
+  .badge .both-fx {
+    color: #b5f5ff;
+    background: linear-gradient(135deg, rgba(14, 80, 36, 0.95), rgba(34, 42, 100, 0.95));
+  }
+  .badge .both-fx::before {
+    content: "!";
+  }
+
+  /* B3: background aura that sits behind the unchanged token */
+  .underlay .fx {
+    z-index: 1;
+    inset: -18px;
+    border-radius: 50%;
+  }
+  .underlay .poison-fx {
+    background:
+      radial-gradient(circle at 24% 64%, rgba(67, 255, 108, 0.55), transparent 17%),
+      radial-gradient(circle at 74% 28%, rgba(67, 255, 108, 0.42), transparent 18%),
+      conic-gradient(from 20deg, transparent, rgba(67, 255, 108, 0.3), transparent 32%, rgba(33, 174, 77, 0.26), transparent 72%);
+    filter: blur(4px);
+    animation: underPoison 2.8s ease-in-out infinite;
+  }
+  .underlay .drunk-fx {
+    background:
+      radial-gradient(circle, transparent 51%, rgba(88, 190, 255, 0.35) 53%, transparent 58%),
+      radial-gradient(circle at 22% 32%, rgba(124, 95, 255, 0.36), transparent 18%),
+      radial-gradient(circle at 80% 70%, rgba(88, 190, 255, 0.35), transparent 20%);
+    filter: blur(3px);
+    animation: underDrunk 3.4s linear infinite;
+  }
+  .underlay .both-fx {
+    background:
+      radial-gradient(circle at 25% 65%, rgba(67, 255, 108, 0.46), transparent 17%),
+      radial-gradient(circle at 77% 32%, rgba(88, 190, 255, 0.42), transparent 18%),
+      conic-gradient(from 80deg, rgba(67, 255, 108, 0.28), transparent 24%, rgba(88, 190, 255, 0.3), transparent 54%, rgba(67, 255, 108, 0.26));
+    filter: blur(3px);
+    animation: underBoth 3.2s ease-in-out infinite;
+  }
+
+  /* C3: tiny orbiting particles; token remains completely still */
+  .particles .fx {
+    z-index: 5;
+    inset: -12px;
+    border-radius: 50%;
+  }
+  .particles .fx::before,
+  .particles .fx::after {
+    content: "";
+    position: absolute;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    box-shadow: 0 0 10px currentColor;
+  }
+  .particles .poison-fx {
+    color: #53ff78;
+    animation: orbit 3s linear infinite;
+  }
+  .particles .poison-fx::before {
+    left: 50%;
+    top: 0;
+    background: #53ff78;
+  }
+  .particles .poison-fx::after {
+    right: 5px;
+    bottom: 17px;
+    background: #2fca62;
+  }
+  .particles .drunk-fx {
+    color: #6fc9ff;
+    animation: orbit 3.8s linear infinite reverse;
+  }
+  .particles .drunk-fx::before {
+    left: 7px;
+    top: 16px;
+    background: #6fc9ff;
+  }
+  .particles .drunk-fx::after {
+    right: 10px;
+    top: 6px;
+    background: #8c7aff;
+  }
+  .particles .both-fx {
+    color: #9df4ff;
+    animation: orbit 3.4s linear infinite;
+  }
+  .particles .both-fx::before {
+    left: 50%;
+    top: 0;
+    background: #55ff78;
+  }
+  .particles .both-fx::after {
+    right: 8px;
+    bottom: 12px;
+    background: #6fc9ff;
+  }
+
+  @keyframes badgePulse {
+    0%, 100% {
+      opacity: 0.8;
+      transform: translateX(-50%) scale(0.92);
+    }
+    50% {
+      opacity: 1;
+      transform: translateX(-50%) scale(1.06);
+    }
+  }
+  @keyframes underPoison {
+    0%, 100% {
+      opacity: 0.38;
+      transform: scale(0.92) rotate(-8deg);
+    }
+    50% {
+      opacity: 0.78;
+      transform: scale(1.06) rotate(10deg);
+    }
+  }
+  @keyframes underDrunk {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes underBoth {
+    0%, 100% {
+      opacity: 0.46;
+      transform: scale(0.95) rotate(-6deg);
+    }
+    50% {
+      opacity: 0.84;
+      transform: scale(1.06) rotate(8deg);
+    }
+  }
+  @keyframes orbit {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @media (max-width: 980px) {
+    .arena {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<h2>第三轮：座位本体不动</h2>
+<p class="subtitle">这版 token、名字牌、小标记都保持原本效果。特效只做独立提示层，不改变座位动画、不让角色 token 晃动或变形。</p>
+
+<div class="arena cards">
+  <div class="concept badge card" data-choice="a3" onclick="toggleSelect(this)">
+    <div class="scene">
+      <div class="seat poison-seat">
+        <div class="token-wrap">
+          <div class="fx poison-fx"></div>
+          <div class="token">寡妇</div>
+        </div>
+        <div class="label">中毒</div>
+        <div class="reminder">毒</div>
+      </div>
+      <div class="seat drunk-seat">
+        <div class="token-wrap">
+          <div class="fx drunk-fx"></div>
+          <div class="token">赌徒</div>
+        </div>
+        <div class="label">醉酒</div>
+        <div class="reminder">酒</div>
+      </div>
+      <div class="seat both-seat">
+        <div class="token-wrap">
+          <div class="fx both-fx"></div>
+          <div class="token">赏金<br>猎人</div>
+        </div>
+        <div class="label">混合</div>
+        <div class="reminder">双</div>
+      </div>
+    </div>
+    <div class="body">
+      <h3>A3. 顶部状态徽章</h3>
+      <p>最清楚，像“座位挂了状态”。不会干扰原角色 token，但会比较工具化。</p>
+    </div>
+  </div>
+
+  <div class="concept underlay card" data-choice="b3" onclick="toggleSelect(this)">
+    <div class="scene">
+      <div class="seat poison-seat">
+        <div class="token-wrap">
+          <div class="fx poison-fx"></div>
+          <div class="token">寡妇</div>
+        </div>
+        <div class="label">中毒</div>
+        <div class="reminder">毒</div>
+      </div>
+      <div class="seat drunk-seat">
+        <div class="token-wrap">
+          <div class="fx drunk-fx"></div>
+          <div class="token">赌徒</div>
+        </div>
+        <div class="label">醉酒</div>
+        <div class="reminder">酒</div>
+      </div>
+      <div class="seat both-seat">
+        <div class="token-wrap">
+          <div class="fx both-fx"></div>
+          <div class="token">赏金<br>猎人</div>
+        </div>
+        <div class="label">混合</div>
+        <div class="reminder">双</div>
+      </div>
+    </div>
+    <div class="body">
+      <h3>B3. token 背后状态雾</h3>
+      <p>保留座位原样，只在 token 后面铺状态雾。中毒更绿，醉酒更蓝，存在感柔和。</p>
+    </div>
+  </div>
+
+  <div class="concept particles card" data-choice="c3" onclick="toggleSelect(this)">
+    <div class="scene">
+      <div class="seat poison-seat">
+        <div class="token-wrap">
+          <div class="fx poison-fx"></div>
+          <div class="token">寡妇</div>
+        </div>
+        <div class="label">中毒</div>
+        <div class="reminder">毒</div>
+      </div>
+      <div class="seat drunk-seat">
+        <div class="token-wrap">
+          <div class="fx drunk-fx"></div>
+          <div class="token">赌徒</div>
+        </div>
+        <div class="label">醉酒</div>
+        <div class="reminder">酒</div>
+      </div>
+      <div class="seat both-seat">
+        <div class="token-wrap">
+          <div class="fx both-fx"></div>
+          <div class="token">赏金<br>猎人</div>
+        </div>
+        <div class="label">混合</div>
+        <div class="reminder">双</div>
+      </div>
+    </div>
+    <div class="body">
+      <h3>C3. 小粒子环绕</h3>
+      <p>座位完全不动，只让小状态粒子绕 token。比徽章更有生命感，比雾更清晰。</p>
+    </div>
+  </div>
+</div>

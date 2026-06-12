@@ -1050,6 +1050,7 @@ class LiveSession {
    */
   _handleVote([index, vote, fromST]) {
     const { session, players } = this._store.state;
+    if (!session.nomination) return;
     const playerCount = players.players.length;
     const indexAdjusted =
       (index - 1 + playerCount - session.nomination[1]) % playerCount;

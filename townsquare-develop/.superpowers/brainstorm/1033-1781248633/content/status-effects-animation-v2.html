@@ -1,0 +1,340 @@
+<style>
+  .arena {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+  }
+  .concept {
+    position: relative;
+    min-height: 470px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 8px;
+    background:
+      linear-gradient(180deg, rgba(10, 16, 20, .55), rgba(3, 7, 9, .92)),
+      url("file:///C:/Users/mengmenglv/AppData/Local/Temp/codex-clipboard-c26044d0-2d33-444b-8990-82e894c3f925.png") center / cover;
+    cursor: pointer;
+  }
+  .concept:hover {
+    border-color: rgba(255,255,255,.34);
+  }
+  .scene {
+    position: relative;
+    height: 330px;
+    background: radial-gradient(circle at 50% 45%, rgba(255,255,255,.05), transparent 62%);
+  }
+  .seat {
+    position: absolute;
+    display: grid;
+    justify-items: center;
+    gap: 9px;
+  }
+  .seat.poison-seat {
+    left: 36px;
+    top: 44px;
+  }
+  .seat.drunk-seat {
+    right: 34px;
+    top: 100px;
+  }
+  .seat.both-seat {
+    left: 102px;
+    bottom: 28px;
+  }
+  .token {
+    position: relative;
+    width: 92px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 5px solid #050505;
+    background:
+      radial-gradient(circle at 50% 44%, rgba(255,255,255,.86), rgba(218,218,211,.74) 43%, rgba(115,115,109,.64)),
+      repeating-linear-gradient(28deg, rgba(255,255,255,.12) 0 6px, rgba(0,0,0,.05) 6px 10px);
+    box-shadow: 0 4px 0 #101010, inset 0 0 18px rgba(255,255,255,.32);
+    display: grid;
+    place-items: center;
+    color: #101316;
+    font-size: 15px;
+    font-weight: 900;
+    text-align: center;
+    line-height: 1.05;
+    isolation: isolate;
+  }
+  .label {
+    min-width: 112px;
+    padding: 6px 14px;
+    border: 5px solid #050505;
+    border-radius: 14px;
+    background: rgba(9, 32, 28, .94);
+    color: #fff;
+    font-size: 22px;
+    font-weight: 900;
+    line-height: 1;
+    text-align: center;
+  }
+  .reminder {
+    position: absolute;
+    width: 48px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 3px solid #16110a;
+    background: #efd88e;
+    display: grid;
+    place-items: center;
+    color: #16110a;
+    font-size: 13px;
+    font-weight: 900;
+    box-shadow: 0 2px 5px rgba(0,0,0,.55);
+  }
+  .poison-seat .reminder { right: -28px; bottom: 18px; }
+  .drunk-seat .reminder { left: -28px; bottom: 18px; }
+  .both-seat .reminder { right: -30px; top: 20px; }
+
+  .body {
+    padding: 15px 16px 18px;
+    background: linear-gradient(180deg, rgba(3,7,9,.3), rgba(3,7,9,.82));
+  }
+  .body h3 {
+    margin: 0 0 6px;
+    color: white;
+  }
+  .body p {
+    margin: 0;
+    color: rgba(255,255,255,.74);
+  }
+
+  /* Option A: surface status */
+  .surface .poison::before {
+    content: "";
+    position: absolute;
+    inset: 7px;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 30% 34%, rgba(74,255,116,.75) 0 5px, transparent 7px),
+      radial-gradient(circle at 62% 58%, rgba(34,202,91,.7) 0 8px, transparent 11px),
+      radial-gradient(circle at 46% 76%, rgba(147,255,85,.52) 0 4px, transparent 7px),
+      conic-gradient(from 90deg, transparent, rgba(54,226,92,.34), transparent 34%, rgba(37,170,83,.28), transparent 72%);
+    mix-blend-mode: multiply;
+    filter: blur(.3px);
+    animation: poisonSpread 2.6s ease-in-out infinite;
+    z-index: 1;
+  }
+  .surface .poison::after {
+    content: "";
+    position: absolute;
+    inset: -16px;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 28% 80%, rgba(83,255,122,.45), transparent 16%),
+      radial-gradient(circle at 72% 24%, rgba(84,255,118,.35), transparent 18%);
+    filter: blur(8px);
+    animation: poisonMist 3.2s ease-in-out infinite;
+    z-index: -1;
+  }
+  .surface .drunk {
+    animation: drunkFloat 2.4s ease-in-out infinite;
+  }
+  .surface .drunk::before,
+  .surface .drunk::after {
+    content: "○";
+    position: absolute;
+    color: rgba(75,193,255,.72);
+    font-size: 28px;
+    text-shadow: 0 0 9px rgba(112,92,255,.7);
+    animation: bubbleRise 2.8s ease-in-out infinite;
+  }
+  .surface .drunk::before { left: -14px; top: 12px; }
+  .surface .drunk::after { right: -15px; bottom: 11px; animation-delay: .75s; }
+  .surface .both {
+    animation: drunkFloat 2.2s ease-in-out infinite, sickPulse 1.7s ease-in-out infinite;
+  }
+
+  /* Option B: aura objects */
+  .objects .poison::before,
+  .objects .drunk::before,
+  .objects .both::before {
+    content: "";
+    position: absolute;
+    inset: -18px;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .objects .poison::before {
+    background:
+      radial-gradient(circle at 50% 0%, rgba(91,255,126,.82) 0 4px, transparent 6px),
+      radial-gradient(circle at 88% 45%, rgba(91,255,126,.66) 0 3px, transparent 5px),
+      radial-gradient(circle at 18% 64%, rgba(91,255,126,.72) 0 5px, transparent 7px);
+    filter: drop-shadow(0 0 8px rgba(82,255,120,.75));
+    animation: toxicOrbit 3.2s linear infinite;
+  }
+  .objects .drunk {
+    animation: tipsyToken 2s ease-in-out infinite;
+  }
+  .objects .drunk::before {
+    border: 3px dashed rgba(98,199,255,.7);
+    box-shadow: 0 0 13px rgba(118,101,255,.65);
+    animation: dizzyOrbit 4s linear infinite;
+  }
+  .objects .drunk::after {
+    content: "";
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    border-left: 5px solid rgba(111,205,255,.34);
+    transform: translateX(7px);
+    filter: blur(.4px);
+  }
+  .objects .both {
+    animation: tipsyToken 2s ease-in-out infinite, sickPulse 1.8s ease-in-out infinite;
+  }
+  .objects .both::before {
+    border: 3px dashed rgba(90,255,130,.75);
+    box-shadow: 0 0 12px rgba(90,255,130,.72), 0 0 20px rgba(112,195,255,.58);
+    animation: dizzyOrbit 3.6s linear infinite reverse;
+  }
+
+  /* Option C: minimal but alive */
+  .subtle .poison {
+    animation: poisonShadow 2.1s ease-in-out infinite;
+  }
+  .subtle .poison::before {
+    content: "";
+    position: absolute;
+    inset: 9px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, transparent 32%, rgba(64,220,91,.42), transparent 58%);
+    mix-blend-mode: multiply;
+    animation: slowWash 3.2s ease-in-out infinite;
+  }
+  .subtle .drunk {
+    animation: tinyWobble 2.1s ease-in-out infinite;
+    filter: drop-shadow(6px 0 0 rgba(75,185,255,.18)) drop-shadow(-5px 0 0 rgba(145,105,255,.15));
+  }
+  .subtle .both {
+    animation: tinyWobble 2.1s ease-in-out infinite, poisonShadow 2.1s ease-in-out infinite;
+  }
+
+  @keyframes poisonSpread {
+    0%,100% { opacity: .42; transform: rotate(-8deg) scale(.9); }
+    50% { opacity: .85; transform: rotate(12deg) scale(1.06); }
+  }
+  @keyframes poisonMist {
+    0%,100% { opacity: .28; transform: translate(-5px, 6px) scale(.96); }
+    50% { opacity: .7; transform: translate(6px, -4px) scale(1.08); }
+  }
+  @keyframes drunkFloat {
+    0%,100% { transform: rotate(-2deg) translate(-1px, 0); filter: drop-shadow(5px 0 0 rgba(84,190,255,.16)); }
+    50% { transform: rotate(3deg) translate(2px, -2px); filter: drop-shadow(-6px 0 0 rgba(137,103,255,.18)); }
+  }
+  @keyframes bubbleRise {
+    0% { transform: translateY(10px) scale(.68); opacity: 0; }
+    38% { opacity: .82; }
+    100% { transform: translateY(-22px) scale(1.05); opacity: 0; }
+  }
+  @keyframes sickPulse {
+    0%,100% { box-shadow: 0 4px 0 #101010, 0 0 9px rgba(83,255,122,.42), inset 0 0 18px rgba(255,255,255,.32); }
+    50% { box-shadow: 0 4px 0 #101010, 0 0 24px rgba(83,255,122,.72), 0 0 20px rgba(92,183,255,.34), inset 0 0 18px rgba(255,255,255,.32); }
+  }
+  @keyframes toxicOrbit {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes tipsyToken {
+    0%,100% { transform: rotate(-4deg) translateX(-1px); }
+    50% { transform: rotate(5deg) translateX(2px); }
+  }
+  @keyframes dizzyOrbit {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes poisonShadow {
+    0%,100% { filter: drop-shadow(0 0 6px rgba(71,255,111,.34)); }
+    50% { filter: drop-shadow(0 0 18px rgba(71,255,111,.72)); }
+  }
+  @keyframes slowWash {
+    0%,100% { transform: rotate(-20deg) translateX(-8px); opacity: .25; }
+    50% { transform: rotate(16deg) translateX(8px); opacity: .65; }
+  }
+  @keyframes tinyWobble {
+    0%,100% { transform: translateX(-1px) rotate(-1deg); }
+    50% { transform: translateX(2px) rotate(2deg); }
+  }
+  @media (max-width: 980px) {
+    .arena { grid-template-columns: 1fr; }
+  }
+</style>
+
+<h2>第二轮：让“状态”自己动起来</h2>
+<p class="subtitle">这轮不做普通外发光。看中毒是否像侵蚀/毒雾，醉酒是否像晃动/重影。可以点一张，也可以说想混搭。</p>
+
+<div class="arena cards">
+  <div class="concept surface card" data-choice="a2" onclick="toggleSelect(this)">
+    <div class="scene">
+      <div class="seat poison-seat">
+        <div class="token poison">寡妇</div>
+        <div class="label">中毒</div>
+        <div class="reminder">毒</div>
+      </div>
+      <div class="seat drunk-seat">
+        <div class="token drunk">赌徒</div>
+        <div class="label">醉酒</div>
+        <div class="reminder">酒</div>
+      </div>
+      <div class="seat both-seat">
+        <div class="token both">赏金<br>猎人</div>
+        <div class="label">混合</div>
+        <div class="reminder">双</div>
+      </div>
+    </div>
+    <div class="body">
+      <h3>A2. 毒雾 + 酒泡</h3>
+      <p>中毒在 token 表面扩散，醉酒有小气泡和轻微漂移。状态感最直观。</p>
+    </div>
+  </div>
+
+  <div class="concept objects card" data-choice="b2" onclick="toggleSelect(this)">
+    <div class="scene">
+      <div class="seat poison-seat">
+        <div class="token poison">寡妇</div>
+        <div class="label">中毒</div>
+        <div class="reminder">毒</div>
+      </div>
+      <div class="seat drunk-seat">
+        <div class="token drunk">赌徒</div>
+        <div class="label">醉酒</div>
+        <div class="reminder">酒</div>
+      </div>
+      <div class="seat both-seat">
+        <div class="token both">赏金<br>猎人</div>
+        <div class="label">混合</div>
+        <div class="reminder">双</div>
+      </div>
+    </div>
+    <div class="body">
+      <h3>B2. 毒点环绕 + 眩晕虚线</h3>
+      <p>中毒有小毒点绕圈，醉酒有慢速眩晕环和 token 倾斜。辨识度高。</p>
+    </div>
+  </div>
+
+  <div class="concept subtle card" data-choice="c2" onclick="toggleSelect(this)">
+    <div class="scene">
+      <div class="seat poison-seat">
+        <div class="token poison">寡妇</div>
+        <div class="label">中毒</div>
+        <div class="reminder">毒</div>
+      </div>
+      <div class="seat drunk-seat">
+        <div class="token drunk">赌徒</div>
+        <div class="label">醉酒</div>
+        <div class="reminder">酒</div>
+      </div>
+      <div class="seat both-seat">
+        <div class="token both">赏金<br>猎人</div>
+        <div class="label">混合</div>
+        <div class="reminder">双</div>
+      </div>
+    </div>
+    <div class="body">
+      <h3>C2. 微侵蚀 + 微重影</h3>
+      <p>更克制：中毒是一层流动污染，醉酒是轻微晃动和左右重影。最不吵。</p>
+    </div>
+  </div>
+</div>

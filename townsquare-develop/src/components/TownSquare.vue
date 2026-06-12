@@ -12,7 +12,7 @@
     <ul class="circle" :class="['size-' + players.length]">
       <Player
         v-for="(player, index) in players"
-        :key="index"
+        :key="player.id || index"
         :player="player"
         @trigger="handleTrigger(index, $event)"
         :class="{
@@ -96,7 +96,7 @@
       <ul>
         <li
           v-for="(role, index) in fabled"
-          :key="index"
+          :key="role.id || index"
           @click="removeFabled(index)"
         >
           <div
@@ -341,8 +341,9 @@ export default {
     nominatePlayer(from, to) {
       if (this.session.isSpectator || this.session.lockedVote) return;
       if (to === undefined) {
+        const prev = this.nominate;
         this.cancel();
-        if (from !== this.nominate) {
+        if (from !== prev) {
           this.nominate = from;
         }
       } else {

@@ -1,0 +1,273 @@
+<style>
+  .arena {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 18px;
+  }
+  .concept {
+    min-height: 470px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    background:
+      linear-gradient(180deg, rgba(8, 14, 18, 0.48), rgba(3, 7, 9, 0.9)),
+      url("file:///C:/Users/mengmenglv/AppData/Local/Temp/codex-clipboard-c26044d0-2d33-444b-8990-82e894c3f925.png") center / cover;
+    cursor: pointer;
+  }
+  .concept:hover {
+    border-color: rgba(255, 255, 255, 0.34);
+  }
+  .scene {
+    position: relative;
+    height: 330px;
+  }
+  .seat {
+    position: absolute;
+    display: grid;
+    justify-items: center;
+    gap: 9px;
+  }
+  .poison-seat {
+    left: 38px;
+    top: 45px;
+  }
+  .drunk-seat {
+    right: 34px;
+    top: 100px;
+  }
+  .both-seat {
+    left: 104px;
+    bottom: 28px;
+  }
+  .token {
+    position: relative;
+    width: 92px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 5px solid #050505;
+    background:
+      radial-gradient(circle at 50% 44%, rgba(255, 255, 255, 0.86), rgba(218, 218, 211, 0.74) 43%, rgba(115, 115, 109, 0.64)),
+      repeating-linear-gradient(28deg, rgba(255, 255, 255, 0.12) 0 6px, rgba(0, 0, 0, 0.05) 6px 10px);
+    box-shadow: 0 4px 0 #101010, inset 0 0 18px rgba(255, 255, 255, 0.32);
+    display: grid;
+    place-items: center;
+    color: #101316;
+    font-size: 15px;
+    font-weight: 900;
+    text-align: center;
+    line-height: 1.05;
+    isolation: isolate;
+  }
+  .label {
+    min-width: 112px;
+    padding: 6px 14px;
+    border: 5px solid #050505;
+    border-radius: 14px;
+    background: rgba(9, 32, 28, 0.94);
+    color: #fff;
+    font-size: 22px;
+    font-weight: 900;
+    line-height: 1;
+    text-align: center;
+  }
+  .reminder {
+    position: absolute;
+    z-index: 4;
+    width: 48px;
+    aspect-ratio: 1;
+    border-radius: 50%;
+    border: 3px solid #16110a;
+    background: #efd88e;
+    display: grid;
+    place-items: center;
+    color: #16110a;
+    font-size: 13px;
+    font-weight: 900;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.55);
+  }
+  .poison-seat .reminder {
+    right: -28px;
+    bottom: 18px;
+  }
+  .drunk-seat .reminder {
+    left: -28px;
+    bottom: 18px;
+  }
+  .both-seat .reminder {
+    right: -30px;
+    top: 20px;
+  }
+  .body {
+    padding: 15px 16px 18px;
+    background: linear-gradient(180deg, rgba(3, 7, 9, 0.3), rgba(3, 7, 9, 0.82));
+  }
+  .body h3 {
+    margin: 0 0 6px;
+    color: white;
+  }
+  .body p {
+    margin: 0;
+    color: rgba(255, 255, 255, 0.74);
+  }
+
+  .drunk,
+  .both {
+    animation: drunkWobble 2.15s ease-in-out infinite, drunkBreath 1.9s ease-in-out infinite;
+  }
+  .drunk::after,
+  .both::after {
+    content: "";
+    position: absolute;
+    inset: -5px;
+    border-radius: 50%;
+    border: 4px solid rgba(91, 190, 255, 0.18);
+    transform: translateX(7px);
+    filter: blur(1px);
+    animation: drunkAfterimage 2.15s ease-in-out infinite;
+    pointer-events: none;
+  }
+  .soft .drunk,
+  .soft .both {
+    --drunk-glow-a: rgba(82, 185, 255, 0.34);
+    --drunk-glow-b: rgba(126, 103, 255, 0.22);
+  }
+  .middle .drunk,
+  .middle .both {
+    --drunk-glow-a: rgba(82, 185, 255, 0.58);
+    --drunk-glow-b: rgba(126, 103, 255, 0.36);
+  }
+  .strong .drunk,
+  .strong .both {
+    --drunk-glow-a: rgba(82, 185, 255, 0.78);
+    --drunk-glow-b: rgba(126, 103, 255, 0.5);
+  }
+
+  .poison::before,
+  .both::before {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    background: conic-gradient(from 210deg, transparent 0 12%, rgba(63, 235, 89, 0.72) 14% 28%, transparent 31% 52%, rgba(38, 167, 75, 0.66) 56% 70%, transparent 73%);
+    mask: radial-gradient(circle, transparent 0 64%, #000 66% 76%, transparent 78%);
+    -webkit-mask: radial-gradient(circle, transparent 0 64%, #000 66% 76%, transparent 78%);
+    filter: blur(0.3px) drop-shadow(0 0 8px rgba(57, 230, 88, 0.62));
+    animation: rimCreep 3.4s linear infinite;
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  @keyframes drunkWobble {
+    0%, 100% {
+      transform: rotate(-2.5deg) translate(-1px, 0);
+    }
+    50% {
+      transform: rotate(3deg) translate(2px, -2px);
+    }
+  }
+  @keyframes drunkBreath {
+    0%, 100% {
+      filter: drop-shadow(0 0 7px var(--drunk-glow-a)) drop-shadow(0 0 14px var(--drunk-glow-b));
+    }
+    50% {
+      filter: drop-shadow(0 0 15px var(--drunk-glow-a)) drop-shadow(0 0 28px var(--drunk-glow-b));
+    }
+  }
+  @keyframes drunkAfterimage {
+    0%, 100% {
+      opacity: 0.18;
+      transform: translateX(7px);
+    }
+    50% {
+      opacity: 0.34;
+      transform: translateX(-6px);
+    }
+  }
+  @keyframes rimCreep {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @media (max-width: 980px) {
+    .arena {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<h2>第五轮：醉酒加呼吸光</h2>
+<p class="subtitle">醉酒统一是“轻微晃动 + 蓝色重影 + 呼吸光”。这一轮只比较呼吸光强弱；中毒先用边缘侵蚀占位。</p>
+
+<div class="arena cards">
+  <div class="concept soft card" data-choice="a5" onclick="toggleSelect(this)">
+    <div class="scene">
+      <div class="seat poison-seat">
+        <div class="token poison">寡妇</div>
+        <div class="label">中毒</div>
+        <div class="reminder">毒</div>
+      </div>
+      <div class="seat drunk-seat">
+        <div class="token drunk">赌徒</div>
+        <div class="label">醉酒</div>
+        <div class="reminder">酒</div>
+      </div>
+      <div class="seat both-seat">
+        <div class="token both">赏金<br>猎人</div>
+        <div class="label">混合</div>
+        <div class="reminder">双</div>
+      </div>
+    </div>
+    <div class="body">
+      <h3>A5. 轻呼吸光</h3>
+      <p>醉酒感比较克制，适合长时间挂状态，不容易抢夜晚行动高亮。</p>
+    </div>
+  </div>
+
+  <div class="concept middle card" data-choice="b5" onclick="toggleSelect(this)">
+    <div class="scene">
+      <div class="seat poison-seat">
+        <div class="token poison">寡妇</div>
+        <div class="label">中毒</div>
+        <div class="reminder">毒</div>
+      </div>
+      <div class="seat drunk-seat">
+        <div class="token drunk">赌徒</div>
+        <div class="label">醉酒</div>
+        <div class="reminder">酒</div>
+      </div>
+      <div class="seat both-seat">
+        <div class="token both">赏金<br>猎人</div>
+        <div class="label">混合</div>
+        <div class="reminder">双</div>
+      </div>
+    </div>
+    <div class="body">
+      <h3>B5. 中呼吸光</h3>
+      <p>晃动、重影、呼吸光都能看出来，但不会像警报。我的倾向是这个。</p>
+    </div>
+  </div>
+
+  <div class="concept strong card" data-choice="c5" onclick="toggleSelect(this)">
+    <div class="scene">
+      <div class="seat poison-seat">
+        <div class="token poison">寡妇</div>
+        <div class="label">中毒</div>
+        <div class="reminder">毒</div>
+      </div>
+      <div class="seat drunk-seat">
+        <div class="token drunk">赌徒</div>
+        <div class="label">醉酒</div>
+        <div class="reminder">酒</div>
+      </div>
+      <div class="seat both-seat">
+        <div class="token both">赏金<br>猎人</div>
+        <div class="label">混合</div>
+        <div class="reminder">双</div>
+      </div>
+    </div>
+    <div class="body">
+      <h3>C5. 强呼吸光</h3>
+      <p>醉酒状态最明显，适合强调提醒，但多人同时醉酒时可能会有点热闹。</p>
+    </div>
+  </div>
+</div>
