@@ -143,6 +143,31 @@ assert.strictEqual(roleDrawModule.getters.currentSeatIndex(roleDrawState), 1);
 roleDrawModule.mutations.cancel(roleDrawState);
 assert.strictEqual(roleDrawState.active, false);
 
+roleDrawModule.mutations.setOptions(roleDrawState, {
+  startSeat: 2,
+  direction: "reverse",
+  manualDrawEnabled: true,
+  autoDrawEnabled: true,
+  autoDrawSeconds: 45,
+  playerCount: 4,
+});
+roleDrawModule.mutations.resetSession(roleDrawState);
+assertJsonEqual(roleDrawState.configuredPool, []);
+assert.strictEqual(roleDrawState.active, false);
+assert.strictEqual(roleDrawState.completed, false);
+assertJsonEqual(roleDrawState.queue, []);
+assertJsonEqual(roleDrawState.pool, []);
+assertJsonEqual(roleDrawState.assignments, {});
+assert.strictEqual(roleDrawState.currentIndex, -1);
+assert.strictEqual(roleDrawState.turnStartedAt, 0);
+assertJsonEqual(roleDrawState.options, {
+  startSeat: 2,
+  direction: "reverse",
+  manualDrawEnabled: true,
+  autoDrawEnabled: true,
+  autoDrawSeconds: 45,
+});
+
 const rootState = {
   players: {
     players: [

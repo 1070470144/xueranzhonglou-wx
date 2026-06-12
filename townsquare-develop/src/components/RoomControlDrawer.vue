@@ -387,6 +387,7 @@
               })
             }}</span>
             <span>{{ roleDrawRemaining }}</span>
+            <span v-if="roleDraw.active">{{ roleDrawCurrentSeatLabel }}</span>
           </div>
           <div class="room-control-note-editor role-draw-options">
             <label>{{ $t("roleDraw.startSeat") }}</label>
@@ -656,6 +657,12 @@ export default {
     roleDrawRemaining() {
       return this.$t("roleDraw.remaining", {
         count: this.$store.getters["roleDraw/remainingCount"],
+      });
+    },
+    roleDrawCurrentSeatLabel() {
+      const currentSeatIndex = this.$store.getters["roleDraw/currentSeatIndex"];
+      return this.$t("roleDraw.currentSeat", {
+        seat: currentSeatIndex >= 0 ? currentSeatIndex + 1 : "-",
       });
     },
     directionLabel() {

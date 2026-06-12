@@ -86,6 +86,11 @@ assert(
 );
 
 assert(
+  applyRoomJoinedSource.includes('commit("roleDraw/resetSession")'),
+  "joining a room should clear stale role draw state from previous rooms"
+);
+
+assert(
   applyRoomJoinedSource.includes("this.ensureRoomSeats(room)") &&
     socketSource.includes('commit("players/setCount"') &&
     socketSource.includes("room.maxPlayers"),
@@ -153,6 +158,13 @@ assert(
 assert(
   /case "room:players":[\s\S]*?this\._syncRoomPlayers\(params\)/.test(socketSource),
   "room player snapshots should refresh the storyteller online-player cache after reconnect"
+);
+
+assert(
+  /case "session\/setSessionId":[\s\S]*?else \{[\s\S]*?store\.commit\("roleDraw\/resetSession"\)/.test(
+    socketSource
+  ),
+  "leaving a room should clear role draw session state without waiting for a page refresh"
 );
 
 assert(

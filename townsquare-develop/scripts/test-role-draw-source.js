@@ -60,11 +60,18 @@ assert(
   "helpCurrentPlayerDraw",
   "autoDrawSeconds",
   "roleDrawRemaining",
+  "roleDrawCurrentSeatLabel",
   "roleDraw/setOptions",
   "roleDraw/startDraw",
   "roleDraw/drawForCurrent",
 ].forEach((needle) =>
   assert(controlSource.includes(needle), `control missing ${needle}`),
+);
+assert(
+  /roleDrawCurrentSeatLabel\(\)[\s\S]*?roleDraw\/currentSeatIndex[\s\S]*?roleDraw\.currentSeat/.test(
+    controlSource,
+  ),
+  "role draw control should show which seat is currently drawing",
 );
 assert(
   /sendCharactersDisabled\(\) \{[\s\S]*?this\.grimoire\.roleDrawEnabled[\s\S]*?!this\.roleDrawOptions\.manualDrawEnabled[\s\S]*?!this\.roleDrawOptions\.autoDrawEnabled[\s\S]*?\}/.test(
@@ -138,10 +145,22 @@ assert(
   "socket should forward player requests and sync role draw snapshots",
 );
 assert(
+  /sendDrawnRoleToPlayer\(\{ seatIndex, roleId \} = \{\}\)[\s\S]*?this\._sendDirect\(player\.id, "player", \{[\s\S]*?index: seatIndex[\s\S]*?property: "role"[\s\S]*?value: roleId/.test(
+    socketSource,
+  ) &&
+    /case "roleDraw\/drawCurrent":[\s\S]*?session\.sendDrawnRoleToPlayer\(payload\)[\s\S]*?session\.sendRoleDrawSnapshot\(\)/.test(
+      socketSource,
+    ),
+  "role draw should reveal the drawn role only to the player who just drew",
+);
+assert(
   /buildGamestate\(\)[\s\S]*?this\._store\.state\.players\.players\.map/.test(
     socketSource,
   ) &&
     /sendRoleDrawSnapshot\(\)[\s\S]*?gamestate: this\.buildGamestate\(\)/.test(
+      socketSource,
+    ) &&
+    /_updateGamestate\(data\)[\s\S]*?const myPlayerId[\s\S]*?gamestate\.findIndex\(\(s\) => s\.id === myPlayerId\)[\s\S]*?session\/setClaimedSeatLocal/.test(
       socketSource,
     ),
   "role draw snapshot sync should include fresh player seats so players keep claimed seats while drawing",
@@ -158,6 +177,7 @@ assert(
   "simulateRoleDraw",
   "drawButton",
   "remaining",
+  "currentSeat",
   "helpCurrentPlayerDraw",
 ].forEach((needle) =>
   assert(i18nSource.includes(needle), `i18n missing ${needle}`),

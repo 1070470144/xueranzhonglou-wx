@@ -133,6 +133,7 @@ const messages = {
       autoDefaultRandom: "超时后默认随机抽取",
       autoDrawSeconds: "等待秒数",
       helpCurrentPlayerDraw: "帮当前玩家随机抽取",
+      currentSeat: "当前抽取 {seat} 号玩家",
     },
     login: {
       title: "网页登录",
@@ -625,6 +626,7 @@ const messages = {
       autoDefaultRandom: "Auto draw after timeout",
       autoDrawSeconds: "Wait seconds",
       helpCurrentPlayerDraw: "Draw for current player",
+      currentSeat: "Drawing seat {seat}",
     },
     login: {
       title: "Web Login",

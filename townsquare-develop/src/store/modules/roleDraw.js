@@ -106,6 +106,16 @@ const mutations = {
     state.currentIndex = -1;
     state.turnStartedAt = 0;
   },
+  resetSession(state) {
+    state.configuredPool = [];
+    state.active = false;
+    state.completed = false;
+    state.queue = [];
+    state.pool = [];
+    state.assignments = {};
+    state.currentIndex = -1;
+    state.turnStartedAt = 0;
+  },
   requestDraw() {},
 };
 
@@ -143,7 +153,7 @@ const actions = {
         { root: true },
       );
     }
-    commit("drawCurrent", { roleId, remainingPool });
+    commit("drawCurrent", { seatIndex, roleId, remainingPool });
   },
 };
 

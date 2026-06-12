@@ -661,6 +661,17 @@ class LiveSession {
     });
   }
 
+  sendDrawnRoleToPlayer({ seatIndex, roleId } = {}) {
+    if (this._isSpectator || seatIndex < 0 || !roleId) return;
+    const player = this._store.state.players.players[seatIndex];
+    if (!player || !player.id) return;
+    this._sendDirect(player.id, "player", {
+      index: seatIndex,
+      property: "role",
+      value: roleId,
+    });
+  }
+
   requestRoleDraw() {
     if (!this._isSpectator) return;
     this._sendDirect("host", "roleDraw:draw", {
@@ -1330,6 +1341,7 @@ class LiveSession {
     this._store.commit("session/claimSeat", -1);
     this._store.commit("session/clearVoteHistory");
     this._store.commit("voice/clear");
+    this._store.commit("roleDraw/resetSession");
     if (isSpectator) this._store.commit("players/clear");
     this._isRoomSession = true;
     this._store.commit("session/setSpectator", isSpectator);
@@ -1454,6 +1466,7 @@ export default (store) => {
           window.location.hash = "";
           store.commit("privateChat/clear");
           store.commit("voice/clear");
+          store.commit("roleDraw/resetSession");
           store.commit("room/clearRoom");
           session.disconnect();
         }
@@ -1514,6 +1527,9 @@ export default (store) => {
       case "roleDraw/cancel":
       case "roleDraw/setConfiguredPool":
       case "roleDraw/setOptions":
+        if (type === "roleDraw/drawCurrent") {
+          session.sendDrawnRoleToPlayer(payload);
+        }
         session.sendRoleDrawSnapshot();
         if (type === "roleDraw/drawCurrent" && state.roleDraw.completed) {
           session.distributeRoles();
