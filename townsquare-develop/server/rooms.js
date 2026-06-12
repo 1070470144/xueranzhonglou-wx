@@ -251,6 +251,19 @@ function removePlayerConnection(roomId, playerId, ws) {
   return { room, player, removed: true };
 }
 
+function reconnectPlayer(roomId, ws) {
+  const room = getRoom(roomId);
+  if (!room) return null;
+  const player = room.players.get(ws.playerId);
+  if (!player) return null;
+  clearPlayerDisconnectTimer(player);
+  player.ws = ws;
+  player.disconnectedAt = 0;
+  player.disconnectTimer = null;
+  room.updatedAt = Date.now();
+  return room;
+}
+
 function markPlayerDisconnected(roomId, playerId, ws, disconnectedAt = Date.now()) {
   const room = getRoom(roomId);
   if (!room) return { room: null, player: null, marked: false };
@@ -291,6 +304,7 @@ module.exports = {
   getRoom,
   verifyJoin,
   addPlayer,
+  reconnectPlayer,
   updateRoom,
   removePlayer,
   removePlayerConnection,

@@ -658,7 +658,12 @@ export default {
       this.selectedRoom = room;
       this.selectPreviewRoom(room);
       this.mode = "join";
-      this.$store.commit("room/updateJoinForm", { roomId: room.id });
+      const patch = { roomId: room.id };
+      // Pre-fill player name from session if the form doesn't already have one
+      if (!this.joinForm.playerName && this.session.playerName) {
+        patch.playerName = this.session.playerName;
+      }
+      this.$store.commit("room/updateJoinForm", patch);
     },
     selectPreviewRoom(room) {
       this.selectedPreviewRoom = room;

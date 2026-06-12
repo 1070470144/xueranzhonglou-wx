@@ -55,6 +55,8 @@ const mutations = {
   setVoteHistoryAllowed: set("isVoteHistoryAllowed"),
   setGameStartedAt: set("gameStartedAt"),
   claimSeat: set("claimedSeat"),
+  // Sets claimedSeat locally without triggering the socket subscription (used on reconnect).
+  setClaimedSeatLocal: set("claimedSeat"),
   distributeRoles: set("isRolesDistributed"),
   setSessionId(state, sessionId) {
     state.sessionId = sessionId

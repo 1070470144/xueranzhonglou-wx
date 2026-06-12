@@ -284,6 +284,15 @@ wss.on("connection", function connection(ws, req) {
     channels[ws.channel] = [];
   }
   channels[ws.channel].push(ws);
+  // Restore a reconnecting player's room presence without requiring room:join again.
+  if (!ws.isLobby && ws.playerId !== "host") {
+    const reconnectedRoom = rooms.reconnectPlayer(ws.roomId, ws);
+    if (reconnectedRoom) {
+      registerVoiceParticipant(reconnectedRoom, ws);
+      sendRoomPlayerList(reconnectedRoom);
+      sendVoiceState(reconnectedRoom);
+    }
+  }
   // start ping pong
   ws.ping(noop);
   ws.on("pong", heartbeat);
@@ -394,6 +403,18 @@ wss.on("connection", function connection(ws, req) {
               });
             });
             broadcastRoomList();
+            return;
+          }
+          case "room:rename": {
+            const room = rooms.getRoom(ws.roomId);
+            if (!room) break;
+            const player = room.players.get(ws.playerId);
+            if (!player) break;
+            const cleanName = String((params && params.name) || "").trim().substr(0, 30);
+            if (!cleanName) break;
+            player.name = cleanName;
+            room.updatedAt = Date.now();
+            sendRoomPlayerList(room);
             return;
           }
           case "room:kick": {

@@ -1,106 +1,110 @@
 <template>
   <Modal class="script-modal" v-if="modals.edition" @close="close">
     <template v-if="view === 'gallery'">
-      <h3>{{ $t("modals.chooseScript") }}</h3>
-      <div class="search-row">
-        <font-awesome-icon icon="search" />
-        <input
-          v-model="searchText"
-          type="search"
-          :placeholder="$t('modals.searchScripts')"
-          @input="queueSearch"
-        />
-        <button
-          type="button"
-          class="refresh-button"
-          :disabled="loading"
-          :title="galleryText('refresh')"
-          @click="refreshGalleryScripts"
-        >
-          <font-awesome-icon icon="sync-alt" :spin="refreshing" />
-        </button>
-      </div>
-      <div
-        class="script-list"
-        @scroll="handleScriptListScroll"
-        @touchstart="handleTouchStart"
-        @touchmove="handleTouchMove"
-        @touchend="handleTouchEnd"
-      >
-        <div v-if="pullDistance > 0" class="state-line pull-state">
-          {{
-            pullDistance >= pullRefreshThreshold
-              ? galleryText("releaseToRefresh")
-              : galleryText("pullToRefresh")
-          }}
-        </div>
-        <div v-if="loading && !galleryScripts.length" class="state-line">
-          <font-awesome-icon icon="spinner" spin />
-          {{ $t("modals.loadingScripts") }}
+      <div class="script-gallery">
+        <h3>{{ $t("modals.chooseScript") }}</h3>
+        <div class="search-row">
+          <font-awesome-icon icon="search" />
+          <input
+            v-model="searchText"
+            type="search"
+            :placeholder="$t('modals.searchScripts')"
+            @input="queueSearch"
+          />
+          <button
+            type="button"
+            class="refresh-button"
+            :disabled="loading"
+            :title="galleryText('refresh')"
+            @click="refreshGalleryScripts"
+          >
+            <font-awesome-icon icon="sync-alt" :spin="refreshing" />
+          </button>
         </div>
         <div
-          v-else-if="error && !galleryScripts.length"
-          class="state-line error"
+          class="script-list"
+          @scroll="handleScriptListScroll"
+          @touchstart="handleTouchStart"
+          @touchmove="handleTouchMove"
+          @touchend="handleTouchEnd"
         >
-          {{ error }}
-        </div>
-        <button
-          v-else
-          v-for="script in galleryScripts"
-          :key="script.id || script._id"
-          type="button"
-          class="script-card"
-          @click="applyGalleryScript(script)"
-        >
-          <span class="script-cover" :style="scriptCoverStyle(script)">
-            <font-awesome-icon
-              v-if="!getScriptImage(script)"
-              icon="theater-masks"
-            />
-          </span>
-          <span class="script-content">
-            <span class="script-title">{{ script.title || script.name }}</span>
-            <span class="script-author">{{
-              script.author || $t("modals.unknownAuthor")
-            }}</span>
-            <span v-if="script.description" class="script-description">
-              {{ script.description }}
+          <div v-if="pullDistance > 0" class="state-line pull-state">
+            {{
+              pullDistance >= pullRefreshThreshold
+                ? galleryText("releaseToRefresh")
+                : galleryText("pullToRefresh")
+            }}
+          </div>
+          <div v-if="loading && !galleryScripts.length" class="state-line">
+            <font-awesome-icon icon="spinner" spin />
+            {{ $t("modals.loadingScripts") }}
+          </div>
+          <div
+            v-else-if="error && !galleryScripts.length"
+            class="state-line error"
+          >
+            {{ error }}
+          </div>
+          <button
+            v-else
+            v-for="script in galleryScripts"
+            :key="script.id || script._id"
+            type="button"
+            class="script-card"
+            @click="applyGalleryScript(script)"
+          >
+            <span class="script-cover" :style="scriptCoverStyle(script)">
+              <font-awesome-icon
+                v-if="!getScriptImage(script)"
+                icon="theater-masks"
+              />
             </span>
-            <span class="script-meta">{{ getScriptMeta(script) }}</span>
-          </span>
-        </button>
-        <div
-          v-if="loading && galleryScripts.length"
-          class="state-line more-state"
-        >
-          <font-awesome-icon icon="spinner" spin />
-          {{ $t("modals.loadingScripts") }}
+            <span class="script-content">
+              <span class="script-title">{{
+                script.title || script.name
+              }}</span>
+              <span class="script-author">{{
+                script.author || $t("modals.unknownAuthor")
+              }}</span>
+              <span v-if="script.description" class="script-description">
+                {{ script.description }}
+              </span>
+              <span class="script-meta">{{ getScriptMeta(script) }}</span>
+            </span>
+          </button>
+          <div
+            v-if="loading && galleryScripts.length"
+            class="state-line more-state"
+          >
+            <font-awesome-icon icon="spinner" spin />
+            {{ $t("modals.loadingScripts") }}
+          </div>
+          <button
+            v-else-if="!loading && !error && hasMore && galleryScripts.length"
+            type="button"
+            class="state-line load-more-button"
+            @click="loadNextGalleryPage"
+          >
+            {{ galleryText("loadMore") }}
+          </button>
+          <div
+            v-if="error && galleryScripts.length"
+            class="state-line error more-state"
+          >
+            {{ error }}
+          </div>
+          <div
+            v-if="!loading && !error && !galleryScripts.length"
+            class="state-line"
+          >
+            {{ $t("modals.noScriptsFound") }}
+          </div>
         </div>
-        <button
-          v-else-if="!loading && !error && hasMore && galleryScripts.length"
-          type="button"
-          class="state-line load-more-button"
-          @click="loadNextGalleryPage"
-        >
-          {{ galleryText("loadMore") }}
-        </button>
-        <div
-          v-if="error && galleryScripts.length"
-          class="state-line error more-state"
-        >
-          {{ error }}
-        </div>
-        <div
-          v-if="!loading && !error && !galleryScripts.length"
-          class="state-line"
-        >
-          {{ $t("modals.noScriptsFound") }}
-        </div>
-      </div>
-      <div class="button-group">
-        <div class="button" @click="view = 'custom'">
-          <font-awesome-icon icon="file-upload" />
-          {{ $t("common.customScriptCharacters") }}
+        <div class="button-group">
+          <div class="button" @click="view = 'custom'">
+            <font-awesome-icon icon="file-upload" />
+            {{ $t("common.customScriptCharacters") }}
+          </div>
         </div>
       </div>
     </template>
@@ -557,8 +561,11 @@ export default {
   }
 
   ::v-deep .modal {
+    display: flex;
+    flex-direction: column;
     width: min(1010px, calc(100vw - 2em));
     max-width: min(1010px, calc(100vw - 2em));
+    height: min(82vh, 620px);
     min-height: min(430px, calc(100vh - 2em));
     max-height: min(82vh, 620px);
     padding: 0.65em;
@@ -592,6 +599,17 @@ export default {
   }
 
   ::v-deep .modal > .slot {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .script-gallery {
+    display: grid;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    width: 100%;
+    height: 100%;
     min-height: 0;
   }
 
@@ -652,14 +670,14 @@ export default {
 
 .script-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(15em, 18em));
+  grid-template-columns: repeat(auto-fit, minmax(15em, 1fr));
   gap: 0.55em;
   align-content: start;
-  justify-content: start;
-  width: auto;
+  justify-content: stretch;
+  width: 100%;
   max-width: none;
-  min-height: 14em;
-  max-height: min(46vh, 330px);
+  min-height: 0;
+  max-height: none;
   overflow-y: auto;
   overscroll-behavior: contain;
   margin: 0 0 0.62em;

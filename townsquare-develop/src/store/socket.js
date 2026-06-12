@@ -525,6 +525,14 @@ class LiveSession {
         fabled: fabled.map((f) => this._store.state.fabled.get(f.id) || f),
       });
     }
+    // Restore claimedSeat from the full gamestate snapshot (important after page refresh).
+    const myPlayerId = this._store.state.session.playerId;
+    if (myPlayerId) {
+      const seatedIndex = gamestate.findIndex((s) => s.id === myPlayerId);
+      if (seatedIndex >= 0 && this._store.state.session.claimedSeat !== seatedIndex) {
+        this._store.commit("session/setClaimedSeatLocal", seatedIndex);
+      }
+    }
   }
 
   /**
@@ -681,6 +689,10 @@ class LiveSession {
       this._store.commit("players/update", { player, property, value });
     }
     if (property === "id" && value === this._store.state.session.playerId) {
+      // Restore claimedSeat after page refresh (host broadcasts our playerId back to us).
+      if (this._store.state.session.claimedSeat !== index) {
+        this._store.commit("session/setClaimedSeatLocal", index);
+      }
       this.sendClaimedPlayerName(index);
     }
   }
@@ -702,6 +714,11 @@ class LiveSession {
 
   sendCurrentPlayerName() {
     if (!this._isSpectator) return;
+    const name = (this._store.state.session.playerName || "").trim();
+    if (name && this._store.state.room.current) {
+      // Keep server-side room player list in sync so management panel shows the current name.
+      this._send("room:rename", { name });
+    }
     const index = this._store.state.session.claimedSeat;
     if (index < 0) return;
     this.sendClaimedPlayerName(index);
@@ -796,6 +813,7 @@ class LiveSession {
         if (now - this._players[player] > this._pingInterval * 2) {
           delete this._players[player];
           delete this._pings[player];
+          delete this._pendingPlayerNames[player];
         }
       }
       // store new player data before clearing claimed seats so a first claim is not immediately removed
@@ -856,6 +874,7 @@ class LiveSession {
   _handleBye(playerId) {
     if (this._isSpectator) return;
     delete this._players[playerId];
+    delete this._pendingPlayerNames[playerId];
     this._store.commit(
       "session/setPlayerCount",
       Object.keys(this._players).length,
@@ -1231,6 +1250,13 @@ class LiveSession {
     if (!room || !room.id) return;
     this._isSpectator = isSpectator;
     this._isJoiningRoom = true;
+    // Sync name BEFORE claimSeat(-1) so sendClaimedPlayerName uses the correct name.
+    if (isSpectator) {
+      const joinPlayerName = (this._store.state.room.joinForm.playerName || "").trim();
+      if (joinPlayerName) {
+        this._store.commit("session/setPlayerName", joinPlayerName);
+      }
+    }
     this._store.commit("session/claimSeat", -1);
     this._store.commit("session/clearVoteHistory");
     this._store.commit("voice/clear");
@@ -1267,7 +1293,10 @@ class LiveSession {
       20,
       Math.max(1, parseInt(room.maxPlayers, 10) || 10),
     );
-    this._store.commit("players/setCount", maxPlayers);
+    // Only grow seats, never shrink — the host may have manually added more seats.
+    if (this._store.state.players.players.length < maxPlayers) {
+      this._store.commit("players/setCount", maxPlayers);
+    }
   }
 
   _loadRoomScript(scriptJson) {
