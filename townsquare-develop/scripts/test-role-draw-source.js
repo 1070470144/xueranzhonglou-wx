@@ -137,6 +137,21 @@ assert(
     ),
   "socket should forward player requests and sync role draw snapshots",
 );
+assert(
+  /buildGamestate\(\)[\s\S]*?this\._store\.state\.players\.players\.map/.test(
+    socketSource,
+  ) &&
+    /sendRoleDrawSnapshot\(\)[\s\S]*?gamestate: this\.buildGamestate\(\)/.test(
+      socketSource,
+    ),
+  "role draw snapshot sync should include fresh player seats so players keep claimed seats while drawing",
+);
+assert(
+  /watch:\s*\{[\s\S]*?nonTravelers\(\)[\s\S]*?this\.selectRandomRoles\(\)/.test(
+    rolesModalSource,
+  ),
+  "roles modal should refresh the selected role pool when player count changes between rooms",
+);
 
 [
   "roleDraw:",

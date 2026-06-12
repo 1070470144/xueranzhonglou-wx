@@ -206,6 +206,9 @@ export default {
     roles() {
       this.selectRandomRoles();
     },
+    nonTravelers() {
+      this.selectRandomRoles();
+    },
   },
 };
 </script>

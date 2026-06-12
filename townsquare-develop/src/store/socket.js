@@ -415,8 +415,7 @@ class LiveSession {
    * @param playerId
    * @param isLightweight
    */
-  sendGamestate(playerId = "", isLightweight = false) {
-    if (this._isSpectator) return;
+  buildGamestate() {
     this._gamestate = this._store.state.players.players.map((player) => ({
       name: player.name,
       id: player.id,
@@ -427,9 +426,15 @@ class LiveSession {
         ? { roleId: player.role.id }
         : {}),
     }));
+    return this._gamestate;
+  }
+
+  sendGamestate(playerId = "", isLightweight = false) {
+    if (this._isSpectator) return;
+    const gamestate = this.buildGamestate();
     if (isLightweight) {
       this._sendDirect(playerId, "gs", {
-        gamestate: this._gamestate,
+        gamestate,
         isLightweight,
       });
     } else {
@@ -437,7 +442,7 @@ class LiveSession {
       const { fabled } = this._store.state.players;
       this.sendEdition(playerId);
       this._sendDirect(playerId, "gs", {
-        gamestate: this._gamestate,
+        gamestate,
         isNight: grimoire.isNight,
         isVoteHistoryAllowed: session.isVoteHistoryAllowed,
         nomination: session.nomination,
@@ -650,7 +655,7 @@ class LiveSession {
   sendRoleDrawSnapshot() {
     if (this._isSpectator) return;
     this._send("gs", {
-      gamestate: this._gamestate,
+      gamestate: this.buildGamestate(),
       isLightweight: true,
       roleDrawSnapshot: this._store.state.roleDraw,
     });
