@@ -19,6 +19,7 @@
     "@fortawesome/vue-fontawesome": "^0.1.10",
     "@vue/cli-service": "^5.0.8",
     "prom-client": "^13.0.0",
+    "puppeteer": "^24.43.1",
     "qrcode": "^1.5.4",
     "sass": "^1.30.0",
     "sass-loader": "^8.0.2",

@@ -58,7 +58,7 @@
           <font-awesome-icon icon="book-open" @click="tab = 'grimoire'" />
           <font-awesome-icon icon="broadcast-tower" @click="tab = 'session'" />
           <font-awesome-icon icon="cog" @click="tab = 'settings'" />
-          <font-awesome-icon icon="question" @click="tab = 'help'" />
+          <font-awesome-icon icon="tools" @click="tab = 'tools'" />
         </li>
 
         <template v-if="tab === 'grimoire'">
@@ -251,9 +251,12 @@
           </template>
         </template>
 
-        <template v-if="tab === 'help'">
-          <!-- Help -->
-          <li class="headline">{{ $t("menu.help") }}</li>
+        <template v-if="tab === 'tools'">
+          <li class="headline">工具</li>
+          <li @click="toggleModal('imageGenerator')">
+            图片生成
+            <em><font-awesome-icon icon="image" /></em>
+          </li>
           <li @click="toggleModal('gameState')">
             {{ $t("menu.gameStateJson") }}
             <em><font-awesome-icon icon="file-code" /></em>
@@ -664,7 +667,7 @@ export default {
         &.characters .fa-theater-masks,
         &.session .fa-broadcast-tower,
         &.settings .fa-cog,
-        &.help .fa-question {
+        &.tools .fa-tools {
           color: #fff8e7;
           background: linear-gradient(#8a2721, #581612 54%, #2d0c09);
         }

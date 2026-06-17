@@ -33,6 +33,7 @@ const faIcons = [
   "Heartbeat",
   "Image",
   "Link",
+  "Magic",
   "MinusCircle",
   "PeopleArrows",
   "PaperPlane",
@@ -52,6 +53,7 @@ const faIcons = [
   "TheaterMasks",
   "Times",
   "TimesCircle",
+  "Tools",
   "Trophy",
   "TrashAlt",
   "Undo",
@@ -75,7 +77,9 @@ Vue.component("font-awesome-icon", FontAwesomeIcon);
 installI18n();
 Vue.config.productionTip = false;
 
-new Vue({
+const app = new Vue({
   render: (h) => h(App),
   store,
 }).$mount("#app");
+
+window.__townsquareApp = app;

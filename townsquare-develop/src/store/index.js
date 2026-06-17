@@ -130,6 +130,7 @@ export default new Vuex.Store({
       edition: false,
       fabled: false,
       gameState: false,
+      imageGenerator: false,
       gameRecord: false,
       login: false,
       nightOrder: false,

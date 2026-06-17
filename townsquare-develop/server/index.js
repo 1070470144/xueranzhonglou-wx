@@ -1,5 +1,7 @@
 const fs = require("fs");
+const http = require("http");
 const https = require("https");
+const puppeteer = require("puppeteer");
 const WebSocket = require("ws");
 const client = require("prom-client");
 const rooms = require("./rooms");
@@ -31,16 +33,246 @@ function isAllowedOrigin(origin) {
 }
 
 const options = {};
+const isDevelopment = process.env.NODE_ENV === "development";
 
-if (process.env.NODE_ENV !== "development") {
+if (!isDevelopment) {
   options.cert = fs.readFileSync("cert.pem");
   options.key = fs.readFileSync("key.pem");
 }
 
-const server = https.createServer(options);
 const developmentPort = Number(process.env.TOWNSQUARE_WS_PORT || 8081);
+const productionPort = Number(process.env.TOWNSQUARE_HTTP_PORT || 8080);
+const POSTER_RENDER_TIMEOUT_MS = Number(
+  process.env.TOWNSQUARE_POSTER_RENDER_TIMEOUT_MS || 60000
+);
+const POSTER_RENDER_FRONTEND_URL = process.env.TOWNSQUARE_POSTER_FRONTEND_URL || "";
+let posterBrowserPromise = null;
+
+function setCorsHeaders(res) {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+}
+
+async function proxyScriptPosterImage(req, res) {
+  setCorsHeaders(res);
+  const requestUrl = new URL(req.url, "http://localhost");
+  const imageUrl = new URL(requestUrl.searchParams.get("url") || "");
+
+  if (!["http:", "https:"].includes(imageUrl.protocol)) {
+    res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("invalid image url");
+    return;
+  }
+
+  const response = await fetch(imageUrl.toString(), {
+    redirect: "follow",
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) townsquare-script-poster/1.0",
+      "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+      "Referer": `${imageUrl.protocol}//${imageUrl.host}/`
+    }
+  });
+  if (!response.ok) {
+    res.writeHead(response.status, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("image request failed");
+    return;
+  }
+
+  const contentType = response.headers.get("content-type") || "image/png";
+  if (!contentType.toLowerCase().startsWith("image/")) {
+    res.writeHead(415, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("url is not an image");
+    return;
+  }
+
+  const buffer = Buffer.from(await response.arrayBuffer());
+  res.writeHead(200, {
+    "Content-Type": contentType,
+    "Cache-Control": "public, max-age=86400",
+    "Content-Length": buffer.length
+  });
+  res.end(buffer);
+}
+
+function readJsonBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = "";
+    req.on("data", chunk => {
+      body += chunk;
+      if (body.length > 4 * 1024 * 1024) {
+        reject(new Error("request body too large"));
+        req.destroy();
+      }
+    });
+    req.on("end", () => {
+      try {
+        resolve(JSON.parse(body || "{}"));
+      } catch (error) {
+        reject(new Error("invalid json body"));
+      }
+    });
+    req.on("error", reject);
+  });
+}
+
+function findLocalChromeExecutable() {
+  const candidates = [
+    process.env.PUPPETEER_EXECUTABLE_PATH,
+    "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",
+    "C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe",
+    "C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe",
+    "/usr/bin/chromium",
+    "/usr/bin/chromium-browser",
+    "/usr/bin/google-chrome",
+  ].filter(Boolean);
+
+  return candidates.find(candidate => fs.existsSync(candidate));
+}
+
+function getPosterRenderUrl(req) {
+  if (POSTER_RENDER_FRONTEND_URL) return POSTER_RENDER_FRONTEND_URL;
+  const origin = req.headers.origin;
+  if (origin && /^https?:\/\//i.test(origin)) return origin;
+  const referer = req.headers.referer;
+  if (referer && /^https?:\/\//i.test(referer)) {
+    const parsed = new URL(referer);
+    return `${parsed.protocol}//${parsed.host}`;
+  }
+  return "http://127.0.0.1:8080";
+}
+
+async function getPosterBrowser() {
+  if (!posterBrowserPromise) {
+    const executablePath = findLocalChromeExecutable();
+    posterBrowserPromise = puppeteer.launch({
+      executablePath,
+      headless: "new",
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+  }
+  return posterBrowserPromise;
+}
+
+async function renderScriptPosterPng(req, res) {
+  setCorsHeaders(res);
+  if (req.method !== "POST") {
+    res.writeHead(405, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("method not allowed");
+    return;
+  }
+
+  const payload = await readJsonBody(req);
+  if (!payload || !payload.poster) {
+    res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("missing poster payload");
+    return;
+  }
+
+  const browser = await getPosterBrowser();
+  const page = await browser.newPage();
+  try {
+    page.setDefaultTimeout(POSTER_RENDER_TIMEOUT_MS);
+    await page.setViewport({ width: 1200, height: 1600, deviceScaleFactor: 1 });
+    const frontendUrl = getPosterRenderUrl(req);
+    await page.goto(frontendUrl, {
+      waitUntil: "networkidle2",
+      timeout: POSTER_RENDER_TIMEOUT_MS,
+    });
+    await page.waitForFunction(
+      () => window.__townsquareApp && window.__townsquareApp.$store,
+      { timeout: POSTER_RENDER_TIMEOUT_MS }
+    );
+    await page.evaluate(() => {
+      const app = window.__townsquareApp;
+      if (app && app.$store) app.$store.commit("openModalOverlay", "imageGenerator");
+    });
+    await page.waitForFunction(
+      () => typeof window.renderScriptPosterPayload === "function",
+      { timeout: POSTER_RENDER_TIMEOUT_MS }
+    );
+    await page.waitForSelector(".poster-preview canvas");
+    await page.evaluate(async posterPayload => {
+      return window.renderScriptPosterPayload(posterPayload);
+    }, payload);
+    await page.evaluate(() => {
+      const canvas = document.querySelector(".poster-preview canvas");
+      if (!canvas) throw new Error("poster canvas not found");
+      document.body.innerHTML = "";
+      document.body.style.margin = "0";
+      document.body.style.background = "transparent";
+      canvas.style.position = "fixed";
+      canvas.style.left = "0";
+      canvas.style.top = "0";
+      canvas.style.width = `${canvas.width}px`;
+      canvas.style.height = `${canvas.height}px`;
+      canvas.style.maxWidth = "none";
+      canvas.style.maxHeight = "none";
+      canvas.style.transform = "none";
+      document.body.appendChild(canvas);
+    });
+    await page.setViewport({ width: 1080, height: 1456, deviceScaleFactor: 1 });
+    const canvas = await page.$("canvas");
+    if (!canvas) throw new Error("poster canvas not found");
+    const buffer = await canvas.screenshot({
+      type: "png",
+      omitBackground: false,
+    });
+    res.writeHead(200, {
+      "Content-Type": "image/png",
+      "Cache-Control": "no-store",
+      "Content-Length": buffer.length,
+    });
+    res.end(buffer);
+  } finally {
+    await page.close();
+  }
+}
+
+function handleHttpRequest(req, res) {
+  if (req.method === "OPTIONS") {
+    setCorsHeaders(res);
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
+  if (req.url && req.url.startsWith("/api/script-poster-image")) {
+    proxyScriptPosterImage(req, res).catch(error => {
+      console.log("script poster image proxy failed", error && error.message);
+      setCorsHeaders(res);
+      res.writeHead(502, { "Content-Type": "text/plain; charset=utf-8" });
+      res.end("image proxy failed");
+    });
+    return;
+  }
+
+  if (req.url && req.url.startsWith("/api/script-poster-render")) {
+    renderScriptPosterPng(req, res).catch(error => {
+      console.log("script poster render failed", error && error.message);
+      setCorsHeaders(res);
+      res.writeHead(502, { "Content-Type": "text/plain; charset=utf-8" });
+      res.end(error && error.message ? error.message : "poster render failed");
+    });
+    return;
+  }
+
+  if (!isDevelopment) {
+    res.setHeader("Content-Type", register.contentType);
+    register.metrics().then(out => res.end(out));
+    return;
+  }
+
+  res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
+  res.end("not found");
+}
+
+const server = isDevelopment
+  ? http.createServer(handleHttpRequest)
+  : https.createServer(options, handleHttpRequest);
 const wss = new WebSocket.Server({
-  ...(process.env.NODE_ENV === "development" ? { port: developmentPort } : { server }),
+  server,
   verifyClient: info => isAllowedOrigin(info.origin)
 });
 
@@ -684,12 +916,6 @@ wss.on("close", function close() {
   clearInterval(interval);
 });
 
-// prod mode with stats API
-if (process.env.NODE_ENV !== "development") {
+server.listen(isDevelopment ? developmentPort : productionPort, () => {
   console.log("server starting");
-  server.listen(8080);
-  server.on("request", (req, res) => {
-    res.setHeader("Content-Type", register.contentType);
-    register.metrics().then(out => res.end(out));
-  });
-}
+});
