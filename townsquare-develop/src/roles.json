@@ -291,7 +291,8 @@
   },
   {
     "id": "bureaucrat",
-    "name": "Bureaucrat",
+    "image": "https://oss.gstonegames.com/data_file/clocktower/role_icon/bureaucrat.png",
+    "name": "官员",
     "edition": "tb",
     "team": "traveler",
     "firstNight": 1,
@@ -300,11 +301,12 @@
     "otherNightReminder": "The Bureaucrat points to a player. Put the Bureaucrat's '3 votes' reminder by the chosen player's character token.",
     "reminders": ["3 votes"],
     "setup": false,
-    "ability": "Each night, choose a player (not yourself): their vote counts as 3 votes tomorrow."
+    "ability": "每晚，选择一名玩家（不能选择自己）：明天他的投票计为 3 票。"
   },
   {
     "id": "thief",
-    "name": "Thief",
+    "image": "https://oss.gstonegames.com/data_file/clocktower/role_icon/thief.png",
+    "name": "小偷",
     "edition": "tb",
     "team": "traveler",
     "firstNight": 1,
@@ -313,11 +315,12 @@
     "otherNightReminder": "The Thief points to a player. Put the Thief's 'Negative vote' reminder by the chosen player's character token.",
     "reminders": ["Negative vote"],
     "setup": false,
-    "ability": "Each night, choose a player (not yourself): their vote counts negatively tomorrow."
+    "ability": "每晚，选择一名玩家（不能选择自己）：明天他的投票计为负票。"
   },
   {
     "id": "gunslinger",
-    "name": "Gunslinger",
+    "image": "https://oss.gstonegames.com/data_file/clocktower/role_icon/gunslinger.png",
+    "name": "枪手",
     "edition": "tb",
     "team": "traveler",
     "firstNight": 0,
@@ -326,11 +329,12 @@
     "otherNightReminder": "",
     "reminders": [],
     "setup": false,
-    "ability": "Each day, after the 1st vote has been tallied, you may choose a player that voted: they die."
+    "ability": "每天，在第一次投票计票后，你可以选择一名参与投票的玩家：他死亡。"
   },
   {
     "id": "scapegoat",
-    "name": "Scapegoat",
+    "image": "https://oss.gstonegames.com/data_file/clocktower/role_icon/scapegoat.png",
+    "name": "替罪羊",
     "edition": "tb",
     "team": "traveler",
     "firstNight": 0,
@@ -339,11 +343,12 @@
     "otherNightReminder": "",
     "reminders": [],
     "setup": false,
-    "ability": "If a player of your alignment is executed, you might be executed instead."
+    "ability": "如果一名与你阵营相同的玩家被处决，你可能会代替他被处决。"
   },
   {
     "id": "beggar",
-    "name": "Beggar",
+    "image": "https://oss.gstonegames.com/data_file/clocktower/role_icon/beggar.png",
+    "name": "乞丐",
     "edition": "tb",
     "team": "traveler",
     "firstNight": 0,
@@ -352,7 +357,7 @@
     "otherNightReminder": "",
     "reminders": [],
     "setup": false,
-    "ability": "You must use a vote token to vote. Dead players may choose to give you theirs. If so, you learn their alignment. You are sober & healthy."
+    "ability": "你必须使用投票标记才能投票。死亡玩家可以选择把他们的投票标记给你。如果这样做，你得知他们的阵营。你不会醉酒或中毒。"
   },
   {
     "id": "grandmother",
@@ -694,7 +699,8 @@
   },
   {
     "id": "apprentice",
-    "name": "Apprentice",
+    "image": "https://oss.gstonegames.com/data_file/clocktower/role_icon/apprentice.png",
+    "name": "学徒",
     "edition": "bmr",
     "team": "traveler",
     "firstNight": 1,
@@ -703,11 +709,12 @@
     "otherNightReminder": "",
     "reminders": ["Is the Apprentice"],
     "setup": false,
-    "ability": "On your 1st night, you gain a Townsfolk ability (if good), or a Minion ability (if evil)."
+    "ability": "在你的第一个夜晚，你获得一个镇民能力（如果你是善良），或一个爪牙能力（如果你是邪恶）。"
   },
   {
     "id": "matron",
-    "name": "Matron",
+    "image": "https://oss.gstonegames.com/data_file/clocktower/role_icon/matron.png",
+    "name": "女舍监",
     "edition": "bmr",
     "team": "traveler",
     "firstNight": 0,
@@ -716,11 +723,12 @@
     "otherNightReminder": "",
     "reminders": [],
     "setup": false,
-    "ability": "Each day, you may choose up to 3 sets of 2 players to swap seats. Players may not leave their seats to talk in private."
+    "ability": "每天，你可以选择最多 3 组各 2 名玩家交换座位。玩家不能离开座位私下交谈。"
   },
   {
     "id": "judge",
-    "name": "Judge",
+    "image": "https://oss.gstonegames.com/data_file/clocktower/role_icon/judge.png",
+    "name": "法官",
     "edition": "bmr",
     "team": "traveler",
     "firstNight": 0,
@@ -729,11 +737,12 @@
     "otherNightReminder": "",
     "reminders": ["No ability"],
     "setup": false,
-    "ability": "Once per game, if another player nominated, you may choose to force the current execution to pass or fail."
+    "ability": "每局一次，如果另一名玩家发起提名，你可以选择强制当前处决通过或失败。"
   },
   {
     "id": "bishop",
-    "name": "Bishop",
+    "image": "https://oss.gstonegames.com/data_file/clocktower/role_icon/bishop.png",
+    "name": "主教",
     "edition": "bmr",
     "team": "traveler",
     "firstNight": 0,
@@ -743,11 +752,12 @@
     "reminders": ["Nominate good",
         "Nominate evil"],
     "setup": false,
-    "ability": "Only the Storyteller can nominate. At least 1 opposite player must be nominated each day."
+    "ability": "只有说书人可以提名。每天至少必须提名 1 名相反阵营的玩家。"
   },
   {
     "id": "voudon",
-    "name": "Voudon",
+    "image": "https://oss.gstonegames.com/data_file/clocktower/role_icon/voudon.png",
+    "name": "巫毒师",
     "edition": "bmr",
     "team": "traveler",
     "firstNight": 0,
@@ -756,7 +766,7 @@
     "otherNightReminder": "",
     "reminders": [],
     "setup": false,
-    "ability": "Only you and the dead can vote. They don't need a vote token to do so. A 50% majority is not required."
+    "ability": "只有你和死亡玩家可以投票。他们不需要投票标记也能投票。不需要达到 50% 多数票。"
   },
   {
     "id": "clockmaker",
@@ -1092,7 +1102,8 @@
   },
   {
     "id": "barista",
-    "name": "Barista",
+    "image": "https://oss.gstonegames.com/data_file/clocktower/role_icon/barista.png",
+    "name": "咖啡师",
     "edition": "snv",
     "team": "traveler",
     "firstNight": 1,
@@ -1102,11 +1113,12 @@
     "reminders": ["Sober & Healthy",
         "Ability twice"],
     "setup": false,
-    "ability": "Each night, until dusk, 1) a player becomes sober, healthy and gets true info, or 2) their ability works twice. They learn which."
+    "ability": "每晚，直到黄昏，选择一名玩家：1）他变得清醒健康并获得真实信息，或 2）他的能力生效两次。他会得知是哪一种。"
   },
   {
     "id": "harlot",
-    "name": "Harlot",
+    "image": "https://oss.gstonegames.com/data_file/clocktower/role_icon/harlot.png",
+    "name": "流莺",
     "edition": "snv",
     "team": "traveler",
     "firstNight": 0,
@@ -1115,11 +1127,12 @@
     "otherNightReminder": "The Harlot points at any player. Then, put the Harlot to sleep. Wake the chosen player, show them the 'This character selected you' token, then the Harlot token. That player either nods their head yes or shakes their head no. If they nodded their head yes, wake the Harlot and show them the chosen player's character token. Then, you may decide that both players die.",
     "reminders": ["Dead"],
     "setup": false,
-    "ability": "Each night*, choose a living player: if they agree, you learn their character, but you both might die."
+    "ability": "每晚*，选择一名存活玩家：如果他同意，你得知他的角色，但你们两人都可能死亡。"
   },
   {
     "id": "butcher",
-    "name": "Butcher",
+    "image": "https://oss.gstonegames.com/data_file/clocktower/role_icon/butcher.png",
+    "name": "屠夫",
     "edition": "snv",
     "team": "traveler",
     "firstNight": 0,
@@ -1128,11 +1141,12 @@
     "otherNightReminder": "",
     "reminders": [],
     "setup": false,
-    "ability": "Each day, after the 1st execution, you may nominate again."
+    "ability": "每天，在第一次处决后，你可以再次发起提名。"
   },
   {
     "id": "bonecollector",
-    "name": "Bone Collector",
+    "image": "https://oss.gstonegames.com/data_file/clocktower/role_icon/bone_collector.png",
+    "name": "集骨者",
     "edition": "snv",
     "team": "traveler",
     "firstNight": 0,
@@ -1142,11 +1156,12 @@
     "reminders": ["No ability",
         "Has ability"],
     "setup": false,
-    "ability": "Once per game, at night, choose a dead player: they regain their ability until dusk."
+    "ability": "每局一次，在夜晚，选择一名死亡玩家：他恢复自己的能力直到黄昏。"
   },
   {
     "id": "deviant",
-    "name": "Deviant",
+    "image": "https://oss.gstonegames.com/data_file/clocktower/role_icon/deviant.png",
+    "name": "异端者",
     "edition": "snv",
     "team": "traveler",
     "firstNight": 0,
@@ -1155,7 +1170,7 @@
     "otherNightReminder": "",
     "reminders": [],
     "setup": false,
-    "ability": "If you were funny today, you cannot die by exile."
+    "ability": "如果你今天足够有趣，你不会因流放而死亡。"
   },
   {
     "id": "noble",
@@ -1728,7 +1743,8 @@
   },
   {
     "id": "gangster",
-    "name": "Gangster",
+    "image": "https://oss.gstonegames.com/data_file/clocktower/role_icon/gangster.png",
+    "name": "黑帮",
     "edition": "",
     "team": "traveler",
     "firstNight": 0,
@@ -1737,7 +1753,34 @@
     "otherNightReminder": "",
     "reminders": [],
     "setup": false,
-    "ability": "Once per day, you may choose to kill an alive neighbour, if your other alive neighbour agrees."
+    "ability": "每天一次，如果你的另一名存活邻座同意，你可以选择杀死一名存活邻座。"
+  },
+  {
+    "id": "cacklejack",
+    "image": "https://botc.app/assets/cacklejack-DLjP2vpy.webp",
+    "name": "笑匠",
+    "edition": "",
+    "team": "traveler",
+    "firstNight": 0,
+    "firstNightReminder": "",
+    "otherNight": 1,
+    "otherNightReminder": "Before dawn, choose a player not marked *NOT ME*. Wake the target. Show the *YOU ARE* info token & their new character token.",
+    "reminders": ["Not Me"],
+    "setup": false,
+    "ability": "每天，选择一名玩家：今晚另一名不同的玩家改变角色。"
+  },
+  {
+    "id": "gnome",
+    "image": "https://botc.app/assets/gnome-BVlHOkWi.webp",
+    "name": "侏儒",
+    "edition": "",
+    "team": "traveler",
+    "firstNight": 0,
+    "firstNightReminder": "",
+    "otherNight": 0,
+    "otherNightReminder": "",
+    "reminders": ["Amigo"],
+    "setup": false,
+    "ability": "所有玩家初始得知一名与你同阵营的玩家。你可以选择杀死任何提名他的玩家。"
   }
 ]
-

@@ -279,11 +279,12 @@ export default new Vuex.Store({
           .map((r) => [r.id, r]),
         ...fabledJSON.map((role) => [role.id, role]),
       ]);
-      // update extraTravelers map to only show travelers not in this script
       state.otherTravelers = new Map(
         rolesJSON
           .filter(
-            (r) => r.team === "traveler" && !roles.some((i) => i.id === r.id),
+            (r) =>
+              r.team === "traveler" &&
+              !processedRoles.some((i) => i.id === r.id),
           )
           .map((role) => [role.id, role]),
       );

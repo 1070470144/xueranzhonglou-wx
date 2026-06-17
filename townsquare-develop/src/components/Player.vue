@@ -618,7 +618,7 @@ export default {
   .life {
     border-radius: 50%;
     width: 100%;
-    background: url("../assets/life.png") center center;
+    background: url("../assets/life1.png") center center;
     background-size: 100%;
     border: 3px solid black;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);

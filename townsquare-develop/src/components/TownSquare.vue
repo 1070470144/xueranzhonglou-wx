@@ -437,6 +437,28 @@ export default {
   }
 }
 
+@media (orientation: portrait) and (max-width: 640px) {
+  #app.room-control-open #townsquare {
+    padding-bottom: calc(
+      var(--room-control-mobile-height, min(42vh, 330px)) + 8px
+    );
+    align-items: flex-start;
+  }
+
+  #app.room-control-open .circle {
+    width: min(
+      calc(100vw - 16px),
+      calc(100dvh - var(--room-control-mobile-height, min(42vh, 330px)) - 74px),
+      540px
+    );
+    height: min(
+      calc(100vw - 16px),
+      calc(100dvh - var(--room-control-mobile-height, min(42vh, 330px)) - 74px),
+      540px
+    );
+  }
+}
+
 @mixin on-circle($item-count) {
   $angle: math.div(360, $item-count);
   $rot: 0;

@@ -348,6 +348,30 @@ ul.tokens li {
   }
 }
 
+::v-deep .token .ability {
+  left: 50%;
+  bottom: calc(100% + 0.55em);
+  width: max-content;
+  max-width: min(18em, calc(100vw - 2em));
+  min-height: 2.4em;
+  transform: translateX(-50%);
+  z-index: 40;
+  line-height: 1.35;
+  text-align: center;
+  white-space: normal;
+  word-break: break-word;
+}
+
+::v-deep .token .ability:before {
+  top: 100%;
+  left: 50%;
+  right: auto;
+  margin-right: 0;
+  transform: translateX(-50%);
+  border-right-color: transparent;
+  border-top-color: black;
+}
+
 .role-picker .button-group {
   display: flex;
   flex-wrap: wrap;

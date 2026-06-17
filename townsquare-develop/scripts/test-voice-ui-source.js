@@ -7,6 +7,7 @@ const inviteConfirmPath = path.join(__dirname, "../src/components/VoiceInviteCon
 const drawerPath = path.join(__dirname, "../src/components/RoomControlDrawer.vue");
 const playerPath = path.join(__dirname, "../src/components/Player.vue");
 const menuPath = path.join(__dirname, "../src/components/Menu.vue");
+const townSquarePath = path.join(__dirname, "../src/components/TownSquare.vue");
 const i18nPath = path.join(__dirname, "../src/i18n/index.js");
 const mainPath = path.join(__dirname, "../src/main.js");
 const appPath = path.join(__dirname, "../src/App.vue");
@@ -19,6 +20,7 @@ const inviteConfirmSource = fs.readFileSync(inviteConfirmPath, "utf8");
 const drawerSource = fs.readFileSync(drawerPath, "utf8");
 const playerSource = fs.readFileSync(playerPath, "utf8");
 const menuSource = fs.readFileSync(menuPath, "utf8");
+const townSquareSource = fs.readFileSync(townSquarePath, "utf8");
 const i18nSource = fs.readFileSync(i18nPath, "utf8");
 const mainSource = fs.readFileSync(mainPath, "utf8");
 const appSource = fs.readFileSync(appPath, "utf8");
@@ -270,13 +272,40 @@ assert(
 );
 
 assert(
-  /@media \(max-width:\s*640px\)[\s\S]*?\.room-control-drawer\s*\{[\s\S]*?width:\s*100vw/.test(drawerSource),
-  "mobile room control drawer should use the full viewport width instead of a narrow cramped panel"
+  /id="app"[\s\S]*?:class="\{[\s\S]*?['"]room-control-open['"]:\s*modals\.roomControl/.test(appSource),
+  "App should mark the root when room control is open"
 );
 
 assert(
-  /@media \(max-width:\s*640px\)[\s\S]*?\.room-control-drawer\s*\{[\s\S]*?font-size:\s*0\.9em/.test(drawerSource),
-  "mobile room control drawer should keep readable text instead of shrinking the whole panel too far"
+  /#app\.room-control-open\s*\{[\s\S]*?padding-right:\s*var\(--room-control-reserve\)/.test(appSource),
+  "App should reserve space for the room control drawer"
+);
+
+assert(
+  /@media \(max-width:\s*640px\)[\s\S]*?#app\.room-control-open\s*\{[\s\S]*?padding-right:\s*0/.test(appSource),
+  "mobile room control should not reserve right-side space that pushes seats off screen"
+);
+
+assert(
+  /--room-control-mobile-height:\s*min\(42vh,\s*330px\)/.test(appSource),
+  "App should expose the mobile room-control height for coordinated layout"
+);
+
+assert(
+  /\.room-control-drawer\s*\{[\s\S]*?width:\s*var\(--room-control-reserve/.test(drawerSource) &&
+    /@media \(max-width:\s*640px\)[\s\S]*?\.room-control-drawer\s*\{[\s\S]*?top:\s*auto[\s\S]*?bottom:\s*0[\s\S]*?left:\s*0[\s\S]*?right:\s*0[\s\S]*?width:\s*100%[\s\S]*?height:\s*var\(--room-control-mobile-height/.test(drawerSource),
+  "mobile room control should become a bottom drawer so it does not push or cover the center seats"
+);
+
+assert(
+  /@media \(orientation:\s*portrait\) and \(max-width:\s*640px\)[\s\S]*?#app\.room-control-open #townsquare\s*\{[\s\S]*?padding-bottom:\s*calc\([\s\S]*?var\(--room-control-mobile-height[\s\S]*?align-items:\s*flex-start/.test(townSquareSource) &&
+    /#app\.room-control-open \.circle\s*\{[\s\S]*?calc\(100dvh - var\(--room-control-mobile-height/.test(townSquareSource),
+  "mobile room control should shrink the seat circle into the space above the bottom drawer"
+);
+
+assert(
+  /@media \(max-width:\s*640px\)[\s\S]*?\.room-control-drawer\s*\{[\s\S]*?font-size:\s*0\.82em/.test(drawerSource),
+  "mobile room control drawer should keep compact text inside the narrower side panel"
 );
 
 assert(
@@ -285,13 +314,13 @@ assert(
 );
 
 assert(
-  /@media \(max-width:\s*640px\)[\s\S]*?\.room-control-overview\s+\.room-control-register\s*\{[\s\S]*?display:\s*grid[\s\S]*?grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/.test(drawerSource),
-  "mobile room control overview should compress host, script, and note into a single compact row"
+  /@media \(max-width:\s*640px\)[\s\S]*?\.room-control-overview\s+\.room-control-register\s*\{[\s\S]*?display:\s*grid[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/.test(drawerSource),
+  "mobile room control overview should stack fields so it fits the narrow side panel"
 );
 
 assert(
-  /@media \(max-width:\s*640px\)[\s\S]*?\.room-control-command-grid:not\(\.guest-actions\),[\s\S]*?\.room-control-inline-actions\.two-column[\s\S]*?\{[\s\S]*?grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/.test(drawerSource),
-  "mobile room control primary actions should remain two columns to reduce vertical crowding"
+  /@media \(max-width:\s*640px\)[\s\S]*?\.room-control-command-grid:not\(\.guest-actions\),[\s\S]*?\.room-control-inline-actions\.two-column[\s\S]*?\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/.test(drawerSource),
+  "mobile room control primary actions should stack into one column inside the narrow side panel"
 );
 
 assert(

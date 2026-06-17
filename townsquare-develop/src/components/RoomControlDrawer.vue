@@ -966,9 +966,12 @@ export default {
   top: 0;
   right: 0;
   z-index: 90;
-  width: min(410px, 94vw);
+  width: var(--room-control-reserve, min(360px, 32vw));
+  min-width: 260px;
+  max-width: var(--room-control-reserve, min(360px, 32vw));
   height: 100vh;
   padding: 0.55em;
+  box-sizing: border-box;
   color: #dcc4a1;
   border-left: 2px solid #3d2e26;
   background: radial-gradient(
@@ -1533,10 +1536,26 @@ summary {
 
 @media (max-width: 640px) {
   .room-control-drawer {
-    width: 100vw;
-    padding: 0.36em;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    height: var(--room-control-mobile-height, min(42vh, 330px));
+    padding: 0.3em;
+    border-top: 2px solid #3d2e26;
     border-left: 0;
-    font-size: 0.9em;
+    box-shadow:
+      0 -16px 38px rgba(0, 0, 0, 0.72),
+      inset 0 1px 0 rgba(255, 236, 190, 0.05);
+    font-size: 0.82em;
+  }
+
+  .room-control-slide-enter,
+  .room-control-slide-leave-to {
+    transform: translateY(100%);
   }
 
   .room-control-header {
@@ -1578,40 +1597,40 @@ summary {
 
   .room-control-overview .room-control-register {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .room-control-register div {
-    display: block;
+    display: grid;
+    grid-template-columns: 4.5em minmax(0, 1fr);
     min-height: 2.55em;
-    border-right: 1px solid #261d19;
-    border-bottom: 0;
+    border-right: 0;
+    border-bottom: 1px solid #261d19;
   }
 
   .room-control-register div:last-child {
-    border-right: 0;
+    border-bottom: 0;
   }
 
   .room-control-register dt,
   .room-control-register dd {
-    display: block;
+    display: flex;
+    align-items: center;
     padding: 0 0.36em;
     line-height: 1.15;
   }
 
   .room-control-register dt {
-    padding-top: 0.28em;
     font-size: 0.76em;
   }
 
   .room-control-register dd {
-    padding-top: 0.16em;
     font-size: 0.82em;
   }
 
   .room-control-command-grid:not(.guest-actions),
   .room-control-inline-actions.two-column {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .room-control-command-grid.guest-actions,

@@ -1,14 +1,10 @@
 <template>
-  <div class="token" @click="setRole" :class="[role.id]">
+  <div class="token" @click="setRole" :class="tokenClasses">
     <span
       class="icon"
       v-if="role.id"
       :style="{
-        backgroundImage: `url(${
-          role.image && grimoire.isImageOptIn
-            ? role.image
-            : require('../assets/icons/' + (role.imageAlt || role.id) + '.png')
-        })`,
+        backgroundImage: `url(${roleIconImage(role)})`,
       }"
     ></span>
     <span
@@ -47,8 +43,6 @@
 </template>
 
 <script>
-import { mapState } from "vuex";
-
 export default {
   name: "Token",
   props: {
@@ -58,13 +52,15 @@ export default {
     },
   },
   computed: {
+    tokenClasses: function () {
+      return [this.role.id, { empty: !this.role.id }];
+    },
     reminderLeaves: function () {
       return (
         (this.role.reminders || []).length +
         (this.role.remindersGlobal || []).length
       );
     },
-    ...mapState(["grimoire"]),
   },
   data() {
     return {};
@@ -73,6 +69,14 @@ export default {
     nameToFontSize: (name) => (name && name.length > 10 ? "90%" : "110%"),
   },
   methods: {
+    roleIconImage(role) {
+      const jsonImage =
+        role.image || role.icon || role.imageUrl || role.image_url;
+      return (
+        jsonImage ||
+        require("../assets/icons/" + (role.imageAlt || role.id) + ".png")
+      );
+    },
     setRole() {
       this.$emit("set-role");
     },
@@ -84,7 +88,7 @@ export default {
 .token {
   border-radius: 50%;
   width: 100%;
-  background: url("../assets/token.png") center center;
+  background: url("../assets/token1.png") center center;
   background-size: 100%;
   text-align: center;
   border: 3px solid black;
@@ -231,5 +235,10 @@ export default {
   &:hover .ability {
     opacity: 1;
   }
+}
+
+.token.empty {
+  background: url("../assets/token1.png") center center;
+  background-size: 100%;
 }
 </style>

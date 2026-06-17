@@ -21,24 +21,17 @@
       {{ session.voteHistory.length }}
     </span>
     <span
-      class="session"
+      class="room-manage-summary"
       :class="{
         spectator: session.isSpectator,
         reconnecting: session.isReconnecting,
       }"
       v-if="session.sessionId"
-      @click="leaveSession"
-      :title="
-        $t('menu.sessionTitle', {
-          count: session.playerCount,
-          latency: session.ping
-            ? $t('menu.latency', { ping: session.ping })
-            : '',
-        })
-      "
+      @click="toggleModal('roomControl')"
+      :title="room.current ? room.current.name : $t('room.manage')"
     >
-      <font-awesome-icon icon="broadcast-tower" />
-      {{ session.playerCount }}
+      <font-awesome-icon icon="users" />
+      <span>{{ $t("room.manage") }}</span>
     </span>
     <span
       class="announcement-summary"
@@ -517,8 +510,10 @@ export default {
     color: #d4af37;
   }
 
-  span.session {
+  span.room-manage-summary {
     color: #dcc4a1;
+    min-width: 3.8em;
+    white-space: nowrap;
     &.spectator {
       color: #d4af37;
     }

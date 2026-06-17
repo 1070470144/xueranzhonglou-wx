@@ -37,6 +37,15 @@ assert(!templateSource.includes('tab === \'characters\''), "characters tab shoul
 assert(!templateSource.includes('tab = \'players\''), "players tab icon should be removed from gear menu");
 assert(!templateSource.includes('tab = \'characters\''), "characters tab icon should be removed from gear menu");
 
+assert(
+  /class="room-manage-summary"[\s\S]*?@click="toggleModal\('roomControl'\)"[\s\S]*?\$t\("room\.manage"\)/.test(templateSource),
+  "top-right room management button should open room control drawer"
+);
+assert(
+  !/class="room-manage-summary"[\s\S]*?@click="leaveSession"/.test(templateSource),
+  "top-right room management button should not leave the session"
+);
+
 [
   "room:",
   "title:",

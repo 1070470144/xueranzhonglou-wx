@@ -5,6 +5,7 @@
     :class="{
       night: grimoire.isNight,
       static: grimoire.isStatic,
+      'room-control-open': modals.roomControl,
     }"
     :style="{
       backgroundImage: grimoire.background
@@ -298,6 +299,8 @@ ul {
 }
 
 #app {
+  --room-control-reserve: min(360px, 32vw);
+  --room-control-mobile-height: min(42vh, 330px);
   height: 100%;
   background-position: center center;
   background-size: cover;
@@ -305,6 +308,7 @@ ul {
   align-items: center;
   align-content: center;
   justify-content: center;
+  transition: padding-right 180ms ease;
 
   // disable all animations
   &.static *,
@@ -312,6 +316,22 @@ ul {
   &.static *:before {
     transition: none !important;
     animation: none !important;
+  }
+}
+
+#app.room-control-open {
+  padding-right: var(--room-control-reserve);
+}
+
+@media (max-width: 900px) {
+  #app {
+    --room-control-reserve: min(280px, 34vw);
+  }
+}
+
+@media (max-width: 640px) {
+  #app.room-control-open {
+    padding-right: 0;
   }
 }
 
