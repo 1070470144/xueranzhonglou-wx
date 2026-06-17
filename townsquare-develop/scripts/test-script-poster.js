@@ -257,7 +257,8 @@ if (!modalSource.includes("GLOSSARY_TOP")) {
   "headerTitleOffsetY: 0",
   'titleArtStyle: "classic"',
   "titleArtStyleOptions",
-  "this.drawPosterTitle(ctx, poster.title",
+  "this.drawPosterTitle(",
+  "poster.title,",
   "applyTitleArtStyle(",
   "goldEmboss",
   "cinnabarSeal",
@@ -386,11 +387,8 @@ if (modalSource.includes("support-count")) {
 });
 
 [
-[
-  "闂佸憡鎸嗛崟顒佸婵炶揪绲剧划蹇涘焵椤掆偓閹锋垹妲?,
-  "poster.title || \"闂佸憡鎸嗛崟顒佸闂佸搫绉村ú顓€傜徊?",
-  "poster.topContent || \"JSON 闂佺厧顨庢禍婊勬叏閳哄懎绠抽柟鐑樻煥椤ｇ唱"",
-  "ctx.fillText(\"闂佸憡鎸嗛崟顒佸\", 0, 0)",
+  "`剧本作者：${poster.author || \"未知\"}`",
+  'poster.topContent || "JSON 自动排版";',
 ].forEach((snippet) => {
   if (!modalSource.includes(snippet)) {
     throw new Error(`Expected readable Chinese header text: ${snippet}`);
@@ -398,11 +396,9 @@ if (modalSource.includes("support-count")) {
 });
 
 [
-  "闂傚倷绀侀幉锟犲箰閸℃稑绀嬫い鎺嶇椤忔澘鈹戦悙鑸靛涧缂佹彃澧介崚鎺曠疀濞戞鍔?,
-  "闂傚倷绀侀幖顐︽偋濠婂嫮顩查柣鎰劋閸?,
-  "婵犵數鍎戠徊钘壝归崒鐐茬獥婵炴埈娼块埀顑跨窔楠炲鈹戦崟銊ヤ壕闁圭儤顨呯粻娑欍亜閺嶃劎鐭屾い?,
-  "濠电姷鏁搁崕鎴犲緤閽樺褰掑磼閻愯尙鐛ュ┑鐐村焾濞煎潡鍩€?,
-  "闂傚倸鍊风粈渚€骞夐敓鐘冲仭闁靛鏅涚壕?,
+  "鍓ф湰浣滆€咃細",
+  "鏈煡",
+  "JSON 鑷姩鎺掔増",
 ].forEach((snippet) => {
   if (modalSource.includes(snippet)) {
     throw new Error(`Expected header mojibake to be removed: ${snippet}`);
@@ -424,8 +420,8 @@ if (modalSource.includes("support-count")) {
 });
 
 [
-  'ctx.fillText("濠碘槅鍋撶徊楣冩偋閺団挋?, 36, 380)',
-  'ctx.fillText("闂備胶顭堢换鎴濓耿閸︻厼鍨濇い鎺嶇缁?, POSTER_WIDTH - 36, 380)',
+  'ctx.fillText("首夜", 36, 380)',
+  'ctx.fillText("其他夜", POSTER_WIDTH - 36, 380)',
 ].forEach((snippet) => {
   if (modalSource.includes(snippet)) {
     throw new Error(`Expected duplicate fixed night label to be removed: ${snippet}`);
@@ -434,11 +430,10 @@ if (modalSource.includes("support-count")) {
 
 [
   "layoutSections",
-  "闂佽崵濮崇粈浣规櫠娴犲鍋柛鈩冪☉缁€鍡涙煕閳╁啰鎳嗘い?,
-  "闂備胶纭堕弲鐐测枍閿濆鈧線宕ㄩ閿敵闂佹枼鏅涢崯鈺冩?,
-  "闂佽崵鍠愰悷锔炬暜閻斿摜鐝跺┑鐘叉搐缁€宀勬煕濠靛棗顏柛?,
-  "濠电姰鍨奸崺鏍垝瀹ュ應鏋嶉柛鏇ㄥ厵娴滄粓鏌涘┑鍡楊伀缁?,
-  "闂佸湱鍘ч悺銊ッ洪悢鐓庣？閻庨潧鎲＄€氭岸鎮楀☉娅虫垿锝?,
+  'label: "顶部与阵营"',
+  'label: "角色"',
+  'label: "夜晚顺序"',
+  'label: "底部说明"',
 ].forEach((snippet) => {
   if (!modalSource.includes(snippet)) {
     throw new Error(`Expected grouped settings UI for ${snippet}`);
@@ -473,7 +468,6 @@ if (modalSource.includes("support-count")) {
 [
   'v-model="jsonInput"',
   "<textarea",
-  "闂佽崵濮村ú銈夊床閺屻儱鍌ㄦ繛鎴炶壘閸ㄦ繃淇婇姘变虎闁搞劑浜堕弻娑㈠箻濡も偓鐎氼參骞?JSON",
 ].forEach((snippet) => {
   if (modalSource.includes(snippet)) {
     throw new Error(`Expected paste JSON input to be removed: ${snippet}`);

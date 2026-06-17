@@ -686,7 +686,7 @@ export default {
       ctx.fillStyle = "#17110d";
       ctx.font = "bold 22px SimSun, serif";
       ctx.fillText(
-        `鍓ф湰浣滆€咃細${poster.author || "鏈煡"}`,
+        `剧本作者：${poster.author || "未知"}`,
         286 + config.headerAuthorOffsetX,
         132 + config.headerAuthorOffsetY,
       );
@@ -728,7 +728,7 @@ export default {
     },
     drawHeaderContent(ctx, poster, config, panel) {
       const contentText =
-        poster.topContent || "JSON 鑷姩鎺掔増";
+        poster.topContent || "JSON 自动排版";
       const words = this.splitHeaderContent(contentText);
       const lineHeight = Math.max(
         16,
