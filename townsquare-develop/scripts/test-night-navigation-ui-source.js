@@ -6,6 +6,10 @@ const drawerSource = fs.readFileSync(
   path.join(__dirname, "../src/components/RoomControlDrawer.vue"),
   "utf8",
 );
+const townSquareSource = fs.readFileSync(
+  path.join(__dirname, "../src/components/TownSquare.vue"),
+  "utf8",
+);
 const playerSource = fs.readFileSync(
   path.join(__dirname, "../src/components/Player.vue"),
   "utf8",
@@ -21,6 +25,9 @@ const mainSource = fs.readFileSync(
 
 [
   "night-navigation",
+  "night-control-drawer",
+  "town-square-drawer",
+  "isNightNavigationOpen",
   "nightNavigationQueue",
   "currentNightNavigationEntry",
   "setNightNavigationMode",
@@ -30,21 +37,66 @@ const mainSource = fs.readFileSync(
   "room.nightNavigation",
   "room.noNightActions",
 ].forEach((needle) =>
-  assert(drawerSource.includes(needle), `RoomControlDrawer missing ${needle}`),
+  assert(townSquareSource.includes(needle), `TownSquare missing ${needle}`),
 );
 
 assert(
   /nightNavigationQueue\(\)[\s\S]*?this\.\$store\.getters\["players\/nightActionQueue"\]/.test(
-    drawerSource,
+    townSquareSource,
   ),
-  "RoomControlDrawer should consume the Vuex night action queue getter",
+  "TownSquare should consume the Vuex night action queue getter",
 );
 
 assert(
   /moveNightAction\(direction\)[\s\S]*?currentSeatIndex[\s\S]*?setNightNavigationSeat/.test(
-    drawerSource,
+    townSquareSource,
   ),
-  "RoomControlDrawer should move through the current queue and store the highlighted seat",
+  "TownSquare should move through the current queue and store the highlighted seat",
+);
+
+assert(
+  !drawerSource.includes("night-navigation"),
+  "RoomControlDrawer should not render night navigation after it moves to the left drawer",
+);
+
+assert(
+  /toggleNightNavigation\(\)[\s\S]*?isFabledOpen\s*=\s*false/.test(
+    townSquareSource,
+  ),
+  "Opening the night drawer should close the fabled drawer",
+);
+
+assert(
+  /toggleNightNavigation\(\)\s*\{[\s\S]*?if\s*\(this\.isNightNavigationOpen\)[\s\S]*?players\/clearNightNavigation[\s\S]*?\n    \},\n    removeFabled/.test(
+    townSquareSource,
+  ),
+  "Closing the night drawer should clear the highlighted night-action seat",
+);
+
+assert(
+  /toggleFabled\(\)[\s\S]*?isNightNavigationOpen\s*=\s*false/.test(
+    townSquareSource,
+  ),
+  "Opening the fabled drawer should close the night drawer",
+);
+
+assert(
+  /\.town-square-drawer-stack\s*\{[\s\S]*?top:\s*max\(0px,\s*env\(safe-area-inset-top\)\)/.test(
+    townSquareSource,
+  ),
+  "Left drawer stack should sit at the top-left safe area",
+);
+assert(
+  /\.town-square-drawer-tab\s*\{[\s\S]*?width:\s*36px[\s\S]*?min-height:\s*74px/.test(
+    townSquareSource,
+  ),
+  "Left drawer buttons should be compact on desktop",
+);
+assert(
+  /@media \(max-width: 768px\)[\s\S]*?\.town-square-drawer-tab\s*\{[\s\S]*?width:\s*34px[\s\S]*?min-height:\s*68px/.test(
+    townSquareSource,
+  ),
+  "Left drawer buttons should be compact on mobile",
 );
 
 ["night-active", "nightNavigation", "currentSeatIndex"].forEach((needle) =>

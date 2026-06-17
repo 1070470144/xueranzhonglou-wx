@@ -87,39 +87,126 @@
       </div>
     </div>
 
-    <div class="fabled" :class="{ closed: !isFabledOpen }" v-if="fabled.length">
-      <h3>
-        <span>{{ $t("townSquare.fabled") }}</span>
-      </h3>
-      <font-awesome-icon icon="times-circle" @click.stop="toggleFabled" />
-      <font-awesome-icon icon="plus-circle" @click.stop="toggleFabled" />
-      <ul>
-        <li
-          v-for="(role, index) in fabled"
-          :key="role.id || index"
-          @click="removeFabled(index)"
+    <div class="town-square-drawer-stack">
+      <div
+        class="town-square-drawer fabled-drawer"
+        :class="{ open: isFabledOpen }"
+        v-if="fabled.length"
+      >
+        <button
+          type="button"
+          class="town-square-drawer-tab"
+          @click.stop="toggleFabled"
         >
-          <div
-            class="night-order first"
-            v-if="nightOrder.get(role).first && grimoire.isNightOrder"
-          >
-            <em>{{ nightOrder.get(role).first }}.</em>
-            <span v-if="role.firstNightReminder">{{
-              role.firstNightReminder
-            }}</span>
+          <font-awesome-icon icon="trophy" />
+          <span>{{ $t("townSquare.fabled") }}</span>
+        </button>
+        <aside class="town-square-drawer-panel fabled">
+          <header class="town-square-drawer-header">
+            <h3>{{ $t("townSquare.fabled") }}</h3>
+            <button type="button" @click.stop="toggleFabled">
+              <font-awesome-icon icon="times-circle" />
+            </button>
+          </header>
+          <ul>
+            <li
+              v-for="(role, index) in fabled"
+              :key="role.id || index"
+              @click="removeFabled(index)"
+            >
+              <div
+                class="night-order first"
+                v-if="nightOrder.get(role).first && grimoire.isNightOrder"
+              >
+                <em>{{ nightOrder.get(role).first }}.</em>
+                <span v-if="role.firstNightReminder">{{
+                  role.firstNightReminder
+                }}</span>
+              </div>
+              <div
+                class="night-order other"
+                v-if="nightOrder.get(role).other && grimoire.isNightOrder"
+              >
+                <em>{{ nightOrder.get(role).other }}.</em>
+                <span v-if="role.otherNightReminder">{{
+                  role.otherNightReminder
+                }}</span>
+              </div>
+              <Token :role="role"></Token>
+            </li>
+          </ul>
+        </aside>
+      </div>
+
+      <div
+        class="town-square-drawer night-control-drawer"
+        :class="{ open: isNightNavigationOpen }"
+        v-if="room.isHost"
+      >
+        <button
+          type="button"
+          class="town-square-drawer-tab"
+          @click.stop="toggleNightNavigation"
+        >
+          <font-awesome-icon icon="cloud-moon" />
+          <span>{{ $t("room.nightNavigation") }}</span>
+        </button>
+        <aside class="town-square-drawer-panel">
+          <header class="town-square-drawer-header">
+            <h3>{{ $t("room.nightNavigation") }}</h3>
+            <button type="button" @click.stop="toggleNightNavigation">
+              <font-awesome-icon icon="times-circle" />
+            </button>
+          </header>
+          <div class="night-navigation">
+            <div
+              class="night-navigation-mode"
+              role="group"
+              :aria-label="$t('room.nightNavigation')"
+            >
+              <button
+                type="button"
+                class="button"
+                :class="{ townsfolk: nightNavigation.mode === 'first' }"
+                @click="setNightNavigationMode('first')"
+              >
+                {{ $t("room.firstNight") }}
+              </button>
+              <button
+                type="button"
+                class="button"
+                :class="{ townsfolk: nightNavigation.mode === 'other' }"
+                @click="setNightNavigationMode('other')"
+              >
+                {{ $t("room.otherNights") }}
+              </button>
+            </div>
+            <div class="night-navigation-stepper">
+              <button
+                type="button"
+                class="button"
+                :disabled="!nightNavigationQueue.length"
+                @click="previousNightAction"
+              >
+                <font-awesome-icon icon="step-backward" />
+                {{ $t("room.previousNightAction") }}
+              </button>
+              <span class="night-navigation-current">
+                {{ currentNightNavigationLabel }}
+              </span>
+              <button
+                type="button"
+                class="button demon"
+                :disabled="!nightNavigationQueue.length"
+                @click="nextNightAction"
+              >
+                <font-awesome-icon icon="step-forward" />
+                {{ $t("room.nextNightAction") }}
+              </button>
+            </div>
           </div>
-          <div
-            class="night-order other"
-            v-if="nightOrder.get(role).other && grimoire.isNightOrder"
-          >
-            <em>{{ nightOrder.get(role).other }}.</em>
-            <span v-if="role.otherNightReminder">{{
-              role.otherNightReminder
-            }}</span>
-          </div>
-          <Token :role="role"></Token>
-        </li>
-      </ul>
+        </aside>
+      </div>
     </div>
 
     <ReminderModal :player-index="selectedPlayer"></ReminderModal>
@@ -146,13 +233,14 @@ export default {
   },
   computed: {
     ...mapGetters({ nightOrder: "players/nightOrder" }),
-    ...mapState(["grimoire", "roles", "session"]),
+    ...mapState(["grimoire", "roles", "room", "session"]),
     ...mapState("players", [
       "players",
       "bluffs",
       "lunaticBluffs",
       "lunaticBluffPlayerIndex",
       "fabled",
+      "nightNavigation",
     ]),
     activeBluffs() {
       return this.activeBluffTab === "lunatic" && !this.session.isSpectator
@@ -164,6 +252,23 @@ export default {
         "--first-night-label": `"${this.$t("townSquare.firstNight")}"`,
         "--other-nights-label": `"${this.$t("townSquare.otherNights")}"`,
       };
+    },
+    nightNavigationQueue() {
+      return this.$store.getters["players/nightActionQueue"](
+        this.nightNavigation.mode,
+      );
+    },
+    currentNightNavigationEntry() {
+      return this.nightNavigationQueue.find(
+        (entry) => entry.seatIndex === this.nightNavigation.currentSeatIndex,
+      );
+    },
+    currentNightNavigationLabel() {
+      const entry = this.currentNightNavigationEntry;
+      if (!entry) return this.$t("room.noNightActions");
+      return `${entry.order}. ${entry.role.name || entry.role.id} - ${
+        entry.player.name || this.$t("room.unnamedPlayer")
+      }`;
     },
   },
   data() {
@@ -179,7 +284,8 @@ export default {
       bluffResizeObserver: null,
       bluffLayoutFrame: null,
       isBluffsOpen: true,
-      isFabledOpen: true,
+      isFabledOpen: false,
+      isNightNavigationOpen: false,
     };
   },
   mounted() {
@@ -199,6 +305,14 @@ export default {
     },
     toggleFabled() {
       this.isFabledOpen = !this.isFabledOpen;
+      if (this.isFabledOpen) this.isNightNavigationOpen = false;
+    },
+    toggleNightNavigation() {
+      if (this.isNightNavigationOpen) {
+        this.$store.commit("players/clearNightNavigation");
+      }
+      this.isNightNavigationOpen = !this.isNightNavigationOpen;
+      if (this.isNightNavigationOpen) this.isFabledOpen = false;
     },
     removeFabled(index) {
       if (this.session.isSpectator) return;
@@ -231,6 +345,35 @@ export default {
     },
     setLunaticBluffPlayerIndex(index) {
       this.$store.commit("players/setLunaticBluffPlayerIndex", index);
+    },
+    setNightNavigationMode(mode) {
+      this.$store.commit("players/setNightNavigationMode", mode);
+    },
+    previousNightAction() {
+      this.moveNightAction(-1);
+    },
+    nextNightAction() {
+      this.moveNightAction(1);
+    },
+    moveNightAction(direction) {
+      const queue = this.nightNavigationQueue;
+      if (!queue.length) {
+        this.$store.commit("players/clearNightNavigation");
+        return;
+      }
+      const currentIndex = queue.findIndex(
+        (entry) => entry.seatIndex === this.nightNavigation.currentSeatIndex,
+      );
+      const nextIndex =
+        currentIndex < 0
+          ? direction > 0
+            ? 0
+            : queue.length - 1
+          : (currentIndex + direction + queue.length) % queue.length;
+      this.$store.commit(
+        "players/setNightNavigationSeat",
+        queue[nextIndex].seatIndex,
+      );
     },
     observeBluffArea() {
       this.updateBluffTabLayout();
@@ -550,6 +693,276 @@ export default {
 @for $i from 1 through 20 {
   .circle.size-#{$i} > li {
     @include on-circle($item-count: $i);
+  }
+}
+
+/***** Left drawers *******/
+.town-square-drawer-stack {
+  position: absolute;
+  top: max(0px, env(safe-area-inset-top));
+  left: 0;
+  display: grid;
+  gap: 6px;
+  z-index: 70;
+  pointer-events: none;
+}
+
+.town-square-drawer {
+  position: relative;
+  min-height: 44px;
+  pointer-events: auto;
+}
+
+.town-square-drawer-tab {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: 1.1em minmax(0, 1fr);
+  align-items: center;
+  gap: 0.32em;
+  width: 36px;
+  min-height: 74px;
+  margin: 0;
+  padding: 0.45em 0.18em;
+  color: #dcc4a1;
+  border: 2px solid #3d2e26;
+  border-left: 0;
+  border-radius: 0 5px 5px 0;
+  background: linear-gradient(
+      180deg,
+      rgba(45, 12, 9, 0.96),
+      rgba(15, 11, 10, 0.96)
+    ),
+    #1d1816;
+  box-shadow:
+    0 12px 28px rgba(0, 0, 0, 0.58),
+    inset 0 1px 0 rgba(255, 236, 190, 0.06);
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0;
+  line-height: 1;
+
+  svg {
+    justify-self: center;
+  }
+
+  span {
+    justify-self: center;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    white-space: nowrap;
+  }
+}
+
+.town-square-drawer.open .town-square-drawer-tab {
+  color: #fff8e7;
+  border-color: #8b6508;
+  background: linear-gradient(
+      180deg,
+      rgba(142, 39, 33, 0.98),
+      rgba(31, 16, 12, 0.98)
+    ),
+    #2a1c09;
+}
+
+.town-square-drawer-panel {
+  position: absolute;
+  top: 0;
+  left: 36px;
+  width: min(360px, calc(100vw - 62px));
+  max-height: min(58vh, 420px);
+  color: #dcc4a1;
+  border: 2px solid #3d2e26;
+  border-left: 0;
+  border-radius: 0 8px 8px 0;
+  background: rgba(12, 9, 8, 0.9);
+  box-shadow:
+    0 18px 42px rgba(0, 0, 0, 0.66),
+    inset 0 1px 0 rgba(255, 236, 190, 0.05);
+  backdrop-filter: blur(3px);
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transform: translateX(-14px) scaleX(0.96);
+  transform-origin: left center;
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+
+.town-square-drawer.open .town-square-drawer-panel {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(0) scaleX(1);
+}
+
+.town-square-drawer-header {
+  display: flex;
+  align-items: center;
+  min-height: 2.3em;
+  border-bottom: 1px solid #3d2e26;
+  background: radial-gradient(
+      circle at 50% 0%,
+      rgba(92, 26, 22, 0.22),
+      transparent 36%
+    ),
+    rgba(18, 14, 12, 0.92);
+}
+
+.town-square-drawer-header h3 {
+  min-width: 0;
+  flex: 1;
+  margin: 0;
+  padding: 0.46em 0.72em;
+  color: #fff8e7;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1em;
+  letter-spacing: 0.06em;
+}
+
+.town-square-drawer-header button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.2em;
+  height: 2.2em;
+  margin: 0;
+  padding: 0;
+  color: #dcc4a1;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.town-square-drawer-header button:hover {
+  color: #fff8e7;
+}
+
+.fabled-drawer .town-square-drawer-panel ul {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.28em;
+  margin: 0;
+  padding: 0.48em;
+  overflow-x: auto;
+  list-style: none;
+}
+
+.fabled-drawer .town-square-drawer-panel li {
+  position: relative;
+  width: clamp(56px, 10vh, 86px);
+  height: clamp(56px, 10vh, 86px);
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+
+.night-navigation {
+  display: grid;
+  gap: 0.34em;
+  padding: 0.46em;
+}
+
+.night-navigation-mode,
+.night-navigation-stepper {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.28em;
+}
+
+.night-navigation-stepper {
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.25fr) minmax(0, 0.85fr);
+}
+
+.night-navigation .button {
+  min-width: 0;
+  min-height: 2.1em;
+  margin: 0;
+  padding: 0 0.42em;
+  color: #dcc4a1;
+  border: 1px solid #3d2e26;
+  border-radius: 2px;
+  background: #1d1816;
+  box-shadow: inset 0 1px 0 rgba(255, 236, 190, 0.04);
+  font-size: 0.82em;
+}
+
+.night-navigation .button.townsfolk {
+  color: #fff8e7;
+  border-color: #d4af37;
+  background: linear-gradient(#b8860b, #946b07 48%, #5c4204);
+}
+
+.night-navigation .button.demon {
+  color: #fff8e7;
+  border-color: #8d2822;
+  background: linear-gradient(#8a2721, #581612 54%, #2d0c09);
+}
+
+.night-navigation .button:disabled {
+  opacity: 0.48;
+}
+
+.night-navigation-current {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  min-height: 2.1em;
+  padding: 0 0.42em;
+  color: #fff8e7;
+  border: 1px solid #3d2e26;
+  background: rgba(5, 4, 4, 0.52);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.78em;
+}
+
+@media (max-width: 768px) {
+  .town-square-drawer-stack {
+    top: max(0px, env(safe-area-inset-top));
+    gap: 5px;
+  }
+
+  .town-square-drawer-tab {
+    width: 34px;
+    min-height: 68px;
+    padding: 0.38em 0.14em;
+    font-size: 11px;
+  }
+
+  .town-square-drawer-panel {
+    left: 34px;
+    width: min(300px, calc(100vw - 46px));
+    max-height: min(46vh, 320px);
+  }
+
+  .town-square-drawer-header h3 {
+    padding: 0.42em 0.58em;
+    font-size: clamp(12px, 3.4vw, 15px);
+  }
+
+  .fabled-drawer .town-square-drawer-panel li {
+    width: clamp(44px, 14vw, 62px);
+    height: clamp(44px, 14vw, 62px);
+  }
+
+  .night-navigation {
+    gap: 0.24em;
+    padding: 0.34em;
+  }
+
+  .night-navigation-stepper {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .night-navigation-current {
+    min-height: 2.2em;
+    font-size: 0.82em;
   }
 }
 

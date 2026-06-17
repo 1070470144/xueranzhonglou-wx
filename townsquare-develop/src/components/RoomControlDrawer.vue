@@ -71,53 +71,6 @@
           <font-awesome-icon icon="theater-masks" />
           {{ $t("menu.sendCharacters") }}
         </button>
-        <div class="night-navigation">
-          <div
-            class="night-navigation-mode"
-            role="group"
-            :aria-label="$t('room.nightNavigation')"
-          >
-            <button
-              type="button"
-              class="button"
-              :class="{ townsfolk: nightNavigation.mode === 'first' }"
-              @click="setNightNavigationMode('first')"
-            >
-              {{ $t("room.firstNight") }}
-            </button>
-            <button
-              type="button"
-              class="button"
-              :class="{ townsfolk: nightNavigation.mode === 'other' }"
-              @click="setNightNavigationMode('other')"
-            >
-              {{ $t("room.otherNights") }}
-            </button>
-          </div>
-          <div class="night-navigation-stepper">
-            <button
-              type="button"
-              class="button"
-              :disabled="!nightNavigationQueue.length"
-              @click="previousNightAction"
-            >
-              <font-awesome-icon icon="step-backward" />
-              {{ $t("room.previousNightAction") }}
-            </button>
-            <span class="night-navigation-current">
-              {{ currentNightNavigationLabel }}
-            </span>
-            <button
-              type="button"
-              class="button demon"
-              :disabled="!nightNavigationQueue.length"
-              @click="nextNightAction"
-            >
-              <font-awesome-icon icon="step-forward" />
-              {{ $t("room.nextNightAction") }}
-            </button>
-          </div>
-        </div>
       </section>
 
       <section
@@ -582,7 +535,7 @@ export default {
   },
   computed: {
     ...mapState(["modals", "room", "session", "voice", "grimoire", "roleDraw"]),
-    ...mapState("players", ["players", "nightNavigation"]),
+    ...mapState("players", ["players"]),
     canEditSeats() {
       return !this.session.isSpectator && !this.session.lockedVote;
     },
@@ -629,23 +582,6 @@ export default {
       const key = `voice.errors.${this.voice.error}`;
       const translated = this.$t(key);
       return translated !== key ? translated : this.voice.error || key;
-    },
-    nightNavigationQueue() {
-      return this.$store.getters["players/nightActionQueue"](
-        this.nightNavigation.mode,
-      );
-    },
-    currentNightNavigationEntry() {
-      return this.nightNavigationQueue.find(
-        (entry) => entry.seatIndex === this.nightNavigation.currentSeatIndex,
-      );
-    },
-    currentNightNavigationLabel() {
-      const entry = this.currentNightNavigationEntry;
-      if (!entry) return this.$t("room.noNightActions");
-      return `${entry.order}. ${entry.role.name || entry.role.id} - ${
-        entry.player.name || this.$t("room.unnamedPlayer")
-      }`;
     },
     canStartRoleDraw() {
       return (
@@ -744,35 +680,6 @@ export default {
           }
         }
       }, 2000);
-    },
-    setNightNavigationMode(mode) {
-      this.$store.commit("players/setNightNavigationMode", mode);
-    },
-    previousNightAction() {
-      this.moveNightAction(-1);
-    },
-    nextNightAction() {
-      this.moveNightAction(1);
-    },
-    moveNightAction(direction) {
-      const queue = this.nightNavigationQueue;
-      if (!queue.length) {
-        this.$store.commit("players/clearNightNavigation");
-        return;
-      }
-      const currentIndex = queue.findIndex(
-        (entry) => entry.seatIndex === this.nightNavigation.currentSeatIndex,
-      );
-      const nextIndex =
-        currentIndex < 0
-          ? direction > 0
-            ? 0
-            : queue.length - 1
-          : (currentIndex + direction + queue.length) % queue.length;
-      this.$store.commit(
-        "players/setNightNavigationSeat",
-        queue[nextIndex].seatIndex,
-      );
     },
     setRoomStatus(status) {
       this.$store.commit("room/update", { status });
@@ -1153,42 +1060,6 @@ dd {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.22em;
-}
-
-.night-navigation {
-  grid-column: 1 / -1;
-  display: grid;
-  gap: 0.22em;
-  padding: 0.24em;
-  border: 1px solid #3d2e26;
-  background: rgba(12, 9, 8, 0.62);
-}
-
-.night-navigation-mode,
-.night-navigation-stepper {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.22em;
-}
-
-.night-navigation-stepper {
-  grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.2fr) minmax(0, 0.9fr);
-}
-
-.night-navigation-current {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 0;
-  min-height: 1.58em;
-  padding: 0 0.32em;
-  color: #fff8e7;
-  border: 1px solid #3d2e26;
-  background: rgba(5, 4, 4, 0.46);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: 0.76em;
 }
 
 .room-control-command-grid.guest-actions,
@@ -1648,16 +1519,6 @@ summary {
     min-height: 2.2em;
     padding: 0 0.42em;
     font-size: 0.86em;
-  }
-
-  .night-navigation {
-    gap: 0.18em;
-    padding: 0.18em;
-  }
-
-  .night-navigation-current {
-    min-height: 2em;
-    font-size: 0.82em;
   }
 
   .room-control-group {
