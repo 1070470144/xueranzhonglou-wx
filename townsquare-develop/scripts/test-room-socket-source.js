@@ -71,7 +71,7 @@ assert(
   "claim seat should record the player before clearing disconnected seats"
 );
 
-const applyRoomJoinedStart = socketSource.indexOf("_applyRoomJoined({ room, scriptJson } = {}, isSpectator)");
+const applyRoomJoinedStart = socketSource.indexOf("_applyRoomJoined(");
 const applyRoomJoinedEnd = socketSource.indexOf("\n  _loadRoomScript(scriptJson) {", applyRoomJoinedStart);
 const applyRoomJoinedSource = socketSource.slice(applyRoomJoinedStart, applyRoomJoinedEnd);
 
@@ -83,6 +83,19 @@ assert(
 assert(
   applyRoomJoinedSource.includes('commit("players/clear")'),
   "joining a room should clear stale local player ids before the host gamestate arrives"
+);
+
+assert(
+  /case "room:create:ok":[\s\S]*?this\._applyRoomJoined\(params, false, \{ resetSeats: true \}\)/.test(socketSource),
+  "creating a new room should reset stale local seats before applying the room player count"
+);
+
+assert(
+  applyRoomJoinedSource.includes("resetSeats") &&
+    applyRoomJoinedSource.includes(
+      'if (isSpectator || resetSeats) this._store.commit("players/clear")'
+    ),
+  "new room setup should clear stale local player names while spectator joins still clear before the host gamestate"
 );
 
 assert(

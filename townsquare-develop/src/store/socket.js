@@ -179,7 +179,7 @@ class LiveSession {
         break;
       case "room:create:ok":
         this._clearRoomRequestTimeout();
-        this._applyRoomJoined(params, false);
+        this._applyRoomJoined(params, false, { resetSeats: true });
         break;
       case "room:join:ok":
         this._clearRoomRequestTimeout();
@@ -1325,7 +1325,11 @@ class LiveSession {
     };
   }
 
-  _applyRoomJoined({ room, scriptJson } = {}, isSpectator) {
+  _applyRoomJoined(
+    { room, scriptJson } = {},
+    isSpectator,
+    { resetSeats = false } = {},
+  ) {
     if (!room || !room.id) return;
     this._isSpectator = isSpectator;
     this._isJoiningRoom = true;
@@ -1342,7 +1346,7 @@ class LiveSession {
     this._store.commit("session/clearVoteHistory");
     this._store.commit("voice/clear");
     this._store.commit("roleDraw/resetSession");
-    if (isSpectator) this._store.commit("players/clear");
+    if (isSpectator || resetSeats) this._store.commit("players/clear");
     this._isRoomSession = true;
     this._store.commit("session/setSpectator", isSpectator);
     this._store.commit("session/setGameStartedAt", Date.now());
