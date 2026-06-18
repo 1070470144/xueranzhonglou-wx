@@ -134,36 +134,60 @@
                   <label
                     v-for="control in section.controls"
                     :key="control.key"
+                    :class="{ 'poster-checkbox': control.type === 'checkbox' }"
                   >
-                    {{ control.label }}
-                    <select
-                      v-if="control.type === 'select'"
-                      v-model="posterLayout[control.key]"
-                      @change="redrawPoster"
-                    >
-                      <option
-                        v-for="option in control.options"
-                        :key="option.value"
-                        :value="option.value"
+                    <template v-if="control.type === 'checkbox'">
+                      <input
+                        v-model="posterLayout[control.key]"
+                        type="checkbox"
+                        @change="redrawPoster"
+                      />
+                      {{ control.label }}
+                    </template>
+                    <template v-else>
+                      {{ control.label }}
+                      <select
+                        v-if="control.type === 'select'"
+                        v-model="posterLayout[control.key]"
+                        @change="redrawPoster"
                       >
-                        {{ option.label }}
-                      </option>
-                    </select>
-                    <input
-                      v-else
-                      v-model.number="posterLayout[control.key]"
-                      type="number"
-                      :min="control.min"
-                      :max="control.max"
-                      :step="control.step || 1"
-                      @keyup.stop=""
-                      @change="redrawPoster"
-                    />
+                        <option
+                          v-for="option in control.options"
+                          :key="option.value"
+                          :value="option.value"
+                        >
+                          {{ option.label }}
+                        </option>
+                      </select>
+                      <input
+                        v-else-if="control.type === 'color'"
+                        v-model="posterLayout[control.key]"
+                        type="color"
+                        @input="redrawPoster"
+                      />
+                      <input
+                        v-else
+                        v-model.number="posterLayout[control.key]"
+                        type="number"
+                        :min="control.min"
+                        :max="control.max"
+                        :step="control.step || 1"
+                        @keyup.stop=""
+                        @change="redrawPoster"
+                      />
+                    </template>
                   </label>
                 </div>
               </details>
             </div>
 
+          </div>
+
+          <div
+            v-if="error || status"
+            class="poster-control-messages"
+            aria-live="polite"
+          >
             <div v-if="error" class="poster-control-alert poster-error error">
               {{ error }}
             </div>
@@ -269,8 +293,11 @@ const DEFAULT_POSTER_LAYOUT = {
   roleAreaTop: 200,
   roleNameAbilityGap: 20,
   headerPanelOffsetX: 40,
+  showHeaderPanel: true,
   headerPanelWidth: 380,
   headerPanelHeight: 94,
+  headerPanelTitleTop: 43,
+  headerPanelContentTop: 72,
   headerTitleOffsetX: 0,
   headerTitleOffsetY: 0,
   titleArtStyle: "classic",
@@ -282,6 +309,8 @@ const DEFAULT_POSTER_LAYOUT = {
   teamGap: 30,
   glossaryBottomOffset: 20,
   roleIconSize: 40,
+  roleNameColor: "#0c83a6",
+  roleAbilityColor: "#17110d",
   roleNameFontSize: 24,
   roleAbilityFontSize: 15,
   roleAreaTitleGap: 34,
@@ -403,8 +432,13 @@ export default {
             {
               key: "headerPanelOffsetX",
               label: controlLabel("headerPanelOffsetX"),
-              min: -120,
-              max: 120,
+              min: -1000,
+              max: 1000,
+            },
+            {
+              key: "showHeaderPanel",
+              label: controlLabel("showHeaderPanel"),
+              type: "checkbox",
             },
             {
               key: "headerPanelWidth",
@@ -419,10 +453,22 @@ export default {
               max: 160,
             },
             {
+              key: "headerPanelTitleTop",
+              label: controlLabel("headerPanelTitleTop"),
+              min: 0,
+              max: 1000,
+            },
+            {
+              key: "headerPanelContentTop",
+              label: controlLabel("headerPanelContentTop"),
+              min: 0,
+              max: 1000,
+            },
+            {
               key: "headerTitleOffsetX",
               label: controlLabel("headerTitleOffsetX"),
-              min: -120,
-              max: 120,
+              min: -1000,
+              max: 1000,
             },
             {
               key: "headerTitleOffsetY",
@@ -455,6 +501,16 @@ export default {
           label: sectionLabel("roles"),
           controls: [
             { key: "roleIconSize", label: controlLabel("roleIconSize"), min: 12, max: 800 },
+            {
+              key: "roleNameColor",
+              label: controlLabel("roleNameColor"),
+              type: "color",
+            },
+            {
+              key: "roleAbilityColor",
+              label: controlLabel("roleAbilityColor"),
+              type: "color",
+            },
             {
               key: "roleNameFontSize",
               label: controlLabel("roleNameFontSize"),
@@ -855,9 +911,11 @@ export default {
         132 + config.headerAuthorOffsetY,
       );
 
-      const configuredPanel = this.drawHeaderPanel(ctx, config);
-      this.drawTopPanelTitle(ctx, poster, config, configuredPanel);
-      this.drawHeaderContent(ctx, poster, config, configuredPanel);
+      if (config.showHeaderPanel) {
+        const configuredPanel = this.drawHeaderPanel(ctx, config);
+        this.drawTopPanelTitle(ctx, poster, config, configuredPanel);
+        this.drawHeaderContent(ctx, poster, config, configuredPanel);
+      }
 
       ctx.restore();
     },
@@ -879,8 +937,17 @@ export default {
       panel.addColorStop(1, "rgba(190, 153, 103, 0.72)");
       ctx.fillStyle = panel;
       this.roundRect(ctx, x, y, width, height, 8, true, false);
-      ctx.strokeStyle = "rgba(105, 78, 43, 0.7)";
-      this.roundRect(ctx, x, y, width, height, 8, false, true);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "rgba(91, 58, 24, 0.72)";
+      this.roundRect(ctx, x + 0.5, y + 0.5, width - 1, height - 1, 8, false, true);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "rgba(255, 246, 205, 0.5)";
+      this.roundRect(ctx, x + 5, y + 5, width - 10, height - 10, 5, false, true);
+      ctx.setLineDash([10, 7]);
+      ctx.strokeStyle = "rgba(91, 58, 24, 0.35)";
+      this.roundRect(ctx, x + 11, y + 11, width - 22, height - 22, 3, false, true);
+      ctx.setLineDash([]);
+      this.drawHeaderPanelCorners(ctx, x, y, width, height);
       ctx.restore();
       return {
         x,
@@ -889,6 +956,26 @@ export default {
         height,
         centerX: x + width / 2,
       };
+    },
+    drawHeaderPanelCorners(ctx, x, y, width, height) {
+      const corner = Math.min(34, Math.max(20, height * 0.32));
+      ctx.save();
+      ctx.shadowColor = "transparent";
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = "rgba(91, 58, 24, 0.72)";
+      [
+        [x + 11, y + 11, 1, 1],
+        [x + width - 11, y + 11, -1, 1],
+        [x + 11, y + height - 11, 1, -1],
+        [x + width - 11, y + height - 11, -1, -1],
+      ].forEach(([cx, cy, sx, sy]) => {
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + sy * corner);
+        ctx.lineTo(cx, cy);
+        ctx.lineTo(cx + sx * corner, cy);
+        ctx.stroke();
+      });
+      ctx.restore();
     },
     drawHeaderContent(ctx, poster, config, panel) {
       const contentText =
@@ -899,11 +986,7 @@ export default {
         16,
         Math.min(22, config.headerPanelHeight / 5),
       );
-      const titleY = panel.y + Math.min(43, panel.height * 0.46);
-      const contentStartY = Math.min(
-        panel.y + panel.height - lineHeight,
-        titleY + Math.max(22, Math.min(30, panel.height * 0.3)),
-      );
+      const contentStartY = panel.y + config.headerPanelContentTop;
       const maxLines = Math.max(
         1,
         Math.floor((panel.y + panel.height - contentStartY) / lineHeight) + 1,
@@ -929,7 +1012,7 @@ export default {
       const title =
         poster.topText || this.$t("modals.imageGenerator.canvas.defaultTopTitle");
       const x = panel.centerX;
-      const y = panel.y + Math.min(43, panel.height * 0.46);
+      const y = panel.y + config.headerPanelTitleTop;
       ctx.save();
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -1086,6 +1169,11 @@ export default {
         ctx.fillText(letter, x, y + index * (fontSize + 2));
       });
     },
+    normalizeColor(value, fallback) {
+      const color = String(value || "").trim();
+      if (/^#[0-9a-f]{6}$/i.test(color)) return color;
+      return fallback;
+    },
     getPosterLayoutConfig() {
       const read = (key, min, max) => {
         const value = Number(this.posterLayout[key]);
@@ -1103,10 +1191,13 @@ export default {
         roleAreaLeft: read("roleAreaLeft", 80, 180),
         roleAreaTop: read("roleAreaTop", 130, 260),
         roleAreaTitleGap: read("roleAreaTitleGap", 0, 120),
-        headerPanelOffsetX: read("headerPanelOffsetX", -120, 120),
+        headerPanelOffsetX: read("headerPanelOffsetX", -1000, 1000),
+        showHeaderPanel: this.posterLayout.showHeaderPanel !== false,
         headerPanelWidth: read("headerPanelWidth", 240, 520),
         headerPanelHeight: read("headerPanelHeight", 60, 160),
-        headerTitleOffsetX: read("headerTitleOffsetX", -120, 120),
+        headerPanelTitleTop: read("headerPanelTitleTop", 0, 1000),
+        headerPanelContentTop: read("headerPanelContentTop", 0, 1000),
+        headerTitleOffsetX: read("headerTitleOffsetX", -1000, 1000),
         headerTitleOffsetY: read("headerTitleOffsetY", -60, 60),
         titleArtStyle:
           this.posterLayout.titleArtStyle || DEFAULT_POSTER_LAYOUT.titleArtStyle,
@@ -1114,6 +1205,14 @@ export default {
         headerAuthorOffsetY: read("headerAuthorOffsetY", -40, 80),
         roleNameAbilityGap: read("roleNameAbilityGap", 0, 30),
         roleIconSize: read("roleIconSize", 12, 800),
+        roleNameColor: this.normalizeColor(
+          this.posterLayout.roleNameColor,
+          DEFAULT_POSTER_LAYOUT.roleNameColor,
+        ),
+        roleAbilityColor: this.normalizeColor(
+          this.posterLayout.roleAbilityColor,
+          DEFAULT_POSTER_LAYOUT.roleAbilityColor,
+        ),
         roleNameFontSize: read("roleNameFontSize", 12, 30),
         roleAbilityFontSize: read("roleAbilityFontSize", 8, 20),
         abilityTextWidth: read("abilityTextWidth", 260, 420),
@@ -1138,6 +1237,8 @@ export default {
         ...settings,
         roleNameAbilityGap: config.roleNameAbilityGap,
         iconSize: config.roleIconSize,
+        nameColor: config.roleNameColor,
+        abilityColor: config.roleAbilityColor,
         nameFontSize: config.roleNameFontSize,
         abilityFontSize: config.roleAbilityFontSize,
         titleGap: config.roleAreaTitleGap,
@@ -1359,11 +1460,11 @@ export default {
         );
       }
 
-      ctx.fillStyle = team.accent;
+      ctx.fillStyle = settings.nameColor || team.accent;
       ctx.font = `bold ${settings.nameFontSize}px STKaiti, KaiTi, serif`;
       ctx.textAlign = "left";
       ctx.fillText(role.name, x + textOffsetX, y + settings.nameFontSize);
-      ctx.fillStyle = "#17110d";
+      ctx.fillStyle = settings.abilityColor || "#17110d";
       ctx.font = `bold ${settings.abilityFontSize}px SimSun, serif`;
       layout.abilityLines.forEach((line, index) => {
         ctx.fillText(
@@ -1691,9 +1792,12 @@ export default {
 
 <style scoped lang="scss">
 .poster-generator {
+  display: flex;
+  flex-direction: column;
   width: min(1180px, calc(92vw - 2em));
+  height: min(82vh, calc(100vh - 3em));
   max-width: 100%;
-  max-height: 82vh;
+  max-height: none;
   overflow: hidden;
   box-sizing: border-box;
   color: #dcc4a1;
@@ -1709,7 +1813,7 @@ export default {
 }
 
 ::v-deep .modal > .slot {
-  overflow-x: hidden;
+  overflow: hidden;
 }
 
 .poster-generator-header {
@@ -1734,21 +1838,24 @@ export default {
 
 .poster-generator-grid {
   display: grid;
+  flex: 1 1 auto;
   grid-template-columns: minmax(280px, 400px) minmax(0, 1fr);
   gap: 18px;
-  align-items: start;
+  align-items: stretch;
   min-height: 0;
   min-width: 0;
+  overflow: hidden;
 }
 
 .poster-controls {
   display: flex;
   flex-direction: column;
   gap: 0.42em;
+  height: 100%;
   min-width: 0;
   min-height: 0;
-  max-height: calc(100vh - 180px);
-  overflow-x: hidden;
+  max-height: none;
+  overflow: hidden;
   font-size: 14px;
 }
 
@@ -1759,8 +1866,10 @@ export default {
   gap: 0.42em;
   min-height: 0;
   min-width: 0;
+  max-height: none;
   overflow-x: hidden;
   overflow-y: auto;
+  padding-bottom: 0.46em;
   padding-right: 0.34em;
 }
 
@@ -1846,6 +1955,7 @@ export default {
 .poster-settings-groups {
   display: grid;
   gap: 0.42em;
+  min-height: 0;
 }
 
 .poster-script-actions .button,
@@ -1901,7 +2011,7 @@ export default {
 
 .poster-control-group {
   padding: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .poster-control-group-title {
@@ -1948,6 +2058,11 @@ export default {
   color: #7f705f;
 }
 
+.poster-controls input[type="color"] {
+  padding: 2px;
+  cursor: pointer;
+}
+
 .poster-controls input:focus,
 .poster-controls select:focus {
   border-color: #8b6508;
@@ -1973,15 +2088,24 @@ export default {
 }
 
 .poster-actions {
-  position: sticky;
+  position: static;
+  flex: 0 0 auto;
   bottom: 0;
   z-index: 1;
   padding-top: 0.42em;
-  background: linear-gradient(
-    180deg,
-    rgba(34, 26, 17, 0) 0%,
-    rgba(34, 26, 17, 0.92) 30%
-  );
+  background: rgba(18, 15, 13, 0.78);
+}
+
+.poster-control-messages {
+  display: grid;
+  flex: 0 0 auto;
+  gap: 0.3em;
+  max-height: 5.6em;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0.4em 0.34em 0;
+  border-top: 1px solid rgba(61, 46, 38, 0.72);
+  background: rgba(18, 15, 13, 0.78);
 }
 
 .poster-action-primary {
@@ -1996,9 +2120,11 @@ export default {
 }
 
 .poster-control-alert {
-  padding: 0.42em 0.5em;
+  min-height: 1.9em;
+  padding: 0.38em 0.5em;
   color: #fff8e7;
   border: 1px solid rgba(212, 175, 55, 0.45);
+  border-radius: 2px;
   background: rgba(92, 66, 4, 0.24);
   font-size: 0.76em;
   line-height: 1.35;
@@ -2018,10 +2144,12 @@ export default {
   display: flex;
   justify-content: center;
   align-items: flex-start;
+  height: 100%;
   min-width: 0;
+  min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  max-height: 74vh;
+  max-height: none;
   padding: 10px;
   border: 1px solid #3d2e26;
   border-radius: 2px;
@@ -2044,10 +2172,12 @@ export default {
 @media (max-width: 860px) {
   .poster-generator-grid {
     grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) minmax(160px, 42vh);
   }
 
   .poster-generator {
     width: min(100%, 88vw);
+    height: min(88vh, calc(100vh - 2em));
   }
 
   .poster-command-grid,

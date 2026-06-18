@@ -281,6 +281,8 @@ if (
   "showHeaderPanel",
   "headerPanelWidth",
   "headerPanelHeight",
+  "headerPanelTitleTop",
+  "headerPanelContentTop",
   "headerTitleOffsetX",
   "headerTitleOffsetY",
   "titleArtStyle",
@@ -316,6 +318,8 @@ if (
   "showHeaderPanel: true",
   "headerPanelWidth: 380",
   "headerPanelHeight: 94",
+  "headerPanelTitleTop: 43",
+  "headerPanelContentTop: 72",
   "headerTitleOffsetX: 0",
   "headerTitleOffsetY: 0",
   'titleArtStyle: "classic"',
@@ -376,9 +380,19 @@ if (
   "contentText.split(/\\s+/)",
   "words.slice(0, maxLines).forEach",
   "fitHeaderLine(",
+  'key: "headerPanelTitleTop"',
+  'key: "headerPanelContentTop"',
+  'headerPanelOffsetX: read("headerPanelOffsetX", -1000, 1000)',
+  'headerPanelTitleTop: read("headerPanelTitleTop", 0, 1000)',
+  'headerPanelContentTop: read("headerPanelContentTop", 0, 1000)',
+  'headerTitleOffsetX: read("headerTitleOffsetX", -1000, 1000)',
+  "const contentStartY = panel.y + config.headerPanelContentTop",
+  "const y = panel.y + config.headerPanelTitleTop",
   "config.headerPanelOffsetX",
   "config.headerPanelWidth",
   "config.headerPanelHeight",
+  "config.headerPanelTitleTop",
+  "config.headerPanelContentTop",
   "config.headerTitleOffsetX",
   "config.headerTitleOffsetY",
   "teamGap: config.teamGap",
@@ -524,14 +538,49 @@ if (modalSource.includes("support-count")) {
   "poster-controls-scroll",
   ".poster-controls-scroll",
   "overflow-y: auto",
+  "height: min(82vh, calc(100vh - 3em))",
+  "align-items: stretch",
+  "height: 100%",
+  "max-height: none",
   "poster-action-primary",
   "poster-action-secondary",
-  "position: sticky",
+  "position: static",
+  "poster-control-messages",
+  "aria-live=\"polite\"",
+  ".poster-control-messages",
 ].forEach((snippet) => {
   if (!modalSource.includes(snippet)) {
-    throw new Error(`Expected scrollable controls or polished actions: ${snippet}`);
+    throw new Error(
+      `Expected stable scrollable controls or polished actions: ${snippet}`,
+    );
   }
 });
+
+[
+  ".poster-control-group {\n  padding: 0;\n  overflow: hidden;",
+  ".poster-control-group:not([open])",
+].forEach((snippet) => {
+  if (modalSource.includes(snippet)) {
+    throw new Error("Expected poster control groups to avoid clipping content");
+  }
+});
+
+const scrollStart = modalSource.indexOf('<div class="poster-controls-scroll">');
+const messagesStart = modalSource.indexOf('<div\n            v-if="error || status"');
+const actionsStart = modalSource.indexOf('<div class="poster-actions poster-command-grid">');
+if (scrollStart === -1 || messagesStart === -1 || actionsStart === -1) {
+  throw new Error("Expected control scroll, messages, and actions regions");
+}
+if (!(scrollStart < messagesStart && messagesStart < actionsStart)) {
+  throw new Error("Expected generated status messages to sit outside scrolling controls and above actions");
+}
+const scrollBlock = modalSource.slice(scrollStart, messagesStart);
+if (
+  scrollBlock.includes("poster-status success") ||
+  scrollBlock.includes("poster-error error")
+) {
+  throw new Error("Expected status and error messages outside poster-controls-scroll");
+}
 
 [
   "poster-control-overview",
@@ -544,6 +593,17 @@ if (modalSource.includes("support-count")) {
 ].forEach((snippet) => {
   if (!modalSource.includes(snippet)) {
     throw new Error(`Expected image generator to follow room-control UI pattern: ${snippet}`);
+  }
+});
+
+[
+  "drawHeaderPanelCorners(ctx,",
+  "ctx.setLineDash([10, 7])",
+  "rgba(255, 246, 205, 0.5)",
+  "rgba(91, 58, 24, 0.72)",
+].forEach((snippet) => {
+  if (!modalSource.includes(snippet)) {
+    throw new Error(`Expected polished top content panel border: ${snippet}`);
   }
 });
 
