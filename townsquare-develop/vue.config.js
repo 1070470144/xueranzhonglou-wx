@@ -5,11 +5,13 @@ module.exports = {
   devServer: {
     proxy: {
       "/api/script-poster-image": {
-        target: process.env.VUE_APP_TOWNSQUARE_IMAGE_PROXY || "http://localhost:8081",
+        target:
+          process.env.VUE_APP_TOWNSQUARE_IMAGE_PROXY || "http://localhost:8081",
         changeOrigin: true,
       },
       "/api/script-poster-render": {
-        target: process.env.VUE_APP_TOWNSQUARE_IMAGE_PROXY || "http://localhost:8081",
+        target:
+          process.env.VUE_APP_TOWNSQUARE_IMAGE_PROXY || "http://localhost:8081",
         changeOrigin: true,
       },
     },

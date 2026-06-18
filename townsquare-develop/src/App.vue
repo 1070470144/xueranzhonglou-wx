@@ -35,6 +35,7 @@
     <NightOrderModal />
     <VoteHistoryModal />
     <GameStateModal />
+    <ScriptCreatorModal />
     <ImageGeneratorModal />
     <GameRecordModal />
     <AnnouncementModal />
@@ -68,6 +69,7 @@ import NightOrderModal from "./components/modals/NightOrderModal";
 import FabledModal from "@/components/modals/FabledModal";
 import VoteHistoryModal from "@/components/modals/VoteHistoryModal";
 import GameStateModal from "@/components/modals/GameStateModal";
+import ScriptCreatorModal from "@/components/modals/ScriptCreatorModal";
 import ImageGeneratorModal from "@/components/modals/ImageGeneratorModal";
 import GameRecordModal from "@/components/modals/GameRecordModal";
 import AnnouncementModal from "@/components/modals/AnnouncementModal";
@@ -94,6 +96,7 @@ export default {
     PlayerNameModal,
     LoginModal,
     ImageGeneratorModal,
+    ScriptCreatorModal,
     GameStateModal,
     GameRecordModal,
     VoteHistoryModal,

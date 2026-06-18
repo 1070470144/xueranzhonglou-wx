@@ -172,9 +172,9 @@ export default {
     },
     close() {
       this.stopTimers();
-      this.toggleModal("login");
+      this.closeModal("login");
     },
-    ...mapMutations(["toggleModal"]),
+    ...mapMutations(["closeModal"]),
   },
 };
 </script>

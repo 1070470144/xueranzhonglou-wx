@@ -101,6 +101,76 @@ const customRole = {
   isCustom: true,
 };
 
+const buildCustomRoleState = (roles, roleLookup = new Map()) => {
+  const processedRoles = roles
+    // replace numerical role object keys with matching key names
+    .map((role) => {
+      if (role[0]) {
+        const customKeys = Object.keys(customRole);
+        const mappedRole = {};
+        for (let prop in role) {
+          if (customKeys[prop]) {
+            mappedRole[customKeys[prop]] = role[prop];
+          }
+        }
+        return mappedRole;
+      } else {
+        return role;
+      }
+    })
+    // clean up role.id
+    .map((role) => {
+      role.id = clean(role.id);
+      return role;
+    })
+    // map existing roles to base definition or pre-populate custom roles to ensure all properties
+    .map(
+      (role) =>
+        rolesJSONbyId.get(role.id) ||
+        roleLookup.get(role.id) ||
+        Object.assign({}, customRole, role),
+    )
+    // default empty icons and placeholders, clean up firstNight / otherNight
+    .map((role) => {
+      if (rolesJSONbyId.get(role.id)) return role;
+      role.imageAlt = // map team to generic icon
+        {
+          townsfolk: "good",
+          outsider: "outsider",
+          minion: "minion",
+          demon: "evil",
+          fabled: "fabled",
+        }[role.team] || "custom";
+      role.firstNight = Math.abs(role.firstNight);
+      role.otherNight = Math.abs(role.otherNight);
+      return role;
+    })
+    // filter out roles that don't match an existing role and also don't have name/ability/team
+    .filter((role) => role.name && role.ability && role.team)
+    // sort by team
+    .sort((a, b) => b.team.localeCompare(a.team));
+
+  const roleMap = new Map(
+    processedRoles
+      .filter((role) => role.team !== "fabled")
+      .map((role) => [role.id, role]),
+  );
+  const fabledMap = new Map([
+    ...processedRoles.filter((r) => r.team === "fabled").map((r) => [r.id, r]),
+    ...fabledJSON.map((role) => [role.id, role]),
+  ]);
+  const otherTravelers = new Map(
+    rolesJSON
+      .filter(
+        (r) =>
+          r.team === "traveler" && !processedRoles.some((i) => i.id === r.id),
+      )
+      .map((role) => [role.id, role]),
+  );
+
+  return { roleMap, fabledMap, otherTravelers };
+};
+
 export default new Vuex.Store({
   modules: {
     players,
@@ -142,12 +212,16 @@ export default new Vuex.Store({
       roles: false,
       roomControl: false,
       roomLobby: false,
+      scriptCreator: false,
       storyLog: false,
       voteHistory: false,
     },
     edition: editionJSONbyId.get("tb"),
     roles: getRolesByEdition(),
     otherTravelers: getTravelersNotInEdition(),
+    editionPickerTarget: "global",
+    posterEdition: null,
+    posterRoles: null,
     fabled,
     jinxes,
   },
@@ -220,75 +294,24 @@ export default new Vuex.Store({
      * @param roles Array of role IDs or full role definitions
      */
     setCustomRoles(state, roles) {
-      const processedRoles = roles
-        // replace numerical role object keys with matching key names
-        .map((role) => {
-          if (role[0]) {
-            const customKeys = Object.keys(customRole);
-            const mappedRole = {};
-            for (let prop in role) {
-              if (customKeys[prop]) {
-                mappedRole[customKeys[prop]] = role[prop];
-              }
-            }
-            return mappedRole;
-          } else {
-            return role;
-          }
-        })
-        // clean up role.id
-        .map((role) => {
-          role.id = clean(role.id);
-          return role;
-        })
-        // map existing roles to base definition or pre-populate custom roles to ensure all properties
-        .map(
-          (role) =>
-            rolesJSONbyId.get(role.id) ||
-            state.roles.get(role.id) ||
-            Object.assign({}, customRole, role),
-        )
-        // default empty icons and placeholders, clean up firstNight / otherNight
-        .map((role) => {
-          if (rolesJSONbyId.get(role.id)) return role;
-          role.imageAlt = // map team to generic icon
-            {
-              townsfolk: "good",
-              outsider: "outsider",
-              minion: "minion",
-              demon: "evil",
-              fabled: "fabled",
-            }[role.team] || "custom";
-          role.firstNight = Math.abs(role.firstNight);
-          role.otherNight = Math.abs(role.otherNight);
-          return role;
-        })
-        // filter out roles that don't match an existing role and also don't have name/ability/team
-        .filter((role) => role.name && role.ability && role.team)
-        // sort by team
-        .sort((a, b) => b.team.localeCompare(a.team));
-      // convert to Map without Fabled
-      state.roles = new Map(
-        processedRoles
-          .filter((role) => role.team !== "fabled")
-          .map((role) => [role.id, role]),
+      const { roleMap, fabledMap, otherTravelers } = buildCustomRoleState(
+        roles,
+        state.roles,
       );
+      state.roles = roleMap;
       // update Fabled to include custom Fabled from this script
-      state.fabled = new Map([
-        ...processedRoles
-          .filter((r) => r.team === "fabled")
-          .map((r) => [r.id, r]),
-        ...fabledJSON.map((role) => [role.id, role]),
-      ]);
-      state.otherTravelers = new Map(
-        rolesJSON
-          .filter(
-            (r) =>
-              r.team === "traveler" &&
-              !processedRoles.some((i) => i.id === r.id),
-          )
-          .map((role) => [role.id, role]),
-      );
+      state.fabled = fabledMap;
+      state.otherTravelers = otherTravelers;
+    },
+    setEditionPickerTarget(state, target) {
+      state.editionPickerTarget = target === "poster" ? "poster" : "global";
+    },
+    setPosterScriptRoles(state, { roles, edition }) {
+      const { roleMap } = buildCustomRoleState(roles);
+      state.posterEdition = edition || { id: "custom" };
+      state.posterRoles = roleMap;
+      state.modals.edition = false;
+      state.editionPickerTarget = "global";
     },
     setEdition(state, edition) {
       if (editionJSONbyId.has(edition.id)) {
@@ -299,6 +322,7 @@ export default new Vuex.Store({
         state.edition = edition;
       }
       state.modals.edition = false;
+      state.editionPickerTarget = "global";
     },
   },
   plugins: [persistence, socket, storyLogPlugin],

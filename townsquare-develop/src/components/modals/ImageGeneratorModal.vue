@@ -12,6 +12,17 @@
 
       <div class="poster-generator-grid">
         <div class="poster-controls">
+          <div class="poster-command-grid poster-script-actions">
+            <button
+              class="button townsfolk script-picker-action"
+              type="button"
+              @click="chooseScript"
+            >
+              <font-awesome-icon icon="book" />
+              {{ $t("modals.imageGenerator.chooseScript") }}
+            </button>
+          </div>
+
           <div class="poster-controls-scroll">
             <section class="poster-control-overview">
               <dl class="poster-control-register">
@@ -29,17 +40,6 @@
                 </div>
               </dl>
             </section>
-
-            <div class="poster-command-grid poster-script-actions">
-              <button
-                class="button townsfolk script-picker-action"
-                type="button"
-                @click="chooseScript"
-              >
-                <font-awesome-icon icon="book" />
-                {{ $t("modals.imageGenerator.chooseScript") }}
-              </button>
-            </div>
 
             <details class="poster-control-group poster-meta-controls" open>
               <summary class="poster-control-group-title">
@@ -180,7 +180,6 @@
                 </div>
               </details>
             </div>
-
           </div>
 
           <div
@@ -211,11 +210,11 @@
             <button
               class="button poster-action-secondary"
               type="button"
-              :disabled="!posterDataUrl"
+              :disabled="!posterDataUrl || isServerGenerating"
               @click="downloadPoster"
             >
               <font-awesome-icon icon="download" />
-              {{ $t("modals.imageGenerator.actions.downloadPng") }}
+              {{ downloadPosterLabel }}
             </button>
           </div>
         </div>
@@ -235,88 +234,85 @@ import {
   SCRIPT_POSTER_TEAMS,
   normalizeCurrentScriptPosterData,
 } from "@/services/scriptPoster";
-import scriptPosterBase from "@/assets/script-poster-parchment-background.jpg";
-import posterWeddingBackground01 from "@/assets/script-poster-backgrounds/wedding-background-01.png";
-import posterWeddingBackground02 from "@/assets/script-poster-backgrounds/wedding-background-02.png";
-import posterWeddingBackground03 from "@/assets/script-poster-backgrounds/wedding-background-03.png";
-import posterWeddingBackground04 from "@/assets/script-poster-backgrounds/wedding-background-04.png";
-import posterWeddingBackground05 from "@/assets/script-poster-backgrounds/wedding-background-05.png";
-import posterWeddingBackground06 from "@/assets/script-poster-backgrounds/wedding-background-06.png";
-import posterWeddingBackground07 from "@/assets/script-poster-backgrounds/wedding-background-07.png";
-import posterWeddingBackground08 from "@/assets/script-poster-backgrounds/wedding-background-08.png";
-import posterWeddingBackground09 from "@/assets/script-poster-backgrounds/wedding-background-09.png";
-import posterWeddingBackground10 from "@/assets/script-poster-backgrounds/wedding-background-10.png";
-import posterWeddingBackground11 from "@/assets/script-poster-backgrounds/wedding-background-11.png";
-import posterWeddingBackground12 from "@/assets/script-poster-backgrounds/wedding-background-12.png";
-import posterWeddingBackground13 from "@/assets/script-poster-backgrounds/wedding-background-13.png";
-import posterWeddingBackground14 from "@/assets/script-poster-backgrounds/wedding-background-14.png";
-import posterWeddingBackground15 from "@/assets/script-poster-backgrounds/wedding-background-15.png";
-import posterWeddingBackground16 from "@/assets/script-poster-backgrounds/wedding-background-16.png";
-import posterWeddingBackground17 from "@/assets/script-poster-backgrounds/wedding-background-17.png";
-import posterWeddingBackground18 from "@/assets/script-poster-backgrounds/wedding-background-18.png";
-import posterWeddingBackground19 from "@/assets/script-poster-backgrounds/wedding-background-19.png";
+import { getAuthSession } from "@/services/auth";
 
 const POSTER_WIDTH = 1080;
 const POSTER_HEIGHT = 1456;
 const SCRIPT_POSTER_IMAGE_PROXY = "/api/script-poster-image?url=";
 const SCRIPT_POSTER_RENDER_API = "/api/script-poster-render";
-const POSTER_BACKGROUND_OPTIONS = [
-  {
-    value: "parchment",
-    labelKey: "modals.imageGenerator.backgrounds.default",
-    src: scriptPosterBase,
-  },
-  { value: "wedding-01", index: 1, src: posterWeddingBackground01 },
-  { value: "wedding-02", index: 2, src: posterWeddingBackground02 },
-  { value: "wedding-03", index: 3, src: posterWeddingBackground03 },
-  { value: "wedding-04", index: 4, src: posterWeddingBackground04 },
-  { value: "wedding-05", index: 5, src: posterWeddingBackground05 },
-  { value: "wedding-06", index: 6, src: posterWeddingBackground06 },
-  { value: "wedding-07", index: 7, src: posterWeddingBackground07 },
-  { value: "wedding-08", index: 8, src: posterWeddingBackground08 },
-  { value: "wedding-09", index: 9, src: posterWeddingBackground09 },
-  { value: "wedding-10", index: 10, src: posterWeddingBackground10 },
-  { value: "wedding-11", index: 11, src: posterWeddingBackground11 },
-  { value: "wedding-12", index: 12, src: posterWeddingBackground12 },
-  { value: "wedding-13", index: 13, src: posterWeddingBackground13 },
-  { value: "wedding-14", index: 14, src: posterWeddingBackground14 },
-  { value: "wedding-15", index: 15, src: posterWeddingBackground15 },
-  { value: "wedding-16", index: 16, src: posterWeddingBackground16 },
-  { value: "wedding-17", index: 17, src: posterWeddingBackground17 },
-  { value: "wedding-18", index: 18, src: posterWeddingBackground18 },
-  { value: "wedding-19", index: 19, src: posterWeddingBackground19 },
-];
-const DEFAULT_POSTER_BACKGROUND_ID = POSTER_BACKGROUND_OPTIONS[0].value;
+
+function naturalComparePosterBackgrounds(left, right) {
+  return left.localeCompare(right, undefined, {
+    numeric: true,
+    sensitivity: "base",
+  });
+}
+
+function getPosterBackgroundDisplayName(fileName) {
+  return fileName.replace(/\.[^.]+$/, "");
+}
+
+function loadPosterBackgroundOptions() {
+  const backgroundContext = require.context(
+    "@/assets/script-poster-backgrounds",
+    false,
+    /\.(png|jpe?g|webp)$/i,
+  );
+  return backgroundContext
+    .keys()
+    .sort(naturalComparePosterBackgrounds)
+    .map((key) => {
+      const fileName = key.replace(/^\.\//, "");
+      return {
+        value: fileName,
+        fileName,
+        displayName: getPosterBackgroundDisplayName(fileName),
+        src: backgroundContext(key),
+      };
+    });
+}
+
+const POSTER_BACKGROUND_OPTIONS = loadPosterBackgroundOptions();
+const DEFAULT_POSTER_BACKGROUND_ID = POSTER_BACKGROUND_OPTIONS[0]?.value || "";
 const DEFAULT_POSTER_LAYOUT = {
   teamTitleLeft: 90,
-  roleAreaLeft: 112,
-  roleAreaTop: 200,
+  roleAreaLeft: 90,
+  roleAreaTop: 160,
   roleNameAbilityGap: 20,
-  headerPanelOffsetX: 40,
+  headerPanelOffsetX: 140,
   showHeaderPanel: true,
   headerPanelWidth: 380,
-  headerPanelHeight: 94,
-  headerPanelTitleTop: 43,
+  headerPanelHeight: 121,
+  headerPanelTitleTop: 32,
   headerPanelContentTop: 72,
-  headerTitleOffsetX: 0,
-  headerTitleOffsetY: 0,
+  headerTitleOffsetX: 16,
+  headerTitleOffsetY: -10,
   titleArtStyle: "classic",
+  headerAuthorColor: "#17110d",
   headerAuthorOffsetX: 0,
-  headerAuthorOffsetY: 18,
+  headerAuthorOffsetY: 7,
   abilityTextWidth: 300,
   abilityLineHeight: 18,
   roleGap: -10,
-  teamGap: 30,
+  townsfolkRoleGap: -10,
+  outsiderRoleGap: -10,
+  minionRoleGap: -10,
+  demonRoleGap: -10,
+  teamGap: 0,
+  townsfolkTeamGap: 0,
+  outsiderTeamGap: 0,
+  minionTeamGap: 0,
+  demonTeamGap: 0,
   glossaryBottomOffset: 20,
-  roleIconSize: 40,
+  roleIconSize: 105,
   roleNameColor: "#0c83a6",
   roleAbilityColor: "#17110d",
   roleNameFontSize: 24,
   roleAbilityFontSize: 15,
   roleAreaTitleGap: 34,
   glossaryTextGap: 44,
-  nightIconSize: 30,
-  nightIconGap: 36,
+  nightIconSize: 75,
+  nightIconGap: 55,
   nightTop: 532,
   nightTitleFontSize: 26,
   nightFirstTitleFontSize: 26,
@@ -370,19 +366,29 @@ const ROLE_LAYOUT_ATTEMPTS = [
 export default {
   components: { Modal },
   computed: {
-    ...mapState(["modals", "edition", "roles"]),
+    ...mapState(["modals", "edition", "roles", "posterEdition", "posterRoles"]),
+    selectedPosterEdition() {
+      return this.posterEdition || this.edition;
+    },
+    selectedPosterRoles() {
+      return this.posterRoles || this.roles;
+    },
     currentScriptName() {
       return (
-        (this.edition && (this.edition.name || this.edition.id)) ||
+        (this.selectedPosterEdition &&
+          (this.selectedPosterEdition.name || this.selectedPosterEdition.id)) ||
         this.$t("modals.imageGenerator.unnamedScript")
       );
     },
     currentScriptRoleCount() {
       let count = 0;
-      if (this.roles && typeof this.roles.size === "number") {
-        count = this.roles.size;
-      } else if (Array.isArray(this.roles)) {
-        count = this.roles.length;
+      if (
+        this.selectedPosterRoles &&
+        typeof this.selectedPosterRoles.size === "number"
+      ) {
+        count = this.selectedPosterRoles.size;
+      } else if (Array.isArray(this.selectedPosterRoles)) {
+        count = this.selectedPosterRoles.length;
       }
       return this.$t("modals.imageGenerator.roleCount", { count });
     },
@@ -395,19 +401,20 @@ export default {
     posterBackgroundOptions() {
       return POSTER_BACKGROUND_OPTIONS.map((option) => ({
         value: option.value,
-        label: option.labelKey
-          ? this.$t(option.labelKey)
-          : this.$t("modals.imageGenerator.backgrounds.wedding", {
-              index: option.index,
-            }),
+        label: option.labelKey ? this.$t(option.labelKey) : option.displayName,
       }));
+    },
+    downloadPosterLabel() {
+      return this.isServerGenerating
+        ? this.$t("modals.imageGenerator.actions.downloadPngGenerating")
+        : this.$t("modals.imageGenerator.actions.downloadPng");
     },
     selectedPosterBackgroundSrc() {
       const option =
         POSTER_BACKGROUND_OPTIONS.find(
           (background) => background.value === this.posterBackgroundId,
         ) || POSTER_BACKGROUND_OPTIONS[0];
-      return option.src;
+      return option ? option.src : "";
     },
     layoutSections() {
       const sectionLabel = (key) =>
@@ -420,9 +427,24 @@ export default {
           key: "basic",
           label: sectionLabel("basic"),
           controls: [
-            { key: "teamTitleLeft", label: controlLabel("teamTitleLeft"), min: 20, max: 180 },
-            { key: "roleAreaLeft", label: controlLabel("roleAreaLeft"), min: 80, max: 180 },
-            { key: "roleAreaTop", label: controlLabel("roleAreaTop"), min: 130, max: 260 },
+            {
+              key: "teamTitleLeft",
+              label: controlLabel("teamTitleLeft"),
+              min: 20,
+              max: 180,
+            },
+            {
+              key: "roleAreaLeft",
+              label: controlLabel("roleAreaLeft"),
+              min: 80,
+              max: 180,
+            },
+            {
+              key: "roleAreaTop",
+              label: controlLabel("roleAreaTop"),
+              min: 130,
+              max: 260,
+            },
             {
               key: "roleAreaTitleGap",
               label: controlLabel("roleAreaTitleGap"),
@@ -483,6 +505,11 @@ export default {
               options: this.titleArtStyleOptions,
             },
             {
+              key: "headerAuthorColor",
+              label: controlLabel("headerAuthorColor"),
+              type: "color",
+            },
+            {
               key: "headerAuthorOffsetX",
               label: controlLabel("headerAuthorOffsetX"),
               min: -120,
@@ -500,7 +527,12 @@ export default {
           key: "roles",
           label: sectionLabel("roles"),
           controls: [
-            { key: "roleIconSize", label: controlLabel("roleIconSize"), min: 12, max: 800 },
+            {
+              key: "roleIconSize",
+              label: controlLabel("roleIconSize"),
+              min: 12,
+              max: 800,
+            },
             {
               key: "roleNameColor",
               label: controlLabel("roleNameColor"),
@@ -541,16 +573,72 @@ export default {
               min: 10,
               max: 28,
             },
-            { key: "roleGap", label: controlLabel("roleGap"), min: -20, max: 28 },
-            { key: "teamGap", label: controlLabel("teamGap"), min: -20, max: 80 },
+            {
+              key: "townsfolkRoleGap",
+              label: controlLabel("townsfolkRoleGap"),
+              min: -100,
+              max: 28,
+            },
+            {
+              key: "outsiderRoleGap",
+              label: controlLabel("outsiderRoleGap"),
+              min: -100,
+              max: 28,
+            },
+            {
+              key: "minionRoleGap",
+              label: controlLabel("minionRoleGap"),
+              min: -100,
+              max: 28,
+            },
+            {
+              key: "demonRoleGap",
+              label: controlLabel("demonRoleGap"),
+              min: -100,
+              max: 28,
+            },
+            {
+              key: "townsfolkTeamGap",
+              label: controlLabel("townsfolkTeamGap"),
+              min: -100,
+              max: 80,
+            },
+            {
+              key: "outsiderTeamGap",
+              label: controlLabel("outsiderTeamGap"),
+              min: -100,
+              max: 80,
+            },
+            {
+              key: "minionTeamGap",
+              label: controlLabel("minionTeamGap"),
+              min: -100,
+              max: 80,
+            },
+            {
+              key: "demonTeamGap",
+              label: controlLabel("demonTeamGap"),
+              min: -100,
+              max: 80,
+            },
           ],
         },
         {
           key: "night",
           label: sectionLabel("night"),
           controls: [
-            { key: "nightIconSize", label: controlLabel("nightIconSize"), min: 12, max: 80 },
-            { key: "nightIconGap", label: controlLabel("nightIconGap"), min: 10, max: 90 },
+            {
+              key: "nightIconSize",
+              label: controlLabel("nightIconSize"),
+              min: 12,
+              max: 80,
+            },
+            {
+              key: "nightIconGap",
+              label: controlLabel("nightIconGap"),
+              min: 10,
+              max: 90,
+            },
             {
               key: "nightTitleFontSize",
               label: controlLabel("nightTitleFontSize"),
@@ -600,13 +688,13 @@ export default {
   },
   data() {
     return {
-      aiBackground: scriptPosterBase,
       posterDataUrl: "",
       error: "",
       status: "",
+      isServerGenerating: false,
       imageCache: Object.create(null),
       lastPoster: null,
-      showGlossary: true,
+      showGlossary: false,
       posterTopText: "",
       posterTopContent: "",
       posterTitleOverride: "",
@@ -622,10 +710,26 @@ export default {
     edition: {
       deep: true,
       handler() {
-        if (this.modals.imageGenerator) this.generatePoster();
+        if (this.modals.imageGenerator && !this.posterEdition) {
+          this.generatePoster();
+        }
       },
     },
     roles: {
+      deep: true,
+      handler() {
+        if (this.modals.imageGenerator && !this.posterRoles) {
+          this.generatePoster();
+        }
+      },
+    },
+    posterEdition: {
+      deep: true,
+      handler() {
+        if (this.modals.imageGenerator) this.generatePoster();
+      },
+    },
+    posterRoles: {
       deep: true,
       handler() {
         if (this.modals.imageGenerator) this.generatePoster();
@@ -646,21 +750,23 @@ export default {
   },
   methods: {
     chooseScript() {
-      this.toggleModal("edition");
+      this.setEditionPickerTarget("poster");
+      this.openModalOverlay("edition");
     },
     async generatePoster() {
       this.error = "";
       this.status = "";
       try {
         const poster = normalizeCurrentScriptPosterData({
-          edition: this.edition,
-          roles: this.roles,
+          edition: this.selectedPosterEdition,
+          roles: this.selectedPosterRoles,
         });
         this.lastPoster = poster;
         await this.renderPoster(poster);
       } catch (error) {
         this.error =
-          error.message || this.$t("modals.imageGenerator.errors.generateFailed");
+          error.message ||
+          this.$t("modals.imageGenerator.errors.generateFailed");
       }
     },
     async redrawPoster() {
@@ -716,6 +822,7 @@ export default {
       await this.drawSidebars(ctx, poster, options);
       await this.drawRoles(ctx, poster, options);
       if (this.showGlossary) this.drawGlossary(ctx);
+      this.drawPosterWatermark(ctx);
     },
     getPosterDisplayData(poster) {
       return {
@@ -746,7 +853,7 @@ export default {
         ...DEFAULT_POSTER_LAYOUT,
         ...(payload.rawLayout || {}),
       };
-      this.showGlossary = payload.showGlossary !== false;
+      this.showGlossary = payload.showGlossary === true;
       this.posterTitleOverride = "";
       this.posterAuthorOverride = "";
       this.posterTopText = "";
@@ -782,7 +889,7 @@ export default {
       );
     },
     async drawBackground(ctx, options = {}) {
-      const background = this.selectedPosterBackgroundSrc || this.aiBackground;
+      const background = this.selectedPosterBackgroundSrc;
       if (!background) {
         this.drawTemplateBackground(ctx);
         return;
@@ -792,7 +899,9 @@ export default {
         this.drawImageCover(ctx, image, 0, 0, POSTER_WIDTH, POSTER_HEIGHT);
       } catch (error) {
         this.drawTemplateBackground(ctx);
-        this.status = this.$t("modals.imageGenerator.status.backgroundFallback");
+        this.status = this.$t(
+          "modals.imageGenerator.status.backgroundFallback",
+        );
       }
     },
     normalizePosterBackgroundId(backgroundId) {
@@ -856,22 +965,8 @@ export default {
       this.drawLeafCluster(ctx, 52, POSTER_HEIGHT - 120, 1);
       this.drawLeafCluster(ctx, POSTER_WIDTH - 52, POSTER_HEIGHT - 120, -1);
     },
-    async drawHeader(ctx, poster, options = {}) {
+    async drawHeader(ctx, poster) {
       this.drawReferenceHeader(ctx, poster);
-
-      if (poster.logo) {
-        try {
-          const logo = await this.loadImage(poster.logo, options);
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(900, 62, 38, 0, Math.PI * 2);
-          ctx.clip();
-          ctx.drawImage(logo, 862, 24, 76, 76);
-          ctx.restore();
-        } catch (error) {
-          this.drawIconFallback(ctx, 900, 62, "#7a5a20");
-        }
-      }
     },
     drawReferenceHeader(ctx, poster) {
       const config = this.getPosterLayoutConfig();
@@ -900,12 +995,13 @@ export default {
         config,
       );
       ctx.shadowColor = "transparent";
-      ctx.fillStyle = "#17110d";
+      ctx.fillStyle = config.headerAuthorColor;
       ctx.font = "bold 22px SimSun, serif";
       ctx.fillText(
         this.$t("modals.imageGenerator.canvas.author", {
           author:
-            poster.author || this.$t("modals.imageGenerator.canvas.unknownAuthor"),
+            poster.author ||
+            this.$t("modals.imageGenerator.canvas.unknownAuthor"),
         }),
         286 + config.headerAuthorOffsetX,
         132 + config.headerAuthorOffsetY,
@@ -939,13 +1035,40 @@ export default {
       this.roundRect(ctx, x, y, width, height, 8, true, false);
       ctx.lineWidth = 2;
       ctx.strokeStyle = "rgba(91, 58, 24, 0.72)";
-      this.roundRect(ctx, x + 0.5, y + 0.5, width - 1, height - 1, 8, false, true);
+      this.roundRect(
+        ctx,
+        x + 0.5,
+        y + 0.5,
+        width - 1,
+        height - 1,
+        8,
+        false,
+        true,
+      );
       ctx.lineWidth = 1;
       ctx.strokeStyle = "rgba(255, 246, 205, 0.5)";
-      this.roundRect(ctx, x + 5, y + 5, width - 10, height - 10, 5, false, true);
+      this.roundRect(
+        ctx,
+        x + 5,
+        y + 5,
+        width - 10,
+        height - 10,
+        5,
+        false,
+        true,
+      );
       ctx.setLineDash([10, 7]);
       ctx.strokeStyle = "rgba(91, 58, 24, 0.35)";
-      this.roundRect(ctx, x + 11, y + 11, width - 22, height - 22, 3, false, true);
+      this.roundRect(
+        ctx,
+        x + 11,
+        y + 11,
+        width - 22,
+        height - 22,
+        3,
+        false,
+        true,
+      );
       ctx.setLineDash([]);
       this.drawHeaderPanelCorners(ctx, x, y, width, height);
       ctx.restore();
@@ -979,8 +1102,7 @@ export default {
     },
     drawHeaderContent(ctx, poster, config, panel) {
       const contentText =
-        poster.topContent ||
-        this.$t("modals.imageGenerator.canvas.autoLayout");
+        poster.topContent || this.$t("modals.imageGenerator.canvas.autoLayout");
       const words = this.splitHeaderContent(contentText);
       const lineHeight = Math.max(
         16,
@@ -1010,7 +1132,8 @@ export default {
     },
     drawTopPanelTitle(ctx, poster, config, panel) {
       const title =
-        poster.topText || this.$t("modals.imageGenerator.canvas.defaultTopTitle");
+        poster.topText ||
+        this.$t("modals.imageGenerator.canvas.defaultTopTitle");
       const x = panel.centerX;
       const y = panel.y + config.headerPanelTitleTop;
       ctx.save();
@@ -1080,7 +1203,10 @@ export default {
     fitHeaderLine(ctx, line, maxWidth) {
       if (ctx.measureText(line).width <= maxWidth) return line;
       let text = line;
-      while (text.length > 1 && ctx.measureText(`${text}...`).width > maxWidth) {
+      while (
+        text.length > 1 &&
+        ctx.measureText(`${text}...`).width > maxWidth
+      ) {
         text = text.slice(0, -1);
       }
       return text.length < line.length ? `${text}...` : line;
@@ -1200,7 +1326,12 @@ export default {
         headerTitleOffsetX: read("headerTitleOffsetX", -1000, 1000),
         headerTitleOffsetY: read("headerTitleOffsetY", -60, 60),
         titleArtStyle:
-          this.posterLayout.titleArtStyle || DEFAULT_POSTER_LAYOUT.titleArtStyle,
+          this.posterLayout.titleArtStyle ||
+          DEFAULT_POSTER_LAYOUT.titleArtStyle,
+        headerAuthorColor: this.normalizeColor(
+          this.posterLayout.headerAuthorColor,
+          DEFAULT_POSTER_LAYOUT.headerAuthorColor,
+        ),
         headerAuthorOffsetX: read("headerAuthorOffsetX", -120, 120),
         headerAuthorOffsetY: read("headerAuthorOffsetY", -40, 80),
         roleNameAbilityGap: read("roleNameAbilityGap", 0, 30),
@@ -1217,8 +1348,16 @@ export default {
         roleAbilityFontSize: read("roleAbilityFontSize", 8, 20),
         abilityTextWidth: read("abilityTextWidth", 260, 420),
         abilityLineHeight: read("abilityLineHeight", 10, 28),
-        roleGap: read("roleGap", -20, 28),
-        teamGap: read("teamGap", -20, 80),
+        roleGap: read("roleGap", -100, 28),
+        teamGap: read("teamGap", -100, 80),
+        townsfolkRoleGap: read("townsfolkRoleGap", -100, 28),
+        outsiderRoleGap: read("outsiderRoleGap", -100, 28),
+        minionRoleGap: read("minionRoleGap", -100, 28),
+        demonRoleGap: read("demonRoleGap", -100, 28),
+        townsfolkTeamGap: read("townsfolkTeamGap", -100, 80),
+        outsiderTeamGap: read("outsiderTeamGap", -100, 80),
+        minionTeamGap: read("minionTeamGap", -100, 80),
+        demonTeamGap: read("demonTeamGap", -100, 80),
         glossaryBottomOffset,
         glossaryTextGap: read("glossaryTextGap", 28, 70),
         nightIconSize: read("nightIconSize", 12, 80),
@@ -1244,9 +1383,14 @@ export default {
         titleGap: config.roleAreaTitleGap,
         abilityTextWidth: config.abilityTextWidth,
         abilityLineHeight: config.abilityLineHeight,
-        roleGap: config.roleGap,
-        teamGap: config.teamGap,
       }));
+    },
+    readTeamGap(config, teamKey, gapType) {
+      const value = Number(
+        config[`${teamKey}${gapType === "roleGap" ? "RoleGap" : "TeamGap"}`],
+      );
+      if (Number.isFinite(value)) return value;
+      return Number(config[gapType]);
     },
     getPosterGroups(poster) {
       const groups = SCRIPT_POSTER_TEAMS.reduce((acc, team) => {
@@ -1351,6 +1495,8 @@ export default {
       for (const team of SCRIPT_POSTER_TEAMS) {
         const roles = columns.groups[team.key] || [];
         if (!roles.length) continue;
+        const roleGap = this.readTeamGap(columns.config, team.key, "roleGap");
+        const teamGap = this.readTeamGap(columns.config, team.key, "teamGap");
 
         items.push({ type: "team", y, team });
         y += settings.titleGap;
@@ -1372,7 +1518,7 @@ export default {
             : null;
           const rowHeight =
             Math.max(left.height, right ? right.height : 0, settings.iconSize) +
-            settings.roleGap;
+            roleGap;
 
           items.push({
             type: "row",
@@ -1385,7 +1531,7 @@ export default {
           y += rowHeight;
         }
 
-        y += settings.teamGap;
+        y += teamGap;
       }
 
       return {
@@ -1503,6 +1649,19 @@ export default {
           GLOSSARY_TOP + 34 + config.glossaryTextGap + index * 15,
         );
       });
+    },
+    drawPosterWatermark(ctx) {
+      ctx.save();
+      ctx.font = "bold 22px STKaiti, KaiTi, SimSun, serif";
+      ctx.textAlign = "right";
+      ctx.textBaseline = "bottom";
+      ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
+      ctx.fillText(
+        this.$t("modals.imageGenerator.canvas.watermark"),
+        POSTER_WIDTH - 88,
+        POSTER_HEIGHT - 18,
+      );
+      ctx.restore();
     },
     drawGlossaryShell(ctx) {
       const GLOSSARY_TOP = this.getPosterLayoutConfig().glossaryTop;
@@ -1742,7 +1901,8 @@ export default {
       if (stroke) ctx.stroke();
     },
     async downloadPoster() {
-      if (!this.posterDataUrl) return;
+      if (!this.posterDataUrl || this.isServerGenerating) return;
+      if (!this.requirePosterGenerationLogin()) return;
       this.error = "";
       try {
         await this.downloadPosterFromServer();
@@ -1759,33 +1919,52 @@ export default {
       link.download = "script-poster.png";
       link.click();
     },
+    requirePosterGenerationLogin() {
+      const { token, user } = getAuthSession();
+      if (token && user) return true;
+      this.status = "";
+      this.error = this.$t("modals.imageGenerator.errors.loginRequired");
+      this.openModalOverlay("login");
+      return false;
+    },
     async downloadPosterFromServer() {
       const payload = this.buildPosterRenderPayload();
       if (!payload) {
-        throw new Error(this.$t("modals.imageGenerator.errors.previewRequired"));
+        throw new Error(
+          this.$t("modals.imageGenerator.errors.previewRequired"),
+        );
       }
-      this.status = this.$t("modals.imageGenerator.status.serverGenerating");
-      const response = await fetch(SCRIPT_POSTER_RENDER_API, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (!response.ok) {
-        throw new Error(await response.text());
-      }
-      const blob = await response.blob();
-      const objectUrl = URL.createObjectURL(blob);
+      this.isServerGenerating = true;
       try {
-        const link = document.createElement("a");
-        link.href = objectUrl;
-        link.download = "script-poster.png";
-        link.click();
-        this.status = this.$t("modals.imageGenerator.status.serverGenerated");
+        this.status = this.$t("modals.imageGenerator.status.serverGenerating");
+        const response = await fetch(SCRIPT_POSTER_RENDER_API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!response.ok) {
+          throw new Error(await response.text());
+        }
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        try {
+          const link = document.createElement("a");
+          link.href = objectUrl;
+          link.download = "script-poster.png";
+          link.click();
+          this.status = this.$t("modals.imageGenerator.status.serverGenerated");
+        } finally {
+          setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+        }
       } finally {
-        setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+        this.isServerGenerating = false;
       }
     },
-    ...mapMutations(["toggleModal"]),
+    ...mapMutations([
+      "toggleModal",
+      "openModalOverlay",
+      "setEditionPickerTarget",
+    ]),
   },
 };
 </script>
@@ -1948,7 +2127,11 @@ export default {
 }
 
 .poster-script-actions {
+  flex: 0 0 auto;
   grid-template-columns: minmax(0, 1fr);
+  padding-bottom: 0.42em;
+  border-bottom: 1px solid rgba(61, 46, 38, 0.72);
+  background: rgba(18, 15, 13, 0.78);
 }
 
 .poster-script-actions,
@@ -2186,4 +2369,3 @@ export default {
   }
 }
 </style>
-

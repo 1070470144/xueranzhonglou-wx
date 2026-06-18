@@ -261,6 +261,10 @@
             {{ $t("menu.gameStateJson") }}
             <em><font-awesome-icon icon="file-code" /></em>
           </li>
+          <li @click="openScriptCreator">
+            {{ $t("menu.scriptCreator") }}
+            <em><font-awesome-icon icon="magic" /></em>
+          </li>
           <li>
             <a href="https://discord.gg/Gd7ybwWbFk" target="_blank">
               {{ $t("menu.joinDiscord") }}
@@ -353,6 +357,9 @@ export default {
         this.hasUnreadAnnouncement = false;
       }
       this.toggleModal("announcement");
+    },
+    openScriptCreator() {
+      this.toggleModal("scriptCreator");
     },
     logoutWeb() {
       if (!confirm(this.$t("login.confirmLogout"))) return;

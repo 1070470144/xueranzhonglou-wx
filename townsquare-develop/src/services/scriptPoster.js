@@ -20,8 +20,8 @@ function normalizeRole(role, index) {
   const team = TEAM_KEYS.includes(role.team)
     ? role.team
     : role.team === "traveler"
-      ? "traveller"
-      : "townsfolk";
+    ? "traveller"
+    : "townsfolk";
   const image =
     role.image || role.icon || role.imageUrl || role.image_url || "";
   return {
@@ -68,7 +68,9 @@ export function normalizeScriptPosterData(input) {
 }
 
 export function normalizeCurrentScriptPosterData({ edition, roles }) {
-  const currentRoles = Array.from((roles && roles.values && roles.values()) || []);
+  const currentRoles = Array.from(
+    (roles && roles.values && roles.values()) || [],
+  );
   return normalizeScriptPosterData([
     {
       id: "_meta",

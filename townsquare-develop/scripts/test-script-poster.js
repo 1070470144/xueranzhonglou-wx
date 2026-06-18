@@ -62,6 +62,18 @@ const modalSource = fs.readFileSync(
   ),
   "utf8",
 );
+const loginModalSource = fs.readFileSync(
+  path.join(__dirname, "..", "src", "components", "modals", "LoginModal.vue"),
+  "utf8",
+);
+const editionModalSource = fs.readFileSync(
+  path.join(__dirname, "..", "src", "components", "modals", "EditionModal.vue"),
+  "utf8",
+);
+const storeSource = fs.readFileSync(
+  path.join(__dirname, "..", "src", "store", "index.js"),
+  "utf8",
+);
 const serverSource = fs.readFileSync(
   path.join(__dirname, "..", "server", "index.js"),
   "utf8",
@@ -156,7 +168,7 @@ if (!modalSource.includes("useProxy: false")) {
 }
 
 [
-  "showGlossary: true",
+  "showGlossary: false",
   'v-model="showGlossary"',
   "if (this.showGlossary) this.drawGlossary(ctx);",
   "posterTopText",
@@ -204,11 +216,89 @@ if (
   throw new Error("Expected poster image loader to use JSON image fields");
 }
 
-if (
-  modalSource.includes("require.context(") ||
-  modalSource.includes("../../assets/icons")
-) {
+if (modalSource.includes("../../assets/icons")) {
   throw new Error("Expected poster image loader to avoid bundled local icons");
+}
+
+[
+  'import { getAuthSession } from "@/services/auth";',
+  "isServerGenerating: false",
+  ':disabled="!posterDataUrl || isServerGenerating"',
+  "downloadPosterLabel",
+  "requirePosterGenerationLogin",
+  "const { token, user } = getAuthSession();",
+  'this.openModalOverlay("login")',
+  "isServerGenerating = true",
+  "isServerGenerating = false",
+].forEach((snippet) => {
+  if (!modalSource.includes(snippet)) {
+    throw new Error(`Expected authenticated server poster generation: ${snippet}`);
+  }
+});
+
+[
+  'this.closeModal("login")',
+  '...mapMutations(["closeModal"])',
+].forEach((snippet) => {
+  if (!loginModalSource.includes(snippet)) {
+    throw new Error(
+      `Expected login success overlay to preserve image generator: ${snippet}`,
+    );
+  }
+});
+
+if (loginModalSource.includes('this.toggleModal("login")')) {
+  throw new Error(
+    "Expected login modal close to avoid toggling and closing other modals",
+  );
+}
+
+[
+  "this.drawPosterWatermark(ctx);",
+  "drawPosterWatermark(ctx)",
+  'this.$t("modals.imageGenerator.canvas.watermark")',
+  'ctx.textAlign = "right"',
+  'ctx.fillStyle = "rgba(255, 255, 255, 0.5)"',
+  "POSTER_WIDTH - 88,",
+  "POSTER_HEIGHT - 18",
+].forEach((snippet) => {
+  if (!modalSource.includes(snippet)) {
+    throw new Error(`Expected poster watermark drawing support: ${snippet}`);
+  }
+});
+
+const watermarkBlockStart = modalSource.indexOf("    drawPosterWatermark(ctx)");
+const watermarkBlockEnd = modalSource.indexOf("drawGlossaryShell(ctx)", watermarkBlockStart);
+const watermarkBlock = modalSource.slice(watermarkBlockStart, watermarkBlockEnd);
+[
+  'ctx.textAlign = "right"',
+  "POSTER_WIDTH - 88,",
+].forEach((snippet) => {
+  if (!watermarkBlock.includes(snippet)) {
+    throw new Error(`Expected poster watermark to stay inside right edge: ${snippet}`);
+  }
+});
+["ctx.shadowColor", "ctx.shadowBlur"].forEach((snippet) => {
+  if (watermarkBlock.includes(snippet)) {
+    throw new Error(`Expected poster watermark to avoid shadow edge: ${snippet}`);
+  }
+});
+
+const posterTitleBlockStart = modalSource.indexOf("    drawPosterTitle(ctx");
+const posterTitleBlockEnd = modalSource.indexOf(
+  "setFittedTitleFont(ctx",
+  posterTitleBlockStart,
+);
+const posterTitleBlock = modalSource.slice(
+  posterTitleBlockStart,
+  posterTitleBlockEnd,
+);
+if (!posterTitleBlock.includes('ctx.textAlign = "left"')) {
+  throw new Error("Expected poster title drawing to remain left aligned");
+}
+
+if (!i18nSource.includes('watermark: "萌萌出品  Q群 961227547"')) {
+  throw new Error("Expected poster watermark text to be translated");
 }
 
 if (modalSource.includes("normalizeRoleIconKey")) {
@@ -220,8 +310,14 @@ if (!modalSource.includes("GLOSSARY_TOP")) {
 }
 
 const nightColumnStart = modalSource.indexOf("async drawNightColumn(");
-const nightColumnEnd = modalSource.indexOf("drawVerticalText(", nightColumnStart);
-const nightColumnHeaderBlock = modalSource.slice(nightColumnStart, nightColumnEnd);
+const nightColumnEnd = modalSource.indexOf(
+  "drawVerticalText(",
+  nightColumnStart,
+);
+const nightColumnHeaderBlock = modalSource.slice(
+  nightColumnStart,
+  nightColumnEnd,
+);
 if (!nightColumnHeaderBlock.includes("SimSun, serif")) {
   throw new Error("Expected night order title font to match role text font");
 }
@@ -249,6 +345,11 @@ if (
 
 [
   "POSTER_BACKGROUND_OPTIONS",
+  "loadPosterBackgroundOptions",
+  "require.context(",
+  "script-poster-backgrounds",
+  "fileName",
+  "displayName",
   "posterBackgroundOptions",
   "selectedPosterBackgroundSrc",
   "posterBackgroundId",
@@ -262,13 +363,50 @@ if (
 });
 
 [
-  'wedding: "背景图片 {index}"',
-  'wedding: "Background Image {index}"',
+  "backgroundContext",
+  ".keys()",
+  "naturalComparePosterBackgrounds",
+  "option.displayName",
+  "posterWeddingBackground01",
+  'value: "wedding-01"',
 ].forEach((snippet) => {
-  if (!i18nSource.includes(snippet)) {
-    throw new Error(`Expected renamed poster background label: ${snippet}`);
+  const shouldExist =
+    !snippet.startsWith("posterWedding") && !snippet.includes('"wedding-01"');
+  const exists = modalSource.includes(snippet);
+  if (shouldExist && !exists) {
+    throw new Error(`Expected dynamic poster background support: ${snippet}`);
+  }
+  if (!shouldExist && exists) {
+    throw new Error(
+      `Expected fixed poster background import to be removed: ${snippet}`,
+    );
   }
 });
+
+[
+  "scriptPosterBase",
+  "script-poster-parchment-background",
+  'value: "parchment"',
+  "modals.imageGenerator.backgrounds.default",
+].forEach((snippet) => {
+  if (modalSource.includes(snippet)) {
+    throw new Error(`Expected default parchment background to be removed: ${snippet}`);
+  }
+});
+
+const headerBlockStart = modalSource.indexOf("    async drawHeader(ctx");
+const headerBlockEnd = modalSource.indexOf(
+  "drawReferenceHeader(ctx",
+  headerBlockStart,
+);
+const headerBlock = modalSource.slice(headerBlockStart, headerBlockEnd);
+["poster.logo", "ctx.arc(900", "ctx.drawImage(logo", "drawIconFallback(ctx, 900"].forEach(
+  (snippet) => {
+    if (headerBlock.includes(snippet)) {
+      throw new Error(`Expected top-right poster icon to be removed: ${snippet}`);
+    }
+  },
+);
 
 [
   "teamTitleLeft",
@@ -286,8 +424,17 @@ if (
   "headerTitleOffsetX",
   "headerTitleOffsetY",
   "titleArtStyle",
+  "headerAuthorColor",
   "roleGap",
+  "townsfolkRoleGap",
+  "outsiderRoleGap",
+  "minionRoleGap",
+  "demonRoleGap",
   "teamGap",
+  "townsfolkTeamGap",
+  "outsiderTeamGap",
+  "minionTeamGap",
+  "demonTeamGap",
   "glossaryBottomOffset",
   "roleIconSize",
   "roleNameColor",
@@ -311,18 +458,20 @@ if (
 
 [
   "teamTitleLeft: 90",
-  "roleAreaLeft: 112",
-  "roleAreaTop: 200",
+  "roleAreaLeft: 90",
+  "roleAreaTop: 160",
   "roleNameAbilityGap: 20",
-  "headerPanelOffsetX: 40",
+  "headerPanelOffsetX: 140",
   "showHeaderPanel: true",
   "headerPanelWidth: 380",
-  "headerPanelHeight: 94",
-  "headerPanelTitleTop: 43",
+  "headerPanelHeight: 121",
+  "headerPanelTitleTop: 32",
   "headerPanelContentTop: 72",
-  "headerTitleOffsetX: 0",
-  "headerTitleOffsetY: 0",
+  "headerTitleOffsetX: 16",
+  "headerTitleOffsetY: -10",
   'titleArtStyle: "classic"',
+  'headerAuthorColor: "#17110d"',
+  "headerAuthorOffsetY: 7",
   "titleArtStyleOptions",
   "this.drawPosterTitle(",
   "poster.title,",
@@ -334,11 +483,20 @@ if (
   "abilityTextWidth: 300",
   "abilityLineHeight: 18",
   "roleGap: -10",
-  "teamGap: 30",
+  "townsfolkRoleGap: -10",
+  "outsiderRoleGap: -10",
+  "minionRoleGap: -10",
+  "demonRoleGap: -10",
+  "teamGap: 0",
+  "townsfolkTeamGap: 0",
+  "outsiderTeamGap: 0",
+  "minionTeamGap: 0",
+  "demonTeamGap: 0",
   "glossaryBottomOffset: 20",
-  "roleIconSize: 40",
+  "roleIconSize: 105",
   'roleNameColor: "#0c83a6"',
   'roleAbilityColor: "#17110d"',
+  'key: "headerAuthorColor"',
   'key: "roleIconSize"',
   'key: "roleNameColor"',
   'key: "roleAbilityColor"',
@@ -348,14 +506,15 @@ if (
   "max: 800",
   'roleIconSize: read("roleIconSize", 12, 800)',
   "showHeaderPanel: this.posterLayout.showHeaderPanel !== false",
+  "headerAuthorColor: this.normalizeColor(",
   "roleNameColor: this.normalizeColor(",
   "roleAbilityColor: this.normalizeColor(",
   "roleNameFontSize: 24",
   "roleAbilityFontSize: 15",
   "roleAreaTitleGap: 34",
   "glossaryTextGap: 44",
-  "nightIconSize: 30",
-  "nightIconGap: 36",
+  "nightIconSize: 75",
+  "nightIconGap: 55",
   "nightTop: 532",
   "nightTitleFontSize: 26",
   "nightFirstTitleFontSize: 26",
@@ -395,7 +554,9 @@ if (
   "config.headerPanelContentTop",
   "config.headerTitleOffsetX",
   "config.headerTitleOffsetY",
-  "teamGap: config.teamGap",
+  'const roleGap = this.readTeamGap(columns.config, team.key, "roleGap")',
+  'const teamGap = this.readTeamGap(columns.config, team.key, "teamGap")',
+  "readTeamGap(config, teamKey, gapType)",
   "config.glossaryTextGap",
   "config.nightIconSize",
   "config.nightIconGap",
@@ -420,6 +581,43 @@ if (
   }
 });
 
+[
+  'key: "townsfolkRoleGap"',
+  'key: "outsiderRoleGap"',
+  'key: "minionRoleGap"',
+  'key: "demonRoleGap"',
+  'key: "townsfolkTeamGap"',
+  'key: "outsiderTeamGap"',
+  'key: "minionTeamGap"',
+  'key: "demonTeamGap"',
+].forEach((snippet) => {
+  const start = modalSource.indexOf(snippet);
+  if (start === -1) {
+    throw new Error(`Expected poster gap control block for ${snippet}`);
+  }
+  const block = modalSource.slice(start, start + 180);
+  if (!block.includes("min: -100")) {
+    throw new Error(`Expected ${snippet} control to allow -100 spacing`);
+  }
+});
+
+[
+  'roleGap: read("roleGap", -100, 28)',
+  'teamGap: read("teamGap", -100, 80)',
+  'townsfolkRoleGap: read("townsfolkRoleGap", -100, 28)',
+  'outsiderRoleGap: read("outsiderRoleGap", -100, 28)',
+  'minionRoleGap: read("minionRoleGap", -100, 28)',
+  'demonRoleGap: read("demonRoleGap", -100, 28)',
+  'townsfolkTeamGap: read("townsfolkTeamGap", -100, 80)',
+  'outsiderTeamGap: read("outsiderTeamGap", -100, 80)',
+  'minionTeamGap: read("minionTeamGap", -100, 80)',
+  'demonTeamGap: read("demonTeamGap", -100, 80)',
+].forEach((snippet) => {
+  if (!modalSource.includes(snippet)) {
+    throw new Error(`Expected poster gap clamp to allow -100: ${snippet}`);
+  }
+});
+
 if (!modalSource.includes('@change="redrawPoster"')) {
   throw new Error(
     "Expected layout controls to redraw the poster after changes",
@@ -435,7 +633,9 @@ if (modalSource.includes("const roles = poster.groups[team.key]")) {
 }
 
 if (modalSource.includes("ctx.moveTo(x + 150, y + 4)")) {
-  throw new Error("Expected team title line to align with the actual title width");
+  throw new Error(
+    "Expected team title line to align with the actual title width",
+  );
 }
 
 if (modalSource.includes("support-count")) {
@@ -451,7 +651,7 @@ if (modalSource.includes("support-count")) {
   "this.roundRect(ctx, 450, 18, 380, 94",
   "this.drawHeaderShell(ctx)",
   "drawHeaderShell(ctx)",
-  "return;\n\n      ctx.fillStyle = \"#2a2119\"",
+  'return;\n\n      ctx.fillStyle = "#2a2119"',
 ].forEach((snippet) => {
   if (modalSource.includes(snippet)) {
     throw new Error(`Expected header ghosting to be removed: ${snippet}`);
@@ -464,7 +664,9 @@ if (modalSource.includes("support-count")) {
   "ctx.moveTo(x + titleWidth + 18, titleCenterY)",
 ].forEach((snippet) => {
   if (!modalSource.includes(snippet)) {
-    throw new Error(`Expected team title divider to align to title middle: ${snippet}`);
+    throw new Error(
+      `Expected team title divider to align to title middle: ${snippet}`,
+    );
   }
 });
 
@@ -472,9 +674,13 @@ if (modalSource.includes("support-count")) {
   "headerAuthorOffsetX",
   "headerAuthorOffsetY",
   "headerAuthorOffset",
+  "headerAuthorColor",
+  'ctx.fillStyle = config.headerAuthorColor',
+  "作者名字颜色",
+  "Author Name Color",
 ].forEach((snippet) => {
-  if (!modalSource.includes(snippet)) {
-    throw new Error(`Expected author offset control: ${snippet}`);
+  if (!modalSource.includes(snippet) && !i18nSource.includes(snippet)) {
+    throw new Error(`Expected author style control: ${snippet}`);
   }
 });
 
@@ -488,11 +694,7 @@ if (modalSource.includes("support-count")) {
   }
 });
 
-[
-  "鍓ф湰浣滆€咃細",
-  "鏈煡",
-  "JSON 鑷姩鎺掔増",
-].forEach((snippet) => {
+["鍓ф湰浣滆€咃細", "鏈煡", "JSON 鑷姩鎺掔増"].forEach((snippet) => {
   if (modalSource.includes(snippet)) {
     throw new Error(`Expected header mojibake to be removed: ${snippet}`);
   }
@@ -517,7 +719,9 @@ if (modalSource.includes("support-count")) {
   'ctx.fillText("其他夜", POSTER_WIDTH - 36, 380)',
 ].forEach((snippet) => {
   if (modalSource.includes(snippet)) {
-    throw new Error(`Expected duplicate fixed night label to be removed: ${snippet}`);
+    throw new Error(
+      `Expected duplicate fixed night label to be removed: ${snippet}`,
+    );
   }
 });
 
@@ -546,7 +750,7 @@ if (modalSource.includes("support-count")) {
   "poster-action-secondary",
   "position: static",
   "poster-control-messages",
-  "aria-live=\"polite\"",
+  'aria-live="polite"',
   ".poster-control-messages",
 ].forEach((snippet) => {
   if (!modalSource.includes(snippet)) {
@@ -566,20 +770,54 @@ if (modalSource.includes("support-count")) {
 });
 
 const scrollStart = modalSource.indexOf('<div class="poster-controls-scroll">');
-const messagesStart = modalSource.indexOf('<div\n            v-if="error || status"');
-const actionsStart = modalSource.indexOf('<div class="poster-actions poster-command-grid">');
-if (scrollStart === -1 || messagesStart === -1 || actionsStart === -1) {
+const scriptActionsStart = modalSource.indexOf(
+  '<div class="poster-command-grid poster-script-actions">',
+);
+const messagesStart = modalSource.indexOf(
+  '<div\n            v-if="error || status"',
+);
+const actionsStart = modalSource.indexOf(
+  '<div class="poster-actions poster-command-grid">',
+);
+if (
+  scrollStart === -1 ||
+  scriptActionsStart === -1 ||
+  messagesStart === -1 ||
+  actionsStart === -1
+) {
   throw new Error("Expected control scroll, messages, and actions regions");
 }
-if (!(scrollStart < messagesStart && messagesStart < actionsStart)) {
-  throw new Error("Expected generated status messages to sit outside scrolling controls and above actions");
+if (
+  !(
+    scriptActionsStart < scrollStart &&
+    scrollStart < messagesStart &&
+    messagesStart < actionsStart
+  )
+) {
+  throw new Error(
+    "Expected script picker, scrolling controls, messages, and actions to be separate stable regions",
+  );
 }
 const scrollBlock = modalSource.slice(scrollStart, messagesStart);
 if (
   scrollBlock.includes("poster-status success") ||
-  scrollBlock.includes("poster-error error")
+  scrollBlock.includes("poster-error error") ||
+  scrollBlock.includes("script-picker-action")
 ) {
-  throw new Error("Expected status and error messages outside poster-controls-scroll");
+  throw new Error(
+    "Expected status, error messages, and script picker outside poster-controls-scroll",
+  );
+}
+
+const scriptActionsStyleStart = modalSource.indexOf(".poster-script-actions {");
+const scriptActionsStyleBlock = modalSource.slice(
+  scriptActionsStyleStart,
+  scriptActionsStyleStart + 160,
+);
+if (!scriptActionsStyleBlock.includes("flex: 0 0 auto")) {
+  throw new Error(
+    "Expected script picker actions to stay outside the scroll flex area",
+  );
 }
 
 [
@@ -592,7 +830,9 @@ if (
   "poster-control-alert",
 ].forEach((snippet) => {
   if (!modalSource.includes(snippet)) {
-    throw new Error(`Expected image generator to follow room-control UI pattern: ${snippet}`);
+    throw new Error(
+      `Expected image generator to follow room-control UI pattern: ${snippet}`,
+    );
   }
 });
 
@@ -612,33 +852,59 @@ if (
   "chooseScript",
   "currentScriptName",
   "currentScriptRoleCount",
-  'this.toggleModal("edition")',
+  'this.setEditionPickerTarget("poster")',
+  'this.openModalOverlay("edition")',
 ].forEach((snippet) => {
   if (!modalSource.includes(snippet) && !source.includes(snippet)) {
-    throw new Error(`Expected poster generator to use selected script: ${snippet}`);
+    throw new Error(
+      `Expected poster generator to use selected script: ${snippet}`,
+    );
   }
 });
 
 [
-  'v-model="jsonInput"',
-  "<textarea",
+  'editionPickerTarget: "global"',
+  "posterEdition: null",
+  "posterRoles: null",
+  "setEditionPickerTarget",
+  "setPosterScriptRoles",
 ].forEach((snippet) => {
+  if (!storeSource.includes(snippet)) {
+    throw new Error(`Expected isolated poster script store state: ${snippet}`);
+  }
+});
+
+[
+  'this.editionPickerTarget === "poster"',
+  "this.setPosterScriptRoles",
+  'this.setEditionPickerTarget("global")',
+].forEach((snippet) => {
+  if (!editionModalSource.includes(snippet)) {
+    throw new Error(
+      `Expected edition modal to isolate poster script selection: ${snippet}`,
+    );
+  }
+});
+
+['v-model="jsonInput"', "<textarea"].forEach((snippet) => {
   if (modalSource.includes(snippet)) {
     throw new Error(`Expected paste JSON input to be removed: ${snippet}`);
   }
 });
 
 if (!modalSource.includes("generatePoster()")) {
-  throw new Error("Expected image generator to refresh from current script state");
+  throw new Error(
+    "Expected image generator to refresh from current script state",
+  );
 }
 
 [
-  'imageGenerator: {',
+  "imageGenerator: {",
   'title: "图片生成"',
   'title: "Image Generator"',
   'preview: "生成预览"',
   'preview: "Generate Preview"',
-  'team: {',
+  "team: {",
 ].forEach((snippet) => {
   if (!i18nSource.includes(snippet)) {
     throw new Error(`Expected image generator i18n entry: ${snippet}`);
@@ -676,7 +942,7 @@ if (!modalSource.includes("generatePoster()")) {
   "显示可能 / 中毒 / 醉酒",
   '<font-awesome-icon icon="image" /> 生成预览',
   '<font-awesome-icon icon="download" /> 下载 PNG',
-  "`剧本作者：${poster.author || \"未知\"}`",
+  '`剧本作者：${poster.author || "未知"}`',
   'poster.topContent || "JSON 自动排版";',
   'ctx.fillText("閸撗勬拱"',
   '"首夜",',
@@ -684,7 +950,9 @@ if (!modalSource.includes("generatePoster()")) {
   'ctx.fillText("可能 / 中毒 / 醉酒"',
 ].forEach((snippet) => {
   if (modalSource.includes(snippet) || menuSource.includes(snippet)) {
-    throw new Error(`Expected image generator hardcoded UI text to move to i18n: ${snippet}`);
+    throw new Error(
+      `Expected image generator hardcoded UI text to move to i18n: ${snippet}`,
+    );
   }
 });
 
@@ -700,11 +968,27 @@ if (!modalSource.includes("generatePoster()")) {
   "readJsonBody",
   "new URL(requestUrl.searchParams.get",
   "Access-Control-Allow-Origin",
-  '"Accept"',
-  '"Referer"',
+  "Accept:",
+  "Referer:",
 ].forEach((snippet) => {
   if (!serverSource.includes(snippet)) {
     throw new Error(`Expected image proxy server support: ${snippet}`);
+  }
+});
+
+[
+  "resetPosterBrowser",
+  "isPosterBrowserConnected",
+  'browser.on("disconnected"',
+  "isRetryablePosterRenderError",
+  "Connection closed",
+  "renderScriptPosterPngOnce",
+  "retrying after browser disconnect",
+].forEach((snippet) => {
+  if (!serverSource.includes(snippet)) {
+    throw new Error(
+      `Expected poster render server to recover from disconnected browser: ${snippet}`,
+    );
   }
 });
 
@@ -745,12 +1029,16 @@ if (!vueConfigSource.includes("/api/script-poster-render")) {
   "useProxy: options.useProxy",
 ].forEach((snippet) => {
   if (!modalSource.includes(snippet)) {
-    throw new Error(`Expected backend poster render to load role icons directly: ${snippet}`);
+    throw new Error(
+      `Expected backend poster render to load role icons directly: ${snippet}`,
+    );
   }
 });
 
 if (!mainSource.includes("window.__townsquareApp = app")) {
-  throw new Error("Expected Vue app instance to be exposed for Puppeteer rendering");
+  throw new Error(
+    "Expected Vue app instance to be exposed for Puppeteer rendering",
+  );
 }
 
 if (!packageSource.includes('"puppeteer"')) {

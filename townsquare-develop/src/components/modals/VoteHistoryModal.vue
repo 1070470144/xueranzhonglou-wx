@@ -1,7 +1,9 @@
 <template>
   <Modal
     class="vote-history"
-    v-if="modals.voteHistory && (session.voteHistory.length || !session.isSpectator)"
+    v-if="
+      modals.voteHistory && (session.voteHistory.length || !session.isSpectator)
+    "
     @close="toggleModal('voteHistory')"
   >
     <font-awesome-icon

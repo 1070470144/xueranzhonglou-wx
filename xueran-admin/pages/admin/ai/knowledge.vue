@@ -43,8 +43,13 @@
               <checkbox :checked="selectedIds.includes(item._id)" @click="toggleSelect(item._id)" />
             </uni-td>
             <uni-td>
-              <view class="title-cell">{{ item.title }}</view>
-              <view class="source-cell">{{ item.sourceUrl || 'manual' }}</view>
+              <view class="title-with-icon">
+                <image v-if="item.iconUrl" class="role-icon-thumb" :src="item.iconUrl" mode="aspectFit" />
+                <view>
+                  <view class="title-cell">{{ item.title }}</view>
+                  <view class="source-cell">{{ item.sourceUrl || 'manual' }}</view>
+                </view>
+              </view>
             </uni-td>
             <uni-td align="center">{{ typeText(item.type) }}</uni-td>
             <uni-td align="center">{{ item.roleType || item.category || '-' }}</uni-td>
@@ -148,6 +153,12 @@
 
         <view class="card">
           <view class="detail-summary">
+            <view class="summary-item summary-icon" v-if="detail.iconUrl">
+              <text class="summary-label">Icon</text>
+              <view class="summary-value">
+                <image class="role-icon-preview" :src="detail.iconUrl" mode="aspectFit" />
+              </view>
+            </view>
             <view class="summary-item">
               <text class="summary-label">标题</text>
               <text class="summary-value">{{ detail.title || '-' }}</text>
@@ -221,6 +232,7 @@
           <input class="input" v-model="form.category" placeholder="分类" />
           <input class="input" v-model="form.roleType" placeholder="角色类型，可选" />
           <input class="input" v-model="form.script" placeholder="剧本，可选" />
+          <input class="input" v-model="form.iconUrl" placeholder="Icon URL" />
           <input class="input" v-model="form.sourceUrl" placeholder="来源 URL" />
           <select class="input" v-model="form.status">
             <option value="active">启用</option>
@@ -253,6 +265,7 @@ const emptyForm = () => ({
   type: 'manual',
   category: 'manual',
   roleType: '',
+  iconUrl: '',
   script: '',
   englishName: '',
   scripts: [],
@@ -723,6 +736,9 @@ export default {
 .summary-full {
   grid-column: 1 / -1;
 }
+.summary-icon {
+  grid-row: span 2;
+}
 .summary-label {
   display: flex;
   align-items: center;
@@ -739,6 +755,21 @@ export default {
 }
 .source-text {
   color: #606266;
+}
+.title-with-icon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.role-icon-thumb {
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+}
+.role-icon-preview {
+  width: 64px;
+  height: 64px;
 }
 .meta-grid {
   display: grid;

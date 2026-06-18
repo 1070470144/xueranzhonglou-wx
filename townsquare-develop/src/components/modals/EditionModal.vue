@@ -224,7 +224,7 @@ export default {
       ],
     };
   },
-  computed: mapState(["modals"]),
+  computed: mapState(["modals", "editionPickerTarget"]),
   watch: {
     "modals.edition"(visible) {
       if (visible) {
@@ -238,6 +238,7 @@ export default {
   },
   methods: {
     close() {
+      this.setEditionPickerTarget("global");
       this.closeModal("edition");
     },
     galleryText(key) {
@@ -480,7 +481,11 @@ export default {
           this.$refs.upload.value = "";
         });
         reader.addEventListener("error", () => {
-          alert(this.$t("modals.errorReadCustom", { message: reader.error && reader.error.message }));
+          alert(
+            this.$t("modals.errorReadCustom", {
+              message: reader.error && reader.error.message,
+            }),
+          );
           this.$refs.upload.value = "";
         });
         reader.readAsText(file);
@@ -529,6 +534,15 @@ export default {
       if (metaIndex > -1) {
         meta = roles.splice(metaIndex, 1).pop();
       }
+      if (this.editionPickerTarget === "poster") {
+        this.setPosterScriptRoles({
+          roles,
+          edition: Object.assign({}, meta, { id: "custom" }),
+        });
+        this.setEditionPickerTarget("global");
+        this.view = "gallery";
+        return;
+      }
       this.$store.commit("setCustomRoles", roles);
       this.$store.commit(
         "setEdition",
@@ -545,7 +559,12 @@ export default {
       }
       this.view = "gallery";
     },
-    ...mapMutations(["closeModal", "toggleModal"]),
+    ...mapMutations([
+      "closeModal",
+      "toggleModal",
+      "setEditionPickerTarget",
+      "setPosterScriptRoles",
+    ]),
   },
 };
 </script>

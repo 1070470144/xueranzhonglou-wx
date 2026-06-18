@@ -11,16 +11,21 @@ const voiceRooms = require("./voiceRooms");
 const register = new client.Registry();
 // Add a default label which is added to all metrics
 register.setDefaultLabels({
-  app: "clocktower-online"
+  app: "clocktower-online",
 });
 
 const PING_INTERVAL = 30000; // 30 seconds
-const HOST_RECONNECT_GRACE_MS = Number(process.env.TOWNSQUARE_HOST_RECONNECT_GRACE_MS || 30000);
-const PLAYER_RECONNECT_GRACE_MS = Number(process.env.TOWNSQUARE_PLAYER_RECONNECT_GRACE_MS || 5000);
-const defaultAllowedOriginPattern = /^https?:\/\/([^.]+\.github\.io|localhost|127\.0\.0\.1|\[::1\]|10(?:\.\d{1,3}){3}|192\.168(?:\.\d{1,3}){2}|172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2}|clocktower\.online|eddbra1nprivatetownsquare\.xyz|([^.]+\.)?xuerantools\.org)(?::\d+)?(?:\/|$)/i;
+const HOST_RECONNECT_GRACE_MS = Number(
+  process.env.TOWNSQUARE_HOST_RECONNECT_GRACE_MS || 30000,
+);
+const PLAYER_RECONNECT_GRACE_MS = Number(
+  process.env.TOWNSQUARE_PLAYER_RECONNECT_GRACE_MS || 5000,
+);
+const defaultAllowedOriginPattern =
+  /^https?:\/\/([^.]+\.github\.io|localhost|127\.0\.0\.1|\[::1\]|10(?:\.\d{1,3}){3}|192\.168(?:\.\d{1,3}){2}|172\.(?:1[6-9]|2\d|3[0-1])(?:\.\d{1,3}){2}|clocktower\.online|eddbra1nprivatetownsquare\.xyz|([^.]+\.)?xuerantools\.org)(?::\d+)?(?:\/|$)/i;
 const allowedOrigins = (process.env.TOWNSQUARE_ALLOWED_ORIGINS || "")
   .split(",")
-  .map(origin => origin.trim().replace(/\/$/, ""))
+  .map((origin) => origin.trim().replace(/\/$/, ""))
   .filter(Boolean);
 
 function isAllowedOrigin(origin) {
@@ -43,10 +48,12 @@ if (!isDevelopment) {
 const developmentPort = Number(process.env.TOWNSQUARE_WS_PORT || 8081);
 const productionPort = Number(process.env.TOWNSQUARE_HTTP_PORT || 8080);
 const POSTER_RENDER_TIMEOUT_MS = Number(
-  process.env.TOWNSQUARE_POSTER_RENDER_TIMEOUT_MS || 60000
+  process.env.TOWNSQUARE_POSTER_RENDER_TIMEOUT_MS || 60000,
 );
-const POSTER_RENDER_FRONTEND_URL = process.env.TOWNSQUARE_POSTER_FRONTEND_URL || "";
+const POSTER_RENDER_FRONTEND_URL =
+  process.env.TOWNSQUARE_POSTER_FRONTEND_URL || "";
 let posterBrowserPromise = null;
+let posterBrowser = null;
 
 function setCorsHeaders(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -70,12 +77,15 @@ async function proxyScriptPosterImage(req, res) {
     headers: {
       "User-Agent":
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) townsquare-script-poster/1.0",
-      "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
-      "Referer": `${imageUrl.protocol}//${imageUrl.host}/`
-    }
+      Accept:
+        "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+      Referer: `${imageUrl.protocol}//${imageUrl.host}/`,
+    },
   });
   if (!response.ok) {
-    res.writeHead(response.status, { "Content-Type": "text/plain; charset=utf-8" });
+    res.writeHead(response.status, {
+      "Content-Type": "text/plain; charset=utf-8",
+    });
     res.end("image request failed");
     return;
   }
@@ -91,7 +101,7 @@ async function proxyScriptPosterImage(req, res) {
   res.writeHead(200, {
     "Content-Type": contentType,
     "Cache-Control": "public, max-age=86400",
-    "Content-Length": buffer.length
+    "Content-Length": buffer.length,
   });
   res.end(buffer);
 }
@@ -99,7 +109,7 @@ async function proxyScriptPosterImage(req, res) {
 function readJsonBody(req) {
   return new Promise((resolve, reject) => {
     let body = "";
-    req.on("data", chunk => {
+    req.on("data", (chunk) => {
       body += chunk;
       if (body.length > 4 * 1024 * 1024) {
         reject(new Error("request body too large"));
@@ -128,7 +138,7 @@ function findLocalChromeExecutable() {
     "/usr/bin/google-chrome",
   ].filter(Boolean);
 
-  return candidates.find(candidate => fs.existsSync(candidate));
+  return candidates.find((candidate) => fs.existsSync(candidate));
 }
 
 function getPosterRenderUrl(req) {
@@ -144,32 +154,56 @@ function getPosterRenderUrl(req) {
 }
 
 async function getPosterBrowser() {
+  if (posterBrowser && isPosterBrowserConnected(posterBrowser)) {
+    return posterBrowser;
+  }
+
   if (!posterBrowserPromise) {
     const executablePath = findLocalChromeExecutable();
-    posterBrowserPromise = puppeteer.launch({
-      executablePath,
-      headless: "new",
-      args: ["--no-sandbox", "--disable-setuid-sandbox"],
-    });
+    posterBrowserPromise = puppeteer
+      .launch({
+        executablePath,
+        headless: "new",
+        args: ["--no-sandbox", "--disable-setuid-sandbox"],
+      })
+      .then((browser) => {
+        posterBrowser = browser;
+        browser.on("disconnected", () => resetPosterBrowser(browser));
+        return browser;
+      })
+      .catch((error) => {
+        resetPosterBrowser();
+        throw error;
+      });
   }
-  return posterBrowserPromise;
+  const browser = await posterBrowserPromise;
+  if (isPosterBrowserConnected(browser)) return browser;
+  resetPosterBrowser(browser);
+  return getPosterBrowser();
 }
 
-async function renderScriptPosterPng(req, res) {
-  setCorsHeaders(res);
-  if (req.method !== "POST") {
-    res.writeHead(405, { "Content-Type": "text/plain; charset=utf-8" });
-    res.end("method not allowed");
-    return;
+function isPosterBrowserConnected(browser) {
+  if (!browser) return false;
+  if (typeof browser.isConnected === "function") {
+    return browser.isConnected();
   }
+  return browser.connected !== false;
+}
 
-  const payload = await readJsonBody(req);
-  if (!payload || !payload.poster) {
-    res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
-    res.end("missing poster payload");
-    return;
-  }
+function resetPosterBrowser(browser) {
+  if (browser && posterBrowser && browser !== posterBrowser) return;
+  posterBrowser = null;
+  posterBrowserPromise = null;
+}
 
+function isRetryablePosterRenderError(error) {
+  const message = String((error && error.message) || error || "");
+  return /Connection closed|Target closed|Protocol error|Session closed|browser has disconnected/i.test(
+    message,
+  );
+}
+
+async function renderScriptPosterPngOnce(req, payload) {
   const browser = await getPosterBrowser();
   const page = await browser.newPage();
   try {
@@ -182,18 +216,19 @@ async function renderScriptPosterPng(req, res) {
     });
     await page.waitForFunction(
       () => window.__townsquareApp && window.__townsquareApp.$store,
-      { timeout: POSTER_RENDER_TIMEOUT_MS }
+      { timeout: POSTER_RENDER_TIMEOUT_MS },
     );
     await page.evaluate(() => {
       const app = window.__townsquareApp;
-      if (app && app.$store) app.$store.commit("openModalOverlay", "imageGenerator");
+      if (app && app.$store)
+        app.$store.commit("openModalOverlay", "imageGenerator");
     });
     await page.waitForFunction(
       () => typeof window.renderScriptPosterPayload === "function",
-      { timeout: POSTER_RENDER_TIMEOUT_MS }
+      { timeout: POSTER_RENDER_TIMEOUT_MS },
     );
     await page.waitForSelector(".poster-preview canvas");
-    await page.evaluate(async posterPayload => {
+    await page.evaluate(async (posterPayload) => {
       return window.renderScriptPosterPayload(posterPayload);
     }, payload);
     await page.evaluate(() => {
@@ -219,15 +254,45 @@ async function renderScriptPosterPng(req, res) {
       type: "png",
       omitBackground: false,
     });
-    res.writeHead(200, {
-      "Content-Type": "image/png",
-      "Cache-Control": "no-store",
-      "Content-Length": buffer.length,
-    });
-    res.end(buffer);
+    return buffer;
   } finally {
-    await page.close();
+    if (page && !page.isClosed()) {
+      await page.close().catch(() => {});
+    }
   }
+}
+
+async function renderScriptPosterPng(req, res) {
+  setCorsHeaders(res);
+  if (req.method !== "POST") {
+    res.writeHead(405, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("method not allowed");
+    return;
+  }
+
+  const payload = await readJsonBody(req);
+  if (!payload || !payload.poster) {
+    res.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
+    res.end("missing poster payload");
+    return;
+  }
+
+  let buffer;
+  try {
+    buffer = await renderScriptPosterPngOnce(req, payload);
+  } catch (error) {
+    if (!isRetryablePosterRenderError(error)) throw error;
+    console.log("retrying after browser disconnect", error && error.message);
+    resetPosterBrowser();
+    buffer = await renderScriptPosterPngOnce(req, payload);
+  }
+
+  res.writeHead(200, {
+    "Content-Type": "image/png",
+    "Cache-Control": "no-store",
+    "Content-Length": buffer.length,
+  });
+  res.end(buffer);
 }
 
 function handleHttpRequest(req, res) {
@@ -239,7 +304,7 @@ function handleHttpRequest(req, res) {
   }
 
   if (req.url && req.url.startsWith("/api/script-poster-image")) {
-    proxyScriptPosterImage(req, res).catch(error => {
+    proxyScriptPosterImage(req, res).catch((error) => {
       console.log("script poster image proxy failed", error && error.message);
       setCorsHeaders(res);
       res.writeHead(502, { "Content-Type": "text/plain; charset=utf-8" });
@@ -249,7 +314,7 @@ function handleHttpRequest(req, res) {
   }
 
   if (req.url && req.url.startsWith("/api/script-poster-render")) {
-    renderScriptPosterPng(req, res).catch(error => {
+    renderScriptPosterPng(req, res).catch((error) => {
       console.log("script poster render failed", error && error.message);
       setCorsHeaders(res);
       res.writeHead(502, { "Content-Type": "text/plain; charset=utf-8" });
@@ -260,7 +325,7 @@ function handleHttpRequest(req, res) {
 
   if (!isDevelopment) {
     res.setHeader("Content-Type", register.contentType);
-    register.metrics().then(out => res.end(out));
+    register.metrics().then((out) => res.end(out));
     return;
   }
 
@@ -273,7 +338,7 @@ const server = isDevelopment
   : https.createServer(options, handleHttpRequest);
 const wss = new WebSocket.Server({
   server,
-  verifyClient: info => isAllowedOrigin(info.origin)
+  verifyClient: (info) => isAllowedOrigin(info.origin),
 });
 
 function noop() {}
@@ -288,7 +353,7 @@ function sendJson(ws, command, params) {
 function broadcastRoomList() {
   closeStaleRooms();
   const payload = rooms.listRooms();
-  wss.clients.forEach(client => {
+  wss.clients.forEach((client) => {
     if (client.readyState === WebSocket.OPEN && client.isLobby) {
       sendJson(client, "room:list:update", payload);
     }
@@ -297,19 +362,19 @@ function broadcastRoomList() {
 
 function sendRoomClosed(room) {
   room.players.forEach(({ ws }) =>
-    sendJson(ws, "room:closed", { roomId: room.id })
+    sendJson(ws, "room:closed", { roomId: room.id }),
   );
 }
 
 function closeStaleRooms() {
   const now = Date.now();
   const closedRooms = rooms.closeRoomsWhere(
-    room =>
+    (room) =>
       (!room.host || room.host.readyState !== WebSocket.OPEN) &&
       room.hostDisconnectedAt &&
-      now - room.hostDisconnectedAt >= HOST_RECONNECT_GRACE_MS
+      now - room.hostDisconnectedAt >= HOST_RECONNECT_GRACE_MS,
   );
-  closedRooms.forEach(room => {
+  closedRooms.forEach((room) => {
     clearTimeout(room.voiceRecallTimer);
     sendRoomClosed(room);
   });
@@ -319,7 +384,7 @@ function closeStaleRooms() {
 function sendRoomSnapshot(ws, room) {
   sendJson(ws, "room:state", {
     room: rooms.summarize(room, { includeInviteToken: true }),
-    scriptJson: room.scriptJson
+    scriptJson: room.scriptJson,
   });
   sendRoomPlayerList(room);
   sendVoiceState(room);
@@ -339,7 +404,7 @@ function reclaimHostConnection(ws, room) {
 function sendRoomPlayerList(room) {
   const players = Array.from(room.players.entries()).map(([id, player]) => ({
     id,
-    name: player.name
+    name: player.name,
   }));
   sendJson(room.host, "room:players", players);
   room.players.forEach(({ ws }) => sendJson(ws, "room:players", players));
@@ -353,7 +418,7 @@ function registerVoiceParticipant(room, ws) {
     id: isHost ? "host" : ws.playerId,
     name: isHost ? room.hostName : player && player.name,
     isHost,
-    now: Date.now()
+    now: Date.now(),
   });
   return state;
 }
@@ -368,7 +433,7 @@ function sendVoiceState(room) {
 function sendVoiceError(ws, command, err) {
   sendJson(ws, "voice:error", {
     command,
-    reason: err && err.message ? err.message : "unknown_error"
+    reason: err && err.message ? err.message : "unknown_error",
   });
 }
 
@@ -380,31 +445,41 @@ function findRoomClient(room, participantId) {
 
 function scheduleVoiceRecall(room, executeAt) {
   clearTimeout(room.voiceRecallTimer);
-  room.voiceRecallTimer = setTimeout(() => {
-    const activeRoom = rooms.getRoom(room.id);
-    if (!activeRoom || !activeRoom.voiceState || !activeRoom.voiceState.recall) return;
-    if (activeRoom.voiceState.recall.executeAt !== executeAt) return;
-    try {
-      voiceRooms.executeRecall(activeRoom.voiceState, {
-        byId: "host",
-        now: Date.now()
-      });
-      sendVoiceState(activeRoom);
-    } catch (e) {
-      console.log("voice recall execute failed", activeRoom.id, e.message);
-    }
-  }, Math.max(0, executeAt - Date.now()));
+  room.voiceRecallTimer = setTimeout(
+    () => {
+      const activeRoom = rooms.getRoom(room.id);
+      if (
+        !activeRoom ||
+        !activeRoom.voiceState ||
+        !activeRoom.voiceState.recall
+      )
+        return;
+      if (activeRoom.voiceState.recall.executeAt !== executeAt) return;
+      try {
+        voiceRooms.executeRecall(activeRoom.voiceState, {
+          byId: "host",
+          now: Date.now(),
+        });
+        sendVoiceState(activeRoom);
+      } catch (e) {
+        console.log("voice recall execute failed", activeRoom.id, e.message);
+      }
+    },
+    Math.max(0, executeAt - Date.now()),
+  );
 }
 
 function sendRoomError(ws, command, err) {
   sendJson(ws, command, {
-    reason: err && err.message ? err.message : "unknown_error"
+    reason: err && err.message ? err.message : "unknown_error",
   });
 }
 
 function moveClientToChannel(ws, channel) {
   if (ws.channel && channels[ws.channel]) {
-    channels[ws.channel] = channels[ws.channel].filter(client => client !== ws);
+    channels[ws.channel] = channels[ws.channel].filter(
+      (client) => client !== ws,
+    );
   }
   ws.channel = channel;
   ws.roomId = channel;
@@ -429,14 +504,14 @@ const metrics = {
     help: "Concurrent Players",
     collect() {
       this.set(wss.clients.size);
-    }
+    },
   }),
   channels_concurrent: new client.Gauge({
     name: "channels_concurrent",
     help: "Concurrent Channels",
     collect() {
       this.set(Object.keys(channels).length);
-    }
+    },
   }),
   channels_list: new client.Gauge({
     name: "channel_players",
@@ -447,35 +522,35 @@ const metrics = {
         this.set(
           { name: channel },
           channels[channel].filter(
-            ws =>
+            (ws) =>
               ws &&
               (ws.readyState === WebSocket.OPEN ||
-                ws.readyState === WebSocket.CONNECTING)
-          ).length
+                ws.readyState === WebSocket.CONNECTING),
+          ).length,
         );
       }
-    }
+    },
   }),
   messages_incoming: new client.Counter({
     name: "messages_incoming",
-    help: "Incoming messages"
+    help: "Incoming messages",
   }),
   messages_outgoing: new client.Counter({
     name: "messages_outgoing",
-    help: "Outgoing messages"
+    help: "Outgoing messages",
   }),
   connection_terminated_host: new client.Counter({
     name: "connection_terminated_host",
-    help: "Terminated connection due to host already present"
+    help: "Terminated connection due to host already present",
   }),
   connection_terminated_spam: new client.Counter({
     name: "connection_terminated_spam",
-    help: "Terminated connection due to message spam"
+    help: "Terminated connection due to message spam",
   }),
   connection_terminated_timeout: new client.Counter({
     name: "connection_terminated_timeout",
-    help: "Terminated connection due to timeout"
-  })
+    help: "Terminated connection due to timeout",
+  }),
 };
 
 // register metrics
@@ -497,10 +572,10 @@ wss.on("connection", function connection(ws, req) {
     ws.playerId === "host" &&
     channels[ws.channel] &&
     channels[ws.channel].some(
-      client =>
+      (client) =>
         client !== ws &&
         client.readyState === WebSocket.OPEN &&
-        client.playerId === "host"
+        client.playerId === "host",
     )
   ) {
     console.log(ws.channel, "duplicate host");
@@ -537,7 +612,7 @@ wss.on("connection", function connection(ws, req) {
       console.log(ws.channel, "disconnecting user due to spam");
       ws.close(
         1000,
-        "Your app seems to be malfunctioning, please clear your browser cache."
+        "Your app seems to be malfunctioning, please clear your browser cache.",
       );
       metrics.connection_terminated_spam.inc();
       return;
@@ -565,7 +640,11 @@ wss.on("connection", function connection(ws, req) {
             const room = rooms.getRoom(ws.roomId || params.roomId);
             if (!room) throw new Error("room_not_found");
             if (ws.playerId !== "host") throw new Error("host_only");
-            if (room.host && room.host !== ws && room.host.readyState === WebSocket.OPEN) {
+            if (
+              room.host &&
+              room.host !== ws &&
+              room.host.readyState === WebSocket.OPEN
+            ) {
               throw new Error("host_already_present");
             }
             reclaimHostConnection(ws, room);
@@ -585,7 +664,7 @@ wss.on("connection", function connection(ws, req) {
               scriptJson: params.scriptJson,
               scriptName: params.scriptName,
               status: params.status,
-              voiceUrl: params.voiceUrl
+              voiceUrl: params.voiceUrl,
             });
             moveClientToChannel(ws, room.id);
             ws.playerId = "host";
@@ -593,7 +672,7 @@ wss.on("connection", function connection(ws, req) {
             registerVoiceParticipant(room, ws);
             sendJson(ws, "room:create:ok", {
               room: rooms.summarize(room, { includeInviteToken: true }),
-              scriptJson: room.scriptJson
+              scriptJson: room.scriptJson,
             });
             sendVoiceState(room);
             broadcastRoomList();
@@ -604,7 +683,7 @@ wss.on("connection", function connection(ws, req) {
               roomId: params.roomId,
               playerId: ws.playerId,
               password: params.password,
-              inviteToken: params.inviteToken
+              inviteToken: params.inviteToken,
             });
             rooms.addPlayer(room.id, ws, params.playerName);
             moveClientToChannel(ws, room.id);
@@ -612,7 +691,7 @@ wss.on("connection", function connection(ws, req) {
             registerVoiceParticipant(room, ws);
             sendJson(ws, "room:join:ok", {
               room: rooms.summarize(room, { includeInviteToken: true }),
-              scriptJson: room.scriptJson
+              scriptJson: room.scriptJson,
             });
             sendRoomPlayerList(room);
             sendVoiceState(room);
@@ -626,12 +705,12 @@ wss.on("connection", function connection(ws, req) {
             registerVoiceParticipant(room, ws);
             sendJson(ws, "room:update:ok", {
               room: rooms.summarize(room, { includeInviteToken: true }),
-              scriptJson: room.scriptJson
+              scriptJson: room.scriptJson,
             });
             room.players.forEach(({ ws: playerWs }) => {
               sendJson(playerWs, "room:update", {
                 room: rooms.summarize(room),
-                scriptJson: room.scriptJson
+                scriptJson: room.scriptJson,
               });
             });
             broadcastRoomList();
@@ -642,7 +721,9 @@ wss.on("connection", function connection(ws, req) {
             if (!room) break;
             const player = room.players.get(ws.playerId);
             if (!player) break;
-            const cleanName = String((params && params.name) || "").trim().substr(0, 30);
+            const cleanName = String((params && params.name) || "")
+              .trim()
+              .substr(0, 30);
             if (!cleanName) break;
             player.name = cleanName;
             room.updatedAt = Date.now();
@@ -653,7 +734,11 @@ wss.on("connection", function connection(ws, req) {
             const room = rooms.getRoom(ws.roomId);
             if (!room || room.host !== ws) throw new Error("host_only");
             const player = rooms.kickPlayer(room.id, params.playerId);
-            if (room.voiceState) voiceRooms.unregisterParticipant(room.voiceState, params.playerId);
+            if (room.voiceState)
+              voiceRooms.unregisterParticipant(
+                room.voiceState,
+                params.playerId,
+              );
             if (player && player.ws) {
               sendJson(player.ws, "room:kicked", { roomId: room.id });
               player.ws.close(1000, "kicked");
@@ -686,7 +771,7 @@ wss.on("connection", function connection(ws, req) {
             voiceRooms.createInvite(state, {
               fromId: ws.playerId,
               invitedIds: params.invitedIds || [],
-              now: Date.now()
+              now: Date.now(),
             });
             sendVoiceState(room);
             return;
@@ -697,21 +782,25 @@ wss.on("connection", function connection(ws, req) {
               participantId: ws.playerId,
               inviteId: params.inviteId,
               accept: acceptInvite,
-              now: Date.now()
+              now: Date.now(),
             });
             if (!acceptInvite) {
-              sendJson(findRoomClient(room, rejectedInvite.fromId), "voice:invite:rejected", {
-                inviteId: rejectedInvite.id,
-                rejectedById: ws.playerId,
-                rejectedByName: responder && responder.name
-              });
+              sendJson(
+                findRoomClient(room, rejectedInvite.fromId),
+                "voice:invite:rejected",
+                {
+                  inviteId: rejectedInvite.id,
+                  rejectedById: ws.playerId,
+                  rejectedByName: responder && responder.name,
+                },
+              );
             }
             sendVoiceState(room);
             return;
           case "voice:channel:join":
             voiceRooms.joinChannel(state, {
               participantId: ws.playerId,
-              channelId: params.channelId
+              channelId: params.channelId,
             });
             sendVoiceState(room);
             return;
@@ -720,13 +809,16 @@ wss.on("connection", function connection(ws, req) {
             sendVoiceState(room);
             return;
           case "voice:muteAll:set":
-            voiceRooms.setMuteAll(state, { byId: ws.playerId, value: params.value });
+            voiceRooms.setMuteAll(state, {
+              byId: ws.playerId,
+              value: params.value,
+            });
             sendVoiceState(room);
             return;
           case "voice:speaking:set":
             voiceRooms.setSpeaking(state, {
               participantId: ws.playerId,
-              speaking: params.speaking === true
+              speaking: params.speaking === true,
             });
             sendVoiceState(room);
             return;
@@ -734,26 +826,33 @@ wss.on("connection", function connection(ws, req) {
             const recall = voiceRooms.startRecall(state, {
               byId: ws.playerId,
               now: Date.now(),
-              delayMs: params.delayMs
+              delayMs: params.delayMs,
             });
             sendVoiceState(room);
             scheduleVoiceRecall(room, recall.executeAt);
             return;
           }
           case "voice:recall:execute":
-            voiceRooms.executeRecall(state, { byId: ws.playerId, now: Date.now() });
+            voiceRooms.executeRecall(state, {
+              byId: ws.playerId,
+              now: Date.now(),
+            });
             sendVoiceState(room);
             return;
           case "voice:signal": {
             const from = state.participants.get(ws.playerId);
             const target = state.participants.get(params.toId);
-            if (!from || !target || from.currentChannelId !== target.currentChannelId) {
+            if (
+              !from ||
+              !target ||
+              from.currentChannelId !== target.currentChannelId
+            ) {
               throw new Error("not_channel_member");
             }
             const targetWs = findRoomClient(room, params.toId);
             sendJson(targetWs, "voice:signal", {
               fromId: ws.playerId,
-              signal: params.signal
+              signal: params.signal,
             });
             return;
           }
@@ -761,17 +860,13 @@ wss.on("connection", function connection(ws, req) {
       } catch (e) {
         sendJson(ws, "voice:error", {
           command,
-          reason: e && e.message ? e.message : "unknown_error"
+          reason: e && e.message ? e.message : "unknown_error",
         });
         return;
       }
     }
 
-    const messageType = data
-      .toLocaleLowerCase()
-      .substr(1)
-      .split(",", 1)
-      .pop();
+    const messageType = data.toLocaleLowerCase().substr(1).split(",", 1).pop();
     switch (messageType) {
       case '"ping"':
         // ping messages will only be sent host -> all or all -> host
@@ -782,7 +877,10 @@ wss.on("connection", function connection(ws, req) {
             (ws.playerId === "host" || client.playerId === "host")
           ) {
             client.send(
-              data.replace(/latency/, (client.latency || 0) + (ws.latency || 0))
+              data.replace(
+                /latency/,
+                (client.latency || 0) + (ws.latency || 0),
+              ),
             );
             metrics.messages_outgoing.inc();
           }
@@ -795,7 +893,7 @@ wss.on("connection", function connection(ws, req) {
           wss.clients.size,
           ws.channel,
           ws.playerId,
-          data
+          data,
         );
         try {
           const dataToPlayer = JSON.parse(data)[1];
@@ -820,7 +918,7 @@ wss.on("connection", function connection(ws, req) {
           wss.clients.size,
           ws.channel,
           ws.playerId,
-          data
+          data,
         );
         channels[ws.channel].forEach(function each(client) {
           if (client !== ws && client.readyState === WebSocket.OPEN) {
@@ -866,7 +964,11 @@ wss.on("connection", function connection(ws, req) {
         if (!activeRoom) return;
         const player = activeRoom.players.get(ws.playerId);
         if (!player || player.ws !== ws || !player.disconnectedAt) return;
-        const removal = rooms.removePlayerConnection(activeRoom.id, ws.playerId, ws);
+        const removal = rooms.removePlayerConnection(
+          activeRoom.id,
+          ws.playerId,
+          ws,
+        );
         if (removal.removed && activeRoom.voiceState) {
           voiceRooms.unregisterParticipant(activeRoom.voiceState, ws.playerId);
         }
@@ -898,10 +1000,10 @@ const interval = setInterval(function ping() {
     if (
       !channels[channel].length ||
       !channels[channel].some(
-        ws =>
+        (ws) =>
           ws &&
           (ws.readyState === WebSocket.OPEN ||
-            ws.readyState === WebSocket.CONNECTING)
+            ws.readyState === WebSocket.CONNECTING),
       )
     ) {
       metrics.channels_list.remove({ name: channel });

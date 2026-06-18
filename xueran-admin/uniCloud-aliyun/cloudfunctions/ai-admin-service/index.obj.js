@@ -1,5 +1,7 @@
 'use strict';
 
+const { extractWikiIconUrl } = require('./roleIconExtractor');
+
 const db = uniCloud.database();
 
 const TABLES = {
@@ -282,6 +284,7 @@ function parseWikiPage(url, html) {
     content,
     searchText: buildSearchText({ title: extractTitle(html, url), content, sections, roleInfo }),
     sections,
+    iconUrl: extractWikiIconUrl(html),
     ...roleInfo,
     sourceUrl: url
   };
@@ -329,6 +332,83 @@ function buildSearchText({ title, content, sections, roleInfo }) {
   return cleanText(important, 100000);
 }
 
+function normalizeScriptRoleTeam(value) {
+  const text = cleanText(value, 4000).toLowerCase();
+  if (!text) return '';
+  if (text.includes('townsfolk') || text.includes('镇民') || text.includes('闀囨皯')) return 'townsfolk';
+  if (text.includes('outsider') || text.includes('外来者') || text.includes('澶栨潵鑰')) return 'outsider';
+  if (text.includes('minion') || text.includes('爪牙') || text.includes('鐖墮')) return 'minion';
+  if (text.includes('demon') || text.includes('恶魔') || text.includes('鎭堕瓟')) return 'demon';
+  if (text.includes('traveler') || text.includes('traveller') || text.includes('旅行者') || text.includes('鏃呰鑰')) return 'traveler';
+  if (text.includes('fabled') || text.includes('传奇角色') || text.includes('傳奇角色') || text.includes('浼犲瑙掕壊')) return 'fabled';
+  return '';
+}
+
+function inferScriptRoleTeam(item = {}) {
+  const directTeam = normalizeScriptRoleTeam([item.roleType, item.category].filter(Boolean).join(' '));
+  if (directTeam) return directTeam;
+
+  const sections = Array.isArray(item.sections) ? item.sections : [];
+  const roleInfoSection = sections.find(section => {
+    const key = cleanText(section.key || section.title, 80).toLowerCase();
+    return key === 'role_info' || key.includes('角色信息') || key.includes('瑙掕壊淇℃伅');
+  });
+  const candidates = [
+    roleInfoSection && roleInfoSection.content,
+    item.content,
+    item.searchText
+  ].filter(Boolean);
+
+  for (const value of candidates) {
+    const team = normalizeScriptRoleTeam(value);
+    if (team) return team;
+  }
+  return '';
+}
+
+function compactAbilityText(value, max = 260) {
+  const text = cleanText(value, 2000)
+    .replace(/\s+/g, ' ')
+    .replace(/角色能力\s*[：:]\s*/g, '')
+    .trim();
+  return text.length > max ? `${text.slice(0, max - 1)}…` : text;
+}
+
+function extractRoleAbilityForScript(item = {}) {
+  const sections = Array.isArray(item.sections) ? item.sections : [];
+  const abilitySection = sections.find(section => {
+    const key = cleanText(section.key || section.title, 80).toLowerCase();
+    return key === 'ability' || /能力|技能|效果|ability|鑳藉姏/.test(key);
+  });
+  if (abilitySection && abilitySection.content) return compactAbilityText(abilitySection.content);
+
+  const content = cleanText(item.content || item.searchText, 4000);
+  const lines = content
+    .split(/[\r\n]+/)
+    .map(line => compactAbilityText(line))
+    .filter(line => line && line !== item.title && line.length > 4);
+  return lines[0] || '';
+}
+
+function knowledgeRoleToScriptRole(item = {}) {
+  const team = inferScriptRoleTeam(item);
+  if (!team) return null;
+  const name = cleanText(item.title, 120);
+  const ability = extractRoleAbilityForScript(item);
+  if (!name || !ability) return null;
+  return {
+    id: `kb_${cleanText(item._id || item.englishName || name, 120).replace(/[^a-zA-Z0-9_-]+/g, '_')}`,
+    knowledgeId: item._id || '',
+    name,
+    englishName: cleanText(item.englishName || '', 80),
+    team,
+    ability,
+    iconUrl: cleanText(item.iconUrl || '', 500),
+    sourceUrl: cleanText(item.sourceUrl || '', 500),
+    updateTime: item.updateTime || null
+  };
+}
+
 function extractTitle(html, url) {
   const titleMatch = String(html || '').match(/<title[^>]*>([\s\S]*?)<\/title>/i);
   if (titleMatch && titleMatch[1]) {
@@ -369,6 +449,7 @@ async function upsertKnowledge(item) {
     category: cleanText(item.category || 'wiki', 100),
     roleType: cleanText(item.roleType || '', 80),
     englishName: cleanText(item.englishName || '', 80),
+    iconUrl: cleanText(item.iconUrl || '', 500),
     script: cleanText(item.script || '', 120),
     scripts: Array.isArray(item.scripts) ? item.scripts.map(script => cleanText(script, 80)).filter(Boolean).slice(0, 20) : [],
     abilityTypes: Array.isArray(item.abilityTypes) ? item.abilityTypes.map(type => cleanText(type, 80)).filter(Boolean).slice(0, 20) : [],
@@ -630,6 +711,42 @@ module.exports = {
     return ok({ list });
   },
 
+  async listKnowledgeRoles(params = {}) {
+    const page = positiveInt(params.page, 1);
+    const pageSize = positiveInt(params.pageSize, 300, 300);
+    const keyword = cleanText(params.keyword || '', 100);
+    const query = { type: 'role', status: 'active' };
+    if (keyword) {
+      query.$or = [
+        { title: { $regex: keyword, $options: 'i' } },
+        { englishName: { $regex: keyword, $options: 'i' } },
+        { searchText: { $regex: keyword, $options: 'i' } }
+      ];
+    }
+    const field = {
+      _id: true,
+      title: true,
+      content: true,
+      sections: true,
+      roleType: true,
+      category: true,
+      englishName: true,
+      iconUrl: true,
+      sourceUrl: true,
+      updateTime: true
+    };
+    const skip = (page - 1) * pageSize;
+    const res = await db.collection(TABLES.knowledge)
+      .where(query)
+      .field(field)
+      .orderBy('updateTime', 'desc')
+      .skip(skip)
+      .limit(pageSize)
+      .get();
+    const list = (res.data || []).map(knowledgeRoleToScriptRole).filter(Boolean);
+    return ok({ list, page, pageSize });
+  },
+
   async getDefaultConfig() {
     const res = await db.collection(TABLES.config).where({ scope: 'default' }).limit(1).get();
     return ok({ config: publicConfig(res.data && res.data[0]) });
@@ -680,6 +797,7 @@ module.exports = {
       type: true,
       category: true,
       roleType: true,
+      iconUrl: true,
       script: true,
       sourceUrl: true,
       sourceType: true,
@@ -713,6 +831,7 @@ module.exports = {
       category: cleanText(item.category || 'manual', 100),
       roleType: cleanText(item.roleType || '', 80),
       englishName: cleanText(item.englishName || '', 80),
+      iconUrl: cleanText(item.iconUrl || '', 500),
       script: cleanText(item.script || '', 120),
       scripts: Array.isArray(item.scripts) ? item.scripts.map(script => cleanText(script, 80)).filter(Boolean).slice(0, 20) : [],
       abilityTypes: Array.isArray(item.abilityTypes) ? item.abilityTypes.map(type => cleanText(type, 80)).filter(Boolean).slice(0, 20) : [],

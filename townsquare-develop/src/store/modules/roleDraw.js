@@ -144,7 +144,9 @@ const actions = {
       typeof random === "function" ? random : Math.random,
     );
     const role =
-      rootState.roles.get(roleId) || rootGetters.rolesJSONbyId.get(roleId) || {};
+      rootState.roles.get(roleId) ||
+      rootGetters.rolesJSONbyId.get(roleId) ||
+      {};
     const player = rootState.players.players[seatIndex];
     if (player && role.id) {
       commit(
