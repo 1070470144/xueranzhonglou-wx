@@ -82,6 +82,14 @@ const mainSource = fs.readFileSync(
   path.join(__dirname, "..", "src", "main.js"),
   "utf8",
 );
+const menuSource = fs.readFileSync(
+  path.join(__dirname, "..", "src", "components", "Menu.vue"),
+  "utf8",
+);
+const i18nSource = fs.readFileSync(
+  path.join(__dirname, "..", "src", "i18n", "index.js"),
+  "utf8",
+);
 
 if (data.title !== "Test Script") {
   throw new Error(`Expected title from _meta, got ${data.title}`);
@@ -211,6 +219,57 @@ if (!modalSource.includes("GLOSSARY_TOP")) {
   throw new Error("Expected glossary layout to use a shared top boundary");
 }
 
+const nightColumnStart = modalSource.indexOf("async drawNightColumn(");
+const nightColumnEnd = modalSource.indexOf("drawVerticalText(", nightColumnStart);
+const nightColumnHeaderBlock = modalSource.slice(nightColumnStart, nightColumnEnd);
+if (!nightColumnHeaderBlock.includes("SimSun, serif")) {
+  throw new Error("Expected night order title font to match role text font");
+}
+if (nightColumnHeaderBlock.includes("SimHei")) {
+  throw new Error("Expected night order title font to stop using SimHei");
+}
+
+const backgroundAssetDir = path.join(
+  __dirname,
+  "..",
+  "src",
+  "assets",
+  "script-poster-backgrounds",
+);
+if (!fs.existsSync(backgroundAssetDir)) {
+  throw new Error("Expected selectable poster background assets directory");
+}
+if (
+  fs
+    .readdirSync(backgroundAssetDir)
+    .filter((fileName) => /\.png$/i.test(fileName)).length < 1
+) {
+  throw new Error("Expected selectable poster background PNG assets");
+}
+
+[
+  "POSTER_BACKGROUND_OPTIONS",
+  "posterBackgroundOptions",
+  "selectedPosterBackgroundSrc",
+  "posterBackgroundId",
+  'v-model="posterBackgroundId"',
+  "backgroundId: this.posterBackgroundId",
+  "payload.backgroundId",
+].forEach((snippet) => {
+  if (!modalSource.includes(snippet)) {
+    throw new Error(`Expected poster background selector support: ${snippet}`);
+  }
+});
+
+[
+  'wedding: "背景图片 {index}"',
+  'wedding: "Background Image {index}"',
+].forEach((snippet) => {
+  if (!i18nSource.includes(snippet)) {
+    throw new Error(`Expected renamed poster background label: ${snippet}`);
+  }
+});
+
 [
   "teamTitleLeft",
   "roleAreaLeft",
@@ -219,6 +278,7 @@ if (!modalSource.includes("GLOSSARY_TOP")) {
   "abilityTextWidth",
   "abilityLineHeight",
   "headerPanelOffsetX",
+  "showHeaderPanel",
   "headerPanelWidth",
   "headerPanelHeight",
   "headerTitleOffsetX",
@@ -228,6 +288,8 @@ if (!modalSource.includes("GLOSSARY_TOP")) {
   "teamGap",
   "glossaryBottomOffset",
   "roleIconSize",
+  "roleNameColor",
+  "roleAbilityColor",
   "roleNameFontSize",
   "roleAbilityFontSize",
   "roleAreaTitleGap",
@@ -251,6 +313,7 @@ if (!modalSource.includes("GLOSSARY_TOP")) {
   "roleAreaTop: 200",
   "roleNameAbilityGap: 20",
   "headerPanelOffsetX: 40",
+  "showHeaderPanel: true",
   "headerPanelWidth: 380",
   "headerPanelHeight: 94",
   "headerTitleOffsetX: 0",
@@ -270,9 +333,19 @@ if (!modalSource.includes("GLOSSARY_TOP")) {
   "teamGap: 30",
   "glossaryBottomOffset: 20",
   "roleIconSize: 40",
+  'roleNameColor: "#0c83a6"',
+  'roleAbilityColor: "#17110d"',
   'key: "roleIconSize"',
+  'key: "roleNameColor"',
+  'key: "roleAbilityColor"',
+  "control.type === 'checkbox'",
+  "control.type === 'color'",
+  'type="color"',
   "max: 800",
   'roleIconSize: read("roleIconSize", 12, 800)',
+  "showHeaderPanel: this.posterLayout.showHeaderPanel !== false",
+  "roleNameColor: this.normalizeColor(",
+  "roleAbilityColor: this.normalizeColor(",
   "roleNameFontSize: 24",
   "roleAbilityFontSize: 15",
   "roleAreaTitleGap: 34",
@@ -289,12 +362,15 @@ if (!modalSource.includes("GLOSSARY_TOP")) {
   "const rightX = leftX + 472",
   "const textOffsetX = iconSize + 18",
   "iconSize: config.roleIconSize",
+  "nameColor: config.roleNameColor",
+  "abilityColor: config.roleAbilityColor",
   "nameFontSize: config.roleNameFontSize",
   "abilityFontSize: config.roleAbilityFontSize",
   "titleGap: config.roleAreaTitleGap",
   "posterTopContent",
   "topContent: this.posterTopContent.trim()",
   "drawHeaderPanel(",
+  "if (config.showHeaderPanel) {",
   "drawHeaderContent(",
   "splitHeaderContent(",
   "contentText.split(/\\s+/)",
@@ -320,6 +396,8 @@ if (!modalSource.includes("GLOSSARY_TOP")) {
   "config.nightOtherTitleFontSize",
   "buildProxiedImageUrl",
   '"/api/script-poster-image?url="',
+  "ctx.fillStyle = settings.nameColor || team.accent",
+  'ctx.fillStyle = settings.abilityColor || "#17110d"',
 ].forEach((snippet) => {
   if (!modalSource.includes(snippet)) {
     throw new Error(
@@ -387,11 +465,12 @@ if (modalSource.includes("support-count")) {
 });
 
 [
-  "`剧本作者：${poster.author || \"未知\"}`",
-  'poster.topContent || "JSON 自动排版";',
+  'this.$t("modals.imageGenerator.canvas.author"',
+  'this.$t("modals.imageGenerator.canvas.autoLayout")',
+  'this.$t("modals.imageGenerator.canvas.fallbackWatermark")',
 ].forEach((snippet) => {
   if (!modalSource.includes(snippet)) {
-    throw new Error(`Expected readable Chinese header text: ${snippet}`);
+    throw new Error(`Expected translated header text: ${snippet}`);
   }
 });
 
@@ -429,11 +508,12 @@ if (modalSource.includes("support-count")) {
 });
 
 [
-  "layoutSections",
-  'label: "顶部与阵营"',
-  'label: "角色"',
-  'label: "夜晚顺序"',
-  'label: "底部说明"',
+  "layoutSections()",
+  'sectionLabel("basic")',
+  'sectionLabel("roles")',
+  'sectionLabel("night")',
+  'sectionLabel("glossary")',
+  'controlLabel("teamTitleLeft")',
 ].forEach((snippet) => {
   if (!modalSource.includes(snippet)) {
     throw new Error(`Expected grouped settings UI for ${snippet}`);
@@ -450,6 +530,20 @@ if (modalSource.includes("support-count")) {
 ].forEach((snippet) => {
   if (!modalSource.includes(snippet)) {
     throw new Error(`Expected scrollable controls or polished actions: ${snippet}`);
+  }
+});
+
+[
+  "poster-control-overview",
+  "poster-control-register",
+  "poster-command-grid",
+  "poster-control-group",
+  "poster-control-group-title",
+  "poster-field-grid",
+  "poster-control-alert",
+].forEach((snippet) => {
+  if (!modalSource.includes(snippet)) {
+    throw new Error(`Expected image generator to follow room-control UI pattern: ${snippet}`);
   }
 });
 
@@ -477,6 +571,62 @@ if (modalSource.includes("support-count")) {
 if (!modalSource.includes("generatePoster()")) {
   throw new Error("Expected image generator to refresh from current script state");
 }
+
+[
+  'imageGenerator: {',
+  'title: "图片生成"',
+  'title: "Image Generator"',
+  'preview: "生成预览"',
+  'preview: "Generate Preview"',
+  'team: {',
+].forEach((snippet) => {
+  if (!i18nSource.includes(snippet)) {
+    throw new Error(`Expected image generator i18n entry: ${snippet}`);
+  }
+});
+
+[
+  '$t("menu.imageGenerator")',
+  '$t("modals.imageGenerator.title")',
+  '$t("modals.imageGenerator.description")',
+  '$t("modals.imageGenerator.currentScript")',
+  '$t("modals.imageGenerator.chooseScript")',
+  '$t("modals.imageGenerator.actions.preview")',
+  '$t("modals.imageGenerator.actions.downloadPng")',
+  'this.$t("modals.imageGenerator.canvas.author"',
+  'this.$t("modals.imageGenerator.canvas.unknownAuthor")',
+  'this.$t("modals.imageGenerator.canvas.autoLayout")',
+  'this.$t("modals.imageGenerator.canvas.defaultTopTitle")',
+  'this.$t("modals.imageGenerator.canvas.scriptTitle")',
+  'this.$t("modals.imageGenerator.canvas.fallbackWatermark")',
+  'this.$t("modals.imageGenerator.canvas.firstNight")',
+  'this.$t("modals.imageGenerator.canvas.otherNight")',
+  'this.$t("modals.imageGenerator.glossary.title")',
+  'this.$t("modals.imageGenerator.glossary.description")',
+  "getPosterTeamLabel",
+].forEach((snippet) => {
+  if (!modalSource.includes(snippet) && !menuSource.includes(snippet)) {
+    throw new Error(`Expected image generator to use i18n snippet: ${snippet}`);
+  }
+});
+
+[
+  "<h3>图片生成</h3>",
+  "<p>选择当前剧本，生成接近参考图的剧本海报。</p>",
+  "显示可能 / 中毒 / 醉酒",
+  '<font-awesome-icon icon="image" /> 生成预览',
+  '<font-awesome-icon icon="download" /> 下载 PNG',
+  "`剧本作者：${poster.author || \"未知\"}`",
+  'poster.topContent || "JSON 自动排版";',
+  'ctx.fillText("閸撗勬拱"',
+  '"首夜",',
+  '"其他夜",',
+  'ctx.fillText("可能 / 中毒 / 醉酒"',
+].forEach((snippet) => {
+  if (modalSource.includes(snippet) || menuSource.includes(snippet)) {
+    throw new Error(`Expected image generator hardcoded UI text to move to i18n: ${snippet}`);
+  }
+});
 
 [
   "script-poster-image",

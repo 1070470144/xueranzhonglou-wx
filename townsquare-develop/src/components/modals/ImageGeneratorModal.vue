@@ -6,92 +6,135 @@
   >
     <section class="poster-generator">
       <header class="poster-generator-header">
-        <h3>图片生成</h3>
-        <p>选择当前剧本，生成接近参考图的剧本海报。</p>
+        <h3>{{ $t("modals.imageGenerator.title") }}</h3>
+        <p>{{ $t("modals.imageGenerator.description") }}</p>
       </header>
 
       <div class="poster-generator-grid">
         <div class="poster-controls">
           <div class="poster-controls-scroll">
-            <div class="script-picker">
-              <div class="script-picker-meta">
-                <span class="script-picker-label">当前剧本</span>
-                <strong>{{ currentScriptName }}</strong>
-                <span>{{ currentScriptRoleCount }}</span>
-              </div>
+            <section class="poster-control-overview">
+              <dl class="poster-control-register">
+                <div>
+                  <dt>{{ $t("modals.imageGenerator.currentScript") }}</dt>
+                  <dd>
+                    <strong>{{ currentScriptName }}</strong>
+                  </dd>
+                </div>
+                <div>
+                  <dt>
+                    {{ $t("modals.imageGenerator.settings.sections.roles") }}
+                  </dt>
+                  <dd>{{ currentScriptRoleCount }}</dd>
+                </div>
+              </dl>
+            </section>
+
+            <div class="poster-command-grid poster-script-actions">
               <button
                 class="button townsfolk script-picker-action"
                 type="button"
                 @click="chooseScript"
               >
-                <font-awesome-icon icon="book" /> 选择剧本
+                <font-awesome-icon icon="book" />
+                {{ $t("modals.imageGenerator.chooseScript") }}
               </button>
             </div>
 
-            <div class="poster-meta-controls">
-              <label>
-                顶部区域标题
-                <input
-                  v-model="posterTopText"
-                  type="text"
-                  placeholder="默认显示 修行渐远"
-                  @keyup.stop=""
-                  @input="redrawPoster"
-                />
-              </label>
-              <label>
-                顶部区域内容
-                <input
-                  v-model="posterTopContent"
-                  type="text"
-                  placeholder="按空格分隔，显示在 JSON 自动排版区域"
-                  @keyup.stop=""
-                  @input="redrawPoster"
-                />
-              </label>
-              <label>
-                剧本名称
-                <input
-                  v-model="posterTitleOverride"
-                  type="text"
-                  placeholder="默认从剧本 JSON 读取"
-                  @keyup.stop=""
-                  @input="redrawPoster"
-                />
-              </label>
-              <label>
-                作者名称
-                <input
-                  v-model="posterAuthorOverride"
-                  type="text"
-                  placeholder="默认从剧本 JSON 读取"
-                  @keyup.stop=""
-                  @input="redrawPoster"
-                />
-              </label>
-            </div>
+            <details class="poster-control-group poster-meta-controls" open>
+              <summary class="poster-control-group-title">
+                {{ $t("modals.imageGenerator.settings.summary") }}
+              </summary>
+              <div class="poster-field-grid poster-meta-field-grid">
+                <label>
+                  {{ $t("modals.imageGenerator.fields.topTitle") }}
+                  <input
+                    v-model="posterTopText"
+                    type="text"
+                    :placeholder="
+                      $t('modals.imageGenerator.fields.topTitlePlaceholder')
+                    "
+                    @keyup.stop=""
+                    @input="redrawPoster"
+                  />
+                </label>
+                <label>
+                  {{ $t("modals.imageGenerator.fields.topContent") }}
+                  <input
+                    v-model="posterTopContent"
+                    type="text"
+                    :placeholder="
+                      $t('modals.imageGenerator.fields.topContentPlaceholder')
+                    "
+                    @keyup.stop=""
+                    @input="redrawPoster"
+                  />
+                </label>
+                <label>
+                  {{ $t("modals.imageGenerator.fields.scriptName") }}
+                  <input
+                    v-model="posterTitleOverride"
+                    type="text"
+                    :placeholder="
+                      $t('modals.imageGenerator.fields.scriptJsonPlaceholder')
+                    "
+                    @keyup.stop=""
+                    @input="redrawPoster"
+                  />
+                </label>
+                <label>
+                  {{ $t("modals.imageGenerator.fields.authorName") }}
+                  <input
+                    v-model="posterAuthorOverride"
+                    type="text"
+                    :placeholder="
+                      $t('modals.imageGenerator.fields.authorJsonPlaceholder')
+                    "
+                    @keyup.stop=""
+                    @input="redrawPoster"
+                  />
+                </label>
+                <label>
+                  {{ $t("modals.imageGenerator.fields.posterBackground") }}
+                  <select v-model="posterBackgroundId" @change="redrawPoster">
+                    <option
+                      v-for="option in posterBackgroundOptions"
+                      :key="option.value"
+                      :value="option.value"
+                    >
+                      {{ option.label }}
+                    </option>
+                  </select>
+                </label>
+              </div>
+            </details>
 
-            <details class="layout-settings" open>
-              <summary>布局参数</summary>
-              <div
+            <div class="poster-settings-groups">
+              <details
                 v-for="section in layoutSections"
                 :key="section.key"
-                class="layout-settings-section"
+                class="poster-control-group layout-settings-section"
+                open
               >
-                <h4>{{ section.label }}</h4>
-                <label
-                  v-if="section.key === 'glossary'"
-                  class="poster-checkbox"
-                >
-                  <input
-                    v-model="showGlossary"
-                    type="checkbox"
-                    @change="redrawPoster"
-                  />
-                  显示可能 / 中毒 / 醉酒
-                </label>
-                <div class="layout-settings-grid">
-                  <label v-for="control in section.controls" :key="control.key">
+                <summary class="poster-control-group-title">
+                  {{ section.label }}
+                </summary>
+                <div class="poster-field-grid">
+                  <label
+                    v-if="section.key === 'glossary'"
+                    class="poster-checkbox"
+                  >
+                    <input
+                      v-model="showGlossary"
+                      type="checkbox"
+                      @change="redrawPoster"
+                    />
+                    {{ $t("modals.imageGenerator.glossary.toggle") }}
+                  </label>
+                  <label
+                    v-for="control in section.controls"
+                    :key="control.key"
+                  >
                     {{ control.label }}
                     <select
                       v-if="control.type === 'select'"
@@ -118,20 +161,28 @@
                     />
                   </label>
                 </div>
-              </div>
-            </details>
+              </details>
+            </div>
 
-            <div v-if="error" class="poster-error">{{ error }}</div>
-            <div v-if="status" class="poster-status">{{ status }}</div>
+            <div v-if="error" class="poster-control-alert poster-error error">
+              {{ error }}
+            </div>
+            <div
+              v-if="status"
+              class="poster-control-alert poster-status success"
+            >
+              {{ status }}
+            </div>
           </div>
 
-          <div class="poster-actions">
+          <div class="poster-actions poster-command-grid">
             <button
               class="button townsfolk poster-action-primary"
               type="button"
               @click="generatePoster"
             >
-              <font-awesome-icon icon="image" /> 生成预览
+              <font-awesome-icon icon="image" />
+              {{ $t("modals.imageGenerator.actions.preview") }}
             </button>
             <button
               class="button poster-action-secondary"
@@ -139,7 +190,8 @@
               :disabled="!posterDataUrl"
               @click="downloadPoster"
             >
-              <font-awesome-icon icon="download" /> 下载 PNG
+              <font-awesome-icon icon="download" />
+              {{ $t("modals.imageGenerator.actions.downloadPng") }}
             </button>
           </div>
         </div>
@@ -160,11 +212,57 @@ import {
   normalizeCurrentScriptPosterData,
 } from "@/services/scriptPoster";
 import scriptPosterBase from "@/assets/script-poster-parchment-background.jpg";
+import posterWeddingBackground01 from "@/assets/script-poster-backgrounds/wedding-background-01.png";
+import posterWeddingBackground02 from "@/assets/script-poster-backgrounds/wedding-background-02.png";
+import posterWeddingBackground03 from "@/assets/script-poster-backgrounds/wedding-background-03.png";
+import posterWeddingBackground04 from "@/assets/script-poster-backgrounds/wedding-background-04.png";
+import posterWeddingBackground05 from "@/assets/script-poster-backgrounds/wedding-background-05.png";
+import posterWeddingBackground06 from "@/assets/script-poster-backgrounds/wedding-background-06.png";
+import posterWeddingBackground07 from "@/assets/script-poster-backgrounds/wedding-background-07.png";
+import posterWeddingBackground08 from "@/assets/script-poster-backgrounds/wedding-background-08.png";
+import posterWeddingBackground09 from "@/assets/script-poster-backgrounds/wedding-background-09.png";
+import posterWeddingBackground10 from "@/assets/script-poster-backgrounds/wedding-background-10.png";
+import posterWeddingBackground11 from "@/assets/script-poster-backgrounds/wedding-background-11.png";
+import posterWeddingBackground12 from "@/assets/script-poster-backgrounds/wedding-background-12.png";
+import posterWeddingBackground13 from "@/assets/script-poster-backgrounds/wedding-background-13.png";
+import posterWeddingBackground14 from "@/assets/script-poster-backgrounds/wedding-background-14.png";
+import posterWeddingBackground15 from "@/assets/script-poster-backgrounds/wedding-background-15.png";
+import posterWeddingBackground16 from "@/assets/script-poster-backgrounds/wedding-background-16.png";
+import posterWeddingBackground17 from "@/assets/script-poster-backgrounds/wedding-background-17.png";
+import posterWeddingBackground18 from "@/assets/script-poster-backgrounds/wedding-background-18.png";
+import posterWeddingBackground19 from "@/assets/script-poster-backgrounds/wedding-background-19.png";
 
 const POSTER_WIDTH = 1080;
 const POSTER_HEIGHT = 1456;
 const SCRIPT_POSTER_IMAGE_PROXY = "/api/script-poster-image?url=";
 const SCRIPT_POSTER_RENDER_API = "/api/script-poster-render";
+const POSTER_BACKGROUND_OPTIONS = [
+  {
+    value: "parchment",
+    labelKey: "modals.imageGenerator.backgrounds.default",
+    src: scriptPosterBase,
+  },
+  { value: "wedding-01", index: 1, src: posterWeddingBackground01 },
+  { value: "wedding-02", index: 2, src: posterWeddingBackground02 },
+  { value: "wedding-03", index: 3, src: posterWeddingBackground03 },
+  { value: "wedding-04", index: 4, src: posterWeddingBackground04 },
+  { value: "wedding-05", index: 5, src: posterWeddingBackground05 },
+  { value: "wedding-06", index: 6, src: posterWeddingBackground06 },
+  { value: "wedding-07", index: 7, src: posterWeddingBackground07 },
+  { value: "wedding-08", index: 8, src: posterWeddingBackground08 },
+  { value: "wedding-09", index: 9, src: posterWeddingBackground09 },
+  { value: "wedding-10", index: 10, src: posterWeddingBackground10 },
+  { value: "wedding-11", index: 11, src: posterWeddingBackground11 },
+  { value: "wedding-12", index: 12, src: posterWeddingBackground12 },
+  { value: "wedding-13", index: 13, src: posterWeddingBackground13 },
+  { value: "wedding-14", index: 14, src: posterWeddingBackground14 },
+  { value: "wedding-15", index: 15, src: posterWeddingBackground15 },
+  { value: "wedding-16", index: 16, src: posterWeddingBackground16 },
+  { value: "wedding-17", index: 17, src: posterWeddingBackground17 },
+  { value: "wedding-18", index: 18, src: posterWeddingBackground18 },
+  { value: "wedding-19", index: 19, src: posterWeddingBackground19 },
+];
+const DEFAULT_POSTER_BACKGROUND_ID = POSTER_BACKGROUND_OPTIONS[0].value;
 const DEFAULT_POSTER_LAYOUT = {
   teamTitleLeft: 90,
   roleAreaLeft: 112,
@@ -196,12 +294,12 @@ const DEFAULT_POSTER_LAYOUT = {
   nightOtherTitleFontSize: 26,
   nightTitleLeftOffset: 36,
 };
-const titleArtStyleOptions = [
-  { value: "classic", label: "Classic" },
-  { value: "goldEmboss", label: "Gold Emboss" },
-  { value: "cinnabarSeal", label: "Cinnabar Seal" },
-  { value: "midnightBlue", label: "Midnight Blue" },
-  { value: "darkGold", label: "Dark Gold" },
+const TITLE_ART_STYLE_VALUES = [
+  "classic",
+  "goldEmboss",
+  "cinnabarSeal",
+  "midnightBlue",
+  "darkGold",
 ];
 const GLOSSARY_HEIGHT = 124;
 const GLOSSARY_ROLE_GAP = 18;
@@ -247,15 +345,201 @@ export default {
     currentScriptName() {
       return (
         (this.edition && (this.edition.name || this.edition.id)) ||
-        "未命名剧本"
+        this.$t("modals.imageGenerator.unnamedScript")
       );
     },
     currentScriptRoleCount() {
+      let count = 0;
       if (this.roles && typeof this.roles.size === "number") {
-        return `${this.roles.size} 个角色`;
+        count = this.roles.size;
+      } else if (Array.isArray(this.roles)) {
+        count = this.roles.length;
       }
-      if (Array.isArray(this.roles)) return `${this.roles.length} 个角色`;
-      return "0 个角色";
+      return this.$t("modals.imageGenerator.roleCount", { count });
+    },
+    titleArtStyleOptions() {
+      return TITLE_ART_STYLE_VALUES.map((value) => ({
+        value,
+        label: this.$t(`modals.imageGenerator.titleArtStyle.${value}`),
+      }));
+    },
+    posterBackgroundOptions() {
+      return POSTER_BACKGROUND_OPTIONS.map((option) => ({
+        value: option.value,
+        label: option.labelKey
+          ? this.$t(option.labelKey)
+          : this.$t("modals.imageGenerator.backgrounds.wedding", {
+              index: option.index,
+            }),
+      }));
+    },
+    selectedPosterBackgroundSrc() {
+      const option =
+        POSTER_BACKGROUND_OPTIONS.find(
+          (background) => background.value === this.posterBackgroundId,
+        ) || POSTER_BACKGROUND_OPTIONS[0];
+      return option.src;
+    },
+    layoutSections() {
+      const sectionLabel = (key) =>
+        this.$t(`modals.imageGenerator.settings.sections.${key}`);
+      const controlLabel = (key) =>
+        this.$t(`modals.imageGenerator.settings.controls.${key}`);
+
+      return [
+        {
+          key: "basic",
+          label: sectionLabel("basic"),
+          controls: [
+            { key: "teamTitleLeft", label: controlLabel("teamTitleLeft"), min: 20, max: 180 },
+            { key: "roleAreaLeft", label: controlLabel("roleAreaLeft"), min: 80, max: 180 },
+            { key: "roleAreaTop", label: controlLabel("roleAreaTop"), min: 130, max: 260 },
+            {
+              key: "roleAreaTitleGap",
+              label: controlLabel("roleAreaTitleGap"),
+              min: 0,
+              max: 120,
+            },
+            {
+              key: "headerPanelOffsetX",
+              label: controlLabel("headerPanelOffsetX"),
+              min: -120,
+              max: 120,
+            },
+            {
+              key: "headerPanelWidth",
+              label: controlLabel("headerPanelWidth"),
+              min: 240,
+              max: 520,
+            },
+            {
+              key: "headerPanelHeight",
+              label: controlLabel("headerPanelHeight"),
+              min: 60,
+              max: 160,
+            },
+            {
+              key: "headerTitleOffsetX",
+              label: controlLabel("headerTitleOffsetX"),
+              min: -120,
+              max: 120,
+            },
+            {
+              key: "headerTitleOffsetY",
+              label: controlLabel("headerTitleOffsetY"),
+              min: -60,
+              max: 60,
+            },
+            {
+              key: "titleArtStyle",
+              label: controlLabel("titleArtStyle"),
+              type: "select",
+              options: this.titleArtStyleOptions,
+            },
+            {
+              key: "headerAuthorOffsetX",
+              label: controlLabel("headerAuthorOffsetX"),
+              min: -120,
+              max: 120,
+            },
+            {
+              key: "headerAuthorOffsetY",
+              label: controlLabel("headerAuthorOffsetY"),
+              min: -40,
+              max: 80,
+            },
+          ],
+        },
+        {
+          key: "roles",
+          label: sectionLabel("roles"),
+          controls: [
+            { key: "roleIconSize", label: controlLabel("roleIconSize"), min: 12, max: 800 },
+            {
+              key: "roleNameFontSize",
+              label: controlLabel("roleNameFontSize"),
+              min: 12,
+              max: 30,
+            },
+            {
+              key: "roleAbilityFontSize",
+              label: controlLabel("roleAbilityFontSize"),
+              min: 8,
+              max: 20,
+            },
+            {
+              key: "roleNameAbilityGap",
+              label: controlLabel("roleNameAbilityGap"),
+              min: 0,
+              max: 30,
+            },
+            {
+              key: "abilityTextWidth",
+              label: controlLabel("abilityTextWidth"),
+              min: 260,
+              max: 420,
+            },
+            {
+              key: "abilityLineHeight",
+              label: controlLabel("abilityLineHeight"),
+              min: 10,
+              max: 28,
+            },
+            { key: "roleGap", label: controlLabel("roleGap"), min: -20, max: 28 },
+            { key: "teamGap", label: controlLabel("teamGap"), min: -20, max: 80 },
+          ],
+        },
+        {
+          key: "night",
+          label: sectionLabel("night"),
+          controls: [
+            { key: "nightIconSize", label: controlLabel("nightIconSize"), min: 12, max: 80 },
+            { key: "nightIconGap", label: controlLabel("nightIconGap"), min: 10, max: 90 },
+            {
+              key: "nightTitleFontSize",
+              label: controlLabel("nightTitleFontSize"),
+              min: 12,
+              max: 48,
+            },
+            {
+              key: "nightFirstTitleFontSize",
+              label: controlLabel("nightFirstTitleFontSize"),
+              min: 12,
+              max: 48,
+            },
+            {
+              key: "nightOtherTitleFontSize",
+              label: controlLabel("nightOtherTitleFontSize"),
+              min: 12,
+              max: 48,
+            },
+            {
+              key: "nightTitleLeftOffset",
+              label: controlLabel("nightTitleLeftOffset"),
+              min: 0,
+              max: 80,
+            },
+          ],
+        },
+        {
+          key: "glossary",
+          label: sectionLabel("glossary"),
+          controls: [
+            {
+              key: "glossaryBottomOffset",
+              label: controlLabel("glossaryBottomOffset"),
+              min: 0,
+              max: 80,
+            },
+            {
+              key: "glossaryTextGap",
+              label: controlLabel("glossaryTextGap"),
+              min: 20,
+              max: 70,
+            },
+          ],
+        },
+      ];
     },
   },
   data() {
@@ -271,161 +555,8 @@ export default {
       posterTopContent: "",
       posterTitleOverride: "",
       posterAuthorOverride: "",
+      posterBackgroundId: DEFAULT_POSTER_BACKGROUND_ID,
       posterLayout: { ...DEFAULT_POSTER_LAYOUT },
-      layoutSections: [
-        {
-          key: "basic",
-          label: "顶部与阵营",
-          controls: [
-            { key: "teamTitleLeft", label: "阵营标题左距", min: 20, max: 180 },
-            { key: "roleAreaLeft", label: "角色区域左距", min: 80, max: 180 },
-            { key: "roleAreaTop", label: "角色区域上距", min: 130, max: 260 },
-            {
-              key: "roleAreaTitleGap",
-              label: "标题到角色间距",
-              min: 0,
-              max: 120,
-            },
-            {
-              key: "headerPanelOffsetX",
-              label: "顶部区域横移",
-              min: -120,
-              max: 120,
-            },
-            {
-              key: "headerPanelWidth",
-              label: "顶部区域宽度",
-              min: 240,
-              max: 520,
-            },
-            {
-              key: "headerPanelHeight",
-              label: "顶部区域高度",
-              min: 60,
-              max: 160,
-            },
-            {
-              key: "headerTitleOffsetX",
-              label: "剧本名横移",
-              min: -120,
-              max: 120,
-            },
-            {
-              key: "headerTitleOffsetY",
-              label: "剧本名纵移",
-              min: -60,
-              max: 60,
-            },
-            {
-              key: "titleArtStyle",
-              label: "剧本名艺术字",
-              type: "select",
-              options: titleArtStyleOptions,
-            },
-            {
-              key: "headerAuthorOffsetX",
-              label: "作者横移",
-              min: -120,
-              max: 120,
-            },
-            {
-              key: "headerAuthorOffsetY",
-              label: "作者纵移",
-              min: -40,
-              max: 80,
-            },
-          ],
-        },
-        {
-          key: "roles",
-          label: "角色",
-          controls: [
-            { key: "roleIconSize", label: "角色图片大小", min: 12, max: 800 },
-            {
-              key: "roleNameFontSize",
-              label: "角色名字字号",
-              min: 12,
-              max: 30,
-            },
-            {
-              key: "roleAbilityFontSize",
-              label: "角色技能字号",
-              min: 8,
-              max: 20,
-            },
-            {
-              key: "roleNameAbilityGap",
-              label: "名字技能间距",
-              min: 0,
-              max: 30,
-            },
-            {
-              key: "abilityTextWidth",
-              label: "技能文字宽度",
-              min: 260,
-              max: 420,
-            },
-            {
-              key: "abilityLineHeight",
-              label: "技能行间距",
-              min: 10,
-              max: 28,
-            },
-            { key: "roleGap", label: "角色间距", min: -20, max: 28 },
-            { key: "teamGap", label: "阵营间距", min: -20, max: 80 },
-          ],
-        },
-        {
-          key: "night",
-          label: "夜晚顺序",
-          controls: [
-            { key: "nightIconSize", label: "夜晚图片大小", min: 12, max: 80 },
-            { key: "nightIconGap", label: "夜晚图片间隔", min: 10, max: 90 },
-            {
-              key: "nightTitleFontSize",
-              label: "夜晚标题字号",
-              min: 12,
-              max: 48,
-            },
-            {
-              key: "nightFirstTitleFontSize",
-              label: "首夜字号",
-              min: 12,
-              max: 48,
-            },
-            {
-              key: "nightOtherTitleFontSize",
-              label: "其他夜字号",
-              min: 12,
-              max: 48,
-            },
-            {
-              key: "nightTitleLeftOffset",
-              label: "夜晚标题边距",
-              min: 0,
-              max: 80,
-            },
-          ],
-        },
-        {
-          key: "glossary",
-          label: "底部说明",
-          controls: [
-            {
-              key: "glossaryBottomOffset",
-              label: "距离底部高度",
-              min: 0,
-              max: 80,
-            },
-            {
-              key: "glossaryTextGap",
-              label: "标题文本间距",
-              min: 20,
-              max: 70,
-            },
-          ],
-        },
-      ],
     };
   },
   watch: {
@@ -443,6 +574,9 @@ export default {
       handler() {
         if (this.modals.imageGenerator) this.generatePoster();
       },
+    },
+    "$i18n.locale"() {
+      if (this.modals.imageGenerator) this.redrawPoster();
     },
   },
   mounted() {
@@ -469,7 +603,8 @@ export default {
         this.lastPoster = poster;
         await this.renderPoster(poster);
       } catch (error) {
-        this.error = error.message || "Generate failed";
+        this.error =
+          error.message || this.$t("modals.imageGenerator.errors.generateFailed");
       }
     },
     async redrawPoster() {
@@ -478,7 +613,8 @@ export default {
       try {
         await this.renderPoster(this.lastPoster);
       } catch (error) {
-        this.error = error.message || "Redraw failed";
+        this.error =
+          error.message || this.$t("modals.imageGenerator.errors.redrawFailed");
       }
     },
     async renderPoster(poster) {
@@ -491,7 +627,7 @@ export default {
       });
       try {
         this.posterDataUrl = canvas.toDataURL("image/png");
-        this.status = "Preview generated";
+        this.status = this.$t("modals.imageGenerator.status.previewGenerated");
       } catch (error) {
         // eslint-disable-next-line no-console
         console.warn("[script-poster] PNG export blocked by remote images", {
@@ -504,8 +640,9 @@ export default {
           allowDirect: false,
         });
         this.posterDataUrl = exportCanvas.toDataURL("image/png");
-        this.status =
-          "Preview generated; some remote role images could not be proxied, placeholders are used for PNG export";
+        this.status = this.$t(
+          "modals.imageGenerator.status.previewGeneratedFallback",
+        );
         // eslint-disable-next-line no-console
         console.warn("[script-poster] export-safe poster generated");
       }
@@ -530,7 +667,9 @@ export default {
         title: this.posterTitleOverride.trim() || poster.title,
         author: this.posterAuthorOverride.trim() || poster.author,
         topContent: this.posterTopContent.trim(),
-        topText: this.posterTopText.trim() || "修行渐远",
+        topText:
+          this.posterTopText.trim() ||
+          this.$t("modals.imageGenerator.canvas.defaultTopTitle"),
       };
     },
     buildPosterRenderPayload() {
@@ -539,11 +678,12 @@ export default {
         poster: this.getPosterDisplayData(this.lastPoster),
         rawLayout: { ...this.posterLayout },
         showGlossary: this.showGlossary,
+        backgroundId: this.posterBackgroundId,
       };
     },
     async renderScriptPosterPayload(payload) {
       if (!payload || !payload.poster) {
-        throw new Error("missing poster render payload");
+        throw new Error(this.$t("modals.imageGenerator.errors.missingPayload"));
       }
       this.lastPoster = payload.poster;
       this.posterLayout = {
@@ -555,9 +695,14 @@ export default {
       this.posterAuthorOverride = "";
       this.posterTopText = "";
       this.posterTopContent = "";
+      this.posterBackgroundId = this.normalizePosterBackgroundId(
+        payload.backgroundId,
+      );
       await this.$nextTick();
       const canvas = this.$refs.posterCanvas;
-      if (!canvas) throw new Error("poster canvas not ready");
+      if (!canvas) {
+        throw new Error(this.$t("modals.imageGenerator.errors.canvasNotReady"));
+      }
       const ctx = canvas.getContext("2d");
       await this.drawPosterContent(ctx, payload.poster, {
         exportSafe: false,
@@ -574,20 +719,32 @@ export default {
       ctx.fillStyle = "#3b3028";
       ctx.font = "bold 42px KaiTi, STKaiti, serif";
       ctx.textAlign = "center";
-      ctx.fillText("Choose a script to generate poster", POSTER_WIDTH / 2, 760);
+      ctx.fillText(
+        this.$t("modals.imageGenerator.canvas.empty"),
+        POSTER_WIDTH / 2,
+        760,
+      );
     },
     async drawBackground(ctx, options = {}) {
-      if (!this.aiBackground) {
+      const background = this.selectedPosterBackgroundSrc || this.aiBackground;
+      if (!background) {
         this.drawTemplateBackground(ctx);
         return;
       }
       try {
-        const image = await this.loadImage(this.aiBackground, options);
+        const image = await this.loadImage(background, options);
         this.drawImageCover(ctx, image, 0, 0, POSTER_WIDTH, POSTER_HEIGHT);
       } catch (error) {
         this.drawTemplateBackground(ctx);
-        this.status = "Background failed to load; using template background";
+        this.status = this.$t("modals.imageGenerator.status.backgroundFallback");
       }
+    },
+    normalizePosterBackgroundId(backgroundId) {
+      return POSTER_BACKGROUND_OPTIONS.some(
+        (option) => option.value === backgroundId,
+      )
+        ? backgroundId
+        : DEFAULT_POSTER_BACKGROUND_ID;
     },
     drawTemplateBackground(ctx) {
       const paper = ctx.createLinearGradient(0, 0, POSTER_WIDTH, POSTER_HEIGHT);
@@ -631,7 +788,11 @@ export default {
       ctx.fillStyle = "#6b5a47";
       ctx.font = "bold 145px STKaiti, KaiTi, serif";
       ctx.textAlign = "center";
-      ctx.fillText("閸撗勬拱", 0, 0);
+      ctx.fillText(
+        this.$t("modals.imageGenerator.canvas.fallbackWatermark"),
+        0,
+        0,
+      );
       ctx.restore();
 
       this.drawLeafCluster(ctx, 48, 28, 1);
@@ -686,7 +847,10 @@ export default {
       ctx.fillStyle = "#17110d";
       ctx.font = "bold 22px SimSun, serif";
       ctx.fillText(
-        `剧本作者：${poster.author || "未知"}`,
+        this.$t("modals.imageGenerator.canvas.author", {
+          author:
+            poster.author || this.$t("modals.imageGenerator.canvas.unknownAuthor"),
+        }),
         286 + config.headerAuthorOffsetX,
         132 + config.headerAuthorOffsetY,
       );
@@ -728,7 +892,8 @@ export default {
     },
     drawHeaderContent(ctx, poster, config, panel) {
       const contentText =
-        poster.topContent || "JSON 自动排版";
+        poster.topContent ||
+        this.$t("modals.imageGenerator.canvas.autoLayout");
       const words = this.splitHeaderContent(contentText);
       const lineHeight = Math.max(
         16,
@@ -761,7 +926,8 @@ export default {
       ctx.restore();
     },
     drawTopPanelTitle(ctx, poster, config, panel) {
-      const title = poster.topText || "修行渐远";
+      const title =
+        poster.topText || this.$t("modals.imageGenerator.canvas.defaultTopTitle");
       const x = panel.centerX;
       const y = panel.y + Math.min(43, panel.height * 0.46);
       ctx.save();
@@ -774,7 +940,8 @@ export default {
     },
     drawPosterTitle(ctx, title, x, y, maxWidth, startSize, config) {
       const style = config.titleArtStyle || "classic";
-      const displayTitle = title || "剧本标题";
+      const displayTitle =
+        title || this.$t("modals.imageGenerator.canvas.scriptTitle");
       ctx.save();
       ctx.textAlign = "left";
       ctx.textBaseline = "alphabetic";
@@ -841,7 +1008,7 @@ export default {
       await this.drawNightColumn(
         ctx,
         config.nightTitleLeftOffset,
-        "首夜",
+        this.$t("modals.imageGenerator.canvas.firstNight"),
         poster.firstNight,
         "#88d6ff",
         options,
@@ -850,7 +1017,7 @@ export default {
       await this.drawNightColumn(
         ctx,
         POSTER_WIDTH - config.nightTitleLeftOffset,
-        "其他夜",
+        this.$t("modals.imageGenerator.canvas.otherNight"),
         poster.otherNight,
         "#e7d2ff",
         options,
@@ -884,7 +1051,7 @@ export default {
       ctx.fillStyle = color;
       ctx.font = `bold ${
         titleFontSize || config.nightTitleFontSize
-      }px SimHei, sans-serif`;
+      }px SimSun, serif`;
       ctx.textAlign = "center";
       this.drawVerticalText(
         ctx,
@@ -1150,7 +1317,8 @@ export default {
       ctx.lineWidth = 2;
       ctx.font = `bold ${settings.titleFontSize}px STKaiti, KaiTi, serif`;
       ctx.textBaseline = "middle";
-      const titleWidth = ctx.measureText(team.label).width;
+      const title = this.getPosterTeamLabel(team);
+      const titleWidth = ctx.measureText(title).width;
       const titleCenterY = y + settings.titleFontSize / 2;
       ctx.beginPath();
       ctx.moveTo(x + titleWidth + 18, titleCenterY);
@@ -1158,8 +1326,13 @@ export default {
       ctx.stroke();
       ctx.fillStyle = team.accent;
       ctx.textAlign = "left";
-      ctx.fillText(team.label, x, titleCenterY);
+      ctx.fillText(title, x, titleCenterY);
       ctx.restore();
+    },
+    getPosterTeamLabel(team) {
+      const key = `modals.imageGenerator.team.${team.key}`;
+      const label = this.$t(key);
+      return label === key ? team.label : label;
     },
     async drawRole(ctx, x, y, width, role, team, options = {}) {
       const settings = options.settings || ROLE_LAYOUT_ATTEMPTS[0];
@@ -1210,12 +1383,16 @@ export default {
       ctx.fillStyle = "#7b2a22";
       ctx.font = "bold 24px STKaiti, KaiTi, serif";
       ctx.textAlign = "left";
-      ctx.fillText("可能 / 中毒 / 醉酒", 245, GLOSSARY_TOP + 34);
+      ctx.fillText(
+        this.$t("modals.imageGenerator.glossary.title"),
+        245,
+        GLOSSARY_TOP + 34,
+      );
       ctx.fillStyle = "#211813";
       ctx.font = "15px SimSun, serif";
       this.wrapText(
         ctx,
-        "某件事可能发生时，由说书人决定是否发生。中毒或醉酒的玩家会失去能力，但会以为自己仍有能力。",
+        this.$t("modals.imageGenerator.glossary.description"),
         580,
         2,
       ).forEach((line, index) => {
@@ -1471,7 +1648,8 @@ export default {
         return;
       } catch (error) {
         this.error =
-          error.message || "Backend PNG render failed; using preview fallback";
+          error.message ||
+          this.$t("modals.imageGenerator.errors.backendFailedFallback");
         // eslint-disable-next-line no-console
         console.warn("[script-poster] backend PNG render failed", error);
       }
@@ -1482,8 +1660,10 @@ export default {
     },
     async downloadPosterFromServer() {
       const payload = this.buildPosterRenderPayload();
-      if (!payload) throw new Error("Please generate a preview first");
-      this.status = "Generating PNG on server...";
+      if (!payload) {
+        throw new Error(this.$t("modals.imageGenerator.errors.previewRequired"));
+      }
+      this.status = this.$t("modals.imageGenerator.status.serverGenerating");
       const response = await fetch(SCRIPT_POSTER_RENDER_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1499,7 +1679,7 @@ export default {
         link.href = objectUrl;
         link.download = "script-poster.png";
         link.click();
-        this.status = "PNG generated by server";
+        this.status = this.$t("modals.imageGenerator.status.serverGenerated");
       } finally {
         setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
       }
@@ -1511,200 +1691,277 @@ export default {
 
 <style scoped lang="scss">
 .poster-generator {
-  width: min(1180px, 86vw);
+  width: min(1180px, calc(92vw - 2em));
+  max-width: 100%;
   max-height: 82vh;
+  overflow: hidden;
+  box-sizing: border-box;
+  color: #dcc4a1;
+}
+
+.poster-generator,
+.poster-generator * {
+  box-sizing: border-box;
+}
+
+::v-deep .modal {
+  max-width: min(92vw, calc(100vw - 3em));
+}
+
+::v-deep .modal > .slot {
+  overflow-x: hidden;
 }
 
 .poster-generator-header {
   padding-right: 82px;
-  margin-bottom: 14px;
+  margin-bottom: 0.62em;
+  padding-bottom: 0.62em;
+  border-bottom: 1px solid #3d2e26;
 
   h3 {
-    margin-bottom: 4px;
+    margin-bottom: 0.16em;
+    color: #fff8e7;
+    letter-spacing: 0.04em;
   }
 
   p {
     margin: 0;
     color: #c8b28f;
-    font-size: 16px;
+    font-size: 0.88rem;
+    line-height: 1.35;
   }
 }
 
 .poster-generator-grid {
   display: grid;
-  grid-template-columns: minmax(300px, 420px) minmax(340px, 1fr);
+  grid-template-columns: minmax(280px, 400px) minmax(0, 1fr);
   gap: 18px;
   align-items: start;
   min-height: 0;
+  min-width: 0;
 }
 
 .poster-controls {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0.42em;
   min-width: 0;
   min-height: 0;
   max-height: calc(100vh - 180px);
   overflow-x: hidden;
+  font-size: 14px;
 }
 
 .poster-controls-scroll {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
-  gap: 12px;
+  gap: 0.42em;
   min-height: 0;
   min-width: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  padding-right: 6px;
+  padding-right: 0.34em;
 }
 
 .poster-controls label {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0.22em;
   min-width: 0;
   max-width: 100%;
+  color: #dcc4a1;
+  line-height: 1.2;
   overflow-wrap: anywhere;
+  font-size: 0.76em;
 }
 
-.script-picker {
+.poster-control-overview,
+.poster-control-group {
+  margin: 0;
+  border: 1px solid #3d2e26;
+  border-radius: 2px;
+  background: rgba(18, 15, 13, 0.68);
+  box-shadow: inset 0 1px 0 rgba(255, 236, 190, 0.04);
+}
+
+.poster-control-overview {
+  padding: 0;
+}
+
+.poster-control-register {
+  margin: 0;
+}
+
+.poster-control-register div {
+  display: grid;
+  grid-template-columns: 6.6em minmax(0, 1fr);
+  min-height: 1.86em;
+  border-bottom: 1px solid #261d19;
+}
+
+.poster-control-register div:last-child {
+  border-bottom: 0;
+}
+
+.poster-control-register dt,
+.poster-control-register dd {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
   min-width: 0;
-  padding: 10px 12px;
-  border: 1px solid rgba(124, 94, 70, 0.72);
-  background: rgba(5, 4, 4, 0.36);
-}
-
-.script-picker-meta {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 0;
-}
-
-.script-picker-label {
-  color: #c8b28f;
-  font-size: 12px;
-}
-
-.script-picker-meta strong {
-  color: #f7f0df;
-  font-size: 15px;
-}
-
-.script-picker-meta span:last-child {
-  color: #9e8a70;
-  font-size: 12px;
-}
-
-.script-picker-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  flex: 0 0 auto;
-  max-width: 128px;
+  margin: 0;
+  padding: 0 0.48em;
   overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.poster-control-register dt {
+  color: #9e8a70;
+  font-size: 0.76em;
+}
+
+.poster-control-register dd {
+  color: #dcc4a1;
   white-space: nowrap;
 }
 
-.script-picker-action svg {
-  flex: 0 0 auto;
-  font-size: 14px;
-}
-
-.poster-meta-controls {
-  display: grid;
-  gap: 8px;
+.poster-control-register strong {
   min-width: 0;
+  color: #fff8e7;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.poster-meta-controls label {
-  color: #f7f0df;
-  font-size: 14px;
-}
-
-.poster-meta-controls input {
-  color: #f7f0df;
-  font-size: 14px;
-  width: 100%;
-}
-
-.poster-controls textarea {
-  width: 100%;
-  min-height: 250px;
-  resize: vertical;
-  padding: 10px;
-  font-family: Consolas, "Courier New", monospace;
-}
-
-.poster-controls input {
-  min-height: 34px;
-  padding: 4px 8px;
-  min-width: 0;
-  max-width: 100%;
-}
-
-.ai-settings {
-  border: 1px solid rgba(124, 94, 70, 0.72);
-  padding: 10px;
-  background: rgba(5, 4, 4, 0.36);
-
-  summary {
-    cursor: pointer;
-    color: #f7f0df;
-    margin-bottom: 8px;
-  }
-}
-
-.layout-settings {
-  border: 1px solid rgba(124, 94, 70, 0.72);
-  padding: 10px;
-  background: rgba(5, 4, 4, 0.36);
-  min-width: 0;
-  overflow-x: hidden;
-
-  summary {
-    cursor: pointer;
-    color: #f7f0df;
-    margin-bottom: 8px;
-  }
-}
-
-.layout-settings-section {
-  margin-bottom: 12px;
-}
-
-.layout-settings-section h4 {
-  margin: 10px 0 8px;
-  color: #f7f0df;
-  font-size: 14px;
-}
-
-.layout-settings-grid {
+.poster-command-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
+  gap: 0.22em;
+}
 
-  label {
-    min-width: 0;
-    font-size: 13px;
-  }
+.poster-script-actions {
+  grid-template-columns: minmax(0, 1fr);
+}
 
-  input {
-    width: 100%;
-  }
+.poster-script-actions,
+.poster-settings-groups {
+  display: grid;
+  gap: 0.42em;
+}
+
+.poster-script-actions .button,
+.poster-actions .button,
+.poster-control-group .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.42em;
+  min-width: 0;
+  min-height: 1.9em;
+  margin: 0;
+  padding: 0 0.48em;
+  max-width: 100%;
+  color: #dcc4a1;
+  border: 1px solid #3d2e26;
+  border-radius: 2px;
+  background: #1d1816;
+  box-shadow: inset 0 1px 0 rgba(255, 236, 190, 0.04);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.76em;
+}
+
+.poster-script-actions .button:hover,
+.poster-actions .button:hover,
+.poster-control-group .button:hover {
+  color: #fff8e7;
+  border-color: #6b4a18;
+  background: #2a1c09;
+}
+
+.poster-script-actions .button:disabled,
+.poster-actions .button:disabled,
+.poster-control-group .button:disabled {
+  color: #7f705f;
+  border-color: #2b211d;
+  background: #15110f;
+  cursor: default;
+  opacity: 0.58;
+}
+
+.poster-script-actions .button svg,
+.poster-actions .button svg {
+  flex: 0 0 auto;
+  font-size: 0.9em;
+}
+
+.script-picker-action {
+  width: 100%;
+}
+
+.poster-control-group {
+  padding: 0;
+  overflow: hidden;
+}
+
+.poster-control-group-title {
+  min-height: 1.68em;
+  padding: 0.28em 0.46em;
+  color: #d4af37;
+  border-bottom: 1px solid #3d2e26;
+  background: #120f0e;
+  cursor: pointer;
+  font-weight: bold;
+  letter-spacing: 0.08em;
+}
+
+.poster-control-group[open] .poster-control-group-title {
+  border-bottom-color: #4a3b32;
+}
+
+.poster-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.34em;
+  padding: 0.34em;
+}
+
+.poster-meta-field-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.poster-controls input,
+.poster-controls select {
+  width: 100%;
+  min-width: 0;
+  min-height: 2em;
+  padding: 0 0.46em;
+  color: #fff8e7;
+  border: 1px solid #3d2e26;
+  border-radius: 2px;
+  background: #120f0e;
+  font-size: 0.96em;
+  line-height: 1.2;
+}
+
+.poster-controls input::placeholder {
+  color: #7f705f;
+}
+
+.poster-controls input:focus,
+.poster-controls select:focus {
+  border-color: #8b6508;
+  outline: 1px solid rgba(212, 175, 55, 0.35);
+  outline-offset: 0;
 }
 
 .poster-checkbox {
+  grid-column: 1 / -1;
   flex-direction: row;
   align-items: center;
-  color: #f7f0df;
-  font-size: 14px;
+  min-height: 2em;
+  color: #dcc4a1;
+  font-size: 0.78em;
 }
 
 .poster-checkbox input {
@@ -1712,15 +1969,14 @@ export default {
   align-self: center;
   width: auto;
   min-height: auto;
+  margin: 0;
 }
 
 .poster-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
   position: sticky;
   bottom: 0;
-  padding-top: 6px;
+  z-index: 1;
+  padding-top: 0.42em;
   background: linear-gradient(
     180deg,
     rgba(34, 26, 17, 0) 0%,
@@ -1728,55 +1984,33 @@ export default {
   );
 }
 
-.poster-actions .button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  border: 1px solid rgba(124, 94, 70, 0.88);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  border-radius: 8px;
-  padding: 10px 14px;
-  min-height: 42px;
-  min-width: 0;
-  max-width: 100%;
-  overflow: hidden;
-  white-space: nowrap;
-  font-size: 14px;
-}
-
-.poster-actions .button svg {
-  flex: 0 0 auto;
-  font-size: 14px;
-}
-
-.poster-actions .button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
-}
-
 .poster-action-primary {
-  background: linear-gradient(180deg, #ead1a0 0%, #c89f5e 100%);
-  color: #2f1f10;
+  color: #fff8e7 !important;
+  border-color: #8b6508 !important;
+  background: linear-gradient(#8b6508, #5c4204) !important;
 }
 
 .poster-action-secondary {
-  background: rgba(24, 18, 12, 0.75);
-  color: #f7f0df;
+  color: #dcc4a1 !important;
+  background: #1d1816 !important;
 }
 
-.poster-error,
-.poster-status {
-  padding: 8px 10px;
-  border: 1px solid rgba(124, 94, 70, 0.72);
-  background: rgba(5, 4, 4, 0.46);
+.poster-control-alert {
+  padding: 0.42em 0.5em;
+  color: #fff8e7;
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  background: rgba(92, 66, 4, 0.24);
+  font-size: 0.76em;
+  line-height: 1.35;
 }
 
-.poster-error {
+.poster-control-alert.error {
   color: #ffb6a9;
+  border-color: rgba(185, 31, 25, 0.55);
+  background: rgba(92, 26, 22, 0.3);
 }
 
-.poster-status {
+.poster-control-alert.success {
   color: #d8eeb7;
 }
 
@@ -1784,16 +2018,22 @@ export default {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  overflow: auto;
+  min-width: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
   max-height: 74vh;
   padding: 10px;
-  background: rgba(5, 4, 4, 0.42);
-  border: 1px solid rgba(124, 94, 70, 0.72);
+  border: 1px solid #3d2e26;
+  border-radius: 2px;
+  background: rgba(18, 15, 13, 0.68);
+  box-shadow: inset 0 1px 0 rgba(255, 236, 190, 0.04);
 }
 
 .poster-preview canvas {
   width: min(100%, 540px);
+  max-width: 100%;
   height: auto;
+  display: block;
   box-shadow: 0 16px 42px rgba(0, 0, 0, 0.55);
 }
 
@@ -1808,6 +2048,11 @@ export default {
 
   .poster-generator {
     width: min(100%, 88vw);
+  }
+
+  .poster-command-grid,
+  .poster-field-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 </style>

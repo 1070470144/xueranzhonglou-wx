@@ -252,9 +252,9 @@
         </template>
 
         <template v-if="tab === 'tools'">
-          <li class="headline">工具</li>
+          <li class="headline">{{ $t("menu.tools") }}</li>
           <li @click="toggleModal('imageGenerator')">
-            图片生成
+            {{ $t("menu.imageGenerator") }}
             <em><font-awesome-icon icon="image" /></em>
           </li>
           <li @click="toggleModal('gameState')">
