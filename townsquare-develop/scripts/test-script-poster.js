@@ -82,6 +82,14 @@ const nginxSource = fs.readFileSync(
   path.join(__dirname, "..", "nginx.conf"),
   "utf8",
 );
+const dockerfileSource = fs.readFileSync(
+  path.join(__dirname, "..", "Dockerfile"),
+  "utf8",
+);
+const composeSource = fs.readFileSync(
+  path.join(__dirname, "..", "docker-compose.yml"),
+  "utf8",
+);
 const vueConfigSource = fs.readFileSync(
   path.join(__dirname, "..", "vue.config.js"),
   "utf8",
@@ -998,6 +1006,39 @@ if (!nginxSource.includes("location /api/script-poster-image")) {
 
 if (!nginxSource.includes("location /api/script-poster-render")) {
   throw new Error("Expected nginx to proxy script poster render requests");
+}
+
+[
+  "proxy_read_timeout 180s",
+  "proxy_send_timeout 180s",
+  "proxy_connect_timeout 30s",
+].forEach((snippet) => {
+  if (!nginxSource.includes(snippet)) {
+    throw new Error(`Expected nginx render proxy timeout: ${snippet}`);
+  }
+});
+
+[
+  "FROM node:20-bookworm-slim AS live",
+  "PUPPETEER_SKIP_DOWNLOAD=true",
+  "PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium",
+  "apt-get install -y --no-install-recommends",
+  "chromium",
+  "fonts-noto-cjk",
+].forEach((snippet) => {
+  if (!dockerfileSource.includes(snippet)) {
+    throw new Error(`Expected production Puppeteer runtime support: ${snippet}`);
+  }
+});
+
+if (
+  !composeSource.includes(
+    "TOWNSQUARE_POSTER_FRONTEND_URL: ${TOWNSQUARE_POSTER_FRONTEND_URL:-http://townsquare-web}",
+  )
+) {
+  throw new Error(
+    "Expected poster rendering to use the Docker internal frontend URL by default",
+  );
 }
 
 if (!vueConfigSource.includes("/api/script-poster-image")) {

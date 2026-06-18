@@ -30,3 +30,4 @@ services:
     environment:
       NODE_ENV: development
       TOWNSQUARE_ALLOWED_ORIGINS: ${TOWNSQUARE_ALLOWED_ORIGINS:-https://www.xuerantools.org,https://xuerantools.org,http://localhost:8080,http://localhost:8081}
+      TOWNSQUARE_POSTER_FRONTEND_URL: ${TOWNSQUARE_POSTER_FRONTEND_URL:-http://townsquare-web}

@@ -21,6 +21,7 @@ ENV VUE_APP_VOICE_STUN_URLS=$VUE_APP_VOICE_STUN_URLS
 ENV VUE_APP_VOICE_TURN_URLS=$VUE_APP_VOICE_TURN_URLS
 ENV VUE_APP_VOICE_TURN_USERNAME=$VUE_APP_VOICE_TURN_USERNAME
 ENV VUE_APP_VOICE_TURN_CREDENTIAL=$VUE_APP_VOICE_TURN_CREDENTIAL
+ENV PUPPETEER_SKIP_DOWNLOAD=true
 
 COPY package*.json ./
 RUN npm ci
@@ -28,11 +29,21 @@ RUN npm ci
 COPY . .
 RUN npm run build
 
-FROM node:20-alpine AS live
+FROM node:20-bookworm-slim AS live
 
 WORKDIR /app
 
 ENV NODE_ENV=development
+ENV PUPPETEER_SKIP_DOWNLOAD=true
+ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+    ca-certificates \
+    chromium \
+    fonts-noto-cjk \
+    fonts-noto-color-emoji \
+  && rm -rf /var/lib/apt/lists/*
 
 COPY package*.json ./
 RUN npm ci --omit=dev
