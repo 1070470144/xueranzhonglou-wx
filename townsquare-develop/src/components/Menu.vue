@@ -380,7 +380,8 @@ export default {
     },
     openMyUploads() {
       if (!this.authUser) {
-        this.toggleModal("login");
+        this.toggleModal("myUploads");
+        this.openModalOverlay("login");
         return;
       }
       this.toggleModal("myUploads");
@@ -497,6 +498,7 @@ export default {
       "toggleRoleDraw",
       "setZoom",
       "toggleModal",
+      "openModalOverlay",
     ]),
   },
 };

@@ -196,12 +196,31 @@
           {{ $t("myScripts.scriptImages") }}
         </div>
         <div v-if="getScriptImages(detailScript).length" class="detail-gallery">
-          <img
-            v-for="image in getScriptImages(detailScript)"
+          <div
+            v-for="(image, index) in getScriptImages(detailScript)"
             :key="image"
-            :src="image"
-            :alt="detailScript.title || detailScript.name"
-          />
+            class="detail-image-item"
+          >
+            <button
+              type="button"
+              class="detail-image-button"
+              :title="$t('myScripts.openImage')"
+              @click="openImagePreview(image, index)"
+            >
+              <img
+                :src="image"
+                :alt="detailScript.title || detailScript.name"
+              />
+            </button>
+            <button
+              type="button"
+              class="image-download-button"
+              @click.stop="downloadScriptImage(image, index)"
+            >
+              <font-awesome-icon icon="download" />
+              <span>{{ $t("myScripts.downloadImage") }}</span>
+            </button>
+          </div>
         </div>
         <div v-else class="state-line compact">
           {{ $t("myScripts.noImages") }}
@@ -300,6 +319,27 @@
         </section>
       </section>
     </Modal>
+
+    <Modal
+      class="script-image-preview-submodal"
+      v-if="previewImage"
+      @close="closeImagePreview"
+    >
+      <section class="image-preview-panel">
+        <img
+          :src="previewImage"
+          :alt="detailScript && (detailScript.title || detailScript.name)"
+        />
+        <button
+          type="button"
+          class="button image-preview-download"
+          @click="downloadScriptImage(previewImage, previewImageIndex)"
+        >
+          <font-awesome-icon icon="download" />
+          <span>{{ $t("myScripts.downloadImage") }}</span>
+        </button>
+      </section>
+    </Modal>
   </div>
 </template>
 
@@ -350,7 +390,11 @@ export default {
       uploadError: "",
       uploadSuccess: "",
       detailScript: null,
+      previewImage: "",
+      previewImageIndex: 0,
+      detailLoadToken: 0,
       openCharacterGroups: {},
+      pendingOpenUpload: false,
     };
   },
   computed: mapState(["modals"]),
@@ -361,12 +405,17 @@ export default {
     },
   },
   beforeDestroy() {
+    window.removeEventListener("townsquare-auth-change", this.handleAuthChange);
     if (this.searchTimer) clearTimeout(this.searchTimer);
     this.cleanupPreviews();
+  },
+  mounted() {
+    window.addEventListener("townsquare-auth-change", this.handleAuthChange);
   },
   methods: {
     close() {
       this.showUpload = false;
+      this.pendingOpenUpload = false;
       this.closeDetail();
       this.closeModal("scriptLibrary");
     },
@@ -377,6 +426,18 @@ export default {
       if (this.isLoggedIn()) return true;
       this.openModalOverlay("login");
       return false;
+    },
+    handleAuthChange() {
+      if (!this.modals.scriptLibrary) {
+        this.pendingOpenUpload = false;
+        return;
+      }
+      if (this.pendingOpenUpload && this.isLoggedIn()) {
+        this.pendingOpenUpload = false;
+        this.showUpload = true;
+        this.uploadError = "";
+        this.uploadSuccess = "";
+      }
     },
     queueSearch() {
       if (this.searchTimer) clearTimeout(this.searchTimer);
@@ -430,7 +491,11 @@ export default {
       }
     },
     openUploadPanel() {
-      if (!this.requireLogin()) return;
+      if (!this.isLoggedIn()) {
+        this.pendingOpenUpload = true;
+        this.openModalOverlay("login");
+        return;
+      }
       this.showUpload = true;
       this.uploadError = "";
       this.uploadSuccess = "";
@@ -562,13 +627,23 @@ export default {
     async openDetail(script) {
       const id = script && (script.id || script._id);
       if (!id) return;
+      const loadToken = ++this.detailLoadToken;
       this.openCharacterGroups = {};
+      this.closeImagePreview();
       this.detailScript = script;
       try {
         const res = await getScriptDetail(id);
         const detail = res && res.success && res.data && res.data.script;
-        if (detail) this.detailScript = { ...script, ...detail, id };
+        if (
+          detail &&
+          loadToken === this.detailLoadToken &&
+          this.detailScript &&
+          (this.detailScript.id || this.detailScript._id) === id
+        ) {
+          this.detailScript = { ...script, ...detail, id };
+        }
       } catch (error) {
+        if (loadToken !== this.detailLoadToken) return;
         this.error = this.resolveError(
           error,
           this.$t("myScripts.loadDetailFailed"),
@@ -645,6 +720,55 @@ export default {
         else addImage(value);
       });
       return Array.from(new Set(images.filter(Boolean)));
+    },
+    openImagePreview(image, index = 0) {
+      this.previewImage = image || "";
+      this.previewImageIndex = index;
+    },
+    closeImagePreview() {
+      this.previewImage = "";
+      this.previewImageIndex = 0;
+    },
+    imageDownloadName(image, index = 0) {
+      const title =
+        (this.detailScript &&
+          (this.detailScript.title || this.detailScript.name)) ||
+        "script";
+      const safeTitle = String(title)
+        .replace(/[\\/:*?"<>|]+/g, "-")
+        .trim();
+      const cleanImage = String(image || "")
+        .split("?")[0]
+        .split("#")[0];
+      const extMatch = cleanImage.match(/\.(png|jpe?g|webp|gif|bmp)$/i);
+      const ext = extMatch ? extMatch[1].toLowerCase() : "png";
+      return `${safeTitle || "script"}-${index + 1}.${ext}`;
+    },
+    async downloadScriptImage(image, index = 0) {
+      if (!image) return;
+      const filename = this.imageDownloadName(image, index);
+      try {
+        const response = await fetch(image, { mode: "cors" });
+        if (!response.ok) throw new Error("image download failed");
+        const blob = await response.blob();
+        const objectUrl = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = objectUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(objectUrl), 500);
+      } catch (error) {
+        const link = document.createElement("a");
+        link.href = image;
+        link.target = "_blank";
+        link.rel = "noopener";
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      }
     },
     scriptCoverStyle(script) {
       const image = this.getScriptImage(script);
@@ -830,7 +954,9 @@ export default {
       this.$set(this.openCharacterGroups, key, !this.isCharacterGroupOpen(key));
     },
     closeDetail() {
+      this.detailLoadToken += 1;
       this.detailScript = null;
+      this.previewImage = "";
       this.openCharacterGroups = {};
     },
     firstCharacter(name) {
@@ -860,7 +986,8 @@ export default {
 
 .my-script-modal,
 .script-upload-submodal,
-.script-detail-submodal {
+.script-detail-submodal,
+.script-image-preview-submodal {
   ::v-deep .modal > .top-right-buttons > .top-right-button:first-child {
     display: none;
   }
@@ -1084,12 +1211,99 @@ textarea {
   padding-top: 0.5em;
 }
 
-.detail-gallery img {
+.detail-image-item {
+  display: grid;
+  gap: 0.28em;
+  min-width: 0;
+}
+
+.detail-image-button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  color: inherit;
+  border: 0;
+  background: transparent;
+  cursor: zoom-in;
+  font: inherit;
+}
+
+.detail-image-button img {
+  display: block;
   width: 100%;
   aspect-ratio: 1 / 1;
   object-fit: cover;
   border: 1px solid #3d2e26;
   background: rgba(5, 4, 4, 0.62);
+}
+
+.image-download-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+  padding: 0.28em 0.45em;
+  color: #fff2c4;
+  border: 1px solid rgba(170, 123, 36, 0.62);
+  background: rgba(43, 30, 19, 0.72);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.72em;
+  gap: 0.32em;
+}
+
+.image-download-button:hover,
+.image-preview-download:hover {
+  color: #ffffff;
+  border-color: rgba(226, 183, 77, 0.9);
+  background: rgba(83, 58, 27, 0.82);
+}
+
+.script-image-preview-submodal {
+  ::v-deep .modal {
+    width: min(92vw, 980px);
+    max-width: min(92vw, 980px);
+    height: auto;
+    max-height: 92vh;
+    color: #dcc4a1;
+    border: 2px solid #3d2e26;
+    background: radial-gradient(
+        circle at 50% 0%,
+        rgba(83, 58, 27, 0.46),
+        transparent 34%
+      ),
+      rgba(12, 9, 8, 0.97);
+  }
+
+  ::v-deep .modal > .slot {
+    width: 100%;
+    max-height: calc(92vh - 3.2em);
+    overflow: auto;
+  }
+}
+
+.image-preview-panel {
+  display: grid;
+  justify-items: center;
+  gap: 0.75em;
+  padding: 0.6em;
+}
+
+.image-preview-panel img {
+  display: block;
+  max-width: 100%;
+  max-height: 72vh;
+  object-fit: contain;
+  border: 1px solid #3d2e26;
+  background: rgba(5, 4, 4, 0.62);
+}
+
+.image-preview-download {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35em;
+  min-width: 8em;
 }
 
 .detail-layout {
