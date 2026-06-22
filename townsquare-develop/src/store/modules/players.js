@@ -222,6 +222,8 @@ const mutations = {
   add(state, name) {
     state.players.push({
       ...NEWPLAYER,
+      role: {},
+      reminders: [],
       name,
     });
   },
@@ -233,9 +235,24 @@ const mutations = {
     for (let index = state.players.length; index < targetCount; index++) {
       state.players.push({
         ...NEWPLAYER,
+        role: {},
+        reminders: [],
         name: `${DEFAULT_PLAYER_LABEL} ${index + 1}`,
       });
     }
+  },
+  resetSeats(state, count = state.players.length) {
+    const targetCount = normalizePlayerCount(count);
+    state.players = Array.from({ length: targetCount }, (_, index) => ({
+      ...NEWPLAYER,
+      id: "",
+      role: {},
+      reminders: [],
+      isDead: false,
+      isVoteless: false,
+      name: `${DEFAULT_PLAYER_LABEL} ${index + 1}`,
+    }));
+    state.nightNavigation.currentSeatIndex = -1;
   },
   addMany(state, { count, startIndex = state.players.length } = {}) {
     const amount = Math.max(

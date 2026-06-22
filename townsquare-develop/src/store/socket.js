@@ -337,6 +337,9 @@ class LiveSession {
       case "roleDraw:draw":
         this._handleRoleDrawRequest(params);
         break;
+      case "resetSeats":
+        this._resetSeats(params);
+        break;
     }
   }
 
@@ -460,6 +463,26 @@ class LiveSession {
         this._resendRoleToPlayer(playerId);
       }
     }
+  }
+
+  resetSeats(count) {
+    if (this._isSpectator) return;
+    this._send("resetSeats", { count });
+  }
+
+  _resetSeats({ count } = {}) {
+    if (!this._isSpectator) return;
+    this._store.commit("session/setClaimedSeatLocal", -1);
+    this._store.commit("players/resetSeats", count);
+    this._store.commit("players/setBluff");
+    this._store.commit("players/setLunaticBluff");
+    this._store.commit("players/setLunaticBluffPlayerIndex", -1);
+    this._store.commit("players/setFabled", { fabled: [] });
+    this._store.commit("session/clearVoteHistory");
+    this._store.commit("session/nomination");
+    this._store.commit("session/setMarkedPlayer", -1);
+    this._store.commit("session/distributeRoles", false);
+    this._store.commit("roleDraw/resetSession");
   }
 
   _resendRoleToPlayer(playerId) {
@@ -1602,6 +1625,9 @@ export default (store) => {
       case "players/addMany":
       case "players/setCount":
         session.sendGamestate("", true);
+        break;
+      case "players/resetSeats":
+        session.resetSeats(payload);
         break;
       case "players/update":
         if (payload.property === "pronouns") {

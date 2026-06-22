@@ -91,6 +91,10 @@
             {{ $t("menu.nightOrderSheet") }}
             <em>[N]</em>
           </li>
+          <li @click="clearSeats">
+            {{ $t("menu.clearSeats") }}
+            <em><font-awesome-icon icon="trash-alt" /></em>
+          </li>
           <li
             @click="toggleModal('gameRecord')"
             v-if="!session.isSpectator && players.length"
@@ -360,6 +364,23 @@ export default {
     },
     openScriptCreator() {
       this.toggleModal("scriptCreator");
+    },
+    clearSeats() {
+      const seatCount =
+        this.players.length ||
+        (this.room.current && parseInt(this.room.current.maxPlayers, 10)) ||
+        0;
+      this.$store.commit("session/claimSeat", -1);
+      this.$store.commit("players/resetSeats", seatCount);
+      this.$store.commit("players/setBluff");
+      this.$store.commit("players/setLunaticBluff");
+      this.$store.commit("players/setLunaticBluffPlayerIndex", -1);
+      this.$store.commit("players/setFabled", { fabled: [] });
+      this.$store.commit("session/clearVoteHistory");
+      this.$store.commit("session/nomination");
+      this.$store.commit("session/setMarkedPlayer", -1);
+      this.$store.commit("session/distributeRoles", false);
+      this.$store.commit("roleDraw/resetSession");
     },
     logoutWeb() {
       if (!confirm(this.$t("login.confirmLogout"))) return;

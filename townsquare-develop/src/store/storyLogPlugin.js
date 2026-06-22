@@ -270,6 +270,7 @@ export default (store) => {
         break;
       case "players/set":
       case "players/setCount":
+      case "players/resetSeats":
         handlePlayersSet(
           store,
           beforePlayers,

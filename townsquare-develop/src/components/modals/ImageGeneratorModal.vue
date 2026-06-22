@@ -202,6 +202,7 @@
             <button
               class="button townsfolk poster-action-primary"
               type="button"
+              :disabled="isPosterPreviewRendering"
               @click="generatePoster"
             >
               <font-awesome-icon icon="image" />
@@ -221,6 +222,14 @@
 
         <div class="poster-preview">
           <canvas ref="posterCanvas" width="1080" height="1456"></canvas>
+          <div
+            v-if="isPosterPreviewRendering"
+            class="poster-preview-loading"
+            aria-live="polite"
+          >
+            <font-awesome-icon icon="spinner" spin />
+            {{ $t("modals.imageGenerator.status.previewGenerating") }}
+          </div>
         </div>
       </div>
     </section>
@@ -705,6 +714,7 @@ export default {
       error: "",
       status: "",
       isServerGenerating: false,
+      isPosterPreviewRendering: false,
       imageCache: Object.create(null),
       loadedImageCache: Object.create(null),
       posterRenderId: 0,
@@ -810,47 +820,59 @@ export default {
     },
     async renderPoster(poster) {
       const renderId = this.nextPosterRenderId();
-      const displayPoster = this.getPosterDisplayData(poster);
-      const canvas = this.$refs.posterCanvas;
-      const previewCanvas = this.createPosterExportCanvas();
-      const previewCtx = previewCanvas.getContext("2d");
-      await this.drawPosterContent(previewCtx, displayPoster, {
-        exportSafe: false,
-        allowDirect: true,
-        fastPreview: true,
-      });
-      if (!this.isCurrentPosterRender(renderId)) return;
-      this.copyPosterCanvas(canvas, previewCanvas);
+      this.isPosterPreviewRendering = true;
       try {
-        this.posterDataUrl = previewCanvas.toDataURL("image/png");
-        this.status = this.$t("modals.imageGenerator.status.previewGenerated");
-      } catch (error) {
-        // eslint-disable-next-line no-console
-        console.warn("[script-poster] PNG export blocked by remote images", {
-          error,
-        });
-        const exportCanvas = this.createPosterExportCanvas();
-        const exportCtx = exportCanvas.getContext("2d");
-        await this.drawPosterContent(exportCtx, displayPoster, {
-          exportSafe: true,
-          allowDirect: false,
+        const displayPoster = this.getPosterDisplayData(poster);
+        const canvas = this.$refs.posterCanvas;
+        const previewCanvas = this.createPosterExportCanvas();
+        const previewCtx = previewCanvas.getContext("2d");
+        await this.drawPosterContent(previewCtx, displayPoster, {
+          exportSafe: false,
+          allowDirect: true,
+          fastPreview: true,
         });
         if (!this.isCurrentPosterRender(renderId)) return;
-        this.posterDataUrl = exportCanvas.toDataURL("image/png");
-        this.status = this.$t(
-          "modals.imageGenerator.status.previewGeneratedFallback",
-        );
-        // eslint-disable-next-line no-console
-        console.warn("[script-poster] export-safe poster generated");
-      }
-      this.refreshPosterImagesAfterPreload(renderId, displayPoster).catch(
-        (error) => {
+        this.copyPosterCanvas(canvas, previewCanvas);
+        try {
+          this.posterDataUrl = previewCanvas.toDataURL("image/png");
+          this.status = this.$t(
+            "modals.imageGenerator.status.previewGenerated",
+          );
+        } catch (error) {
           // eslint-disable-next-line no-console
-          console.warn("[script-poster] delayed poster image refresh failed", {
+          console.warn("[script-poster] PNG export blocked by remote images", {
             error,
           });
-        },
-      );
+          const exportCanvas = this.createPosterExportCanvas();
+          const exportCtx = exportCanvas.getContext("2d");
+          await this.drawPosterContent(exportCtx, displayPoster, {
+            exportSafe: true,
+            allowDirect: false,
+          });
+          if (!this.isCurrentPosterRender(renderId)) return;
+          this.posterDataUrl = exportCanvas.toDataURL("image/png");
+          this.status = this.$t(
+            "modals.imageGenerator.status.previewGeneratedFallback",
+          );
+          // eslint-disable-next-line no-console
+          console.warn("[script-poster] export-safe poster generated");
+        }
+        this.refreshPosterImagesAfterPreload(renderId, displayPoster).catch(
+          (error) => {
+            // eslint-disable-next-line no-console
+            console.warn(
+              "[script-poster] delayed poster image refresh failed",
+              {
+                error,
+              },
+            );
+          },
+        );
+      } finally {
+        if (this.isCurrentPosterRender(renderId)) {
+          this.isPosterPreviewRendering = false;
+        }
+      }
     },
     async refreshPosterImagesAfterPreload(renderId, displayPoster) {
       await this.preloadPosterRoleImages(displayPoster, {
@@ -2592,6 +2614,7 @@ export default {
 }
 
 .poster-preview {
+  position: relative;
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -2618,6 +2641,27 @@ export default {
 
 .poster-preview canvas[aria-hidden="true"] {
   display: none;
+}
+
+.poster-preview-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: calc(100% - 32px);
+  padding: 9px 14px;
+  border: 1px solid rgba(226, 189, 128, 0.42);
+  border-radius: 4px;
+  color: #f9edcf;
+  background: rgba(25, 20, 16, 0.78);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.32);
+  font-size: 13px;
+  line-height: 1.25;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
 }
 
 @media (max-width: 860px) {

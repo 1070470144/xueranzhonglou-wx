@@ -101,6 +101,7 @@ const messages = {
       help: "帮助",
       referenceSheet: "角色参考表",
       nightOrderSheet: "夜晚顺序表",
+      clearSeats: "清空座位",
       tools: "工具",
       imageGenerator: "图片生成",
       gameStateJson: "游戏状态 JSON",
@@ -623,6 +624,7 @@ const messages = {
           downloadPngGenerating: "服务器生成中...",
         },
         status: {
+          previewGenerating: "正在生成预览...",
           previewGenerated: "预览已生成",
           previewGeneratedFallback:
             "预览已生成；部分远程角色图片无法代理，PNG 导出将使用占位图。",
@@ -768,6 +770,7 @@ const messages = {
       help: "Help",
       referenceSheet: "Reference Sheet",
       nightOrderSheet: "Night Order Sheet",
+      clearSeats: "Clear Seats",
       tools: "Tools",
       imageGenerator: "Image Generator",
       gameStateJson: "Game State JSON",
@@ -1303,6 +1306,7 @@ const messages = {
           downloadPngGenerating: "Generating on server...",
         },
         status: {
+          previewGenerating: "Generating preview...",
           previewGenerated: "Preview generated",
           previewGeneratedFallback:
             "Preview generated; some remote role images could not be proxied, so placeholders are used for PNG export.",

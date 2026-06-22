@@ -210,7 +210,10 @@ if (!modalSource.includes("useProxy: false")) {
 [
   "posterRenderId: 0",
   "posterRedrawTimer: null",
+  "isPosterPreviewRendering: false",
   "const renderId = this.nextPosterRenderId()",
+  "this.isPosterPreviewRendering = true",
+  "this.isPosterPreviewRendering = false",
   "isCurrentPosterRender(renderId)",
   "if (!this.isCurrentPosterRender(renderId)) return;",
   "const previewCanvas = this.createPosterExportCanvas()",
@@ -228,6 +231,21 @@ if (!modalSource.includes("useProxy: false")) {
   if (!modalSource.includes(snippet)) {
     throw new Error(
       `Expected poster rendering to ignore stale async draws: ${snippet}`,
+    );
+  }
+});
+
+[
+  ':disabled="isPosterPreviewRendering"',
+  'class="poster-preview-loading"',
+  "top: 50%;",
+  "left: 50%;",
+  "transform: translate(-50%, -50%);",
+  '$t("modals.imageGenerator.status.previewGenerating")',
+].forEach((snippet) => {
+  if (!modalSource.includes(snippet)) {
+    throw new Error(
+      `Expected poster preview to show a loading state while rendering: ${snippet}`,
     );
   }
 });
@@ -1078,6 +1096,7 @@ if (!modalSource.includes("generatePoster()")) {
   'title: "Image Generator"',
   'preview: "生成预览"',
   'preview: "Generate Preview"',
+  'previewGenerating: "Generating preview..."',
   "team: {",
 ].forEach((snippet) => {
   if (!i18nSource.includes(snippet)) {
