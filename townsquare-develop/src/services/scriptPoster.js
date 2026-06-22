@@ -3,11 +3,10 @@ export const SCRIPT_POSTER_TEAMS = [
   { key: "outsider", label: "善良阵营·外来者", accent: "#0c83a6" },
   { key: "minion", label: "邪恶阵营·爪牙", accent: "#8f1f24" },
   { key: "demon", label: "邪恶阵营·恶魔", accent: "#8f1f24" },
-  { key: "traveller", label: "旅行者", accent: "#7a5a20" },
-  { key: "fabled", label: "传奇角色", accent: "#7a5a20" },
 ];
 
 const TEAM_KEYS = SCRIPT_POSTER_TEAMS.map((team) => team.key);
+const EXCLUDED_POSTER_TEAMS = new Set(["traveler", "traveller", "fabled"]);
 
 function coerceArray(input) {
   if (Array.isArray(input)) return input;
@@ -17,11 +16,7 @@ function coerceArray(input) {
 }
 
 function normalizeRole(role, index) {
-  const team = TEAM_KEYS.includes(role.team)
-    ? role.team
-    : role.team === "traveler"
-    ? "traveller"
-    : "townsfolk";
+  const team = TEAM_KEYS.includes(role.team) ? role.team : "townsfolk";
   const image =
     role.image || role.icon || role.imageUrl || role.image_url || "";
   return {
@@ -44,7 +39,12 @@ export function normalizeScriptPosterData(input) {
     (parsed && parsed.meta) ||
     {};
   const roles = items
-    .filter((item) => item && item.id !== "_meta")
+    .filter(
+      (item) =>
+        item &&
+        item.id !== "_meta" &&
+        !EXCLUDED_POSTER_TEAMS.has(String(item.team || "").toLowerCase()),
+    )
     .map(normalizeRole);
   const groups = SCRIPT_POSTER_TEAMS.reduce((acc, team) => {
     acc[team.key] = roles.filter((role) => role.team === team.key);

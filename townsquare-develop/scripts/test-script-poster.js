@@ -48,6 +48,18 @@ const sample = [
     ability: "Once per game at night, choose a player: they die.",
     otherNight: 11,
   },
+  {
+    id: "bureaucrat",
+    name: "Bureaucrat",
+    team: "traveler",
+    ability: "Each night, choose a player.",
+  },
+  {
+    id: "djinn",
+    name: "Djinn",
+    team: "fabled",
+    ability: "Use the Djinn's special rule.",
+  },
 ];
 
 const data = normalizeScriptPosterData(JSON.stringify(sample));
@@ -125,6 +137,16 @@ if (data.roles.length !== 3) {
   );
 }
 
+if (
+  data.roles.some((role) =>
+    ["traveler", "traveller", "fabled"].includes(role.team),
+  )
+) {
+  throw new Error(
+    "Expected travelers and fabled roles to be excluded from poster roles",
+  );
+}
+
 if (data.roles[0].image !== "https://example.test/adventurer.png") {
   throw new Error("Expected role image URL to be preserved");
 }
@@ -147,6 +169,16 @@ if (data.groups.demon[0].name !== "Assassin") {
 
 if (!SCRIPT_POSTER_TEAMS.some((team) => team.key === "minion")) {
   throw new Error("Expected minion team metadata");
+}
+
+if (
+  SCRIPT_POSTER_TEAMS.some((team) =>
+    ["traveler", "traveller", "fabled"].includes(team.key),
+  )
+) {
+  throw new Error(
+    "Expected traveler and fabled team areas to be removed from poster",
+  );
 }
 
 if (!modalSource.includes("imageCache: Object.create(null)")) {
@@ -173,6 +205,83 @@ if (!modalSource.includes("retry image without proxy")) {
 
 if (!modalSource.includes("useProxy: false")) {
   throw new Error("Expected poster image loader to support direct image retry");
+}
+
+[
+  "posterRenderId: 0",
+  "posterRedrawTimer: null",
+  "const renderId = this.nextPosterRenderId()",
+  "isCurrentPosterRender(renderId)",
+  "if (!this.isCurrentPosterRender(renderId)) return;",
+  "const previewCanvas = this.createPosterExportCanvas()",
+  "this.copyPosterCanvas(canvas, previewCanvas)",
+  "this.clearScheduledPosterRender()",
+  "schedulePosterRender(poster)",
+  "this.posterRedrawTimer = window.setTimeout(",
+  "this.posterRedrawTimer = null",
+  "this.renderPoster(poster).catch",
+  "clearScheduledPosterRender()",
+  "window.clearTimeout(this.posterRedrawTimer)",
+  "nextPosterRenderId()",
+  "copyPosterCanvas(targetCanvas, sourceCanvas)",
+].forEach((snippet) => {
+  if (!modalSource.includes(snippet)) {
+    throw new Error(
+      `Expected poster rendering to ignore stale async draws: ${snippet}`,
+    );
+  }
+});
+
+[
+  "preloadPosterRoleImages(poster, options)",
+  "collectPosterImageRoles(poster)",
+  "Promise.all(",
+  "this.preloadPosterRoleImages(poster, options)",
+  "const roleImagePreload =",
+  "fastPreview: true",
+  "this.refreshPosterImagesAfterPreload(",
+  "if (roleImagePreload && !options.fastPreview) await roleImagePreload",
+  "if (options.fastPreview && !this.hasCachedRoleImage(role, options))",
+  "hasCachedRoleImage(role, options)",
+].forEach((snippet) => {
+  if (!modalSource.includes(snippet)) {
+    throw new Error(
+      `Expected poster preview to preload role images without blocking first paint: ${snippet}`,
+    );
+  }
+});
+
+[
+  "isBlockedRemoteRoleImageHost",
+  "if (this.isBlockedRemoteRoleImageHost(src))",
+  "role image skipped because host returns deleted placeholders",
+  "isUnavailableRemoteRoleImage",
+  "isPostimageHost",
+  "isBlueRemovedImagePlaceholder",
+  "postimage.org",
+  "postimages.org",
+  "postimg.cc",
+  "Math.abs(naturalWidth - naturalHeight)",
+  "if (isSmallSquarePlaceholder) return true;",
+  'document.createElement("canvas")',
+  "getImageData",
+  "bluePixels / sampledPixels > 0.45",
+  "role image resolved to unavailable placeholder",
+].forEach((snippet) => {
+  if (!modalSource.includes(snippet)) {
+    throw new Error(
+      `Expected poster image loader to reject removed-image placeholders: ${snippet}`,
+    );
+  }
+});
+
+if (
+  modalSource.includes("naturalWidth === 103") ||
+  modalSource.includes("naturalHeight === 103")
+) {
+  throw new Error(
+    "Expected removed-image placeholder detection to stop relying on one fixed size",
+  );
 }
 
 [
@@ -240,20 +349,21 @@ if (modalSource.includes("../../assets/icons")) {
   "isServerGenerating = false",
 ].forEach((snippet) => {
   if (!modalSource.includes(snippet)) {
-    throw new Error(`Expected authenticated server poster generation: ${snippet}`);
-  }
-});
-
-[
-  'this.closeModal("login")',
-  '...mapMutations(["closeModal"])',
-].forEach((snippet) => {
-  if (!loginModalSource.includes(snippet)) {
     throw new Error(
-      `Expected login success overlay to preserve image generator: ${snippet}`,
+      `Expected authenticated server poster generation: ${snippet}`,
     );
   }
 });
+
+['this.closeModal("login")', '...mapMutations(["closeModal"])'].forEach(
+  (snippet) => {
+    if (!loginModalSource.includes(snippet)) {
+      throw new Error(
+        `Expected login success overlay to preserve image generator: ${snippet}`,
+      );
+    }
+  },
+);
 
 if (loginModalSource.includes('this.toggleModal("login")')) {
   throw new Error(
@@ -276,19 +386,26 @@ if (loginModalSource.includes('this.toggleModal("login")')) {
 });
 
 const watermarkBlockStart = modalSource.indexOf("    drawPosterWatermark(ctx)");
-const watermarkBlockEnd = modalSource.indexOf("drawGlossaryShell(ctx)", watermarkBlockStart);
-const watermarkBlock = modalSource.slice(watermarkBlockStart, watermarkBlockEnd);
-[
-  'ctx.textAlign = "right"',
-  "POSTER_WIDTH - 88,",
-].forEach((snippet) => {
+const watermarkBlockEnd = modalSource.indexOf(
+  "drawGlossaryShell(ctx)",
+  watermarkBlockStart,
+);
+const watermarkBlock = modalSource.slice(
+  watermarkBlockStart,
+  watermarkBlockEnd,
+);
+['ctx.textAlign = "right"', "POSTER_WIDTH - 88,"].forEach((snippet) => {
   if (!watermarkBlock.includes(snippet)) {
-    throw new Error(`Expected poster watermark to stay inside right edge: ${snippet}`);
+    throw new Error(
+      `Expected poster watermark to stay inside right edge: ${snippet}`,
+    );
   }
 });
 ["ctx.shadowColor", "ctx.shadowBlur"].forEach((snippet) => {
   if (watermarkBlock.includes(snippet)) {
-    throw new Error(`Expected poster watermark to avoid shadow edge: ${snippet}`);
+    throw new Error(
+      `Expected poster watermark to avoid shadow edge: ${snippet}`,
+    );
   }
 });
 
@@ -331,6 +448,39 @@ if (!nightColumnHeaderBlock.includes("SimSun, serif")) {
 }
 if (nightColumnHeaderBlock.includes("SimHei")) {
   throw new Error("Expected night order title font to stop using SimHei");
+}
+
+const nightColumnFallbackEnd = modalSource.indexOf(
+  "drawVerticalText(ctx",
+  nightColumnStart,
+);
+const nightColumnBlock = modalSource.slice(
+  nightColumnStart,
+  nightColumnFallbackEnd,
+);
+if (!nightColumnBlock.includes("this.getNightFallbackLabel(role)")) {
+  throw new Error(
+    "Expected missing night action images to fall back to role name first character",
+  );
+}
+if (nightColumnBlock.includes("String(index + 1)")) {
+  throw new Error(
+    "Expected missing night action images to stop using order numbers",
+  );
+}
+if (
+  !nightColumnBlock.includes(
+    "const fallbackCircleSize = config.nightIconSize * 0.68",
+  )
+) {
+  throw new Error(
+    "Expected missing night action text circle to be smaller than icon size",
+  );
+}
+if (!nightColumnBlock.includes("fallbackCircleSize / 2")) {
+  throw new Error(
+    "Expected missing night action text circle radius to use reduced size",
+  );
 }
 
 const backgroundAssetDir = path.join(
@@ -398,7 +548,9 @@ if (
   "modals.imageGenerator.backgrounds.default",
 ].forEach((snippet) => {
   if (modalSource.includes(snippet)) {
-    throw new Error(`Expected default parchment background to be removed: ${snippet}`);
+    throw new Error(
+      `Expected default parchment background to be removed: ${snippet}`,
+    );
   }
 });
 
@@ -408,13 +560,16 @@ const headerBlockEnd = modalSource.indexOf(
   headerBlockStart,
 );
 const headerBlock = modalSource.slice(headerBlockStart, headerBlockEnd);
-["poster.logo", "ctx.arc(900", "ctx.drawImage(logo", "drawIconFallback(ctx, 900"].forEach(
-  (snippet) => {
-    if (headerBlock.includes(snippet)) {
-      throw new Error(`Expected top-right poster icon to be removed: ${snippet}`);
-    }
-  },
-);
+[
+  "poster.logo",
+  "ctx.arc(900",
+  "ctx.drawImage(logo",
+  "drawIconFallback(ctx, 900",
+].forEach((snippet) => {
+  if (headerBlock.includes(snippet)) {
+    throw new Error(`Expected top-right poster icon to be removed: ${snippet}`);
+  }
+});
 
 [
   "teamTitleLeft",
@@ -451,9 +606,11 @@ const headerBlock = modalSource.slice(headerBlockStart, headerBlockEnd);
   "roleAbilityFontSize",
   "roleAreaTitleGap",
   "glossaryTextGap",
+  "showNightOrder",
   "nightIconSize",
   "nightIconGap",
   "nightTop",
+  "nightTopOffset",
   "nightTitleFontSize",
   "nightFirstTitleFontSize",
   "nightOtherTitleFontSize",
@@ -470,15 +627,16 @@ const headerBlock = modalSource.slice(headerBlockStart, headerBlockEnd);
   "roleAreaTop: 160",
   "roleNameAbilityGap: 20",
   "headerPanelOffsetX: 140",
-  "showHeaderPanel: true",
+  "showHeaderPanel: false",
   "headerPanelWidth: 380",
   "headerPanelHeight: 121",
   "headerPanelTitleTop: 32",
   "headerPanelContentTop: 72",
-  "headerTitleOffsetX: 16",
+  "headerTitleOffsetX: 240",
   "headerTitleOffsetY: -10",
   'titleArtStyle: "classic"',
   'headerAuthorColor: "#17110d"',
+  "headerAuthorOffsetX: 130",
   "headerAuthorOffsetY: 7",
   "titleArtStyleOptions",
   "this.drawPosterTitle(",
@@ -513,7 +671,7 @@ const headerBlock = modalSource.slice(headerBlockStart, headerBlockEnd);
   'type="color"',
   "max: 800",
   'roleIconSize: read("roleIconSize", 12, 800)',
-  "showHeaderPanel: this.posterLayout.showHeaderPanel !== false",
+  "showHeaderPanel: this.posterLayout.showHeaderPanel === true",
   "headerAuthorColor: this.normalizeColor(",
   "roleNameColor: this.normalizeColor(",
   "roleAbilityColor: this.normalizeColor(",
@@ -521,9 +679,11 @@ const headerBlock = modalSource.slice(headerBlockStart, headerBlockEnd);
   "roleAbilityFontSize: 15",
   "roleAreaTitleGap: 34",
   "glossaryTextGap: 44",
+  "showNightOrder: true",
   "nightIconSize: 75",
   "nightIconGap: 55",
   "nightTop: 532",
+  "nightTopOffset: 0",
   "nightTitleFontSize: 26",
   "nightFirstTitleFontSize: 26",
   "nightOtherTitleFontSize: 26",
@@ -549,10 +709,13 @@ const headerBlock = modalSource.slice(headerBlockStart, headerBlockEnd);
   "fitHeaderLine(",
   'key: "headerPanelTitleTop"',
   'key: "headerPanelContentTop"',
+  'key: "showNightOrder"',
+  'key: "nightTopOffset"',
   'headerPanelOffsetX: read("headerPanelOffsetX", -1000, 1000)',
   'headerPanelTitleTop: read("headerPanelTitleTop", 0, 1000)',
   'headerPanelContentTop: read("headerPanelContentTop", 0, 1000)',
   'headerTitleOffsetX: read("headerTitleOffsetX", -1000, 1000)',
+  'headerAuthorOffsetX: read("headerAuthorOffsetX", -1000, 1000)',
   "const contentStartY = panel.y + config.headerPanelContentTop",
   "const y = panel.y + config.headerPanelTitleTop",
   "config.headerPanelOffsetX",
@@ -566,9 +729,12 @@ const headerBlock = modalSource.slice(headerBlockStart, headerBlockEnd);
   'const teamGap = this.readTeamGap(columns.config, team.key, "teamGap")',
   "readTeamGap(config, teamKey, gapType)",
   "config.glossaryTextGap",
+  "showNightOrder: this.posterLayout.showNightOrder !== false",
+  "if (config.showNightOrder) {",
   "config.nightIconSize",
   "config.nightIconGap",
   "config.nightTop",
+  'read("nightTop", 400, 900) + read("nightTopOffset", -1000, 1000)',
   "config.nightTitleFontSize",
   "config.nightFirstTitleFontSize",
   "config.nightOtherTitleFontSize",
@@ -683,7 +849,7 @@ if (modalSource.includes("support-count")) {
   "headerAuthorOffsetY",
   "headerAuthorOffset",
   "headerAuthorColor",
-  'ctx.fillStyle = config.headerAuthorColor',
+  "ctx.fillStyle = config.headerAuthorColor",
   "作者名字颜色",
   "Author Name Color",
 ].forEach((snippet) => {
@@ -1027,7 +1193,9 @@ if (!nginxSource.includes("location /api/script-poster-render")) {
   "fonts-noto-cjk",
 ].forEach((snippet) => {
   if (!dockerfileSource.includes(snippet)) {
-    throw new Error(`Expected production Puppeteer runtime support: ${snippet}`);
+    throw new Error(
+      `Expected production Puppeteer runtime support: ${snippet}`,
+    );
   }
 });
 

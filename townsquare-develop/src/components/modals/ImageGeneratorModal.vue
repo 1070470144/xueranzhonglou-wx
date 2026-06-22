@@ -280,16 +280,16 @@ const DEFAULT_POSTER_LAYOUT = {
   roleAreaTop: 160,
   roleNameAbilityGap: 20,
   headerPanelOffsetX: 140,
-  showHeaderPanel: true,
+  showHeaderPanel: false,
   headerPanelWidth: 380,
   headerPanelHeight: 121,
   headerPanelTitleTop: 32,
   headerPanelContentTop: 72,
-  headerTitleOffsetX: 16,
+  headerTitleOffsetX: 240,
   headerTitleOffsetY: -10,
   titleArtStyle: "classic",
   headerAuthorColor: "#17110d",
-  headerAuthorOffsetX: 0,
+  headerAuthorOffsetX: 130,
   headerAuthorOffsetY: 7,
   abilityTextWidth: 300,
   abilityLineHeight: 18,
@@ -311,9 +311,11 @@ const DEFAULT_POSTER_LAYOUT = {
   roleAbilityFontSize: 15,
   roleAreaTitleGap: 34,
   glossaryTextGap: 44,
+  showNightOrder: true,
   nightIconSize: 75,
   nightIconGap: 55,
   nightTop: 532,
+  nightTopOffset: 0,
   nightTitleFontSize: 26,
   nightFirstTitleFontSize: 26,
   nightOtherTitleFontSize: 26,
@@ -512,8 +514,8 @@ export default {
             {
               key: "headerAuthorOffsetX",
               label: controlLabel("headerAuthorOffsetX"),
-              min: -120,
-              max: 120,
+              min: -1000,
+              max: 1000,
             },
             {
               key: "headerAuthorOffsetY",
@@ -628,6 +630,11 @@ export default {
           label: sectionLabel("night"),
           controls: [
             {
+              key: "showNightOrder",
+              label: controlLabel("showNightOrder"),
+              type: "checkbox",
+            },
+            {
               key: "nightIconSize",
               label: controlLabel("nightIconSize"),
               min: 12,
@@ -663,6 +670,12 @@ export default {
               min: 0,
               max: 80,
             },
+            {
+              key: "nightTopOffset",
+              label: controlLabel("nightTopOffset"),
+              min: -1000,
+              max: 1000,
+            },
           ],
         },
         {
@@ -693,6 +706,9 @@ export default {
       status: "",
       isServerGenerating: false,
       imageCache: Object.create(null),
+      loadedImageCache: Object.create(null),
+      posterRenderId: 0,
+      posterRedrawTimer: null,
       lastPoster: null,
       showGlossary: false,
       posterTopText: "",
@@ -744,6 +760,7 @@ export default {
     window.renderScriptPosterPayload = this.renderScriptPosterPayload;
   },
   beforeDestroy() {
+    this.clearScheduledPosterRender();
     if (window.renderScriptPosterPayload === this.renderScriptPosterPayload) {
       delete window.renderScriptPosterPayload;
     }
@@ -754,6 +771,7 @@ export default {
       this.openModalOverlay("edition");
     },
     async generatePoster() {
+      this.clearScheduledPosterRender();
       this.error = "";
       this.status = "";
       try {
@@ -772,23 +790,39 @@ export default {
     async redrawPoster() {
       if (!this.lastPoster) return;
       this.error = "";
-      try {
-        await this.renderPoster(this.lastPoster);
-      } catch (error) {
-        this.error =
-          error.message || this.$t("modals.imageGenerator.errors.redrawFailed");
-      }
+      this.schedulePosterRender(this.lastPoster);
+    },
+    schedulePosterRender(poster) {
+      this.clearScheduledPosterRender();
+      this.posterRedrawTimer = window.setTimeout(() => {
+        this.posterRedrawTimer = null;
+        this.renderPoster(poster).catch((error) => {
+          this.error =
+            error.message ||
+            this.$t("modals.imageGenerator.errors.redrawFailed");
+        });
+      }, 80);
+    },
+    clearScheduledPosterRender() {
+      if (!this.posterRedrawTimer) return;
+      window.clearTimeout(this.posterRedrawTimer);
+      this.posterRedrawTimer = null;
     },
     async renderPoster(poster) {
+      const renderId = this.nextPosterRenderId();
       const displayPoster = this.getPosterDisplayData(poster);
       const canvas = this.$refs.posterCanvas;
-      const previewCtx = canvas.getContext("2d");
+      const previewCanvas = this.createPosterExportCanvas();
+      const previewCtx = previewCanvas.getContext("2d");
       await this.drawPosterContent(previewCtx, displayPoster, {
         exportSafe: false,
         allowDirect: true,
+        fastPreview: true,
       });
+      if (!this.isCurrentPosterRender(renderId)) return;
+      this.copyPosterCanvas(canvas, previewCanvas);
       try {
-        this.posterDataUrl = canvas.toDataURL("image/png");
+        this.posterDataUrl = previewCanvas.toDataURL("image/png");
         this.status = this.$t("modals.imageGenerator.status.previewGenerated");
       } catch (error) {
         // eslint-disable-next-line no-console
@@ -801,6 +835,7 @@ export default {
           exportSafe: true,
           allowDirect: false,
         });
+        if (!this.isCurrentPosterRender(renderId)) return;
         this.posterDataUrl = exportCanvas.toDataURL("image/png");
         this.status = this.$t(
           "modals.imageGenerator.status.previewGeneratedFallback",
@@ -808,6 +843,52 @@ export default {
         // eslint-disable-next-line no-console
         console.warn("[script-poster] export-safe poster generated");
       }
+      this.refreshPosterImagesAfterPreload(renderId, displayPoster).catch(
+        (error) => {
+          // eslint-disable-next-line no-console
+          console.warn("[script-poster] delayed poster image refresh failed", {
+            error,
+          });
+        },
+      );
+    },
+    async refreshPosterImagesAfterPreload(renderId, displayPoster) {
+      await this.preloadPosterRoleImages(displayPoster, {
+        exportSafe: false,
+        allowDirect: true,
+      });
+      if (!this.isCurrentPosterRender(renderId)) return;
+      const canvas = this.$refs.posterCanvas;
+      if (!canvas) return;
+      const previewCanvas = this.createPosterExportCanvas();
+      const previewCtx = previewCanvas.getContext("2d");
+      await this.drawPosterContent(previewCtx, displayPoster, {
+        exportSafe: false,
+        allowDirect: true,
+        preloadRoleImages: false,
+      });
+      if (!this.isCurrentPosterRender(renderId)) return;
+      this.copyPosterCanvas(canvas, previewCanvas);
+      try {
+        this.posterDataUrl = previewCanvas.toDataURL("image/png");
+      } catch (error) {
+        const exportCanvas = this.createPosterExportCanvas();
+        const exportCtx = exportCanvas.getContext("2d");
+        await this.drawPosterContent(exportCtx, displayPoster, {
+          exportSafe: true,
+          allowDirect: false,
+          preloadRoleImages: false,
+        });
+        if (!this.isCurrentPosterRender(renderId)) return;
+        this.posterDataUrl = exportCanvas.toDataURL("image/png");
+      }
+    },
+    nextPosterRenderId() {
+      this.posterRenderId += 1;
+      return this.posterRenderId;
+    },
+    isCurrentPosterRender(renderId) {
+      return renderId === this.posterRenderId;
     },
     createPosterExportCanvas() {
       const canvas = document.createElement("canvas");
@@ -815,11 +896,24 @@ export default {
       canvas.height = POSTER_HEIGHT;
       return canvas;
     },
+    copyPosterCanvas(targetCanvas, sourceCanvas) {
+      const ctx = targetCanvas.getContext("2d");
+      ctx.clearRect(0, 0, POSTER_WIDTH, POSTER_HEIGHT);
+      ctx.drawImage(sourceCanvas, 0, 0);
+    },
     async drawPosterContent(ctx, poster, options = {}) {
+      const roleImagePreload =
+        options.preloadRoleImages === false
+          ? null
+          : this.preloadPosterRoleImages(poster, options);
       ctx.clearRect(0, 0, POSTER_WIDTH, POSTER_HEIGHT);
       await this.drawBackground(ctx, options);
+      if (roleImagePreload && !options.fastPreview) await roleImagePreload;
       await this.drawHeader(ctx, poster, options);
-      await this.drawSidebars(ctx, poster, options);
+      const config = this.getPosterLayoutConfig();
+      if (config.showNightOrder) {
+        await this.drawSidebars(ctx, poster, options);
+      }
       await this.drawRoles(ctx, poster, options);
       if (this.showGlossary) this.drawGlossary(ctx);
       this.drawPosterWatermark(ctx);
@@ -834,6 +928,38 @@ export default {
           this.posterTopText.trim() ||
           this.$t("modals.imageGenerator.canvas.defaultTopTitle"),
       };
+    },
+    async preloadPosterRoleImages(poster, options) {
+      const roles = this.collectPosterImageRoles(poster);
+      await Promise.all(
+        roles.map((role) =>
+          this.loadRoleImage(role, options).catch(() => null),
+        ),
+      );
+    },
+    collectPosterImageRoles(poster) {
+      const roles = [];
+      const seen = new Set();
+      const addRole = (role) => {
+        if (!role) return;
+        const key =
+          role.image ||
+          role.icon ||
+          role.imageUrl ||
+          role.image_url ||
+          `${role.team || ""}:${role.id || role.name || roles.length}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        roles.push(role);
+      };
+
+      (poster.firstNight || []).forEach(addRole);
+      (poster.otherNight || []).forEach(addRole);
+      Object.values(this.getPosterGroups(poster)).forEach((group) => {
+        group.forEach(addRole);
+      });
+
+      return roles;
     },
     buildPosterRenderPayload() {
       if (!this.lastPoster) return null;
@@ -1271,7 +1397,12 @@ export default {
       );
       for (const [index, role] of roles.slice(0, 25).entries()) {
         const y = config.nightTop + index * config.nightIconGap;
-        const image = await this.loadRoleImage(role, options);
+        let image = null;
+        if (options.fastPreview && !this.hasCachedRoleImage(role, options)) {
+          image = null;
+        } else {
+          image = await this.loadRoleImage(role, options);
+        }
         if (image) {
           ctx.drawImage(
             image,
@@ -1282,13 +1413,25 @@ export default {
           );
           continue;
         }
+        const fallbackCircleSize = config.nightIconSize * 0.68;
         ctx.beginPath();
-        ctx.arc(x, y, config.nightIconSize / 2, 0, Math.PI * 2);
+        ctx.arc(x, y, fallbackCircleSize / 2, 0, Math.PI * 2);
         ctx.fill();
+        const fallbackLabel = this.getNightFallbackLabel(role);
         ctx.fillStyle = "#102033";
-        ctx.fillText(String(index + 1), x, y + 6);
+        ctx.font = `bold ${Math.max(
+          14,
+          Math.min(28, fallbackCircleSize * 0.46),
+        )}px SimSun, serif`;
+        ctx.textBaseline = "middle";
+        ctx.fillText(fallbackLabel, x, y);
+        ctx.textBaseline = "alphabetic";
         ctx.fillStyle = color;
       }
+    },
+    getNightFallbackLabel(role) {
+      const name = String((role && (role.name || role.id)) || "").trim();
+      return Array.from(name)[0] || "?";
     },
     drawVerticalText(ctx, text, x, y, fontSize) {
       Array.from(text).forEach((letter, index) => {
@@ -1318,7 +1461,7 @@ export default {
         roleAreaTop: read("roleAreaTop", 130, 260),
         roleAreaTitleGap: read("roleAreaTitleGap", 0, 120),
         headerPanelOffsetX: read("headerPanelOffsetX", -1000, 1000),
-        showHeaderPanel: this.posterLayout.showHeaderPanel !== false,
+        showHeaderPanel: this.posterLayout.showHeaderPanel === true,
         headerPanelWidth: read("headerPanelWidth", 240, 520),
         headerPanelHeight: read("headerPanelHeight", 60, 160),
         headerPanelTitleTop: read("headerPanelTitleTop", 0, 1000),
@@ -1332,7 +1475,7 @@ export default {
           this.posterLayout.headerAuthorColor,
           DEFAULT_POSTER_LAYOUT.headerAuthorColor,
         ),
-        headerAuthorOffsetX: read("headerAuthorOffsetX", -120, 120),
+        headerAuthorOffsetX: read("headerAuthorOffsetX", -1000, 1000),
         headerAuthorOffsetY: read("headerAuthorOffsetY", -40, 80),
         roleNameAbilityGap: read("roleNameAbilityGap", 0, 30),
         roleIconSize: read("roleIconSize", 12, 800),
@@ -1360,9 +1503,11 @@ export default {
         demonTeamGap: read("demonTeamGap", -100, 80),
         glossaryBottomOffset,
         glossaryTextGap: read("glossaryTextGap", 28, 70),
+        showNightOrder: this.posterLayout.showNightOrder !== false,
         nightIconSize: read("nightIconSize", 12, 80),
         nightIconGap: read("nightIconGap", 10, 90),
-        nightTop: read("nightTop", 400, 900),
+        nightTop:
+          read("nightTop", 400, 900) + read("nightTopOffset", -1000, 1000),
         nightTitleFontSize: read("nightTitleFontSize", 12, 48),
         nightFirstTitleFontSize: read("nightFirstTitleFontSize", 12, 48),
         nightOtherTitleFontSize: read("nightOtherTitleFontSize", 12, 48),
@@ -1588,7 +1733,12 @@ export default {
       const iconSize = settings.iconSize;
       const textOffsetX = iconSize + 18;
       const iconY = y + Math.max(0, (layout.height - iconSize) / 2);
-      const icon = await this.loadRoleImage(role, options);
+      let icon = null;
+      if (options.fastPreview && !this.hasCachedRoleImage(role, options)) {
+        icon = null;
+      } else {
+        icon = await this.loadRoleImage(role, options);
+      }
 
       if (icon) {
         ctx.save();
@@ -1761,16 +1911,35 @@ export default {
       return clipped;
     },
     async loadRoleImage(role, options = {}) {
-      const sources = [
-        role.image,
-        role.icon,
-        role.imageUrl,
-        role.image_url,
-      ].filter(Boolean);
+      const sources = this.getRoleImageSources(role);
 
       for (const src of sources) {
+        if (this.isBlockedRemoteRoleImageHost(src)) {
+          // eslint-disable-next-line no-console
+          console.warn(
+            "[script-poster] role image skipped because host returns deleted placeholders",
+            {
+              role: role.name || role.id,
+              src,
+            },
+          );
+          continue;
+        }
+
         try {
-          return await this.loadImage(src, options);
+          const image = await this.loadImage(src, options);
+          if (this.isUnavailableRemoteRoleImage(src, image)) {
+            // eslint-disable-next-line no-console
+            console.warn(
+              "[script-poster] role image resolved to unavailable placeholder",
+              {
+                role: role.name || role.id,
+                src,
+              },
+            );
+            continue;
+          }
+          return image;
         } catch (error) {
           // eslint-disable-next-line no-console
           console.warn("[script-poster] role image failed", {
@@ -1791,6 +1960,93 @@ export default {
 
       return null;
     },
+    getRoleImageSources(role) {
+      return [
+        role && role.image,
+        role && role.icon,
+        role && role.imageUrl,
+        role && role.image_url,
+      ].filter(Boolean);
+    },
+    hasCachedRoleImage(role, options) {
+      return this.getRoleImageSources(role).some((src) =>
+        this.getRoleImageCacheKeys(src, options).some(
+          (cacheKey) => this.loadedImageCache[cacheKey],
+        ),
+      );
+    },
+    getRoleImageCacheKeys(src, options = {}) {
+      return [
+        options,
+        { ...options, useProxy: false },
+        { ...options, crossOrigin: false, useProxy: false },
+      ].map((variant) => this.getImageCacheKey(src, variant));
+    },
+    isBlockedRemoteRoleImageHost(src) {
+      return this.isPostimageHost(src);
+    },
+    isUnavailableRemoteRoleImage(src, image) {
+      if (!src || !image) return false;
+      if (!this.isPostimageHost(src)) return false;
+
+      const naturalWidth = image.naturalWidth || image.width;
+      const naturalHeight = image.naturalHeight || image.height;
+      if (!naturalWidth || !naturalHeight) return false;
+      const isSmallSquarePlaceholder =
+        naturalWidth <= 260 &&
+        naturalHeight <= 260 &&
+        Math.abs(naturalWidth - naturalHeight) <= 8;
+      if (isSmallSquarePlaceholder) return true;
+
+      if (this.isBlueRemovedImagePlaceholder(image)) return true;
+
+      return false;
+    },
+    isPostimageHost(src) {
+      let hostname = "";
+      try {
+        hostname = new URL(
+          this.normalizeImageSource(src),
+        ).hostname.toLowerCase();
+      } catch (error) {
+        return false;
+      }
+
+      return ["postimage.org", "postimages.org", "postimg.cc"].some(
+        (domain) => hostname === domain || hostname.endsWith(`.${domain}`),
+      );
+    },
+    isBlueRemovedImagePlaceholder(image) {
+      const sampleSize = 12;
+      let imageData = null;
+
+      try {
+        const canvas = document.createElement("canvas");
+        canvas.width = sampleSize;
+        canvas.height = sampleSize;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(image, 0, 0, sampleSize, sampleSize);
+        imageData = ctx.getImageData(0, 0, sampleSize, sampleSize).data;
+      } catch (error) {
+        return false;
+      }
+
+      let bluePixels = 0;
+      let sampledPixels = 0;
+      for (let index = 0; index < imageData.length; index += 4) {
+        const red = imageData[index];
+        const green = imageData[index + 1];
+        const blue = imageData[index + 2];
+        const alpha = imageData[index + 3];
+        if (alpha < 220) continue;
+        sampledPixels += 1;
+        if (blue > 160 && green > 80 && red < 120 && blue - red > 70) {
+          bluePixels += 1;
+        }
+      }
+
+      return sampledPixels > 0 && bluePixels / sampledPixels > 0.45;
+    },
     normalizeImageSource(src) {
       if (src.startsWith("//")) return `${window.location.protocol}${src}`;
       return src;
@@ -1801,6 +2057,16 @@ export default {
       if (!/^https?:\/\//i.test(normalizedSrc)) return normalizedSrc;
       return `${SCRIPT_POSTER_IMAGE_PROXY}${encodeURIComponent(normalizedSrc)}`;
     },
+    getImageCacheKey(src, options = {}) {
+      const normalizedSrc = this.normalizeImageSource(src);
+      const useProxy = options.useProxy !== false;
+      const effectiveSrc = useProxy
+        ? this.buildProxiedImageUrl(normalizedSrc)
+        : normalizedSrc;
+      return `${
+        options.crossOrigin === false ? "plain" : "cors"
+      }:${effectiveSrc}`;
+    },
     loadImage(src, options = {}) {
       const normalizedSrc = this.normalizeImageSource(src);
       const useProxy = options.useProxy !== false;
@@ -1809,17 +2075,19 @@ export default {
       const effectiveSrc = useProxy
         ? this.buildProxiedImageUrl(normalizedSrc)
         : normalizedSrc;
-      const cacheKey = `${
-        options.crossOrigin === false ? "plain" : "cors"
-      }:${effectiveSrc}`;
+      const cacheKey = this.getImageCacheKey(normalizedSrc, options);
       if (this.imageCache[cacheKey]) return this.imageCache[cacheKey];
 
       this.imageCache[cacheKey] = new Promise((resolve, reject) => {
         const image = new Image();
         if (options.crossOrigin !== false) image.crossOrigin = "anonymous";
-        image.onload = () => resolve(image);
+        image.onload = () => {
+          this.loadedImageCache[cacheKey] = image;
+          resolve(image);
+        };
         image.onerror = (error) => {
           delete this.imageCache[cacheKey];
+          delete this.loadedImageCache[cacheKey];
           reject(error);
         };
         image.src = effectiveSrc;
