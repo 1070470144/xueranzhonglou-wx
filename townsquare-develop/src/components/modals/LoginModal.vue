@@ -183,6 +183,11 @@ export default {
 @import "../../vars.scss";
 
 .web-login {
+  &.modal-backdrop,
+  .modal-backdrop {
+    z-index: 150;
+  }
+
   ::v-deep .modal {
     width: min(360px, calc(100vw - 3em));
   }

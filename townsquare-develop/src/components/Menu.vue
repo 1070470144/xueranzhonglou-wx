@@ -59,6 +59,7 @@
           <font-awesome-icon icon="broadcast-tower" @click="tab = 'session'" />
           <font-awesome-icon icon="cog" @click="tab = 'settings'" />
           <font-awesome-icon icon="tools" @click="tab = 'tools'" />
+          <font-awesome-icon icon="user" @click="tab = 'my'" />
         </li>
 
         <template v-if="tab === 'grimoire'">
@@ -105,14 +106,6 @@
           <li @click="toggleModal('playerName')" v-if="session.isSpectator">
             {{ $t("menu.changePlayerName") }}
             <em><font-awesome-icon icon="user-edit" /></em>
-          </li>
-          <li v-if="authUser" @click="logoutWeb">
-            {{ authUser.nickname || $t("login.loggedIn") }}
-            <em><font-awesome-icon icon="times" /></em>
-          </li>
-          <li v-else @click="toggleModal('login')">
-            {{ $t("menu.webLogin") }}
-            <em><font-awesome-icon icon="user" /></em>
           </li>
         </template>
 
@@ -290,6 +283,26 @@
             </em>
           </li>
         </template>
+
+        <template v-if="tab === 'my'">
+          <li class="headline">{{ $t("menu.my") }}</li>
+          <li v-if="authUser" @click="logoutWeb">
+            {{ authUser.nickname || $t("login.loggedIn") }}
+            <em><font-awesome-icon icon="times" /></em>
+          </li>
+          <li v-else @click="toggleModal('login')">
+            {{ $t("menu.webLogin") }}
+            <em><font-awesome-icon icon="user" /></em>
+          </li>
+          <li @click="toggleModal('scriptLibrary')">
+            {{ $t("menu.scriptLibrary") }}
+            <em><font-awesome-icon icon="book-open" /></em>
+          </li>
+          <li @click="openMyUploads">
+            {{ $t("menu.myUploads") }}
+            <em><font-awesome-icon icon="file-upload" /></em>
+          </li>
+        </template>
       </ul>
     </div>
   </div>
@@ -364,6 +377,13 @@ export default {
     },
     openScriptCreator() {
       this.toggleModal("scriptCreator");
+    },
+    openMyUploads() {
+      if (!this.authUser) {
+        this.toggleModal("login");
+        return;
+      }
+      this.toggleModal("myUploads");
     },
     clearSeats() {
       const seatCount =
@@ -695,7 +715,8 @@ export default {
         &.characters .fa-theater-masks,
         &.session .fa-broadcast-tower,
         &.settings .fa-cog,
-        &.tools .fa-tools {
+        &.tools .fa-tools,
+        &.my .fa-user {
           color: #fff8e7;
           background: linear-gradient(#8a2721, #581612 54%, #2d0c09);
         }

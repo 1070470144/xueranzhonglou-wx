@@ -16,7 +16,7 @@ function getUniCloudConfig() {
   };
 }
 
-function getUniCloudInstance() {
+export function getUniCloudInstance() {
   if (uniCloudInstance) return uniCloudInstance;
   const uniCloudClient = uniCloud || window.uniCloud;
   if (!uniCloudClient || !uniCloudClient.init) {
@@ -39,6 +39,26 @@ export async function callUniCloudFunction(name, method, params = {}) {
       method,
       params: [params],
     },
+  });
+  return res && res.result ? res.result : res;
+}
+
+export async function callUniCloudRawFunction(name, data = {}) {
+  const res = await getUniCloudInstance().callFunction({
+    name,
+    data,
+  });
+  return res && res.result ? res.result : res;
+}
+
+export async function uploadCloudFile(file, cloudPath) {
+  const instance = getUniCloudInstance();
+  if (!file) throw new Error("File is required");
+  if (!cloudPath) throw new Error("Cloud path is required");
+
+  const res = await instance.uploadFile({
+    filePath: file,
+    cloudPath,
   });
   return res && res.result ? res.result : res;
 }

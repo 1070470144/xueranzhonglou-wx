@@ -592,6 +592,99 @@ function normalizeUploadImages(images) {
     .slice(0, 3)
 }
 
+const SCRIPT_UPLOAD_IMAGE_MAX_SIZE = 8 * 1024 * 1024
+
+function getImageExtension(fileName, contentType) {
+  const type = String(contentType || '').toLowerCase()
+  if (type.includes('png')) return '.png'
+  if (type.includes('webp')) return '.webp'
+  if (type.includes('gif')) return '.gif'
+  if (type.includes('jpeg') || type.includes('jpg')) return '.jpg'
+
+  const ext = String(fileName || '').match(/\.[a-zA-Z0-9]+$/)
+  if (ext && ['.jpg', '.jpeg', '.png', '.webp', '.gif'].includes(ext[0].toLowerCase())) {
+    return ext[0].toLowerCase() === '.jpeg' ? '.jpg' : ext[0].toLowerCase()
+  }
+  return '.jpg'
+}
+
+function parseImageDataUrl(dataUrl) {
+  const value = String(dataUrl || '')
+  const matched = value.match(/^data:([^;,]+)?;base64,(.+)$/)
+  if (!matched) {
+    return {
+      contentType: '',
+      base64: value
+    }
+  }
+  return {
+    contentType: matched[1] || '',
+    base64: matched[2] || ''
+  }
+}
+
+async function uploadUserScriptImage(data) {
+  const { token, fileName = 'cover.jpg', contentType: inputContentType = '', dataUrl = '', size = 0 } = data || {}
+
+  try {
+    const db = uniCloud.database()
+    const user = await verifyAppUser(db, token)
+    if (!user) {
+      return { success: false, message: 'Please login first' }
+    }
+
+    const parsed = parseImageDataUrl(dataUrl)
+    const contentType = inputContentType || parsed.contentType
+    if (!String(contentType || '').startsWith('image/')) {
+      return { success: false, message: 'Only image files can be uploaded' }
+    }
+
+    const declaredSize = Number(size) || 0
+    if (declaredSize > SCRIPT_UPLOAD_IMAGE_MAX_SIZE) {
+      return { success: false, message: 'Image file is too large' }
+    }
+
+    const base64 = String(parsed.base64 || '').replace(/\s/g, '')
+    if (!base64) {
+      return { success: false, message: 'Image data is empty' }
+    }
+
+    const fileContent = Buffer.from(base64, 'base64')
+    if (!fileContent.length) {
+      return { success: false, message: 'Invalid image data' }
+    }
+    if (fileContent.length > SCRIPT_UPLOAD_IMAGE_MAX_SIZE) {
+      return { success: false, message: 'Image file is too large' }
+    }
+
+    const suffix = getImageExtension(fileName, contentType)
+    const random = Math.random().toString(36).slice(2)
+    const userId = String(user._id || 'user').replace(/[^\w-]+/g, '-')
+    const cloudPath = `script-upload/${userId}/${Date.now()}-${random}${suffix}`
+    const uploadRes = await uniCloud.uploadFile({
+      cloudPath,
+      fileContent
+    })
+    const fileID = uploadRes.fileID || uploadRes.fileId || uploadRes.url || ''
+
+    return {
+      success: true,
+      data: {
+        fileID,
+        fileId: fileID,
+        url: fileID,
+        cloudPath
+      }
+    }
+  } catch (error) {
+    console.error('Upload user script image error:', error)
+    return {
+      success: false,
+      message: error && error.message ? error.message : 'Failed to upload image'
+    }
+  }
+}
+
 function normalizeUploadedScriptData(jsonData) {
   if (Array.isArray(jsonData)) {
     const meta = jsonData.find(item => item && typeof item === 'object' && item.id === '_meta') || {}
@@ -1129,6 +1222,8 @@ const main = async (event, context) => {
         return await favoriteScript(...params)
       case 'getFavoriteScripts':
         return await getFavoriteScripts(...params)
+      case 'uploadUserScriptImage':
+        return await uploadUserScriptImage(...params)
       case 'userUploadScript':
         return await userUploadScript(...params)
       case 'getMyUploadedScripts':
@@ -1170,6 +1265,7 @@ module.exports = {
   likeScript,
   favoriteScript,
   getFavoriteScripts,
+  uploadUserScriptImage,
   userUploadScript,
   getMyUploadedScripts,
   getMyUploadedScriptDetail,
