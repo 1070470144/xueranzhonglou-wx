@@ -138,6 +138,21 @@ assertIncludes(
 );
 assertIncludes(
   tokenGenerator,
+  "image.crossOrigin = \"anonymous\"",
+  "token generator should set anonymous CORS before reading images on canvas",
+);
+assertIncludes(
+  tokenGenerator,
+  "roleTokenGenerator.textureLoadFailed",
+  "token generator should show which texture failed to load after deployment",
+);
+assertIncludes(
+  tokenGenerator,
+  "roleTokenGenerator.canvasReadFailed",
+  "token generator should show canvas read errors during image processing",
+);
+assertIncludes(
+  tokenGenerator,
   "applyRoleTokenTextures",
   "token generator should blend white and team textures into visible pixels",
 );

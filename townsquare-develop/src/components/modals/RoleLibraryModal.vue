@@ -126,93 +126,117 @@
           <span>{{ $t("roleLibrary.createTitle") }}</span>
         </div>
         <div class="create-form">
-          <label class="form-field">
-            <span>{{ $t("roleLibrary.roleId") }}</span>
-            <input v-model="createForm.id" type="text" readonly />
-          </label>
-          <label class="form-field">
-            <span>{{ $t("roleLibrary.roleName") }}</span>
-            <input v-model.trim="createForm.name" type="text" />
-          </label>
-          <label class="form-field">
-            <span>{{ $t("roleLibrary.roleTeam") }}</span>
-            <select v-model="createForm.team">
-              <option
-                v-for="team in createTeamOptions"
-                :key="team"
-                :value="team"
-              >
-                {{ teamLabel(team) }}
-              </option>
-            </select>
-          </label>
-          <label class="form-field wide">
-            <span>{{ $t("roleLibrary.roleAbility") }}</span>
-            <textarea v-model.trim="createForm.ability" rows="4"></textarea>
-          </label>
-          <label class="form-field">
-            <span>{{ $t("roleLibrary.firstNight") }}</span>
-            <input
-              v-model.number="createForm.firstNight"
-              type="number"
-              min="0"
-              step="1"
-            />
-          </label>
-          <label class="form-field">
-            <span>{{ $t("roleLibrary.otherNight") }}</span>
-            <input
-              v-model.number="createForm.otherNight"
-              type="number"
-              min="0"
-              step="1"
-            />
-          </label>
-          <label class="form-field wide">
-            <span>{{ $t("roleLibrary.firstNightReminder") }}</span>
-            <textarea
-              v-model.trim="createForm.firstNightReminder"
-              rows="3"
-            ></textarea>
-          </label>
-          <label class="form-field wide">
-            <span>{{ $t("roleLibrary.otherNightReminder") }}</span>
-            <textarea
-              v-model.trim="createForm.otherNightReminder"
-              rows="3"
-            ></textarea>
-          </label>
-          <div class="form-field wide upload-field">
-            <span>{{ $t("roleLibrary.roleImage") }}</span>
-            <div class="upload-row">
-              <input v-model.trim="createForm.image" type="url" />
-              <label class="upload-button">
-                <font-awesome-icon
-                  :icon="createUploadingImage ? 'spinner' : 'image'"
-                  :spin="createUploadingImage"
-                />
-                <span>{{ $t("roleLibrary.uploadImage") }}</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  :disabled="createUploadingImage || creating"
-                  @change="handleCreateImageUpload"
-                />
+          <section class="create-section create-basic-section">
+            <h4 class="create-section-title">基础信息</h4>
+            <div class="create-field-grid">
+              <label class="form-field">
+                <span>{{ $t("roleLibrary.roleId") }}</span>
+                <input v-model="createForm.id" type="text" readonly />
+              </label>
+              <label class="form-field">
+                <span>{{ $t("roleLibrary.roleName") }}</span>
+                <input v-model.trim="createForm.name" type="text" />
+              </label>
+              <label class="form-field">
+                <span>{{ $t("roleLibrary.roleTeam") }}</span>
+                <select v-model="createForm.team">
+                  <option
+                    v-for="team in createTeamOptions"
+                    :key="team"
+                    :value="team"
+                  >
+                    {{ teamLabel(team) }}
+                  </option>
+                </select>
+              </label>
+              <label class="form-field wide">
+                <span>{{ $t("roleLibrary.roleAbility") }}</span>
+                <textarea v-model.trim="createForm.ability" rows="4"></textarea>
               </label>
             </div>
-            <img
-              v-if="createForm.image"
-              class="create-preview-image"
-              :src="createForm.image"
-              :alt="createForm.name || createForm.id"
-            />
-          </div>
-          <div class="form-field wide upload-field">
-            <span>{{ $t("roleLibrary.roleToken") }}</span>
+          </section>
+
+          <section class="create-section create-night-section">
+            <h4 class="create-section-title">夜晚信息</h4>
+            <div class="create-field-grid">
+              <label class="form-field">
+                <span>{{ $t("roleLibrary.firstNight") }}</span>
+                <input
+                  v-model.number="createForm.firstNight"
+                  type="number"
+                  min="0"
+                  step="1"
+                />
+              </label>
+              <label class="form-field">
+                <span>{{ $t("roleLibrary.otherNight") }}</span>
+                <input
+                  v-model.number="createForm.otherNight"
+                  type="number"
+                  min="0"
+                  step="1"
+                />
+              </label>
+              <label class="form-field wide">
+                <span>{{ $t("roleLibrary.firstNightReminder") }}</span>
+                <textarea
+                  v-model.trim="createForm.firstNightReminder"
+                  rows="3"
+                ></textarea>
+              </label>
+              <label class="form-field wide">
+                <span>{{ $t("roleLibrary.otherNightReminder") }}</span>
+                <textarea
+                  v-model.trim="createForm.otherNightReminder"
+                  rows="3"
+                ></textarea>
+              </label>
+            </div>
+          </section>
+
+          <section class="create-section create-media-section">
+            <h4 class="create-section-title">
+              {{ $t("roleLibrary.roleImage") }}
+            </h4>
+            <div class="form-field upload-field">
+              <div class="form-control-row image-control-row">
+                <input v-model.trim="createForm.image" type="url" />
+                <label class="upload-button">
+                  <font-awesome-icon
+                    :icon="createUploadingImage ? 'spinner' : 'image'"
+                    :spin="createUploadingImage"
+                  />
+                  <span>{{ $t("roleLibrary.uploadImage") }}</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    :disabled="createUploadingImage || creating"
+                    @change="handleCreateImageUpload"
+                  />
+                </label>
+              </div>
+              <img
+                v-if="createForm.image"
+                class="create-preview-image"
+                :src="createForm.image"
+                :alt="createForm.name || createForm.id"
+              />
+            </div>
+          </section>
+
+          <section class="create-section create-token-section">
+            <h4 class="create-section-title">
+              {{ $t("roleLibrary.roleToken") }}
+            </h4>
+            <div class="token-grid-header">
+              <span>文本</span>
+              <span>图片</span>
+              <span></span>
+            </div>
             <div
               v-for="(token, index) in createForm.smallTokens"
               :key="index"
-              class="upload-row token-row"
+              class="form-control-row token-row"
             >
               <input
                 v-model.trim="createForm.smallTokens[index].name"
@@ -227,13 +251,14 @@
               <button
                 type="button"
                 class="remove-token-button"
+                :title="$t('common.remove')"
                 :disabled="createForm.smallTokens.length <= 1"
                 @click="removeCreateToken(index)"
               >
-                {{ $t("common.remove") }}
+                <font-awesome-icon icon="times" />
               </button>
             </div>
-            <div class="upload-row token-actions">
+            <div class="token-action-row">
               <button
                 type="button"
                 class="upload-button"
@@ -256,14 +281,16 @@
                 />
               </label>
             </div>
-            <img
-              v-for="token in compactCreateTokens()"
-              :key="token.image"
-              class="create-preview-image token"
-              :src="token.image"
-              :alt="token.name || createForm.name || createForm.id"
-            />
-          </div>
+            <div class="create-token-preview-list">
+              <img
+                v-for="token in compactCreateTokens()"
+                :key="token.image"
+                class="create-preview-image token"
+                :src="token.image"
+                :alt="token.name || createForm.name || createForm.id"
+              />
+            </div>
+          </section>
         </div>
         <div v-if="createError" class="state-line error compact">
           {{ createError }}
@@ -1266,9 +1293,30 @@ textarea {
 
 .create-form {
   display: grid;
+  gap: 0.75em;
+  padding-top: 0.55em;
+}
+
+.create-section {
+  display: grid;
+  gap: 0.55em;
+  min-width: 0;
+  padding: 0.58em;
+  border: 1px solid #3d2e26;
+  background: rgba(5, 4, 4, 0.24);
+}
+
+.create-section-title {
+  margin: 0;
+  color: #fff8e7;
+  font-size: 0.86em;
+  font-weight: 700;
+}
+
+.create-field-grid {
+  display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.55em;
-  padding-top: 0.55em;
 }
 
 .form-field {
@@ -1290,9 +1338,12 @@ textarea {
 
 .form-field input,
 .form-field select,
-.form-field textarea {
+.form-field textarea,
+.upload-button,
+.remove-token-button {
   width: 100%;
   min-width: 0;
+  min-height: 2.4em;
   margin: 0;
   padding: 0.42em 0.48em;
   color: #f7f0df;
@@ -1313,22 +1364,35 @@ textarea {
   resize: vertical;
 }
 
-.upload-row {
+.form-control-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) max-content;
   gap: 0.4em;
   align-items: center;
 }
 
-.token-row {
-  grid-template-columns: minmax(7em, 0.45fr) minmax(0, 1fr) max-content;
+.image-control-row .upload-button {
+  width: 9.4em;
+}
+
+.token-row,
+.token-grid-header {
+  display: grid;
+  grid-template-columns: minmax(7em, 0.45fr) minmax(0, 1fr) 2.6em;
+  gap: 0.4em;
+  align-items: center;
+}
+
+.token-grid-header {
+  color: #b8a082;
+  font-size: 0.74em;
+  font-weight: 700;
 }
 
 .upload-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 2.15em;
   padding: 0 0.58em;
   color: #fff2c4;
   border: 1px solid rgba(170, 123, 36, 0.62);
@@ -1338,13 +1402,18 @@ textarea {
   white-space: nowrap;
 }
 
-.token-row,
-.token-actions {
-  margin-top: 0.35em;
+.token-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4em;
+}
+
+.token-action-row .upload-button {
+  width: auto;
 }
 
 .remove-token-button {
-  min-height: 2.15em;
   padding: 0 0.58em;
   color: #dcc4a1;
   border: 1px solid #3d2e26;
@@ -1361,6 +1430,12 @@ textarea {
 
 .upload-button input {
   display: none;
+}
+
+.create-token-preview-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.42em;
 }
 
 .create-preview-image {
@@ -1580,9 +1655,19 @@ textarea {
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .create-form,
-  .upload-row {
+  .create-field-grid,
+  .form-control-row,
+  .token-row {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .token-grid-header {
+    display: none;
+  }
+
+  .image-control-row .upload-button,
+  .remove-token-button {
+    width: 100%;
   }
 
   .role-list {

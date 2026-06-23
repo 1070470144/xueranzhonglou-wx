@@ -372,6 +372,8 @@ const messages = {
       pasted: "粘贴的图片",
       roleRequired: "请选择要保存的角色",
       processFailed: "图片处理失败",
+      textureLoadFailed: "纹理加载失败：{texture}（{url}）",
+      canvasReadFailed: "无法读取图片像素，请换用本地上传的 PNG/JPG 图片",
       saveFailed: "保存角色 icon 失败",
       saved: "已保存到角色 icon",
       loadRolesFailed: "我的角色加载失败",
@@ -1271,6 +1273,9 @@ const messages = {
       pasted: "Pasted image",
       roleRequired: "Choose a target role",
       processFailed: "Image processing failed",
+      textureLoadFailed: "Texture failed to load: {texture} ({url})",
+      canvasReadFailed:
+        "Unable to read image pixels. Try uploading a local PNG/JPG image.",
       saveFailed: "Failed to save role icon",
       saved: "Saved to role icon",
       loadRolesFailed: "Failed to load my roles",

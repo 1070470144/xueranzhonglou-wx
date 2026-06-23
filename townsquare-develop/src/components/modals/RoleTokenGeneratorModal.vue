@@ -622,6 +622,7 @@ export default {
       return new Promise((resolve, reject) => {
         const image = new Image();
         const url = URL.createObjectURL(file);
+        image.crossOrigin = "anonymous";
         image.onload = () => {
           URL.revokeObjectURL(url);
           resolve(image);
@@ -646,8 +647,12 @@ export default {
       canvas.height = height;
       const context = canvas.getContext("2d");
       context.clearRect(0, 0, width, height);
-      context.drawImage(image, 0, 0, width, height);
-      return context.getImageData(0, 0, width, height);
+      try {
+        context.drawImage(image, 0, 0, width, height);
+        return context.getImageData(0, 0, width, height);
+      } catch (error) {
+        throw new Error(this.$t("roleTokenGenerator.canvasReadFailed"));
+      }
     },
     removeBackground(imageData) {
       if (!this.options.removeBackgroundEnabled) return imageData;
@@ -863,22 +868,36 @@ export default {
       if (!this.textureCache) this.textureCache = {};
       const key = TEXTURE_SOURCES[textureKey] ? textureKey : "blue";
       if (this.textureCache[key]) return this.textureCache[key];
-      const image = await this.loadImageFromUrl(TEXTURE_SOURCES[key]);
+      const url = TEXTURE_SOURCES[key];
+      const image = await this.loadImageFromUrl(
+        url,
+        this.$t("roleTokenGenerator.textureLoadFailed", { texture: key, url }),
+      );
       const canvas = document.createElement("canvas");
       canvas.width = image.naturalWidth || image.width;
       canvas.height = image.naturalHeight || image.height;
       const context = canvas.getContext("2d");
-      context.drawImage(image, 0, 0, canvas.width, canvas.height);
-      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      let imageData;
+      try {
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+      } catch (error) {
+        throw new Error(this.$t("roleTokenGenerator.canvasReadFailed"));
+      }
       this.textureCache[key] = imageData;
       return imageData;
     },
-    loadImageFromUrl(url) {
+    loadImageFromUrl(url, errorMessage) {
       return new Promise((resolve, reject) => {
         const image = new Image();
+        image.crossOrigin = "anonymous";
         image.onload = () => resolve(image);
         image.onerror = () =>
-          reject(new Error(this.$t("roleTokenGenerator.processFailed")));
+          reject(
+            new Error(
+              errorMessage || this.$t("roleTokenGenerator.processFailed"),
+            ),
+          );
         image.src = url;
       });
     },

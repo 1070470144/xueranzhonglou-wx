@@ -27,10 +27,24 @@ assert(
 );
 
 const createTemplate = modalSource.slice(createStart, detailStart);
+const styleStart = modalSource.indexOf('<style scoped lang="scss">');
+assert(styleStart >= 0, "role library modal should keep scoped styles");
+const styleSource = modalSource.slice(styleStart);
 
 assert(
   !createTemplate.includes("createJson"),
   "create role modal should not expose the old raw JSON textarea",
+);
+assert(
+  createTemplate.includes('class="create-section create-basic-section"') &&
+    createTemplate.includes('class="create-section create-night-section"') &&
+    createTemplate.includes('class="create-section create-media-section"') &&
+    createTemplate.includes('class="create-section create-token-section"'),
+  "create role modal should group fields into basic, night, image, and token sections",
+);
+assert(
+  createTemplate.includes('class="create-section-title"'),
+  "create role modal should label each grouped section",
 );
 [
   "createForm.id",
@@ -57,9 +71,39 @@ assert(
   "create role modal should upload both role image and small token images",
 );
 assert(
+  createTemplate.includes('class="form-control-row image-control-row"') &&
+    createTemplate.includes('class="token-grid-header"') &&
+    createTemplate.includes('class="token-action-row"'),
+  "create role media controls should use aligned image and token control rows",
+);
+assert(
   createTemplate.includes("createForm.smallTokens[index].name") &&
     createTemplate.includes("createForm.smallTokens[index].image"),
   "create role modal should allow entering both small token text and image",
+);
+assert(
+  /\.create-section\s*\{[\s\S]*?display:\s*grid;[\s\S]*?gap:\s*0\.55em/.test(
+    styleSource,
+  ),
+  "create role sections should use a consistent vertical rhythm",
+);
+assert(
+  /\.form-control-row\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)\s+max-content/.test(
+    styleSource,
+  ),
+  "image URL and upload controls should align with a stable button column",
+);
+assert(
+  /\.token-row,\s*\.token-grid-header\s*\{[\s\S]*?grid-template-columns:\s*minmax\(7em,\s*0\.45fr\)\s+minmax\(0,\s*1fr\)\s+2\.6em/.test(
+    styleSource,
+  ),
+  "small token rows should align text, image URL, and remove action columns",
+);
+assert(
+  /\.form-field input,\s*\.form-field select,\s*\.form-field textarea,\s*\.upload-button,\s*\.remove-token-button\s*\{[\s\S]*?min-height:\s*2\.4em/.test(
+    styleSource,
+  ),
+  "create role inputs and buttons should share a consistent control height",
 );
 assert(
   modalSource.includes("generateCreateRoleId") &&
