@@ -15,6 +15,8 @@ import rolesJSON from "../roles.json";
 import fabledJSON from "../fabled.json";
 import jinxesJSON from "../hatred.json";
 
+const { translateOfficialReminders } = require("../utils/reminderTranslations");
+
 Vue.use(Vuex);
 
 // helper functions
@@ -65,6 +67,48 @@ const editionJSONbyId = new Map(
 const rolesJSONbyId = new Map(rolesJSON.map((role) => [role.id, role]));
 const fabled = new Map(fabledJSON.map((role) => [role.id, role]));
 
+const normalizeOfficialRoleKey = (value) =>
+  String(value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, "");
+
+const officialRolesByImageKey = rolesJSON.reduce((result, role) => {
+  [role.id, role.name].forEach((value) => {
+    const key = normalizeOfficialRoleKey(value);
+    if (key && !result.has(key)) result.set(key, role);
+  });
+  return result;
+}, new Map());
+
+const officialRoleFromImage = (role) => {
+  const image = String(
+    (role && (role.image || role.iconUrl || role.icon || role.avatar)) || "",
+  );
+  if (!/clocktower-wiki\.gstonegames\.com/i.test(image)) return null;
+  const matches = image.match(/\/([^/?#]+)\.png(?:[/?#]|$)/gi);
+  if (!matches || !matches.length) return null;
+  const key = normalizeOfficialRoleKey(
+    matches[matches.length - 1].replace(/^\/|\.png.*$/gi, ""),
+  );
+  return officialRolesByImageKey.get(key) || null;
+};
+
+const officialNightDefaults = (role) => {
+  const officialRole = officialRoleFromImage(role);
+  if (!officialRole) return {};
+  return {
+    firstNight: officialRole.firstNight,
+    firstNightReminder: officialRole.firstNightReminder,
+    otherNight: officialRole.otherNight,
+    otherNightReminder: officialRole.otherNightReminder,
+    reminders: cloneJson(translateOfficialReminders(officialRole.reminders)),
+    remindersGlobal: cloneJson(
+      translateOfficialReminders(officialRole.remindersGlobal),
+    ),
+    setup: officialRole.setup,
+  };
+};
+
 // jinxes
 let jinxes = {};
 try {
@@ -99,6 +143,21 @@ const customRole = {
   setup: false,
   team: "townsfolk",
   isCustom: true,
+  smallTokens: [],
+  tokenImages: [],
+  smallToken: "",
+  tokenImage: "",
+  tokenUrl: "",
+  tokens: [],
+};
+
+const cloneJson = (value) =>
+  value === undefined ? value : JSON.parse(JSON.stringify(value));
+
+const hasExportValue = (value) => {
+  if (Array.isArray(value)) return value.length > 0;
+  if (value && typeof value === "object") return Object.keys(value).length > 0;
+  return value !== undefined && value !== null && value !== "";
 };
 
 const buildCustomRoleState = (roles, roleLookup = new Map()) => {
@@ -128,7 +187,7 @@ const buildCustomRoleState = (roles, roleLookup = new Map()) => {
       (role) =>
         rolesJSONbyId.get(role.id) ||
         roleLookup.get(role.id) ||
-        Object.assign({}, customRole, role),
+        Object.assign({}, customRole, officialNightDefaults(role), role),
     )
     // default empty icons and placeholders, clean up firstNight / otherNight
     .map((role) => {
@@ -210,6 +269,7 @@ export default new Vuex.Store({
       reference: false,
       reminder: false,
       role: false,
+      roleLibrary: false,
       roles: false,
       roomControl: false,
       roomLobby: false,
@@ -237,11 +297,7 @@ export default new Vuex.Store({
     customRolesStripped: ({ roles }) => {
       const customRoles = [];
       const customKeys = Object.keys(customRole);
-      const strippedProps = [
-        "firstNightReminder",
-        "otherNightReminder",
-        "isCustom",
-      ];
+      const strippedProps = ["isCustom"];
       roles.forEach((role) => {
         if (!role.isCustom) {
           customRoles.push({ id: role.id });
@@ -260,6 +316,23 @@ export default new Vuex.Store({
         }
       });
       return customRoles;
+    },
+    customRolesFull: ({ roles }) => {
+      const requiredProps = ["id", "name", "image", "ability", "team"];
+      return Array.from(roles.values()).map((role) => {
+        if (!role.isCustom) return role.id;
+        const fullRole = {};
+        Object.keys(customRole).forEach((prop) => {
+          if (prop === "isCustom" || prop === "edition") return;
+          const value = role[prop];
+          const isRequired = requiredProps.includes(prop);
+          const isDefault = value === customRole[prop];
+          if (isRequired || (!isDefault && hasExportValue(value))) {
+            fullRole[prop] = cloneJson(value);
+          }
+        });
+        return fullRole;
+      });
     },
     rolesJSONbyId: () => rolesJSONbyId,
   },

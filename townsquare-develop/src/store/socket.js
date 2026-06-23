@@ -48,34 +48,31 @@ class LiveSession {
    */
   _open(channel) {
     this.disconnect();
-    this._socket = new WebSocket(
+    const socket = new WebSocket(
       this._wss +
         channel +
         "/" +
         (this._isSpectator ? this._store.state.session.playerId : "host"),
     );
-    this._socket.addEventListener("message", this._handleMessage.bind(this));
-    this._socket.onopen = this._onOpen.bind(this);
-    this._socket.onclose = (err) => {
+    this._socket = socket;
+    socket.addEventListener("message", this._handleMessage.bind(this));
+    socket.onopen = this._onOpen.bind(this);
+    socket.onclose = (err) => {
+      if (this._socket !== socket) return;
       this._socket = null;
       clearInterval(this._pingTimer);
       this._pingTimer = null;
-      if (err.code !== 1000) {
-        // connection interrupted, reconnect after 3 seconds
-        this._store.commit("session/setReconnecting", true);
-        this._reconnectTimer = setTimeout(
-          () => this.connect(channel),
-          3 * 1000,
-        );
-      } else {
-        if (this._isRoomSession) {
-          this._store.commit("voice/clear");
-          this._store.commit("room/clearRoom");
-        }
-        this._isRoomSession = false;
-        this._store.commit("session/setSessionId", "");
-        if (err.reason) alert(err.reason);
+      const shouldRecoverRoomSession =
+        this._store.state.session.sessionId === channel &&
+        (this._isRoomSession || this._store.state.room.current) &&
+        !err.reason;
+      if (err.code !== 1000 || shouldRecoverRoomSession) {
+        this._scheduleReconnect(channel);
+        return;
       }
+      this._isRoomSession = false;
+      this._store.commit("session/setSessionId", "");
+      if (err.reason) alert(err.reason);
     };
   }
 
@@ -379,6 +376,27 @@ class LiveSession {
       this._store.state.session.sessionId === "" &&
       !this._store.state.room.current
     );
+  }
+
+  _scheduleReconnect(channel, delay = 3 * 1000) {
+    clearTimeout(this._reconnectTimer);
+    if (!channel || this._store.state.session.sessionId !== channel) return;
+    this._store.commit("session/setReconnecting", true);
+    this._reconnectTimer = setTimeout(() => {
+      this._reconnectTimer = null;
+      if (this._store.state.session.sessionId === channel) {
+        this.connect(channel);
+      }
+    }, delay);
+  }
+
+  resumeCurrentSession() {
+    const channel = this._store.state.session.sessionId;
+    if (!channel || this.isConnectedTo(channel)) return;
+    if (this._socket && this._socket.readyState === 0) return;
+    clearTimeout(this._reconnectTimer);
+    this._reconnectTimer = null;
+    this.connect(channel);
   }
 
   syncAuthPlayer() {
@@ -1338,10 +1356,12 @@ class LiveSession {
       this._store.state.session.playerId ||
       Math.random().toString(36).substr(2);
     this._store.commit("session/setPlayerId", playerId);
-    this._socket = new WebSocket(`${this._wss}lobby/${playerId}`);
-    this._socket.addEventListener("message", this._handleMessage.bind(this));
-    this._socket.onopen = () => this._send("room:list", {});
-    this._socket.onclose = () => {
+    const socket = new WebSocket(`${this._wss}lobby/${playerId}`);
+    this._socket = socket;
+    socket.addEventListener("message", this._handleMessage.bind(this));
+    socket.onopen = () => this._send("room:list", {});
+    socket.onclose = () => {
+      if (this._socket !== socket) return;
       this._socket = null;
       clearInterval(this._pingTimer);
       this._pingTimer = null;
@@ -1470,9 +1490,19 @@ export default (store) => {
   // setup
   const session = new LiveSession(store);
   if (typeof window !== "undefined") {
+    const resumeCurrentSession = () => {
+      if (typeof document !== "undefined" && document.hidden) return;
+      session.resumeCurrentSession();
+    };
     window.addEventListener("townsquare-auth-change", () => {
       session.syncAuthPlayer();
     });
+    window.addEventListener("pageshow", resumeCurrentSession);
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden) resumeCurrentSession();
+      });
+    }
   }
 
   // listen to mutations

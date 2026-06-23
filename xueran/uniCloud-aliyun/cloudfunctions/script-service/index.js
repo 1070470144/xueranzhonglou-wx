@@ -10,13 +10,16 @@ try {
   }
 } catch (e) {
   // don't fail if init-data not present; log for local debug
-  console.warn('init-data module not found or failed to load; proceeding without test data')
+  console.warn(
+    'init-data module not found or failed to load; proceeding without test data'
+  )
 }
 
 async function verifyAppUser(db, token) {
   if (!token) return null
 
-  const sessionRes = await db.collection('auth-sessions')
+  const sessionRes = await db
+    .collection('auth-sessions')
     .where({ token })
     .limit(1)
     .get()
@@ -42,7 +45,7 @@ function normalizeScript(script) {
     script.images = [script.thumbnail]
   } else if (Array.isArray(script.images)) {
     script.images = script.images
-      .map(img => {
+      .map((img) => {
         if (typeof img === 'string') return img
         if (img && typeof img === 'object') return img.url || img.fileId || null
         return null
@@ -74,340 +77,352 @@ function applyPublicScriptStatus(db, whereCondition, status) {
  * 获取剧本列表
  */
 async function getScriptList(data) {
-    const { page = 1, pageSize = 20, category = 'all', status = 'published' } = data
-    console.log('getScriptList called with:', { page, pageSize, category, status })
+  const {
+    page = 1,
+    pageSize = 20,
+    category = 'all',
+    status = 'published'
+  } = data
+  console.log('getScriptList called with:', {
+    page,
+    pageSize,
+    category,
+    status
+  })
 
-    // 输入验证
-    if (page < 1 || pageSize < 1 || pageSize > 100) {
-      return {
-        success: false,
-        message: 'Invalid pagination parameters'
-      }
-    }
-
-    try {
-      const db = uniCloud.database()
-      const collection = db.collection('scripts')
-
-      // 构建查询条件
-      const whereCondition = {}
-      applyPublicScriptStatus(db, whereCondition, status)
-      if (category !== 'all') {
-        whereCondition.category = category
-      }
-
-      console.log('查询条件:', whereCondition)
-
-      // 计算跳过的记录数
-      const skip = (page - 1) * pageSize
-
-      // 查询数据
-      const result = await collection
-        .where(whereCondition)
-        .orderBy('createTime', 'desc')
-        .skip(skip)
-        .limit(pageSize)
-        .get()
-
-      console.log('查询结果:', result)
-
-      // 获取总数
-      const totalResult = await collection.where(whereCondition).count()
-      console.log('总数统计:', totalResult)
-
-      const responseData = {
-        list: result.data,
-        total: totalResult.total,
-        page,
-        pageSize,
-        totalPages: Math.ceil(totalResult.total / pageSize)
-      }
-
-      console.log('返回数据:', responseData)
-
-      return {
-        success: true,
-        data: responseData
-      }
-    } catch (error) {
-      console.error('Get script list error:', error)
-      return {
-        success: false,
-        message: 'Failed to get script list: ' + error.message
-      }
+  // 输入验证
+  if (page < 1 || pageSize < 1 || pageSize > 100) {
+    return {
+      success: false,
+      message: 'Invalid pagination parameters'
     }
   }
+
+  try {
+    const db = uniCloud.database()
+    const collection = db.collection('scripts')
+
+    // 构建查询条件
+    const whereCondition = {}
+    applyPublicScriptStatus(db, whereCondition, status)
+    if (category !== 'all') {
+      whereCondition.category = category
+    }
+
+    console.log('查询条件:', whereCondition)
+
+    // 计算跳过的记录数
+    const skip = (page - 1) * pageSize
+
+    // 查询数据
+    const result = await collection
+      .where(whereCondition)
+      .orderBy('createTime', 'desc')
+      .skip(skip)
+      .limit(pageSize)
+      .get()
+
+    console.log('查询结果:', result)
+
+    // 获取总数
+    const totalResult = await collection.where(whereCondition).count()
+    console.log('总数统计:', totalResult)
+
+    const responseData = {
+      list: result.data,
+      total: totalResult.total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(totalResult.total / pageSize)
+    }
+
+    console.log('返回数据:', responseData)
+
+    return {
+      success: true,
+      data: responseData
+    }
+  } catch (error) {
+    console.error('Get script list error:', error)
+    return {
+      success: false,
+      message: 'Failed to get script list: ' + error.message
+    }
+  }
+}
 
 /**
  * 获取剧本详情
  */
 async function getScriptDetail(data) {
-    const { scriptId } = data
+  const { scriptId } = data
 
-    // 输入验证
-    if (!scriptId) {
-      return {
-        success: false,
-        message: 'scriptId is required'
-      }
-    }
-
-    try {
-      const db = uniCloud.database()
-      const result = await db.collection('scripts')
-        .doc(scriptId)
-        .get()
-
-      if (!result.data || result.data.length === 0) {
-        return {
-          success: false,
-          message: 'Script not found'
-        }
-      }
-
-      const script = result.data[0]
-
-      // 更新浏览量
-      await db.collection('scripts')
-        .doc(scriptId)
-        .update({
-          views: (script.views || 0) + 1,
-          updateTime: Date.now()
-        })
-
-      return {
-        success: true,
-        data: {
-          script: {
-            ...script,
-            views: (script.views || 0) + 1
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Get script detail error:', error)
-      return {
-        success: false,
-        message: 'Failed to get script detail'
-      }
+  // 输入验证
+  if (!scriptId) {
+    return {
+      success: false,
+      message: 'scriptId is required'
     }
   }
+
+  try {
+    const db = uniCloud.database()
+    const result = await db.collection('scripts').doc(scriptId).get()
+
+    if (!result.data || result.data.length === 0) {
+      return {
+        success: false,
+        message: 'Script not found'
+      }
+    }
+
+    const script = result.data[0]
+
+    // 更新浏览量
+    await db
+      .collection('scripts')
+      .doc(scriptId)
+      .update({
+        views: (script.views || 0) + 1,
+        updateTime: Date.now()
+      })
+
+    return {
+      success: true,
+      data: {
+        script: {
+          ...script,
+          views: (script.views || 0) + 1
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Get script detail error:', error)
+    return {
+      success: false,
+      message: 'Failed to get script detail'
+    }
+  }
+}
 
 /**
  * 搜索剧本
  */
 async function searchScripts(data) {
-    const { keyword = '', tags = [], page = 1, pageSize = 20, status = 'published' } = data
+  const {
+    keyword = '',
+    tags = [],
+    page = 1,
+    pageSize = 20,
+    status = 'published'
+  } = data
 
-    // 输入验证
-    if (page < 1 || pageSize < 1 || pageSize > 100) {
-      return {
-        success: false,
-        message: 'Invalid pagination parameters'
-      }
+  // 输入验证
+  if (page < 1 || pageSize < 1 || pageSize > 100) {
+    return {
+      success: false,
+      message: 'Invalid pagination parameters'
+    }
+  }
+
+  try {
+    const db = uniCloud.database()
+    const collection = db.collection('scripts')
+
+    // 构建查询条件
+    const cmd = db.command
+    const baseCondition = {}
+    const andConditions = []
+    applyPublicScriptStatus(db, baseCondition, status)
+    if (Object.keys(baseCondition).length > 0) {
+      andConditions.push(baseCondition)
     }
 
-    try {
-      const db = uniCloud.database()
-      const collection = db.collection('scripts')
-
-      // 构建查询条件
-      const cmd = db.command
-      const baseCondition = {}
-      const andConditions = []
-      applyPublicScriptStatus(db, baseCondition, status)
-      if (Object.keys(baseCondition).length > 0) {
-        andConditions.push(baseCondition)
-      }
-
-      // 关键词搜索：覆盖标题、作者、标签，避免只搜当前已展示列表或只按标题命中。
-      if (keyword) {
-        const keywordReg = new RegExp(keyword, 'i')
-        andConditions.push(cmd.or([
+    // 关键词搜索：覆盖标题、作者、标签，避免只搜当前已展示列表或只按标题命中。
+    if (keyword) {
+      const keywordReg = new RegExp(keyword, 'i')
+      andConditions.push(
+        cmd.or([
           { title: keywordReg },
           { author: keywordReg },
           { tags: keywordReg }
-        ]))
-      }
+        ])
+      )
+    }
 
-      // 标签过滤
-      if (tags && tags.length > 0) {
-        andConditions.push({ tags: cmd.in(tags) })
-      }
+    // 标签过滤
+    if (tags && tags.length > 0) {
+      andConditions.push({ tags: cmd.in(tags) })
+    }
 
-      const whereCondition = andConditions.length > 1
-        ? cmd.and(andConditions)
-        : (andConditions[0] || {})
+    const whereCondition =
+      andConditions.length > 1 ? cmd.and(andConditions) : andConditions[0] || {}
 
-      // 计算跳过的记录数
-      const skip = (page - 1) * pageSize
+    // 计算跳过的记录数
+    const skip = (page - 1) * pageSize
 
-      // 查询数据
-      const result = await collection
-        .where(whereCondition)
-        .orderBy('createTime', 'desc')
-        .skip(skip)
-        .limit(pageSize)
-        .get()
+    // 查询数据
+    const result = await collection
+      .where(whereCondition)
+      .orderBy('createTime', 'desc')
+      .skip(skip)
+      .limit(pageSize)
+      .get()
 
-      // 获取总数
-      const totalResult = await collection.where(whereCondition).count()
+    // 获取总数
+    const totalResult = await collection.where(whereCondition).count()
 
-      return {
-        success: true,
-        data: {
-          list: result.data,
-          total: totalResult.total,
-          page,
-          pageSize,
-          totalPages: Math.ceil(totalResult.total / pageSize),
-          keyword,
-          tags
-        }
-      }
-    } catch (error) {
-      console.error('Search scripts error:', error)
-      return {
-        success: false,
-        message: 'Failed to search scripts'
+    return {
+      success: true,
+      data: {
+        list: result.data,
+        total: totalResult.total,
+        page,
+        pageSize,
+        totalPages: Math.ceil(totalResult.total / pageSize),
+        keyword,
+        tags
       }
     }
+  } catch (error) {
+    console.error('Search scripts error:', error)
+    return {
+      success: false,
+      message: 'Failed to search scripts'
+    }
   }
+}
 
 /**
  * 创建剧本
  */
 async function createScript(data) {
-    const { scriptData } = data
+  const { scriptData } = data
 
-    // 输入验证
-    if (!scriptData || !scriptData.title) {
-      return {
-        success: false,
-        message: 'Script title is required'
-      }
-    }
-
-    try {
-      const db = uniCloud.database()
-
-      const scriptDoc = {
-        ...scriptData,
-        status: 'published',
-        likes: 0,
-        views: 0,
-        createTime: Date.now(),
-        updateTime: Date.now()
-      }
-
-      const result = await db.collection('scripts').add(scriptDoc)
-
-      return {
-        success: true,
-        data: {
-          scriptId: result.id,
-          message: 'Script created successfully'
-        }
-      }
-    } catch (error) {
-      console.error('Create script error:', error)
-      return {
-        success: false,
-        message: 'Failed to create script'
-      }
+  // 输入验证
+  if (!scriptData || !scriptData.title) {
+    return {
+      success: false,
+      message: 'Script title is required'
     }
   }
+
+  try {
+    const db = uniCloud.database()
+
+    const scriptDoc = {
+      ...scriptData,
+      status: 'published',
+      likes: 0,
+      views: 0,
+      createTime: Date.now(),
+      updateTime: Date.now()
+    }
+
+    const result = await db.collection('scripts').add(scriptDoc)
+
+    return {
+      success: true,
+      data: {
+        scriptId: result.id,
+        message: 'Script created successfully'
+      }
+    }
+  } catch (error) {
+    console.error('Create script error:', error)
+    return {
+      success: false,
+      message: 'Failed to create script'
+    }
+  }
+}
 
 /**
  * 更新剧本点赞
  */
 async function likeScript(data) {
-    const { token, scriptId, action } = data
+  const { token, scriptId, action } = data
 
-    // 输入验证
-    if (!scriptId) {
+  // 输入验证
+  if (!scriptId) {
+    return {
+      success: false,
+      message: 'scriptId is required'
+    }
+  }
+
+  if (!['like', 'unlike'].includes(action)) {
+    return {
+      success: false,
+      message: 'Invalid action'
+    }
+  }
+
+  try {
+    const db = uniCloud.database()
+    const user = await verifyAppUser(db, token)
+    if (!user) {
       return {
         success: false,
-        message: 'scriptId is required'
+        message: '请先登录'
       }
     }
 
-    if (!['like', 'unlike'].includes(action)) {
+    // 获取当前剧本
+    const scriptResult = await db.collection('scripts').doc(scriptId).get()
+
+    if (!scriptResult.data || scriptResult.data.length === 0) {
       return {
         success: false,
-        message: 'Invalid action'
+        message: 'Script not found'
       }
     }
 
-    try {
-      const db = uniCloud.database()
-      const user = await verifyAppUser(db, token)
-      if (!user) {
-        return {
-          success: false,
-          message: '请先登录'
-        }
-      }
+    const script = scriptResult.data[0]
+    const currentLikes = script.likes || 0
+    const likesCollection = db.collection('script-likes')
+    const likedResult = await likesCollection
+      .where({ userId: user._id, scriptId })
+      .limit(1)
+      .get()
+    const likedRecord = likedResult.data && likedResult.data[0]
+    let newLikes = currentLikes
 
-      // 获取当前剧本
-      const scriptResult = await db.collection('scripts')
-        .doc(scriptId)
-        .get()
+    if (action === 'like' && !likedRecord) {
+      await likesCollection.add({
+        userId: user._id,
+        scriptId,
+        createTime: Date.now()
+      })
+      newLikes = currentLikes + 1
+    }
 
-      if (!scriptResult.data || scriptResult.data.length === 0) {
-        return {
-          success: false,
-          message: 'Script not found'
-        }
-      }
+    if (action === 'unlike' && likedRecord) {
+      await likesCollection.doc(likedRecord._id).remove()
+      newLikes = Math.max(0, currentLikes - 1)
+    }
 
-      const script = scriptResult.data[0]
-      const currentLikes = script.likes || 0
-      const likesCollection = db.collection('script-likes')
-      const likedResult = await likesCollection
-        .where({ userId: user._id, scriptId })
-        .limit(1)
-        .get()
-      const likedRecord = likedResult.data && likedResult.data[0]
-      let newLikes = currentLikes
+    if (newLikes !== currentLikes) {
+      await db.collection('scripts').doc(scriptId).update({
+        likes: newLikes,
+        updateTime: Date.now()
+      })
+    }
 
-      if (action === 'like' && !likedRecord) {
-        await likesCollection.add({
-          userId: user._id,
-          scriptId,
-          createTime: Date.now()
-        })
-        newLikes = currentLikes + 1
-      }
-
-      if (action === 'unlike' && likedRecord) {
-        await likesCollection.doc(likedRecord._id).remove()
-        newLikes = Math.max(0, currentLikes - 1)
-      }
-
-      if (newLikes !== currentLikes) {
-        await db.collection('scripts')
-          .doc(scriptId)
-          .update({
-            likes: newLikes,
-            updateTime: Date.now()
-          })
-      }
-
-      return {
-        success: true,
-        data: {
-          likes: newLikes,
-          message: action === 'like' ? '点赞成功' : '取消点赞成功'
-        }
-      }
-    } catch (error) {
-      console.error('Like script error:', error)
-      return {
-        success: false,
-        message: 'Failed to update like'
+    return {
+      success: true,
+      data: {
+        likes: newLikes,
+        message: action === 'like' ? '点赞成功' : '取消点赞成功'
       }
     }
+  } catch (error) {
+    console.error('Like script error:', error)
+    return {
+      success: false,
+      message: 'Failed to update like'
+    }
+  }
 }
 
 async function favoriteScript(data) {
@@ -467,9 +482,10 @@ async function favoriteScript(data) {
 
 function buildFavoriteListItem(script, favorite, likedIds) {
   const id = script._id || script.id
-  const images = Array.isArray(script.thumbnails) && script.thumbnails.length
-    ? script.thumbnails
-    : (script.images || (script.thumbnail ? [script.thumbnail] : []))
+  const images =
+    Array.isArray(script.thumbnails) && script.thumbnails.length
+      ? script.thumbnails
+      : script.images || (script.thumbnail ? [script.thumbnail] : [])
   return {
     id,
     title: script.title || '未命名剧本',
@@ -488,7 +504,9 @@ async function getFavoriteScripts(data) {
   const { token, page = 1, pageSize = 10, q = '' } = data || {}
   const pageNum = Math.max(1, parseInt(page, 10) || 1)
   const limit = Math.max(1, Math.min(50, parseInt(pageSize, 10) || 10))
-  const keyword = String(q || '').trim().toLowerCase()
+  const keyword = String(q || '')
+    .trim()
+    .toLowerCase()
 
   try {
     const db = uniCloud.database()
@@ -509,7 +527,9 @@ async function getFavoriteScripts(data) {
         .get()
       favoriteRows = allResult.data || []
     } else {
-      const countResult = await favoritesCollection.where({ userId: user._id }).count()
+      const countResult = await favoritesCollection
+        .where({ userId: user._id })
+        .count()
       total = countResult.total || 0
       const pageResult = await favoritesCollection
         .where({ userId: user._id })
@@ -521,27 +541,44 @@ async function getFavoriteScripts(data) {
     }
 
     const favoriteByScriptId = new Map()
-    const scriptIds = favoriteRows.map(favorite => {
-      favoriteByScriptId.set(favorite.scriptId, favorite)
-      return favorite.scriptId
-    }).filter(Boolean)
+    const scriptIds = favoriteRows
+      .map((favorite) => {
+        favoriteByScriptId.set(favorite.scriptId, favorite)
+        return favorite.scriptId
+      })
+      .filter(Boolean)
 
     let scripts = []
     if (scriptIds.length > 0) {
       const [scriptsResult, likeResult] = await Promise.all([
-        db.collection('scripts')
+        db
+          .collection('scripts')
           .where({ _id: db.command.in(scriptIds) })
-          .field({ title: true, author: true, version: true, description: true, thumbnails: true, thumbnail: true, images: true, likes: true })
+          .field({
+            title: true,
+            author: true,
+            version: true,
+            description: true,
+            thumbnails: true,
+            thumbnail: true,
+            images: true,
+            likes: true
+          })
           .get(),
-        db.collection('script-likes')
+        db
+          .collection('script-likes')
           .where({ userId: user._id, scriptId: db.command.in(scriptIds) })
           .get()
       ])
-      const likedIds = new Set((likeResult.data || []).map(row => row.scriptId))
-      const scriptMap = new Map((scriptsResult.data || []).map(script => [script._id, script]))
+      const likedIds = new Set(
+        (likeResult.data || []).map((row) => row.scriptId)
+      )
+      const scriptMap = new Map(
+        (scriptsResult.data || []).map((script) => [script._id, script])
+      )
 
       scripts = scriptIds
-        .map(scriptId => {
+        .map((scriptId) => {
           const script = scriptMap.get(scriptId)
           if (!script) return null
           const favorite = favoriteByScriptId.get(scriptId)
@@ -552,11 +589,15 @@ async function getFavoriteScripts(data) {
 
     let list = scripts
     if (keyword) {
-      list = scripts.filter(script => {
+      list = scripts.filter((script) => {
         const title = String(script.title || '').toLowerCase()
         const author = String(script.author || '').toLowerCase()
         const description = String(script.description || '').toLowerCase()
-        return title.includes(keyword) || author.includes(keyword) || description.includes(keyword)
+        return (
+          title.includes(keyword) ||
+          author.includes(keyword) ||
+          description.includes(keyword)
+        )
       })
       total = list.length
       list = list.slice((pageNum - 1) * limit, pageNum * limit)
@@ -583,9 +624,10 @@ async function getFavoriteScripts(data) {
 function normalizeUploadImages(images) {
   if (!Array.isArray(images)) return []
   return images
-    .map(image => {
+    .map((image) => {
       if (typeof image === 'string') return image
-      if (image && typeof image === 'object') return image.url || image.fileID || image.fileId || ''
+      if (image && typeof image === 'object')
+        return image.url || image.fileID || image.fileId || ''
       return ''
     })
     .filter(Boolean)
@@ -602,7 +644,10 @@ function getImageExtension(fileName, contentType) {
   if (type.includes('jpeg') || type.includes('jpg')) return '.jpg'
 
   const ext = String(fileName || '').match(/\.[a-zA-Z0-9]+$/)
-  if (ext && ['.jpg', '.jpeg', '.png', '.webp', '.gif'].includes(ext[0].toLowerCase())) {
+  if (
+    ext &&
+    ['.jpg', '.jpeg', '.png', '.webp', '.gif'].includes(ext[0].toLowerCase())
+  ) {
     return ext[0].toLowerCase() === '.jpeg' ? '.jpg' : ext[0].toLowerCase()
   }
   return '.jpg'
@@ -624,7 +669,13 @@ function parseImageDataUrl(dataUrl) {
 }
 
 async function uploadUserScriptImage(data) {
-  const { token, fileName = 'cover.jpg', contentType: inputContentType = '', dataUrl = '', size = 0 } = data || {}
+  const {
+    token,
+    fileName = 'cover.jpg',
+    contentType: inputContentType = '',
+    dataUrl = '',
+    size = 0
+  } = data || {}
 
   try {
     const db = uniCloud.database()
@@ -687,7 +738,10 @@ async function uploadUserScriptImage(data) {
 
 function normalizeUploadedScriptData(jsonData) {
   if (Array.isArray(jsonData)) {
-    const meta = jsonData.find(item => item && typeof item === 'object' && item.id === '_meta') || {}
+    const meta =
+      jsonData.find(
+        (item) => item && typeof item === 'object' && item.id === '_meta'
+      ) || {}
     const title = meta.name || meta.title || '未命名剧本'
     return {
       title,
@@ -707,21 +761,31 @@ async function userUploadScript(data) {
   const { token, images = [] } = data || {}
   const jsonData = normalizeUploadedScriptData(data && data.jsonData)
   const requestedType = data && data.scriptType
-  const jsonType = jsonData && (jsonData.tag || jsonData.genre || jsonData.category)
+  const jsonType =
+    jsonData && (jsonData.tag || jsonData.genre || jsonData.category)
   const scriptType = ['推理', '娱乐'].includes(requestedType)
     ? requestedType
-    : (['推理', '娱乐'].includes(jsonType) ? jsonType : '推理')
+    : ['推理', '娱乐'].includes(jsonType)
+    ? jsonType
+    : '推理'
 
   if (!jsonData || typeof jsonData !== 'object') {
     return { success: false, message: 'Invalid JSON data' }
   }
 
-  if (!jsonData.title && typeof jsonData.name === 'string' && jsonData.name.trim()) {
+  if (
+    !jsonData.title &&
+    typeof jsonData.name === 'string' &&
+    jsonData.name.trim()
+  ) {
     jsonData.title = jsonData.name.trim()
   }
 
   if (!jsonData.title || typeof jsonData.title !== 'string') {
-    return { success: false, message: 'Script title or name is required and must be a string' }
+    return {
+      success: false,
+      message: 'Script title or name is required and must be a string'
+    }
   }
 
   try {
@@ -733,7 +797,8 @@ async function userUploadScript(data) {
 
     const uploadedImages = normalizeUploadImages(images)
     const now = Date.now()
-    const ownerNickname = user.nickname || user.username || user.mobile || '微信用户'
+    const ownerNickname =
+      user.nickname || user.username || user.mobile || '微信用户'
     const scriptDoc = {
       ...jsonData,
       images: uploadedImages,
@@ -791,7 +856,9 @@ async function getMyUploadedScripts(data) {
   const { token, page = 1, pageSize = 10, q = '' } = data || {}
   const pageNum = Math.max(1, parseInt(page, 10) || 1)
   const limit = Math.max(1, Math.min(50, parseInt(pageSize, 10) || 10))
-  const keyword = String(q || '').trim().toLowerCase()
+  const keyword = String(q || '')
+    .trim()
+    .toLowerCase()
 
   try {
     const db = uniCloud.database()
@@ -825,11 +892,15 @@ async function getMyUploadedScripts(data) {
         .orderBy('createTime', 'desc')
         .limit(200)
         .get()
-      const filtered = (result.data || []).filter(script => {
+      const filtered = (result.data || []).filter((script) => {
         const title = String(script.title || '').toLowerCase()
         const author = String(script.author || '').toLowerCase()
         const description = String(script.description || '').toLowerCase()
-        return title.includes(keyword) || author.includes(keyword) || description.includes(keyword)
+        return (
+          title.includes(keyword) ||
+          author.includes(keyword) ||
+          description.includes(keyword)
+        )
       })
       total = filtered.length
       rows = filtered.slice((pageNum - 1) * limit, pageNum * limit)
@@ -879,7 +950,11 @@ async function getMyUploadedScriptDetail(data) {
 
     const result = await db.collection('scripts').doc(scriptId).get()
     const script = result.data && result.data[0]
-    if (!script || script.ownerUserId !== user._id || script.source !== 'user_upload') {
+    if (
+      !script ||
+      script.ownerUserId !== user._id ||
+      script.source !== 'user_upload'
+    ) {
       return { success: false, message: 'Script not found' }
     }
 
@@ -889,7 +964,9 @@ async function getMyUploadedScriptDetail(data) {
         script: {
           ...script,
           id: script._id,
-          images: normalizeUploadImages(script.images || script.thumbnails || [])
+          images: normalizeUploadImages(
+            script.images || script.thumbnails || []
+          )
         }
       }
     }
@@ -915,7 +992,11 @@ async function deleteMyUploadedScript(data) {
 
     const result = await db.collection('scripts').doc(scriptId).get()
     const script = result.data && result.data[0]
-    if (!script || script.ownerUserId !== user._id || script.source !== 'user_upload') {
+    if (
+      !script ||
+      script.ownerUserId !== user._id ||
+      script.source !== 'user_upload'
+    ) {
       return { success: false, message: 'Script not found' }
     }
 
@@ -930,6 +1011,435 @@ async function deleteMyUploadedScript(data) {
   } catch (error) {
     console.error('Delete my uploaded script error:', error)
     return { success: false, message: 'Failed to delete uploaded script' }
+  }
+}
+
+const USER_ROLE_TEAMS = [
+  'townsfolk',
+  'outsider',
+  'minion',
+  'demon',
+  'traveler',
+  'fabled'
+]
+
+function cleanUserRoleText(value, max = 2000) {
+  return String(value || '')
+    .trim()
+    .slice(0, max)
+}
+
+function normalizeUserRoleTeam(value) {
+  const text = cleanUserRoleText(value, 80).toLowerCase()
+  if (!text) return ''
+  if (USER_ROLE_TEAMS.includes(text)) return text
+  if (
+    text.includes('townsfolk') ||
+    text.includes('town') ||
+    text.includes('镇民')
+  )
+    return 'townsfolk'
+  if (text.includes('outsider') || text.includes('外来')) return 'outsider'
+  if (text.includes('minion') || text.includes('爪牙')) return 'minion'
+  if (text.includes('demon') || text.includes('恶魔')) return 'demon'
+  if (
+    text.includes('traveler') ||
+    text.includes('traveller') ||
+    text.includes('旅行')
+  )
+    return 'traveler'
+  if (text.includes('fabled') || text.includes('传奇')) return 'fabled'
+  return ''
+}
+
+function cleanUserRoleImageList() {
+  const values = Array.prototype.slice.call(arguments)
+  const images = []
+  const add = (value) => {
+    if (!value) return
+    if (Array.isArray(value)) {
+      value.forEach(add)
+      return
+    }
+    if (typeof value === 'string') {
+      const text = cleanUserRoleText(value, 1000)
+      if (text) images.push(text)
+      return
+    }
+    if (typeof value !== 'object') return
+    add(
+      value.url ||
+        value.fileId ||
+        value.fileID ||
+        value.path ||
+        value.src ||
+        value.thumbnail ||
+        value.tempFilePath
+    )
+  }
+  values.forEach(add)
+  return Array.from(new Set(images))
+}
+
+function parseUserRoleJson(value) {
+  if (typeof value !== 'string') return value
+  const text = value.trim().replace(/^\uFEFF/, '')
+  if (!text) return null
+  try {
+    return JSON.parse(text)
+  } catch (error) {
+    return null
+  }
+}
+
+function normalizeUserRoleData(roleJson) {
+  const parsed = parseUserRoleJson(roleJson)
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    return { error: 'Role JSON must be one role object' }
+  }
+  if (parsed.id === '_meta') {
+    return { error: 'Meta object cannot be created as a role' }
+  }
+
+  const id = cleanUserRoleText(parsed.id || parsed.roleId || parsed.key, 120)
+  const name = cleanUserRoleText(
+    parsed.name || parsed.displayName || parsed.title || parsed.zhName,
+    120
+  )
+  const ability = cleanUserRoleText(
+    parsed.ability || parsed.displayAbility || parsed.skill || parsed.zhAbility,
+    4000
+  )
+  const team = normalizeUserRoleTeam(
+    parsed.team || parsed.roleType || parsed.category || parsed.type
+  )
+  const image = cleanUserRoleText(
+    parsed.image || parsed.iconUrl || parsed.icon || parsed.avatar,
+    1000
+  )
+  const tokenImages = cleanUserRoleImageList(
+    parsed.smallTokens,
+    parsed.tokenImages,
+    parsed.tokens,
+    parsed.tokenImage,
+    parsed.smallToken,
+    parsed.tokenUrl,
+    parsed.smallTokenUrl
+  )
+  const tokenImage = tokenImages[0] || ''
+  const firstNight = Math.max(0, parseInt(parsed.firstNight, 10) || 0)
+  const otherNight = Math.max(0, parseInt(parsed.otherNight, 10) || 0)
+  const firstNightReminder = cleanUserRoleText(
+    parsed.firstNightReminder || '',
+    4000
+  )
+  const otherNightReminder = cleanUserRoleText(
+    parsed.otherNightReminder || '',
+    4000
+  )
+
+  if (!id) return { error: 'Role id is required' }
+  if (!name) return { error: 'Role name is required' }
+  if (!team) return { error: 'Role team is required' }
+
+  const role = {
+    ...parsed,
+    id,
+    roleId: id,
+    name,
+    displayName: name,
+    ability,
+    displayAbility: ability,
+    team,
+    image,
+    iconUrl: cleanUserRoleText(parsed.iconUrl || image, 1000),
+    smallTokens: tokenImages,
+    tokenImages,
+    smallToken: tokenImage,
+    tokenImage,
+    tokenUrl: tokenImage,
+    firstNight,
+    firstNightReminder,
+    otherNight,
+    otherNightReminder
+  }
+  delete role._id
+  delete role.ownerUserId
+  delete role.ownerNickname
+  delete role.source
+  delete role.status
+
+  return { role }
+}
+
+function buildUserRoleSearchText(role) {
+  return [
+    role.id,
+    role.name,
+    role.displayName,
+    role.englishName,
+    role.ability,
+    role.displayAbility,
+    role.firstNightReminder,
+    role.otherNightReminder,
+    role.team
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+}
+
+function buildUserRoleListItem(role) {
+  const id = role._id || role.id
+  const tokenImages = cleanUserRoleImageList(
+    role.smallTokens,
+    role.tokenImages,
+    role.tokens,
+    role.smallToken,
+    role.tokenImage,
+    role.tokenUrl
+  )
+  const tokenImage = tokenImages[0] || ''
+  return {
+    ...role,
+    id,
+    docId: role._id || role.docId || id,
+    roleId: role.roleId || role.id,
+    sourceType: 'custom',
+    source: role.source || 'user_custom',
+    status: role.status || 'active',
+    image: role.image || role.iconUrl || '',
+    iconUrl: role.iconUrl || role.image || '',
+    smallTokens: tokenImages,
+    tokenImages,
+    smallToken: tokenImage,
+    tokenImage,
+    tokenUrl: tokenImage,
+    firstNight: Math.max(0, parseInt(role.firstNight, 10) || 0),
+    firstNightReminder: role.firstNightReminder || '',
+    otherNight: Math.max(0, parseInt(role.otherNight, 10) || 0),
+    otherNightReminder: role.otherNightReminder || ''
+  }
+}
+
+async function createUserRole(data) {
+  const { token, roleJson } = data || {}
+  const normalized = normalizeUserRoleData(roleJson)
+  if (normalized.error) {
+    return { success: false, message: normalized.error }
+  }
+
+  try {
+    const db = uniCloud.database()
+    const user = await verifyAppUser(db, token)
+    if (!user) {
+      return { success: false, message: 'Please log in first' }
+    }
+
+    const collection = db.collection('user-roles')
+    const role = normalized.role
+    const existed = await collection
+      .where({
+        ownerUserId: user._id,
+        roleId: role.roleId,
+        source: 'user_custom'
+      })
+      .limit(1)
+      .get()
+    if (existed.data && existed.data.length) {
+      return { success: false, message: 'Role id already exists' }
+    }
+
+    const now = Date.now()
+    const ownerNickname =
+      user.nickname || user.username || user.mobile || 'Web user'
+    const doc = {
+      ...role,
+      ownerUserId: user._id,
+      ownerNickname,
+      source: 'user_custom',
+      status: 'active',
+      searchText: buildUserRoleSearchText(role),
+      createTime: now,
+      updateTime: now
+    }
+    const result = await collection.add(doc)
+    const saved = { ...doc, _id: result.id }
+
+    return {
+      success: true,
+      data: {
+        role: buildUserRoleListItem(saved),
+        roleId: result.id
+      }
+    }
+  } catch (error) {
+    console.error('Create user role error:', error)
+    return { success: false, message: 'Failed to create role' }
+  }
+}
+
+async function getMyUploadedRoles(data) {
+  const { token, page = 1, pageSize = 20, q = '' } = data || {}
+  const pageNum = Math.max(1, parseInt(page, 10) || 1)
+  const limit = Math.max(1, Math.min(50, parseInt(pageSize, 10) || 20))
+  const keyword = String(q || '')
+    .trim()
+    .toLowerCase()
+
+  try {
+    const db = uniCloud.database()
+    const user = await verifyAppUser(db, token)
+    if (!user) {
+      return { success: false, message: 'Please log in first' }
+    }
+
+    const whereCondition = { ownerUserId: user._id, source: 'user_custom' }
+    const collection = db.collection('user-roles')
+    let total = 0
+    let rows = []
+
+    if (keyword) {
+      const result = await collection
+        .where(whereCondition)
+        .orderBy('createTime', 'desc')
+        .limit(300)
+        .get()
+      const filtered = (result.data || []).filter((role) =>
+        String(role.searchText || buildUserRoleSearchText(role))
+          .toLowerCase()
+          .includes(keyword)
+      )
+      total = filtered.length
+      rows = filtered.slice((pageNum - 1) * limit, pageNum * limit)
+    } else {
+      const totalResult = await collection.where(whereCondition).count()
+      total = totalResult.total || 0
+      const result = await collection
+        .where(whereCondition)
+        .orderBy('createTime', 'desc')
+        .skip((pageNum - 1) * limit)
+        .limit(limit)
+        .get()
+      rows = result.data || []
+    }
+
+    return {
+      success: true,
+      data: {
+        list: rows.map(buildUserRoleListItem),
+        total,
+        page: pageNum,
+        pageSize: limit
+      }
+    }
+  } catch (error) {
+    console.error('Get user roles error:', error)
+    return { success: false, message: 'Failed to get roles' }
+  }
+}
+
+async function getPublicCustomRoles(data) {
+  const { token, page = 1, pageSize = 20, q = '' } = data || {}
+  const pageNum = Math.max(1, parseInt(page, 10) || 1)
+  const limit = Math.max(1, Math.min(50, parseInt(pageSize, 10) || 20))
+  const keyword = String(q || '')
+    .trim()
+    .toLowerCase()
+
+  try {
+    const db = uniCloud.database()
+    const user = await verifyAppUser(db, token)
+    const collection = db.collection('user-roles')
+    const result = await collection
+      .where({ source: 'user_custom', status: 'active' })
+      .orderBy('createTime', 'desc')
+      .limit(300)
+      .get()
+    const rows = (result.data || []).filter((role) => {
+      if (user && role.ownerUserId === user._id) return false
+      if (!keyword) return true
+      return String(role.searchText || buildUserRoleSearchText(role))
+        .toLowerCase()
+        .includes(keyword)
+    })
+
+    return {
+      success: true,
+      data: {
+        list: rows
+          .slice((pageNum - 1) * limit, pageNum * limit)
+          .map(buildUserRoleListItem),
+        total: rows.length,
+        page: pageNum,
+        pageSize: limit
+      }
+    }
+  } catch (error) {
+    console.error('Get public custom roles error:', error)
+    return { success: false, message: 'Failed to get public custom roles' }
+  }
+}
+
+async function getMyUploadedRoleDetail(data) {
+  const { token, roleId } = data || {}
+  if (!roleId) return { success: false, message: 'roleId is required' }
+
+  try {
+    const db = uniCloud.database()
+    const user = await verifyAppUser(db, token)
+    if (!user) {
+      return { success: false, message: 'Please log in first' }
+    }
+
+    const result = await db.collection('user-roles').doc(roleId).get()
+    const role = result.data && result.data[0]
+    if (
+      !role ||
+      role.ownerUserId !== user._id ||
+      role.source !== 'user_custom'
+    ) {
+      return { success: false, message: 'Role not found' }
+    }
+
+    return {
+      success: true,
+      data: {
+        role: buildUserRoleListItem(role)
+      }
+    }
+  } catch (error) {
+    console.error('Get user role detail error:', error)
+    return { success: false, message: 'Failed to get role detail' }
+  }
+}
+
+async function deleteMyUploadedRole(data) {
+  const { token, roleId } = data || {}
+  if (!roleId) return { success: false, message: 'roleId is required' }
+
+  try {
+    const db = uniCloud.database()
+    const user = await verifyAppUser(db, token)
+    if (!user) {
+      return { success: false, message: 'Please log in first' }
+    }
+
+    const result = await db.collection('user-roles').doc(roleId).get()
+    const role = result.data && result.data[0]
+    if (
+      !role ||
+      role.ownerUserId !== user._id ||
+      role.source !== 'user_custom'
+    ) {
+      return { success: false, message: 'Role not found' }
+    }
+
+    await db.collection('user-roles').doc(roleId).remove()
+    return { success: true, data: { message: 'Deleted' } }
+  } catch (error) {
+    console.error('Delete user role error:', error)
+    return { success: false, message: 'Failed to delete role' }
   }
 }
 
@@ -1184,7 +1694,7 @@ async function initScripts(data = {}) {
     console.log('插入结果:', result)
 
     // 验证数据是否正确插入
-    const verifyResult = await collection.where({status: 'published'}).count()
+    const verifyResult = await collection.where({ status: 'published' }).count()
     console.log('验证published状态数据:', verifyResult)
 
     return {
@@ -1232,6 +1742,16 @@ const main = async (event, context) => {
         return await getMyUploadedScriptDetail(...params)
       case 'deleteMyUploadedScript':
         return await deleteMyUploadedScript(...params)
+      case 'createUserRole':
+        return await createUserRole(...params)
+      case 'getMyUploadedRoles':
+        return await getMyUploadedRoles(...params)
+      case 'getPublicCustomRoles':
+        return await getPublicCustomRoles(...params)
+      case 'getMyUploadedRoleDetail':
+        return await getMyUploadedRoleDetail(...params)
+      case 'deleteMyUploadedRole':
+        return await deleteMyUploadedRole(...params)
       case 'initScripts':
         return await initScripts(...params)
       // 管理员专用方法
@@ -1270,6 +1790,11 @@ module.exports = {
   getMyUploadedScripts,
   getMyUploadedScriptDetail,
   deleteMyUploadedScript,
+  createUserRole,
+  getMyUploadedRoles,
+  getPublicCustomRoles,
+  getMyUploadedRoleDetail,
+  deleteMyUploadedRole,
   initScripts,
   // 管理员专用方法
   adminCreateScript,

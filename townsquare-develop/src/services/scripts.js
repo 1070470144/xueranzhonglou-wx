@@ -101,6 +101,34 @@ export function deleteMyUploadedScript(scriptId) {
   return callScriptService("deleteMyUploadedScript", withToken({ scriptId }));
 }
 
+export function createUserRole(roleJson) {
+  return callScriptService("createUserRole", withToken({ roleJson }));
+}
+
+export function getMyUploadedRoles({ page = 1, pageSize = 20, q = "" } = {}) {
+  return callScriptService(
+    "getMyUploadedRoles",
+    withToken({ page, pageSize, q }),
+  );
+}
+
+export function getPublicCustomRoles({ page = 1, pageSize = 20, q = "" } = {}) {
+  return callScriptService("getPublicCustomRoles", {
+    page,
+    pageSize,
+    q,
+    token: getAuthSession().token,
+  });
+}
+
+export function getMyUploadedRoleDetail(roleId) {
+  return callScriptService("getMyUploadedRoleDetail", withToken({ roleId }));
+}
+
+export function deleteMyUploadedRole(roleId) {
+  return callScriptService("deleteMyUploadedRole", withToken({ roleId }));
+}
+
 function readFileAsDataURL(file) {
   return new Promise((resolve, reject) => {
     if (!file) {

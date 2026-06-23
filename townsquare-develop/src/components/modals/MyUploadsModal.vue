@@ -9,12 +9,29 @@
           </div>
         </header>
 
+        <div class="upload-tabs">
+          <button
+            type="button"
+            :class="{ active: activeUploadTab === 'scripts' }"
+            @click="switchUploadTab('scripts')"
+          >
+            {{ $t("myScripts.tabs.scripts") }}
+          </button>
+          <button
+            type="button"
+            :class="{ active: activeUploadTab === 'roles' }"
+            @click="switchUploadTab('roles')"
+          >
+            {{ $t("myScripts.tabs.roles") }}
+          </button>
+        </div>
+
         <div class="search-row">
           <font-awesome-icon icon="search" />
           <input
             v-model="searchText"
             type="search"
-            :placeholder="$t('myScripts.searchMinePlaceholder')"
+            :placeholder="searchPlaceholder"
             @input="queueSearch"
           />
           <button
@@ -28,76 +45,128 @@
         </div>
 
         <section class="upload-list" @scroll="handleScroll">
-          <div v-if="loading && !uploads.length" class="state-line">
+          <div v-if="loading && !activeUploads.length" class="state-line">
             <font-awesome-icon icon="spinner" spin />
             {{ $t("myScripts.loading") }}
           </div>
-          <div v-else-if="error && !uploads.length" class="state-line error">
+          <div
+            v-else-if="error && !activeUploads.length"
+            class="state-line error"
+          >
             {{ error }}
           </div>
-          <article
-            v-else
-            v-for="script in uploads"
-            :key="script.id || script._id"
-            class="upload-card"
-          >
-            <span class="script-cover" :style="scriptCoverStyle(script)">
-              <font-awesome-icon
-                v-if="!getScriptImage(script)"
-                icon="theater-masks"
-              />
-            </span>
-            <div class="upload-content">
-              <div class="upload-title-row">
-                <strong>{{ script.title || script.name }}</strong>
-                <span class="status-tag" :class="statusClass(script)">
-                  {{ statusText(script) }}
-                </span>
-              </div>
-              <span>{{ script.author || $t("myScripts.unknownAuthor") }}</span>
-              <p
-                v-if="isRejected(script) && script.reviewReason"
-                class="reject-reason"
-              >
-                {{ script.reviewReason }}
-              </p>
-              <p v-else-if="script.description">{{ script.description }}</p>
-              <div class="card-actions">
-                <button
-                  type="button"
-                  class="button compact"
-                  @click="openDetail(script)"
+          <template v-if="activeUploadTab === 'scripts'">
+            <article
+              v-for="script in uploads"
+              :key="script.id || script._id"
+              class="upload-card"
+            >
+              <span class="script-cover" :style="scriptCoverStyle(script)">
+                <font-awesome-icon
+                  v-if="!getScriptImage(script)"
+                  icon="theater-masks"
+                />
+              </span>
+              <div class="upload-content">
+                <div class="upload-title-row">
+                  <strong>{{ script.title || script.name }}</strong>
+                  <span class="status-tag" :class="statusClass(script)">
+                    {{ statusText(script) }}
+                  </span>
+                </div>
+                <span>{{
+                  script.author || $t("myScripts.unknownAuthor")
+                }}</span>
+                <p
+                  v-if="isRejected(script) && script.reviewReason"
+                  class="reject-reason"
                 >
-                  {{ $t("myScripts.view") }}
-                </button>
-                <button
-                  type="button"
-                  class="button compact danger"
-                  @click="removeUpload(script)"
-                >
-                  <font-awesome-icon icon="trash-alt" />
-                  {{ $t("common.remove") }}
-                </button>
+                  {{ script.reviewReason }}
+                </p>
+                <p v-else-if="script.description">{{ script.description }}</p>
+                <div class="card-actions">
+                  <button
+                    type="button"
+                    class="button compact"
+                    @click="openDetail(script)"
+                  >
+                    {{ $t("myScripts.view") }}
+                  </button>
+                  <button
+                    type="button"
+                    class="button compact danger"
+                    @click="removeUpload(script)"
+                  >
+                    <font-awesome-icon icon="trash-alt" />
+                    {{ $t("common.remove") }}
+                  </button>
+                </div>
               </div>
-            </div>
-          </article>
+            </article>
+          </template>
+          <template v-else>
+            <article
+              v-for="role in roleUploads"
+              :key="role.docId || role.id"
+              class="upload-card"
+            >
+              <span class="script-cover role-cover">
+                <img
+                  v-if="role.icon"
+                  :src="role.icon"
+                  :alt="role.displayName"
+                />
+                <span v-else>{{ firstCharacter(role.displayName) }}</span>
+              </span>
+              <div class="upload-content">
+                <div class="upload-title-row">
+                  <strong>{{ role.displayName }}</strong>
+                  <span class="status-tag approved">
+                    {{ teamLabel(role.team) }}
+                  </span>
+                </div>
+                <span>{{ role.roleId || role.id }}</span>
+                <p v-if="role.displayAbility">{{ role.displayAbility }}</p>
+                <div class="card-actions">
+                  <button
+                    type="button"
+                    class="button compact"
+                    @click="openRoleDetail(role)"
+                  >
+                    {{ $t("myScripts.view") }}
+                  </button>
+                  <button
+                    type="button"
+                    class="button compact danger"
+                    @click="removeRoleUpload(role)"
+                  >
+                    <font-awesome-icon icon="trash-alt" />
+                    {{ $t("common.remove") }}
+                  </button>
+                </div>
+              </div>
+            </article>
+          </template>
 
           <button
-            v-if="!loading && hasMore && uploads.length"
+            v-if="!loading && activeHasMore && activeUploads.length"
             type="button"
             class="state-line load-more-button"
             @click="loadNext"
           >
             {{ $t("myScripts.loadMore") }}
           </button>
-          <div v-if="loading && uploads.length" class="state-line">
+          <div v-if="loading && activeUploads.length" class="state-line">
             <font-awesome-icon icon="spinner" spin />
             {{ $t("myScripts.loading") }}
           </div>
-          <div v-if="!loading && !error && !uploads.length" class="state-line">
-            {{ $t("myScripts.noUploads") }}
+          <div
+            v-if="!loading && !error && !activeUploads.length"
+            class="state-line"
+          >
+            {{ emptyText }}
           </div>
-          <div v-if="error && uploads.length" class="state-line error">
+          <div v-if="error && activeUploads.length" class="state-line error">
             {{ error }}
           </div>
         </section>
@@ -226,19 +295,75 @@
     </Modal>
 
     <Modal
+      class="my-upload-detail-submodal"
+      v-if="detailRole"
+      @close="closeRoleDetail"
+    >
+      <section class="my-upload-section detail-panel">
+        <div class="section-title">
+          <span>{{ detailRole.displayName }}</span>
+        </div>
+        <div class="detail-layout">
+          <span class="script-cover role-cover large">
+            <img
+              v-if="roleImages(detailRole).length"
+              :src="roleImages(detailRole)[0]"
+              :alt="detailRole.displayName"
+            />
+            <span v-else>{{ firstCharacter(detailRole.displayName) }}</span>
+          </span>
+          <div class="detail-copy">
+            <strong>{{ teamLabel(detailRole.team) }}</strong>
+            <span>{{ detailRole.roleId || detailRole.id }}</span>
+            <p>
+              {{ detailRole.displayAbility || $t("myScripts.noDescription") }}
+            </p>
+          </div>
+        </div>
+        <div class="section-subtitle">
+          {{ $t("myScripts.roleImages") }}
+        </div>
+        <div v-if="roleImages(detailRole).length" class="detail-gallery">
+          <div
+            v-for="(image, index) in roleImages(detailRole)"
+            :key="image"
+            class="detail-image-item"
+          >
+            <button
+              type="button"
+              class="detail-image-button"
+              :title="$t('myScripts.openImage')"
+              @click="openImagePreview(image, index)"
+            >
+              <img :src="image" :alt="detailRole.displayName" />
+            </button>
+            <button
+              type="button"
+              class="image-download-button"
+              @click.stop="downloadRoleImage(image, index)"
+            >
+              <font-awesome-icon icon="download" />
+              <span>{{ $t("myScripts.downloadImage") }}</span>
+            </button>
+          </div>
+        </div>
+        <div v-else class="state-line compact">
+          {{ $t("myScripts.noImages") }}
+        </div>
+      </section>
+    </Modal>
+
+    <Modal
       class="my-upload-image-preview-submodal"
       v-if="previewImage"
       @close="closeImagePreview"
     >
       <section class="image-preview-panel">
-        <img
-          :src="previewImage"
-          :alt="detailScript && (detailScript.title || detailScript.name)"
-        />
+        <img :src="previewImage" :alt="previewImageAlt" />
         <button
           type="button"
           class="button image-preview-download"
-          @click="downloadScriptImage(previewImage, previewImageIndex)"
+          @click="downloadPreviewImage"
         >
           <font-awesome-icon icon="download" />
           <span>{{ $t("myScripts.downloadImage") }}</span>
@@ -252,11 +377,15 @@
 import { mapMutations, mapState } from "vuex";
 import Modal from "./Modal";
 import {
+  deleteMyUploadedRole,
   deleteMyUploadedScript,
+  getMyUploadedRoleDetail,
+  getMyUploadedRoles,
   getMyUploadedScriptDetail,
   getMyUploadedScripts,
 } from "@/services/scripts";
 import { getAuthSession } from "@/services/auth";
+import { normalizeRoleForLibrary, roleImageList } from "@/utils/roleLibrary";
 import rolesJSON from "@/roles.json";
 
 const ROLE_BY_ID = new Map(rolesJSON.map((role) => [role.id, role]));
@@ -279,18 +408,49 @@ export default {
       pageSize: 10,
       total: 0,
       hasMore: true,
+      activeUploadTab: "scripts",
+      roleUploads: [],
+      rolePage: 1,
+      rolePageSize: 20,
+      roleTotal: 0,
+      roleHasMore: true,
       searchText: "",
       searchTimer: null,
       loading: false,
       error: "",
       detailScript: null,
+      detailRole: null,
       previewImage: "",
       previewImageIndex: 0,
       detailLoadToken: 0,
       openCharacterGroups: {},
     };
   },
-  computed: mapState(["modals"]),
+  computed: {
+    ...mapState(["modals"]),
+    activeUploads() {
+      return this.activeUploadTab === "roles" ? this.roleUploads : this.uploads;
+    },
+    activeHasMore() {
+      return this.activeUploadTab === "roles" ? this.roleHasMore : this.hasMore;
+    },
+    searchPlaceholder() {
+      return this.activeUploadTab === "roles"
+        ? this.$t("myScripts.searchRolesPlaceholder")
+        : this.$t("myScripts.searchMinePlaceholder");
+    },
+    emptyText() {
+      return this.activeUploadTab === "roles"
+        ? this.$t("myScripts.noRoles")
+        : this.$t("myScripts.noUploads");
+    },
+    previewImageAlt() {
+      if (this.detailRole) return this.detailRole.displayName || "";
+      return (
+        this.detailScript && (this.detailScript.title || this.detailScript.name)
+      );
+    },
+  },
   watch: {
     "modals.myUploads"(visible) {
       if (visible) this.refresh();
@@ -306,6 +466,7 @@ export default {
   methods: {
     close() {
       this.closeDetail();
+      this.closeRoleDetail();
       this.closeModal("myUploads");
     },
     requireLogin() {
@@ -316,6 +477,14 @@ export default {
     handleAuthChange() {
       if (this.modals.myUploads) this.refresh();
     },
+    switchUploadTab(tab) {
+      if (this.activeUploadTab === tab) return;
+      this.closeDetail();
+      this.closeRoleDetail();
+      this.activeUploadTab = tab;
+      this.searchText = "";
+      this.refresh();
+    },
     queueSearch() {
       if (this.searchTimer) clearTimeout(this.searchTimer);
       this.searchTimer = setTimeout(this.refresh, 300);
@@ -323,6 +492,14 @@ export default {
     async refresh() {
       if (!this.modals.myUploads || this.loading || !this.requireLogin())
         return;
+      if (this.activeUploadTab === "roles") {
+        this.rolePage = 1;
+        this.roleTotal = 0;
+        this.roleHasMore = true;
+        this.roleUploads = [];
+        await this.loadRoleUploads();
+        return;
+      }
       this.page = 1;
       this.total = 0;
       this.hasMore = true;
@@ -360,8 +537,45 @@ export default {
         this.loading = false;
       }
     },
+    async loadRoleUploads() {
+      if (this.loading) return;
+      this.loading = true;
+      this.error = "";
+      try {
+        const res = await getMyUploadedRoles({
+          page: this.rolePage,
+          pageSize: this.rolePageSize,
+          q: this.searchText.trim(),
+        });
+        if (!res || !res.success || !res.data) {
+          throw new Error(
+            (res && res.message) || this.$t("myScripts.loadRolesFailed"),
+          );
+        }
+        const list = (res.data.list || []).map((item) =>
+          normalizeRoleForLibrary(item, "custom"),
+        );
+        this.roleUploads =
+          this.rolePage === 1 ? list : this.roleUploads.concat(list);
+        this.roleTotal = Number(res.data.total) || this.roleUploads.length;
+        this.roleHasMore =
+          this.roleUploads.length < this.roleTotal && list.length > 0;
+      } catch (error) {
+        this.error = this.resolveError(
+          error,
+          this.$t("myScripts.loadRolesFailed"),
+        );
+      } finally {
+        this.loading = false;
+      }
+    },
     loadNext() {
-      if (this.loading || !this.hasMore) return;
+      if (this.loading || !this.activeHasMore) return;
+      if (this.activeUploadTab === "roles") {
+        this.rolePage += 1;
+        this.loadRoleUploads();
+        return;
+      }
       this.page += 1;
       this.loadUploads();
     },
@@ -426,6 +640,94 @@ export default {
         );
       }
     },
+    async openRoleDetail(role) {
+      const id = role && (role.docId || role.id);
+      if (!id) return;
+      const loadToken = ++this.detailLoadToken;
+      this.closeImagePreview();
+      this.detailRole = role;
+      try {
+        const res = await getMyUploadedRoleDetail(id);
+        const detail = res && res.success && res.data && res.data.role;
+        if (
+          detail &&
+          loadToken === this.detailLoadToken &&
+          this.detailRole &&
+          (this.detailRole.docId || this.detailRole.id) === id
+        ) {
+          this.detailRole = normalizeRoleForLibrary(
+            { ...role, ...detail, docId: id },
+            "custom",
+          );
+        }
+      } catch (error) {
+        if (loadToken !== this.detailLoadToken) return;
+        this.error = this.resolveError(
+          error,
+          this.$t("myScripts.loadRoleDetailFailed"),
+        );
+      }
+    },
+    async removeRoleUpload(role) {
+      const id = role && (role.docId || role.id);
+      if (!id) return;
+      if (!confirm(this.$t("myScripts.confirmDeleteRole"))) return;
+      const before = this.roleUploads.slice();
+      this.roleUploads = this.roleUploads.filter(
+        (item) => (item.docId || item.id) !== id,
+      );
+      try {
+        const res = await deleteMyUploadedRole(id);
+        if (!res || !res.success) {
+          throw new Error(
+            (res && res.message) || this.$t("myScripts.deleteRoleFailed"),
+          );
+        }
+        if (
+          this.detailRole &&
+          (this.detailRole.docId || this.detailRole.id) === id
+        ) {
+          this.closeRoleDetail();
+        }
+      } catch (error) {
+        this.roleUploads = before;
+        this.error = this.resolveError(
+          error,
+          this.$t("myScripts.deleteRoleFailed"),
+        );
+      }
+    },
+    roleImages(role) {
+      return roleImageList(role);
+    },
+    roleImageDownloadName(image, index = 0) {
+      const title =
+        (this.detailRole &&
+          (this.detailRole.displayName || this.detailRole.name)) ||
+        "role";
+      const safeTitle = String(title)
+        .replace(/[\\/:*?"<>|]+/g, "-")
+        .trim();
+      const cleanImage = String(image || "")
+        .split("?")[0]
+        .split("#")[0];
+      const extMatch = cleanImage.match(/\.(png|jpe?g|webp|gif|bmp)$/i);
+      const ext = extMatch ? extMatch[1].toLowerCase() : "png";
+      return `${safeTitle || "role"}-${index + 1}.${ext}`;
+    },
+    async downloadRoleImage(image, index = 0) {
+      return this.downloadImageWithName(
+        image,
+        this.roleImageDownloadName(image, index),
+      );
+    },
+    downloadPreviewImage() {
+      if (this.detailRole) {
+        this.downloadRoleImage(this.previewImage, this.previewImageIndex);
+        return;
+      }
+      this.downloadScriptImage(this.previewImage, this.previewImageIndex);
+    },
     getScriptImage(script) {
       return this.getScriptImages(script)[0] || "";
     },
@@ -486,6 +788,10 @@ export default {
     async downloadScriptImage(image, index = 0) {
       if (!image) return;
       const filename = this.imageDownloadName(image, index);
+      await this.downloadImageWithName(image, filename);
+    },
+    async downloadImageWithName(image, filename) {
+      if (!image) return;
       try {
         const response = await fetch(image, { mode: "cors" });
         if (!response.ok) throw new Error("image download failed");
@@ -508,6 +814,17 @@ export default {
         link.click();
         link.remove();
       }
+    },
+    teamLabel(team) {
+      const labels = {
+        townsfolk: "teamTownsfolk",
+        outsider: "teamOutsider",
+        minion: "teamMinion",
+        demon: "teamDemon",
+        traveler: "teamTraveler",
+        fabled: "teamFabled",
+      };
+      return this.$t(`myScripts.${labels[team] || "teamOther"}`);
     },
     scriptCoverStyle(script) {
       const image = this.getScriptImage(script);
@@ -717,6 +1034,11 @@ export default {
       this.previewImage = "";
       this.openCharacterGroups = {};
     },
+    closeRoleDetail() {
+      this.detailLoadToken += 1;
+      this.detailRole = null;
+      this.previewImage = "";
+    },
     firstCharacter(name) {
       return (
         String(name || "?")
@@ -825,6 +1147,33 @@ export default {
 
 .my-upload-header small {
   color: #b8a082;
+}
+
+.upload-tabs {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(5.5em, 1fr));
+  gap: 0.2em;
+  width: max-content;
+  padding: 0.2em;
+  border: 1px solid #3d2e26;
+  background: rgba(8, 7, 6, 0.58);
+}
+
+.upload-tabs button {
+  min-height: 1.9em;
+  padding: 0 0.85em;
+  color: #b8a082;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  font: inherit;
+}
+
+.upload-tabs button:hover,
+.upload-tabs button.active {
+  color: #fff8e7;
+  border-color: rgba(170, 123, 36, 0.72);
+  background: rgba(92, 66, 4, 0.26);
 }
 
 h3 {
@@ -1170,6 +1519,29 @@ h3 {
 .script-cover.large {
   width: 6.6em;
   height: 6.6em;
+}
+
+.role-cover {
+  overflow: hidden;
+  border-radius: 50%;
+}
+
+.role-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.role-cover > span {
+  color: #fff8e7;
+  font-size: 1.35em;
+  font-weight: 700;
+}
+
+.role-cover.large {
+  width: 6.6em;
+  height: 6.6em;
+  flex: 0 0 auto;
 }
 
 .upload-content {

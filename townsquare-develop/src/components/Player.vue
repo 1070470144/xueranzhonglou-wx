@@ -208,7 +208,9 @@
     <template v-if="player.reminders">
       <div
         class="reminder"
-        :key="reminder.role + ' ' + reminder.name"
+        :key="
+          reminder.role + ' ' + reminder.name + ' ' + (reminder.image || '')
+        "
         v-for="reminder in player.reminders"
         :class="[reminder.role]"
         @click="removeReminder(reminder)"
@@ -227,7 +229,7 @@
             })`,
           }"
         ></span>
-        <span class="text">{{ reminder.name }}</span>
+        <span class="text">{{ displayReminderName(reminder) }}</span>
       </div>
     </template>
     <div class="reminder add" @click="$emit('trigger', ['openReminderModal'])">
@@ -240,6 +242,8 @@
 <script>
 import Token from "./Token";
 import { mapGetters, mapState } from "vuex";
+
+const { translateOfficialReminder } = require("../utils/reminderTranslations");
 
 export default {
   components: {
@@ -481,6 +485,9 @@ export default {
       const reminders = [...this.player.reminders];
       reminders.splice(this.player.reminders.indexOf(reminder), 1);
       this.updatePlayer("reminders", reminders, true);
+    },
+    displayReminderName(reminder) {
+      return translateOfficialReminder(reminder && reminder.name);
     },
     updatePlayer(property, value, closeMenu = false) {
       if (
@@ -1343,11 +1350,13 @@ li.move:not(.from) .player .overlay svg.move {
   z-index: -1;
 }
 
-.circle li:hover .reminder.add {
+.circle .player:hover ~ .reminder.add,
+.circle .reminder.add:hover {
   opacity: 1;
   top: 0;
 }
-.circle li:hover .reminder.add:before {
+.circle .player:hover ~ .reminder.add:before,
+.circle .reminder.add:hover:before {
   opacity: 1;
 }
 

@@ -50,7 +50,36 @@
           </div>
         </section>
 
-        <section class="control-group role-pool-group">
+        <section class="control-group creator-actions">
+          <label class="random-option">
+            <input type="checkbox" v-model="includeCustomInRandom" />
+            <span>{{ $t("modals.scriptCreator.actions.includeCustom") }}</span>
+          </label>
+          <button class="button minion" @click="randomizeSelection">
+            <font-awesome-icon icon="random" />
+            {{ $t("modals.scriptCreator.actions.random") }}
+          </button>
+          <button
+            class="button townsfolk"
+            :disabled="!canGenerate"
+            @click="copy"
+          >
+            <font-awesome-icon icon="copy" /> {{ $t("common.copyJson") }}
+          </button>
+          <button
+            class="button demon"
+            :disabled="!canGenerate"
+            @click="download"
+          >
+            <font-awesome-icon icon="download" />
+            {{ $t("modals.scriptCreator.actions.downloadJson") }}
+          </button>
+          <p class="status" v-if="status">{{ status }}</p>
+        </section>
+      </aside>
+
+      <section class="role-picker-panel">
+        <div class="control-group role-pool-group">
           <h4 class="control-group-title">
             {{ $t("modals.scriptCreator.sections.roles") }}
           </h4>
@@ -60,6 +89,17 @@
             type="search"
             :placeholder="$t('modals.scriptCreator.searchPlaceholder')"
           />
+          <div class="source-filter">
+            <button
+              v-for="source in roleSources"
+              :key="source"
+              type="button"
+              :class="{ active: sourceFilter === source }"
+              @click="sourceFilter = source"
+            >
+              {{ roleSourceLabel(source) }}
+            </button>
+          </div>
 
           <div class="validation" v-if="roleLoadError">
             <font-awesome-icon icon="exclamation-triangle" />
@@ -117,31 +157,8 @@
               </label>
             </section>
           </div>
-        </section>
-
-        <section class="control-group creator-actions">
-          <button class="button minion" @click="randomizeSelection">
-            <font-awesome-icon icon="random" />
-            {{ $t("modals.scriptCreator.actions.random") }}
-          </button>
-          <button
-            class="button townsfolk"
-            :disabled="!canGenerate"
-            @click="copy"
-          >
-            <font-awesome-icon icon="copy" /> {{ $t("common.copyJson") }}
-          </button>
-          <button
-            class="button demon"
-            :disabled="!canGenerate"
-            @click="download"
-          >
-            <font-awesome-icon icon="download" />
-            {{ $t("modals.scriptCreator.actions.downloadJson") }}
-          </button>
-          <p class="status" v-if="status">{{ status }}</p>
-        </section>
-      </aside>
+        </div>
+      </section>
 
       <aside class="selected-preview">
         <header class="preview-header">
@@ -205,6 +222,15 @@
 import Modal from "./Modal";
 import { getAuthSession } from "@/services/auth";
 import { listKnowledgeRoles } from "@/services/knowledgeRoles";
+import { getMyUploadedRoles, getPublicCustomRoles } from "@/services/scripts";
+import {
+  normalizeRoleForLibrary,
+  ROLE_SOURCE_ALL,
+  ROLE_SOURCE_CUSTOM,
+  ROLE_SOURCE_MINE,
+  ROLE_SOURCE_OFFICIAL,
+  ROLE_SOURCE_PUBLIC_CUSTOM,
+} from "@/utils/roleLibrary";
 import { mapMutations, mapState } from "vuex";
 
 const {
@@ -217,24 +243,6 @@ const {
   selectedRolesByTeam,
   validateRoleSelection,
 } = require("@/utils/scriptCreator");
-
-function normalizeRoleTeam(value) {
-  const text = String(value || "").toLowerCase();
-  if (!text) return "";
-  if (text.includes("townsfolk") || text.includes("镇民")) return "townsfolk";
-  if (text.includes("outsider") || text.includes("外来者")) return "outsider";
-  if (text.includes("minion") || text.includes("爪牙")) return "minion";
-  if (text.includes("demon") || text.includes("恶魔")) return "demon";
-  if (
-    text.includes("traveler") ||
-    text.includes("traveller") ||
-    text.includes("旅行者")
-  ) {
-    return "traveler";
-  }
-  if (text.includes("fabled") || text.includes("传奇角色")) return "fabled";
-  return TEAM_ORDER.includes(value) ? value : "";
-}
 
 export default {
   components: {
@@ -253,6 +261,10 @@ export default {
       roleLoadError: "",
       failedIconIds: [],
       collapsedPreviewTeams: {},
+      publicCustomRoles: [],
+      myCustomRoles: [],
+      sourceFilter: ROLE_SOURCE_ALL,
+      includeCustomInRandom: false,
     };
   },
   computed: {
@@ -260,23 +272,56 @@ export default {
     teamOrder() {
       return TEAM_ORDER;
     },
+    roleSources() {
+      return [
+        ROLE_SOURCE_ALL,
+        ROLE_SOURCE_OFFICIAL,
+        ROLE_SOURCE_PUBLIC_CUSTOM,
+        ROLE_SOURCE_MINE,
+      ];
+    },
     allRoles() {
-      return this.knowledgeRoles.map((role) => ({
-        ...role,
-        displayName: role.name || role.displayName,
-        displayAbility: role.ability || role.displayAbility || "",
-        team: normalizeRoleTeam(
-          role.team || role.roleType || role.category || role.type,
-        ),
-        icon: this.failedIconIds.includes(role.id)
-          ? ""
-          : role.iconUrl || role.image,
-      }));
+      const officialRoles = this.knowledgeRoles.map((role) =>
+        normalizeRoleForLibrary(role, ROLE_SOURCE_OFFICIAL),
+      );
+      const publicCustomRoles = this.publicCustomRoles.map((role) =>
+        normalizeRoleForLibrary(role, ROLE_SOURCE_PUBLIC_CUSTOM),
+      );
+      const myCustomRoles = this.myCustomRoles.map((role) =>
+        normalizeRoleForLibrary(role, ROLE_SOURCE_MINE),
+      );
+      return officialRoles
+        .concat(publicCustomRoles, myCustomRoles)
+        .map((role) => {
+          let selectId = role.id;
+          if (role.sourceType === ROLE_SOURCE_PUBLIC_CUSTOM) {
+            selectId = `public-custom:${role.docId || role.roleId || role.id}`;
+          } else if (
+            role.sourceType === ROLE_SOURCE_MINE ||
+            role.sourceType === ROLE_SOURCE_CUSTOM
+          ) {
+            selectId = `mine:${role.docId || role.roleId || role.id}`;
+          }
+          return {
+            ...role,
+            id: selectId,
+            officialId:
+              role.sourceType === ROLE_SOURCE_OFFICIAL
+                ? role.officialId || role.id
+                : "",
+            icon: this.failedIconIds.includes(selectId) ? "" : role.icon,
+          };
+        });
     },
     groupedRoles() {
       return TEAM_ORDER.reduce((groups, team) => {
         groups[team] = this.allRoles
-          .filter((role) => role.team === team)
+          .filter(
+            (role) =>
+              role.team === team &&
+              (this.sourceFilter === ROLE_SOURCE_ALL ||
+                role.sourceType === this.sourceFilter),
+          )
           .sort((a, b) => a.displayName.localeCompare(b.displayName));
         return groups;
       }, {});
@@ -387,6 +432,26 @@ export default {
       this.pruneMissingRoles();
     },
   },
+  mounted() {
+    window.addEventListener(
+      "townsquare-user-roles-change",
+      this.handleUserRolesChange,
+    );
+    window.addEventListener(
+      "townsquare-auth-change",
+      this.handleUserRolesChange,
+    );
+  },
+  beforeDestroy() {
+    window.removeEventListener(
+      "townsquare-user-roles-change",
+      this.handleUserRolesChange,
+    );
+    window.removeEventListener(
+      "townsquare-auth-change",
+      this.handleUserRolesChange,
+    );
+  },
   methods: {
     teamLabel(team) {
       return this.$t(`modals.scriptCreator.teams.${team}`);
@@ -410,17 +475,65 @@ export default {
       this.roleCounts = normalizeRoleCounts(this.roleCounts);
     },
     async loadKnowledgeRoles() {
-      if (this.loadingRoles || this.knowledgeRoles.length) return;
+      if (this.loadingRoles) return;
       this.loadingRoles = true;
       this.roleLoadError = "";
       try {
-        this.knowledgeRoles = await listKnowledgeRoles();
+        if (!this.knowledgeRoles.length) {
+          this.knowledgeRoles = await listKnowledgeRoles();
+        }
+        const [publicCustomRoles, myCustomRoles] = await Promise.all([
+          this.loadPublicCustomRolesForCreator(),
+          this.loadMyCustomRolesForCreator(),
+        ]);
+        this.publicCustomRoles = publicCustomRoles;
+        this.myCustomRoles = myCustomRoles;
       } catch (error) {
         this.roleLoadError =
           error.message || this.$t("modals.scriptCreator.status.loadFailed");
       } finally {
         this.loadingRoles = false;
       }
+    },
+    async loadPublicCustomRolesForCreator() {
+      const roles = [];
+      let page = 1;
+      let hasMore = true;
+      while (hasMore && page <= 4) {
+        const res = await getPublicCustomRoles({ page, pageSize: 50 });
+        const list = res && res.success && res.data ? res.data.list || [] : [];
+        roles.push(...list);
+        const total = Number(res && res.data && res.data.total) || roles.length;
+        hasMore = roles.length < total && list.length > 0;
+        page += 1;
+      }
+      return roles;
+    },
+    async loadMyCustomRolesForCreator() {
+      if (!getAuthSession().token) return [];
+      const roles = [];
+      let page = 1;
+      let hasMore = true;
+      while (hasMore && page <= 4) {
+        const res = await getMyUploadedRoles({ page, pageSize: 50 });
+        const list = res && res.success && res.data ? res.data.list || [] : [];
+        roles.push(...list);
+        const total = Number(res && res.data && res.data.total) || roles.length;
+        hasMore = roles.length < total && list.length > 0;
+        page += 1;
+      }
+      return roles;
+    },
+    handleUserRolesChange() {
+      if (!this.modals.scriptCreator) {
+        this.publicCustomRoles = [];
+        this.myCustomRoles = [];
+        return;
+      }
+      this.loadKnowledgeRoles();
+    },
+    roleSourceLabel(source) {
+      return this.$t(`modals.scriptCreator.sources.${source}`);
     },
     markIconFailed(roleId) {
       if (!this.failedIconIds.includes(roleId)) {
@@ -437,7 +550,12 @@ export default {
     },
     randomizeSelection() {
       this.sanitizeRoleCounts();
-      this.selectedRoles = randomRoleSelection(this.allRoles, this.roleCounts);
+      this.selectedRoles = randomRoleSelection(
+        this.allRoles,
+        this.roleCounts,
+        Math.random,
+        { includeCustomRoles: this.includeCustomInRandom },
+      );
       this.status = "";
     },
     ensureCanExport() {
@@ -478,7 +596,9 @@ export default {
 
 .script-creator {
   ::v-deep .modal {
+    width: min(1240px, calc(100vw - 1.5em));
     max-width: min(1240px, calc(100vw - 1.5em));
+    box-sizing: border-box;
     color: #dcc4a1;
     border: 2px solid #3d2e26;
     background: radial-gradient(
@@ -493,18 +613,32 @@ export default {
       inset 0 1px 0 rgba(255, 236, 190, 0.05);
     font-family: "STKaiti", "KaiTi", "STSong", "SimSun", serif;
     font-size: 0.86em;
+    overflow: hidden;
+  }
+
+  ::v-deep .modal > .slot {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 0;
+    overflow: hidden;
   }
 }
 
 .script-workspace {
   display: grid;
-  grid-template-columns: minmax(520px, 0.58fr) minmax(360px, 0.42fr);
+  grid-template-columns: minmax(240px, 280px) minmax(420px, 1fr) minmax(
+      320px,
+      400px
+    );
   gap: 0;
+  width: 100%;
   min-height: 0;
   height: min(90vh, 860px);
+  overflow: hidden;
 }
 
 .creator-controls,
+.role-picker-panel,
 .selected-preview {
   min-height: 0;
   overflow: hidden;
@@ -518,10 +652,17 @@ export default {
   background: rgba(18, 15, 13, 0.42);
 }
 
+.role-picker-panel {
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid rgba(124, 94, 70, 0.5);
+  background: rgba(9, 7, 6, 0.26);
+}
+
 .creator-header,
 .preview-header {
-  margin: 0.45em;
-  padding: 0.32em 0.52em 0.42em;
+  margin: 0.32em 0.45em 0.28em;
+  padding: 0.2em 0.5em 0.26em;
   border: 1px solid #3d2e26;
   border-bottom: 3px double #4a3b32;
   background: rgba(18, 15, 13, 0.74);
@@ -549,7 +690,7 @@ export default {
 }
 
 .control-group {
-  margin: 0 0.45em 0.42em;
+  margin: 0 0.45em 0.3em;
   padding: 0;
   border: 1px solid #3d2e26;
   border-radius: 2px;
@@ -561,14 +702,15 @@ export default {
 .role-pool-group {
   display: flex;
   flex-direction: column;
+  flex: 1 1 auto;
   min-height: 0;
   overflow: hidden;
 }
 
 .control-group-title {
-  min-height: 1.68em;
+  min-height: 1.36em;
   margin: 0;
-  padding: 0.28em 0.46em;
+  padding: 0.18em 0.46em;
   color: #d4af37;
   border-bottom: 1px solid #3d2e26;
   background: #120f0e;
@@ -581,29 +723,29 @@ export default {
 .script-fields {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 0.38em;
-  padding: 0.28em;
+  gap: 0.28em;
+  padding: 0.2em 0.28em;
 
   label {
     display: grid;
-    gap: 0.14em;
+    gap: 0.08em;
     color: #b8a082;
-    font-size: 0.72em;
+    font-size: 0.68em;
   }
 }
 
 .count-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 0.28em;
-  padding: 0.28em;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.18em;
+  padding: 0.18em 0.28em;
 }
 
 .count-control {
   display: grid;
-  gap: 0.12em;
+  gap: 0.06em;
   color: #b8a082;
-  font-size: 0.68em;
+  font-size: 0.64em;
 
   span {
     font-weight: 700;
@@ -615,8 +757,8 @@ export default {
 .role-search {
   box-sizing: border-box;
   width: 100%;
-  min-height: 1.62em;
-  padding: 0.14em 0.4em;
+  min-height: 1.42em;
+  padding: 0.08em 0.36em;
   color: #f7f0df;
   border: 1px solid #3d2e26;
   border-radius: 2px;
@@ -635,11 +777,38 @@ export default {
   width: calc(100% - 0.56em);
 }
 
+.source-filter {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.24em;
+  padding: 0 0.28em 0.32em;
+
+  button {
+    min-width: 0;
+    padding: 0.2em 0.35em;
+    color: #b8a082;
+    border: 1px solid #3d2e26;
+    border-radius: 2px;
+    background: rgba(5, 4, 4, 0.54);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.72em;
+  }
+
+  button.active {
+    color: #fff8e7;
+    border-color: rgba(212, 175, 55, 0.6);
+    background: rgba(92, 66, 4, 0.34);
+  }
+}
+
 .role-browser {
   flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding: 0 0.28em 0.28em;
+  scrollbar-gutter: stable;
 }
 
 .role-section {
@@ -870,11 +1039,34 @@ export default {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.22em;
+  align-self: end;
+  margin-top: auto;
   margin-bottom: 0.45em;
   padding: 0.28em;
 
+  .random-option {
+    grid-column: 1 / -1;
+  }
+
   .status {
     grid-column: 1 / -1;
+  }
+}
+
+.random-option {
+  display: flex;
+  align-items: center;
+  gap: 0.38em;
+  min-height: 1.62em;
+  padding: 0 0.2em;
+  color: #b8a082;
+  font-size: 0.72em;
+  line-height: 1.25;
+
+  input {
+    width: 1em;
+    height: 1em;
+    margin: 0;
   }
 }
 
@@ -954,10 +1146,12 @@ button.button {
   color: $fabled;
 }
 
-@media (max-width: 880px) {
+@media (max-width: 1080px) {
   .script-workspace {
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(0, 1fr) minmax(10em, 0.42fr);
+    grid-template-rows:
+      auto minmax(28em, 1fr)
+      minmax(10em, 0.42fr);
     height: min(88vh, 840px);
   }
 
@@ -965,6 +1159,11 @@ button.button {
     border-right: 0;
     border-bottom: 1px solid rgba(124, 94, 70, 0.5);
     overflow: hidden;
+  }
+
+  .role-picker-panel {
+    border-right: 0;
+    border-bottom: 1px solid rgba(124, 94, 70, 0.5);
   }
 
   .selected-preview {

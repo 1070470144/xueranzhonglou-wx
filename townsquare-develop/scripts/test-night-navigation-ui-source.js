@@ -195,4 +195,11 @@ assert(
   "main icons should register StepForward",
 );
 
+assert(
+  /\.night-order[\s\S]*?em\s*\{[\s\S]*?width:\s*32px;[\s\S]*?height:\s*32px;/.test(
+    townSquareSource,
+  ),
+  "Seat night-order number markers should be smaller than the old 40px badges",
+);
+
 console.log("night navigation UI source tests passed");

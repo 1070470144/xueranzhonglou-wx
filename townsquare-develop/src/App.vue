@@ -42,6 +42,7 @@
     <LoginModal />
     <ScriptLibraryModal />
     <MyUploadsModal />
+    <RoleLibraryModal />
     <PlayerNameModal />
     <StoryLogModal />
     <PrivateChatModal />
@@ -78,6 +79,7 @@ import AnnouncementModal from "@/components/modals/AnnouncementModal";
 import LoginModal from "@/components/modals/LoginModal";
 import ScriptLibraryModal from "@/components/modals/ScriptLibraryModal";
 import MyUploadsModal from "@/components/modals/MyUploadsModal";
+import RoleLibraryModal from "@/components/modals/RoleLibraryModal";
 import PlayerNameModal from "@/components/modals/PlayerNameModal";
 import StoryLogModal from "@/components/modals/StoryLogModal";
 import PrivateChatModal from "@/components/modals/PrivateChatModal";
@@ -101,6 +103,7 @@ export default {
     LoginModal,
     ScriptLibraryModal,
     MyUploadsModal,
+    RoleLibraryModal,
     ImageGeneratorModal,
     ScriptCreatorModal,
     GameStateModal,

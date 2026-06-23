@@ -298,6 +298,10 @@
             {{ $t("menu.scriptLibrary") }}
             <em><font-awesome-icon icon="book-open" /></em>
           </li>
+          <li @click="toggleModal('roleLibrary')">
+            {{ $t("menu.roleLibrary") }}
+            <em><font-awesome-icon icon="theater-masks" /></em>
+          </li>
           <li @click="openMyUploads">
             {{ $t("menu.myUploads") }}
             <em><font-awesome-icon icon="file-upload" /></em>

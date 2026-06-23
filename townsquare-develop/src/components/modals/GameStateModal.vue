@@ -40,7 +40,7 @@ export default {
           : this.edition,
         roles: this.edition.isOfficial
           ? ""
-          : this.$store.getters.customRolesStripped,
+          : this.$store.getters.customRolesFull,
         fabled: this.players.fabled.map((fabled) =>
           fabled.isCustom ? fabled : { id: fabled.id },
         ),

@@ -1418,8 +1418,8 @@ export default {
   em {
     font-style: normal;
     position: absolute;
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     border: 3px solid black;
     filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.5));
@@ -1434,12 +1434,12 @@ export default {
   }
 
   &.first em {
-    left: -10%;
+    left: -7%;
     background: linear-gradient(180deg, rgba(0, 0, 0, 1) 0%, $townsfolk 100%);
   }
 
   &.other em {
-    right: -10%;
+    right: -7%;
     background: linear-gradient(180deg, rgba(0, 0, 0, 1) 0%, $demon 100%);
   }
 
@@ -1451,7 +1451,7 @@ export default {
   .fabled &.first {
     span {
       right: auto;
-      left: 40px;
+      left: 32px;
       &:after {
         left: auto;
         right: 100%;

@@ -192,6 +192,39 @@ assert(
   "storyteller reconnect should request room state from the server"
 );
 
+const roomSocketOnCloseStart = socketSource.indexOf("socket.onclose = (err) => {");
+const roomSocketOnCloseEnd = socketSource.indexOf("\n  }\n\n  /**\n   * Send a message", roomSocketOnCloseStart);
+const roomSocketOnCloseSource = socketSource.slice(
+  roomSocketOnCloseStart,
+  roomSocketOnCloseEnd
+);
+
+assert(
+  roomSocketOnCloseSource.includes("if (this._socket !== socket) return"),
+  "stale socket close events should not clear or reconnect a newer room socket"
+);
+
+assert(
+  roomSocketOnCloseSource.includes("shouldRecoverRoomSession") &&
+    /err\.code !== 1000 \|\| shouldRecoverRoomSession/.test(roomSocketOnCloseSource),
+  "mobile browser normal-close events for an active room session should reconnect instead of clearing the room"
+);
+
+assert(
+  !/else \{[\s\S]*?commit\("voice\/clear"\)[\s\S]*?commit\("room\/clearRoom"\)[\s\S]*?commit\("session\/setSessionId", ""\)/.test(
+    roomSocketOnCloseSource
+  ),
+  "room socket normal close should not be treated as an implicit user leave"
+);
+
+assert(
+  socketSource.includes("resumeCurrentSession()") &&
+    socketSource.includes('window.addEventListener("pageshow", resumeCurrentSession)') &&
+    socketSource.includes('document.addEventListener("visibilitychange"') &&
+    socketSource.includes("session.resumeCurrentSession()"),
+  "returning to the mobile browser should immediately resume the persisted room session"
+);
+
 assert(
   /_onOpen\(\)[\s\S]*?this\._store\.state\.room\.current[\s\S]*?this\._send\("room:state:get", \{\}\)/.test(
     socketSource

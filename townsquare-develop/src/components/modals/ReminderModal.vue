@@ -9,7 +9,9 @@
         v-for="reminder in availableReminders"
         class="reminder"
         :class="[reminder.role]"
-        :key="reminder.role + ' ' + reminder.name"
+        :key="
+          reminder.role + ' ' + reminder.name + ' ' + (reminder.image || '')
+        "
         @click="addReminder(reminder)"
       >
         <span
@@ -50,6 +52,78 @@ const mapReminder =
     name,
   });
 
+const smallTokenFields = [
+  "smallTokens",
+  "tokenImages",
+  "tokens",
+  "smallToken",
+  "tokenImage",
+  "tokenUrl",
+];
+
+const smallTokenImageFields = [
+  "image",
+  "url",
+  "fileId",
+  "fileID",
+  "path",
+  "src",
+  "thumbnail",
+  "tempFilePath",
+];
+
+const tokenName = (token, role, index, total) => {
+  if (token && typeof token === "object") {
+    const name = token.name || token.label || token.text || token.title;
+    if (name) return String(name);
+  }
+  const baseName = role.name || role.displayName || role.id || "Token";
+  return total > 1 ? `${baseName} ${index + 1}` : baseName;
+};
+
+const tokenImage = (token) => {
+  if (!token) return "";
+  if (typeof token === "string") return token.trim();
+  if (typeof token !== "object") return "";
+  const image = smallTokenImageFields
+    .map((field) => token[field])
+    .find(Boolean);
+  return image ? String(image).trim() : "";
+};
+
+const roleSmallTokens = (role) => {
+  const tokens = [];
+  smallTokenFields.forEach((field) => {
+    const value = role[field];
+    if (!value) return;
+    if (Array.isArray(value)) {
+      tokens.push(...value);
+    } else {
+      tokens.push(value);
+    }
+  });
+  return tokens;
+};
+
+const mapSmallTokenReminders = (role) => {
+  const seenSmallTokenImages = new Set();
+  const tokens = roleSmallTokens(role).reduce((result, token) => {
+    const image = tokenImage(token);
+    if (!image || seenSmallTokenImages.has(image)) return result;
+    seenSmallTokenImages.add(image);
+    result.push({ token, image });
+    return result;
+  }, []);
+
+  return tokens.map(({ token, image }, index) => ({
+    role: role.id,
+    image,
+    imageAlt: role.imageAlt,
+    name: tokenName(token, role, index, tokens.length),
+    isSmallToken: true,
+  }));
+};
+
 export default {
   components: { Modal },
   props: ["playerIndex"],
@@ -63,6 +137,7 @@ export default {
           reminders = [
             ...reminders,
             ...(role.reminders || []).map(mapReminder(role)),
+            ...mapSmallTokenReminders(role),
           ];
         }
         // add reminders from bluff/other roles
@@ -70,6 +145,7 @@ export default {
           reminders = [
             ...reminders,
             ...(role.reminders || []).map(mapReminder(role)),
+            ...mapSmallTokenReminders(role),
           ];
         }
         // add global reminders
@@ -85,6 +161,7 @@ export default {
         reminders = [
           ...reminders,
           ...(role.reminders || []).map(mapReminder(role)),
+          ...mapSmallTokenReminders(role),
         ];
       });
 
@@ -94,6 +171,7 @@ export default {
           reminders = [
             ...reminders,
             ...(role.reminders || []).map(mapReminder(role)),
+            ...mapSmallTokenReminders(role),
           ];
         }
       });
