@@ -58,6 +58,7 @@ export function normalizeRoleImageArray(...values) {
     }
     if (typeof value !== "object") return;
     const url =
+      value.image ||
       value.url ||
       value.fileId ||
       value.fileID ||
@@ -69,6 +70,48 @@ export function normalizeRoleImageArray(...values) {
   };
   values.forEach(add);
   return Array.from(new Set(images));
+}
+
+export function normalizeRoleTokenArray(...values) {
+  const tokens = [];
+  const seen = new Set();
+  const add = (value) => {
+    if (!value) return;
+    if (Array.isArray(value)) {
+      value.forEach(add);
+      return;
+    }
+    if (typeof value === "string") {
+      const image = value.trim();
+      if (image && !seen.has(image)) {
+        seen.add(image);
+        tokens.push({ name: "", image });
+      }
+      return;
+    }
+    if (typeof value !== "object") return;
+    const image = String(
+      value.image ||
+        value.url ||
+        value.fileId ||
+        value.fileID ||
+        value.path ||
+        value.src ||
+        value.thumbnail ||
+        value.tempFilePath ||
+        "",
+    ).trim();
+    if (!image || seen.has(image)) return;
+    seen.add(image);
+    tokens.push({
+      name: String(
+        value.name || value.label || value.text || value.title || "",
+      ).trim(),
+      image,
+    });
+  };
+  values.forEach(add);
+  return tokens;
 }
 
 function firstDefined(...values) {
@@ -124,7 +167,7 @@ export function normalizeRoleForLibrary(
   const icon =
     role && (role.iconUrl || role.image || role.icon || role.avatar || "");
   const docId = role && (role.docId || role._id || role.id);
-  const tokenImages = normalizeRoleImageArray(
+  const tokenImages = normalizeRoleTokenArray(
     role && role.smallTokens,
     role && role.tokenImages,
     role && role.tokens,
@@ -133,7 +176,7 @@ export function normalizeRoleForLibrary(
     role && role.tokenUrl,
     role && role.token,
   );
-  const firstToken = tokenImages[0] || "";
+  const firstToken = (tokenImages[0] && tokenImages[0].image) || "";
   return {
     ...(role || {}),
     id,
@@ -213,6 +256,7 @@ export function roleImageList(role) {
     }
     if (typeof value !== "object") return;
     const url =
+      value.image ||
       value.url ||
       value.fileId ||
       value.fileID ||

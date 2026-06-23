@@ -183,12 +183,18 @@ const buildCustomRoleState = (roles, roleLookup = new Map()) => {
       return role;
     })
     // map existing roles to base definition or pre-populate custom roles to ensure all properties
-    .map(
-      (role) =>
-        rolesJSONbyId.get(role.id) ||
-        roleLookup.get(role.id) ||
-        Object.assign({}, customRole, officialNightDefaults(role), role),
-    )
+    .map((role) => {
+      const officialRole = rolesJSONbyId.get(role.id);
+      if (officialRole) return officialRole;
+
+      return Object.assign(
+        {},
+        customRole,
+        roleLookup.get(role.id) || {},
+        officialNightDefaults(role),
+        role,
+      );
+    })
     // default empty icons and placeholders, clean up firstNight / otherNight
     .map((role) => {
       if (rolesJSONbyId.get(role.id)) return role;
@@ -270,11 +276,13 @@ export default new Vuex.Store({
       reminder: false,
       role: false,
       roleLibrary: false,
+      roleTokenGenerator: false,
       roles: false,
       roomControl: false,
       roomLobby: false,
       scriptCreator: false,
       scriptLibrary: false,
+      settings: false,
       storyLog: false,
       voteHistory: false,
     },

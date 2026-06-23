@@ -23,87 +23,96 @@
               <span>{{ $t("myScripts.uploadTitle") }}</span>
             </div>
 
-            <div class="cover-list">
-              <div
-                v-for="(image, index) in selectedImages"
-                :key="image.preview"
-                class="cover-item"
-              >
-                <img :src="image.preview" :alt="image.file.name" />
-                <button type="button" @click="removeImage(index)">
-                  <font-awesome-icon icon="times" />
-                </button>
-              </div>
-              <button
-                v-if="selectedImages.length < 3"
-                type="button"
-                class="cover-picker"
-                @click="$refs.coverInput.click()"
-              >
-                <font-awesome-icon icon="image" />
-                {{ $t("myScripts.addImage") }}
-              </button>
-            </div>
-            <input
-              ref="coverInput"
-              class="hidden-input"
-              type="file"
-              accept="image/*"
-              multiple
-              @change="handleCoverFiles"
-            />
-
-            <div class="upload-grid">
-              <label>
-                <span>{{ $t("myScripts.scriptType") }}</span>
-                <select v-model="scriptType">
-                  <option value="推理">{{ $t("myScripts.reasoning") }}</option>
-                  <option value="娱乐">{{ $t("myScripts.fun") }}</option>
-                </select>
-              </label>
-              <label>
-                <span>{{ $t("myScripts.jsonFile") }}</span>
-                <button
-                  type="button"
-                  class="button"
-                  @click="$refs.jsonInput.click()"
-                >
-                  <font-awesome-icon icon="file-code" />
-                  {{ jsonFileName || $t("myScripts.chooseJson") }}
-                </button>
+            <div class="upload-form">
+              <div class="upload-cover-section">
+                <span class="upload-label">{{ $t("myScripts.addImage") }}</span>
+                <div class="cover-list">
+                  <div
+                    v-for="(image, index) in selectedImages"
+                    :key="image.preview"
+                    class="cover-item"
+                  >
+                    <img :src="image.preview" :alt="image.file.name" />
+                    <button type="button" @click="removeImage(index)">
+                      <font-awesome-icon icon="times" />
+                    </button>
+                  </div>
+                  <button
+                    v-if="selectedImages.length < 3"
+                    type="button"
+                    class="cover-picker"
+                    @click="$refs.coverInput.click()"
+                  >
+                    <font-awesome-icon icon="image" />
+                    {{ $t("myScripts.addImage") }}
+                  </button>
+                </div>
                 <input
-                  ref="jsonInput"
+                  ref="coverInput"
                   class="hidden-input"
                   type="file"
-                  accept=".json,application/json"
-                  @change="handleJsonFile"
+                  accept="image/*"
+                  multiple
+                  @change="handleCoverFiles"
                 />
-              </label>
-            </div>
+              </div>
 
-            <div v-if="uploadError" class="state-line error">
-              {{ uploadError }}
-            </div>
-            <div v-if="uploadSuccess" class="state-line success">
-              {{ uploadSuccess }}
-            </div>
-            <div class="button-row">
-              <button
-                type="button"
-                class="button demon"
-                :disabled="submitting"
-                @click="submitUpload"
-              >
-                <font-awesome-icon
-                  :icon="submitting ? 'spinner' : 'file-upload'"
-                  :spin="submitting"
-                />
-                {{
-                  submitting
-                    ? $t("myScripts.submitting")
-                    : $t("myScripts.submit")
-                }}
-              </button>
+              <div class="upload-fields">
+                <label class="upload-field">
+                  <span>{{ $t("myScripts.scriptType") }}</span>
+                  <select v-model="scriptType">
+                    <option value="推理">
+                      {{ $t("myScripts.reasoning") }}
+                    </option>
+                    <option value="娱乐">{{ $t("myScripts.fun") }}</option>
+                  </select>
+                </label>
+                <label class="upload-field">
+                  <span>{{ $t("myScripts.jsonFile") }}</span>
+                  <button
+                    type="button"
+                    class="button json-picker"
+                    @click="$refs.jsonInput.click()"
+                  >
+                    <font-awesome-icon icon="file-code" />
+                    {{ jsonFileName || $t("myScripts.chooseJson") }}
+                  </button>
+                  <input
+                    ref="jsonInput"
+                    class="hidden-input"
+                    type="file"
+                    accept=".json,application/json"
+                    @change="handleJsonFile"
+                  />
+                </label>
+              </div>
+
+              <div class="upload-action-row">
+                <div class="upload-status">
+                  <div v-if="uploadError" class="state-line error">
+                    {{ uploadError }}
+                  </div>
+                  <div v-if="uploadSuccess" class="state-line success">
+                    {{ uploadSuccess }}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  class="button demon"
+                  :disabled="submitting"
+                  @click="submitUpload"
+                >
+                  <font-awesome-icon
+                    :icon="submitting ? 'spinner' : 'file-upload'"
+                    :spin="submitting"
+                  />
+                  {{
+                    submitting
+                      ? $t("myScripts.submitting")
+                      : $t("myScripts.submit")
+                  }}
+                </button>
+              </div>
             </div>
           </section>
         </Modal>
@@ -1125,20 +1134,38 @@ h3 {
   padding: 0.5em;
 }
 
+.upload-form {
+  display: grid;
+  gap: 0.75em;
+}
+
+.upload-cover-section {
+  display: grid;
+  gap: 0.45em;
+}
+
+.upload-label {
+  color: #b8a082;
+  font-size: 0.82em;
+  font-weight: 700;
+}
+
 .cover-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35em;
-  margin: 0.5em 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6.25em, 1fr));
+  gap: 0.45em;
+  margin: 0;
 }
 
 .cover-item,
 .cover-picker {
-  width: 5.5em;
-  height: 4.2em;
+  width: 100%;
+  min-height: 4.8em;
 }
 
 .cover-item {
+  position: relative;
+  overflow: hidden;
   border: 1px solid #3d2e26;
   background: #0d0b0a;
 }
@@ -1164,16 +1191,33 @@ h3 {
   align-items: center;
   justify-content: center;
   gap: 0.2em;
+  color: #b8a082;
+  border: 1px dashed #5b4638;
+  background: rgba(5, 4, 4, 0.62);
+  cursor: pointer;
+  font: inherit;
 }
 
 .hidden-input {
   display: none;
 }
 
-.upload-grid {
+.upload-fields {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.45em;
+}
+
+.upload-field select,
+.upload-field .button {
+  min-height: 2.4em;
+}
+
+.json-picker {
+  justify-content: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 label {
@@ -1198,10 +1242,21 @@ textarea {
   padding: 0.45em;
 }
 
-.button-row {
+.upload-action-row {
   display: flex;
-  justify-content: flex-end;
-  margin-top: 0.45em;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75em;
+  margin-top: 0.1em;
+}
+
+.upload-status {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.upload-status .state-line {
+  margin: 0;
 }
 
 .detail-gallery {
@@ -1579,9 +1634,14 @@ textarea {
 }
 
 @media (max-width: 640px) {
-  .upload-grid,
+  .upload-fields,
   .character-list {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .upload-action-row {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .script-list {

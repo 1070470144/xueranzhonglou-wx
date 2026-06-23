@@ -125,6 +125,13 @@ export function getMyUploadedRoleDetail(roleId) {
   return callScriptService("getMyUploadedRoleDetail", withToken({ roleId }));
 }
 
+export function updateMyUploadedRoleIcon(roleId, iconUrl) {
+  return callScriptService(
+    "updateMyUploadedRoleIcon",
+    withToken({ roleId, iconUrl }),
+  );
+}
+
 export function deleteMyUploadedRole(roleId) {
   return callScriptService("deleteMyUploadedRole", withToken({ roleId }));
 }
@@ -145,12 +152,26 @@ function readFileAsDataURL(file) {
 
 export async function uploadScriptCoverImage(file) {
   const dataUrl = await readFileAsDataURL(file);
+  return uploadScriptImageDataUrl({
+    dataUrl,
+    fileName: (file && file.name) || "cover.jpg",
+    contentType: (file && file.type) || "",
+    size: (file && file.size) || 0,
+  });
+}
+
+export async function uploadScriptImageDataUrl({
+  dataUrl,
+  fileName = "cover.jpg",
+  contentType = "",
+  size = 0,
+} = {}) {
   const res = await callScriptService(
     "uploadUserScriptImage",
     withToken({
-      fileName: (file && file.name) || "cover.jpg",
-      contentType: (file && file.type) || "",
-      size: (file && file.size) || 0,
+      fileName,
+      contentType,
+      size,
       dataUrl,
     }),
   );

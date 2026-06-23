@@ -60,4 +60,24 @@ assert(
   "script creator left controls should stay compact and reserve filler space before actions",
 );
 
+assert(
+  modalSource.includes("collapsedRoleTeams: {}") &&
+    modalSource.includes("isRoleSectionCollapsed(team)") &&
+    modalSource.includes("toggleRoleSection(team)"),
+  "script creator role picker should track and toggle collapsed role sections",
+);
+
+assert(
+  modalSource.includes("@click=\"removeSelectedRole(team, role.id)\"") &&
+    modalSource.includes("removeSelectedRole(team, roleId)"),
+  "selected preview roles should expose a remove action wired to selection state",
+);
+
+assert(
+  /sourceFilter === ROLE_SOURCE_PUBLIC_CUSTOM[\s\S]*?role\.sourceType === ROLE_SOURCE_MINE/.test(
+    modalSource,
+  ),
+  "script creator custom source filter should include my uploaded custom roles",
+);
+
 console.log("script creator layout source tests passed");

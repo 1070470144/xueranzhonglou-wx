@@ -57,9 +57,20 @@ assert(
   "create role modal should upload both role image and small token images",
 );
 assert(
+  createTemplate.includes("createForm.smallTokens[index].name") &&
+    createTemplate.includes("createForm.smallTokens[index].image"),
+  "create role modal should allow entering both small token text and image",
+);
+assert(
   modalSource.includes("generateCreateRoleId") &&
     modalSource.includes("buildCreateRoleJson"),
   "create role modal should generate a readonly id and build JSON from form fields",
+);
+assert(
+  modalSource.includes("normalizeCreateToken") &&
+    modalSource.includes("token.image") &&
+    modalSource.includes("token.name"),
+  "create role modal should preserve small token text while building role JSON",
 );
 assert(
   modalSource.includes("uploadScriptCoverImage"),
@@ -69,6 +80,12 @@ assert(
   serviceSource.includes("smallTokens") &&
     serviceSource.includes("tokenImages"),
   "script-service should store and return small token image arrays",
+);
+assert(
+  serviceSource.includes("cleanUserRoleTokenList") &&
+    serviceSource.includes("name: cleanUserRoleText") &&
+    serviceSource.includes("image: cleanUserRoleText"),
+  "script-service should preserve small token text and image objects",
 );
 [
   "firstNight",

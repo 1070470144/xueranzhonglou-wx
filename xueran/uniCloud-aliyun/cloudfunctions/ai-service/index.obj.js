@@ -16,7 +16,10 @@ const TABLES = {
 
 const AI_HTTP_TIMEOUT = 45000;
 const AI_HARD_TIMEOUT = 50000;
+const AI_IMAGE_HTTP_TIMEOUT = 150000;
+const AI_IMAGE_HARD_TIMEOUT = 160000;
 const AI_MAX_TOKENS = 1000;
+const AI_IMAGE_MAX_SIZE = 6 * 1024 * 1024;
 
 function ok(data = {}, message = '操作成功') {
   return { success: true, message, data };
@@ -174,6 +177,7 @@ function publicConfig(config) {
     provider: config.provider || 'openai-compatible',
     baseUrl: config.baseUrl || '',
     model: config.model || '',
+    imageModel: config.imageModel || 'gpt-image-2',
     apiKey: maskedKey
   };
 }
@@ -510,6 +514,191 @@ async function callAi(config, prompt) {
   return withTimeout(task, AI_HARD_TIMEOUT, 'AI request timeout');
 }
 
+function roleIconPrompt(role) {
+  const description = cleanText(
+    role.description || role.keywords || role.iconKeywords || role.prompt || role.subject || '',
+    220
+  );
+  const team = cleanText(role.team || role.roleType || role.category || '', 40).toLowerCase();
+  const styleByTeam = {
+    townsfolk: 'Townsfolk color: cobalt blue ink.',
+    outsider: 'Outsider color: muted blue-violet ink.',
+    minion: 'Minion color: vivid red ink.',
+    demon: 'Demon color: deep crimson ink.',
+    traveler: 'Traveler color: bright cyan or teal ink.',
+    fabled: 'Fabled color: warm gold or yellow ink.'
+  };
+  const teamStyle = styleByTeam[team] || styleByTeam.townsfolk;
+  return [
+    'Create one square transparent background image for a Blood on the Clocktower custom role icon.',
+    'Draw only one single centered ink symbol based on the short description below.',
+    'The symbol should feel like a hand-painted token mark: rough ink edges, bold silhouette, readable at small seat-token size.',
+    teamStyle,
+    'Use the team color as the dominant ink color, with subtle darker edge texture if needed.',
+    'Do not draw a parchment disk, circular token background, thick outer rim, inner ring, badge, frame, or brown coin.',
+    'Do not include any text, letters, Chinese characters, captions, role names, ability text, watermarks, UI mockups, or multiple object collage.',
+    'Avoid the bad style: no black background, no square black tile, no glowing app icon, no realistic photo.',
+    'Keep the outside area transparent background or as close to transparent as the model supports.',
+    `Team style key: ${team || 'townsfolk'}`,
+    `Description: ${description}`
+  ].filter(Boolean).join('\n');
+}
+
+function imageExtensionFromContentType(contentType) {
+  if (/png/i.test(contentType)) return '.png';
+  if (/webp/i.test(contentType)) return '.webp';
+  if (/jpe?g/i.test(contentType)) return '.jpg';
+  return '.png';
+}
+
+async function uploadGeneratedRoleIcon(userId, base64, contentType = 'image/png') {
+  const cleanBase64 = String(base64 || '').replace(/^data:[^;,]+;base64,/i, '').replace(/\s/g, '');
+  if (!cleanBase64) throw new Error('AI did not return image data');
+  const fileContent = Buffer.from(cleanBase64, 'base64');
+  if (!fileContent.length) throw new Error('AI returned invalid image data');
+  if (fileContent.length > AI_IMAGE_MAX_SIZE) throw new Error('AI image is too large');
+  const safeUserId = String(userId || 'user').replace(/[^\w-]+/g, '-');
+  const random = Math.random().toString(36).slice(2);
+  const cloudPath = `ai-role-icons/${safeUserId}/${Date.now()}-${random}${imageExtensionFromContentType(contentType)}`;
+  const uploadRes = await uniCloud.uploadFile({ cloudPath, fileContent });
+  return uploadRes.fileID || uploadRes.fileId || uploadRes.url || '';
+}
+
+function looksLikeImageUrl(value) {
+  const text = String(value || '').trim();
+  return /^https?:\/\//i.test(text) || /^cloud:\/\//i.test(text);
+}
+
+function looksLikeImageBase64(value) {
+  const text = String(value || '').trim();
+  if (/^data:image\/[^;]+;base64,/i.test(text)) return true;
+  return text.length > 200 && /^[A-Za-z0-9+/=\s]+$/.test(text);
+}
+
+function extractGeneratedImage(payload, depth = 0) {
+  if (!payload || depth > 8) return null;
+  if (typeof payload === 'string') {
+    if (looksLikeImageBase64(payload)) return { base64: payload };
+    if (looksLikeImageUrl(payload)) return { url: payload };
+    return null;
+  }
+  if (Array.isArray(payload)) {
+    for (const item of payload) {
+      const image = extractGeneratedImage(item, depth + 1);
+      if (image) return image;
+    }
+    return null;
+  }
+  if (typeof payload !== 'object') return null;
+
+  const urlValue =
+    payload.url ||
+    payload.imageUrl ||
+    payload.image_url ||
+    payload.fileID ||
+    payload.fileId;
+  const urlImage = extractGeneratedImage(urlValue, depth + 1);
+  if (urlImage) return urlImage;
+
+  const base64Value =
+    payload.b64_json ||
+    payload.base64 ||
+    payload.image_base64 ||
+    payload.imageBase64;
+  if (base64Value) return { base64: String(base64Value) };
+
+  const nestedKeys = [
+    'data',
+    'output',
+    'result',
+    'image',
+    'images',
+    'content',
+    'artifacts',
+    'generations'
+  ];
+  for (const key of nestedKeys) {
+    const image = extractGeneratedImage(payload[key], depth + 1);
+    if (image) return image;
+  }
+  return null;
+}
+
+function imageResponseShape(body) {
+  if (!body || typeof body !== 'object') return typeof body;
+  return Object.keys(body).slice(0, 12).join(',') || 'empty object';
+}
+
+function imageErrorDetail(body) {
+  if (!body) return '';
+  if (typeof body === 'string') return cleanText(body, 500);
+  if (typeof body !== 'object') return cleanText(String(body), 500);
+
+  const error = body.error && typeof body.error === 'object' ? body.error : {};
+  const parts = [
+    error.message,
+    error.type,
+    error.code,
+    body.message,
+    body.msg,
+    body.detail,
+    body.details,
+    body.code,
+    body.type
+  ]
+    .map((item) => cleanText(item, 220))
+    .filter(Boolean);
+
+  if (parts.length) return parts.join(' | ');
+  try {
+    return cleanText(JSON.stringify(body), 500);
+  } catch (error) {
+    return imageResponseShape(body);
+  }
+}
+
+async function callOpenAiImageGeneration(config, role, userId) {
+  const baseUrl = String(config.baseUrl || '').replace(/\/+$/, '');
+  const url = `${baseUrl}/images/generations`;
+  const response = await uniCloud.httpclient.request(url, {
+    method: 'POST',
+    dataType: 'json',
+    contentType: 'json',
+    timeout: AI_IMAGE_HTTP_TIMEOUT,
+    headers: {
+      Authorization: `Bearer ${config.apiKey}`
+    },
+    data: {
+      model: config.imageModel || 'gpt-image-2',
+      prompt: roleIconPrompt(role),
+      n: 1,
+      size: '1024x1024'
+    }
+  });
+
+  if (response.status >= 400) {
+    const detail = imageErrorDetail(response.data);
+    console.error('AI image request failed:', {
+      status: response.status,
+      model: config.imageModel || 'gpt-image-2',
+      baseUrl,
+      detail
+    });
+    throw new Error(`AI image request failed: ${response.status}${detail ? ` - ${detail}` : ''}`);
+  }
+  const body = response.data || {};
+  const image = extractGeneratedImage(body);
+  if (!image) {
+    throw new Error(`AI did not return an image. Response fields: ${imageResponseShape(body)}`);
+  }
+  if (image.url) return image.url;
+  if (image.base64) {
+    const urlFromUpload = await uploadGeneratedRoleIcon(userId, image.base64, 'image/png');
+    if (urlFromUpload) return urlFromUpload;
+  }
+  throw new Error('AI did not return a usable image');
+}
+
 async function generateRecordAnswer(record, userId) {
   if (!record || !record._id) return fail('record not found');
   if (record.userId !== userId) return fail('record not found');
@@ -592,7 +781,7 @@ module.exports = {
     const auth = await verifyToken(params.token);
     if (!auth) return fail('请先登录');
     const config = await getUserConfig(auth.user._id);
-    return ok({ config: publicConfig(config) || { enabled: false, provider: 'openai-compatible', baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o-mini', apiKey: '' } });
+    return ok({ config: publicConfig(config) || { enabled: false, provider: 'openai-compatible', baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o-mini', imageModel: 'gpt-image-2', apiKey: '' } });
   },
 
   async saveUserConfig(params = {}) {
@@ -607,6 +796,7 @@ module.exports = {
       provider: cleanText(input.provider || 'openai-compatible', 60),
       baseUrl: cleanText(input.baseUrl || '', 300),
       model: cleanText(input.model || '', 120),
+      imageModel: cleanText(input.imageModel || 'gpt-image-2', 120),
       updateTime: now()
     };
     if (input.apiKey && !String(input.apiKey).includes('***')) {
@@ -625,7 +815,49 @@ module.exports = {
       doc.createTime = now();
       await db.collection(TABLES.userConfig).add(doc);
     }
-    return ok({ config: publicConfig(doc) }, '保存成功');
+    const saved = await getUserConfig(auth.user._id);
+    if (doc.imageModel && (!saved || saved.imageModel !== doc.imageModel)) {
+      return fail('AI 生图模型保存失败，请检查数据库 schema 是否已部署');
+    }
+    return ok({ config: publicConfig(saved || doc) }, '保存成功');
+  },
+
+  async generateRoleIcon(params = {}) {
+    const auth = await verifyToken(params.token);
+    if (!auth) return fail('Please login first');
+    const role = params.role || {};
+    const description = cleanText(
+      role.description || role.keywords || role.iconKeywords || role.prompt || role.subject || '',
+      220
+    );
+    if (!description) return fail('请输入图标描述');
+    role.description = description;
+    role.team = cleanText(role.team || role.roleType || role.category || 'townsfolk', 40);
+
+    const resolved = await resolveAiConfig(auth.user._id);
+    if (!resolved || !resolved.config) return fail('AI not configured');
+    const config = resolved.config;
+    const imageModel = cleanText(config.imageModel || 'gpt-image-2', 120);
+    if (!config.baseUrl || !config.apiKey) {
+      return fail('AI 生图配置不完整，请检查网站地址和 API Key');
+    }
+    config.imageModel = imageModel;
+
+    try {
+      const imageUrl = await withTimeout(
+        callOpenAiImageGeneration(config, role, auth.user._id),
+        AI_IMAGE_HARD_TIMEOUT,
+        'AI image request timeout'
+      );
+      return ok({
+        imageUrl,
+        source: resolved.source,
+        model: config.imageModel || 'gpt-image-2'
+      });
+    } catch (error) {
+      console.error('generateRoleIcon failed:', error && error.message ? error.message : error);
+      return fail(aiErrorMessage(error));
+    }
   },
 
   async listScripts(params = {}) {

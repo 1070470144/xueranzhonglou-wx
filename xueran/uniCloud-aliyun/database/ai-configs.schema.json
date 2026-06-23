@@ -8,10 +8,10 @@
     "provider": { "bsonType": "string" },
     "baseUrl": { "bsonType": "string" },
     "model": { "bsonType": "string" },
+    "imageModel": { "bsonType": "string" },
     "apiKey": { "bsonType": "string" },
     "temperature": { "bsonType": ["double", "int"] },
     "createTime": { "bsonType": "timestamp" },
     "updateTime": { "bsonType": "timestamp" }
   }
 }
-

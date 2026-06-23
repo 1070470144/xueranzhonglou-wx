@@ -162,6 +162,64 @@ assert.strictEqual(
 assertJsonEqual(pastedUndertaker.reminders, ["已处决"]);
 assert.strictEqual(pastedUndertaker.setup, false);
 
+const staleCustomRole = {
+  id: "customcached",
+  name: "Cached Role",
+  ability: "old ability",
+  team: "townsfolk",
+  smallTokens: [
+    {
+      name: "old",
+      image: "https://example.com/old.png",
+    },
+  ],
+  tokenImages: [
+    {
+      name: "old",
+      image: "https://example.com/old.png",
+    },
+  ],
+};
+const freshCustomRole = {
+  id: "customcached",
+  name: "Cached Role",
+  ability: "fresh ability",
+  team: "townsfolk",
+  smallTokens: [
+    {
+      name: "first",
+      image: "https://example.com/first.png",
+    },
+    {
+      name: "second",
+      image: "https://example.com/second.png",
+    },
+  ],
+  tokenImages: [
+    {
+      name: "first",
+      image: "https://example.com/first.png",
+    },
+    {
+      name: "second",
+      image: "https://example.com/second.png",
+    },
+  ],
+};
+const staleLookup = new Map([[staleCustomRole.id, staleCustomRole]]);
+const { roleMap: refreshedRoleMap } = buildCustomRoleState(
+  [freshCustomRole],
+  staleLookup,
+);
+const refreshedRole = refreshedRoleMap.get(freshCustomRole.id);
+assert.strictEqual(
+  refreshedRole.ability,
+  freshCustomRole.ability,
+  "loading custom JSON should use fresh role fields over stale cached role data",
+);
+assertJsonEqual(refreshedRole.smallTokens, freshCustomRole.smallTokens);
+assertJsonEqual(refreshedRole.tokenImages, freshCustomRole.tokenImages);
+
 assert(
   gameStateSource.includes("this.$store.getters.customRolesFull"),
   "game state JSON should export full custom roles so assigned JSON keeps night order and token fields",

@@ -112,3 +112,10 @@ export function createWebLoginTicket() {
 export function pollWebLoginTicket(ticket) {
   return callAuth("pollWebLoginTicket", { ticket });
 }
+
+export function updateProfile(profile = {}) {
+  return callAuth("updateProfile", {
+    ...profile,
+    token: getAuthSession().token,
+  });
+}

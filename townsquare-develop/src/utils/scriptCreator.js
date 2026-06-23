@@ -61,8 +61,9 @@ function officialRoleForExport(role) {
   return null;
 }
 
-function cleanImageList(...values) {
-  const images = [];
+function cleanTokenList(...values) {
+  const tokens = [];
+  const seen = new Set();
   const add = (value) => {
     if (!value) return;
     if (Array.isArray(value)) {
@@ -70,13 +71,17 @@ function cleanImageList(...values) {
       return;
     }
     if (typeof value === "string") {
-      const text = value.trim();
-      if (text) images.push(text);
+      const image = cleanText(value);
+      if (image && !seen.has(image)) {
+        seen.add(image);
+        tokens.push(image);
+      }
       return;
     }
     if (typeof value !== "object") return;
-    add(
-      value.url ||
+    const image = cleanText(
+      value.image ||
+        value.url ||
         value.fileId ||
         value.fileID ||
         value.path ||
@@ -84,9 +89,22 @@ function cleanImageList(...values) {
         value.thumbnail ||
         value.tempFilePath,
     );
+    if (!image || seen.has(image)) return;
+    seen.add(image);
+    const name = cleanText(
+      value.name || value.label || value.text || value.title,
+    );
+    tokens.push(name ? { name, image } : image);
   };
   values.forEach(add);
-  return Array.from(new Set(images));
+  return tokens;
+}
+
+function tokenImageUrl(token) {
+  if (!token) return "";
+  if (typeof token === "string") return token;
+  if (typeof token !== "object") return "";
+  return cleanText(token.image);
 }
 
 function cleanJsonValue(value) {
@@ -135,7 +153,7 @@ function normalizeRoleCounts(counts = {}) {
 function customRoleJson(role) {
   if (!role || !role.id) return null;
   const officialRole = officialRoleForExport(role) || {};
-  const tokenImages = cleanImageList(
+  const tokenImages = cleanTokenList(
     role.smallTokens,
     role.tokenImages,
     role.tokens,
@@ -189,8 +207,8 @@ function customRoleJson(role) {
   if (tokenImages.length) {
     json.smallTokens = tokenImages;
     json.tokenImages = tokenImages;
-    json.smallToken = tokenImages[0];
-    json.tokenImage = tokenImages[0];
+    json.smallToken = tokenImageUrl(tokenImages[0]);
+    json.tokenImage = tokenImageUrl(tokenImages[0]);
   }
   addCleanJson(
     json,

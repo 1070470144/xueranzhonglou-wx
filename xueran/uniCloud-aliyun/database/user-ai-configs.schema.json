@@ -9,9 +9,9 @@
     "provider": { "bsonType": "string" },
     "baseUrl": { "bsonType": "string" },
     "model": { "bsonType": "string" },
+    "imageModel": { "bsonType": "string" },
     "apiKey": { "bsonType": "string" },
     "createTime": { "bsonType": "timestamp" },
     "updateTime": { "bsonType": "timestamp" }
   }
 }
-

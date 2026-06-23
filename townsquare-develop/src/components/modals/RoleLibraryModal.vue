@@ -214,7 +214,16 @@
               :key="index"
               class="upload-row token-row"
             >
-              <input v-model.trim="createForm.smallTokens[index]" type="url" />
+              <input
+                v-model.trim="createForm.smallTokens[index].name"
+                type="text"
+                :placeholder="$t('roleLibrary.tokenTextPlaceholder')"
+              />
+              <input
+                v-model.trim="createForm.smallTokens[index].image"
+                type="url"
+                :placeholder="$t('roleLibrary.tokenImagePlaceholder')"
+              />
               <button
                 type="button"
                 class="remove-token-button"
@@ -249,10 +258,10 @@
             </div>
             <img
               v-for="token in compactCreateTokens()"
-              :key="token"
+              :key="token.image"
               class="create-preview-image token"
-              :src="token"
-              :alt="createForm.name || createForm.id"
+              :src="token.image"
+              :alt="token.name || createForm.name || createForm.id"
             />
           </div>
         </div>
@@ -285,33 +294,6 @@
         <div class="section-title">
           <span>{{ detailRole.displayName }}</span>
         </div>
-        <div v-if="roleImages(detailRole).length" class="detail-gallery">
-          <div
-            v-for="(image, index) in roleImages(detailRole)"
-            :key="image"
-            class="detail-image-item"
-          >
-            <button
-              type="button"
-              class="detail-image-button"
-              :title="$t('myScripts.openImage')"
-              @click="openImagePreview(image, index)"
-            >
-              <img :src="image" :alt="detailRole.displayName" />
-            </button>
-            <button
-              type="button"
-              class="image-download-button"
-              @click.stop="downloadRoleImage(image, index)"
-            >
-              <font-awesome-icon icon="download" />
-              <span>{{ $t("myScripts.downloadImage") }}</span>
-            </button>
-          </div>
-        </div>
-        <div v-else class="state-line compact">
-          {{ $t("myScripts.noImages") }}
-        </div>
         <div class="detail-layout">
           <div class="detail-copy">
             <strong>{{ teamLabel(detailRole.team) }}</strong>
@@ -319,6 +301,83 @@
               {{ detailRole.displayAbility || $t("roleLibrary.noAbility") }}
             </p>
           </div>
+        </div>
+        <div
+          v-if="
+            roleMainImages(detailRole).length ||
+            roleSmallTokens(detailRole).length
+          "
+          class="detail-media"
+        >
+          <section
+            v-if="roleMainImages(detailRole).length"
+            class="detail-image-section"
+          >
+            <h4 class="section-subtitle">{{ $t("roleLibrary.roleImage") }}</h4>
+            <div class="detail-image-gallery">
+              <div
+                v-for="(image, index) in roleMainImages(detailRole)"
+                :key="image"
+                class="detail-image-item"
+              >
+                <button
+                  type="button"
+                  class="detail-image-button"
+                  :title="$t('myScripts.openImage')"
+                  @click="openImagePreview(image, index)"
+                >
+                  <img :src="image" :alt="detailRole.displayName" />
+                </button>
+                <button
+                  type="button"
+                  class="image-download-button"
+                  @click.stop="downloadRoleImage(image, index)"
+                >
+                  <font-awesome-icon icon="download" />
+                  <span>{{ $t("myScripts.downloadImage") }}</span>
+                </button>
+              </div>
+            </div>
+          </section>
+          <section
+            v-if="roleSmallTokens(detailRole).length"
+            class="detail-token-section"
+          >
+            <h4 class="section-subtitle">{{ $t("roleLibrary.roleToken") }}</h4>
+            <div class="detail-token-gallery">
+              <div
+                v-for="(token, index) in roleSmallTokens(detailRole)"
+                :key="token.image"
+                class="detail-token-item"
+              >
+                <button
+                  type="button"
+                  class="detail-token-button"
+                  :title="$t('myScripts.openImage')"
+                  @click="openImagePreview(token.image, index)"
+                >
+                  <img
+                    :src="token.image"
+                    :alt="token.name || detailRole.displayName"
+                  />
+                </button>
+                <strong class="detail-token-name">
+                  {{ token.name || detailRole.displayName }}
+                </strong>
+                <button
+                  type="button"
+                  class="image-download-button"
+                  @click.stop="downloadRoleImage(token.image, index)"
+                >
+                  <font-awesome-icon icon="download" />
+                  <span>{{ $t("myScripts.downloadImage") }}</span>
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+        <div v-else class="state-line compact">
+          {{ $t("myScripts.noImages") }}
         </div>
       </section>
     </Modal>
@@ -358,7 +417,9 @@ import {
   ROLE_SOURCE_CUSTOM,
   ROLE_SOURCE_OFFICIAL,
   ROLE_TEAM_ORDER,
+  normalizeRoleImageArray,
   normalizeRoleForLibrary,
+  normalizeRoleTokenArray,
   roleImageList,
   roleMatchesKeyword,
 } from "@/utils/roleLibrary";
@@ -392,7 +453,7 @@ export default {
         team: "townsfolk",
         ability: "",
         image: "",
-        smallTokens: [""],
+        smallTokens: [this.emptyCreateToken()],
         firstNight: 0,
         firstNightReminder: "",
         otherNight: 0,
@@ -620,7 +681,7 @@ export default {
         team: "townsfolk",
         ability: "",
         image: "",
-        smallTokens: [""],
+        smallTokens: [this.emptyCreateToken()],
         firstNight: 0,
         firstNightReminder: "",
         otherNight: 0,
@@ -629,8 +690,35 @@ export default {
       this.createUploadingImage = false;
       this.createUploadingToken = false;
     },
+    emptyCreateToken() {
+      return { name: "", image: "" };
+    },
+    normalizeCreateToken(token) {
+      if (!token) return null;
+      if (typeof token === "string") {
+        const image = token.trim();
+        return image ? { name: "", image } : null;
+      }
+      if (typeof token !== "object") return null;
+      const name = String(
+        token.name || token.label || token.text || token.title || "",
+      ).trim();
+      const image = String(
+        token.image ||
+          token.url ||
+          token.fileId ||
+          token.fileID ||
+          token.path ||
+          token.src ||
+          token.thumbnail ||
+          token.tempFilePath ||
+          "",
+      ).trim();
+      return image ? { name, image } : null;
+    },
     buildCreateRoleJson() {
       const tokenImages = this.compactCreateTokens();
+      const firstTokenImage = (tokenImages[0] && tokenImages[0].image) || "";
       const role = {
         id: String(this.createForm.id || "").trim(),
         name: String(this.createForm.name || "").trim(),
@@ -640,8 +728,9 @@ export default {
         iconUrl: String(this.createForm.image || "").trim(),
         smallTokens: tokenImages,
         tokenImages,
-        smallToken: tokenImages[0] || "",
-        tokenImage: tokenImages[0] || "",
+        smallToken: firstTokenImage,
+        tokenImage: firstTokenImage,
+        tokenUrl: firstTokenImage,
         firstNight: Math.max(
           0,
           Number.parseInt(this.createForm.firstNight, 10) || 0,
@@ -680,7 +769,10 @@ export default {
       try {
         const url = await uploadScriptCoverImage(file);
         if (field === "smallTokens") {
-          const tokens = this.compactCreateTokens().concat(url);
+          const tokens = this.compactCreateTokens().concat({
+            name: "",
+            image: url,
+          });
           this.$set(this.createForm, "smallTokens", tokens);
         } else {
           this.$set(this.createForm, field, url);
@@ -696,22 +788,27 @@ export default {
       }
     },
     addCreateToken() {
-      this.createForm.smallTokens = this.createForm.smallTokens.concat("");
+      this.createForm.smallTokens = this.createForm.smallTokens.concat(
+        this.emptyCreateToken(),
+      );
     },
     removeCreateToken(index) {
       if (this.createForm.smallTokens.length <= 1) return;
       const tokens = this.createForm.smallTokens.slice();
       tokens.splice(index, 1);
-      this.createForm.smallTokens = tokens.length ? tokens : [""];
+      this.createForm.smallTokens = tokens.length
+        ? tokens
+        : [this.emptyCreateToken()];
     },
     compactCreateTokens() {
-      return Array.from(
-        new Set(
-          (this.createForm.smallTokens || [])
-            .map((token) => String(token || "").trim())
-            .filter(Boolean),
-        ),
-      );
+      const seen = new Set();
+      return (this.createForm.smallTokens || []).reduce((tokens, token) => {
+        const normalized = this.normalizeCreateToken(token);
+        if (!normalized || seen.has(normalized.image)) return tokens;
+        seen.add(normalized.image);
+        tokens.push(normalized);
+        return tokens;
+      }, []);
     },
     async submitCreate() {
       if (
@@ -770,6 +867,27 @@ export default {
     },
     roleImages(role) {
       return roleImageList(role);
+    },
+    roleMainImages(role) {
+      return normalizeRoleImageArray(
+        role && role.iconUrl,
+        role && role.image,
+        role && role.icon,
+        role && role.avatar,
+        role && role.images,
+        role && role.thumbnails,
+      );
+    },
+    roleSmallTokens(role) {
+      return normalizeRoleTokenArray(
+        role && role.smallTokens,
+        role && role.tokenImages,
+        role && role.tokens,
+        role && role.smallToken,
+        role && role.tokenImage,
+        role && role.tokenUrl,
+        role && role.token,
+      );
     },
     openImagePreview(image, index = 0) {
       this.previewImage = image || "";
@@ -1202,6 +1320,10 @@ textarea {
   align-items: center;
 }
 
+.token-row {
+  grid-template-columns: minmax(7em, 0.45fr) minmax(0, 1fr) max-content;
+}
+
 .upload-button {
   display: inline-flex;
   align-items: center;
@@ -1284,11 +1406,21 @@ textarea {
   font-weight: 700;
 }
 
-.detail-gallery {
+.detail-media {
+  display: grid;
+  gap: 0.75em;
+  padding-top: 0.65em;
+}
+
+.detail-image-section,
+.detail-token-section {
+  min-width: 0;
+}
+
+.detail-image-gallery {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(6.5em, 1fr));
   gap: 0.45em;
-  padding-top: 0.5em;
 }
 
 .detail-image-item {
@@ -1315,6 +1447,48 @@ textarea {
   object-fit: cover;
   border: 1px solid #3d2e26;
   background: rgba(5, 4, 4, 0.62);
+}
+
+.detail-token-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(5em, 1fr));
+  gap: 0.55em;
+}
+
+.detail-token-item {
+  display: grid;
+  min-width: 0;
+  justify-items: center;
+  gap: 0.32em;
+}
+
+.detail-token-button {
+  width: 4.35em;
+  height: 4.35em;
+  padding: 0;
+  overflow: hidden;
+  color: inherit;
+  border: 1px solid #5b4638;
+  border-radius: 50%;
+  background: rgba(5, 4, 4, 0.62);
+  cursor: zoom-in;
+  font: inherit;
+}
+
+.detail-token-button img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.detail-token-name {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  color: #fff8e7;
+  font-size: 0.78em;
+  line-height: 1.2;
+  text-align: center;
 }
 
 .image-download-button {

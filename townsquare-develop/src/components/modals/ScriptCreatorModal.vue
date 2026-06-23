@@ -118,43 +118,60 @@
             <p v-else-if="!allRoles.length" class="role-state">
               {{ $t("modals.scriptCreator.status.emptyRoles") }}
             </p>
-            <section v-for="team in teamOrder" :key="team" class="role-section">
-              <h4 :class="team">
+            <section
+              v-for="team in teamOrder"
+              :key="team"
+              class="role-section"
+              :class="{ collapsed: isRoleSectionCollapsed(team) }"
+            >
+              <button
+                type="button"
+                class="role-section-heading"
+                :class="team"
+                @click="toggleRoleSection(team)"
+              >
+                <font-awesome-icon icon="chevron-down" />
                 <span>{{ teamLabel(team) }}</span>
                 <span>{{ selectedCount(team) }}/{{ expectedCount(team) }}</span>
-              </h4>
+              </button>
               <p
-                v-if="!loadingRoles && !filteredGroupedRoles[team].length"
+                v-if="
+                  !isRoleSectionCollapsed(team) &&
+                  !loadingRoles &&
+                  !filteredGroupedRoles[team].length
+                "
                 class="role-state role-state-compact"
               >
                 {{ $t("modals.scriptCreator.status.emptyTeamRoles") }}
               </p>
-              <label
-                v-for="role in filteredGroupedRoles[team]"
-                :key="role.id"
-                class="role-option"
-                :class="{ selected: selectedRoles[team].includes(role.id) }"
-              >
-                <input
-                  type="checkbox"
-                  :value="role.id"
-                  v-model="selectedRoles[team]"
-                />
-                <img
-                  v-if="role.icon"
-                  class="role-icon"
-                  :src="role.icon"
-                  :alt="role.displayName"
-                  @error="markIconFailed(role.id)"
-                />
-                <span v-else class="role-icon role-icon-empty">
-                  {{ role.displayName.slice(0, 1) }}
-                </span>
-                <span class="role-copy">
-                  <strong>{{ role.displayName }}</strong>
-                  <small>{{ role.displayAbility }}</small>
-                </span>
-              </label>
+              <template v-if="!isRoleSectionCollapsed(team)">
+                <label
+                  v-for="role in filteredGroupedRoles[team]"
+                  :key="role.id"
+                  class="role-option"
+                  :class="{ selected: selectedRoles[team].includes(role.id) }"
+                >
+                  <input
+                    type="checkbox"
+                    :value="role.id"
+                    v-model="selectedRoles[team]"
+                  />
+                  <img
+                    v-if="role.icon"
+                    class="role-icon"
+                    :src="role.icon"
+                    :alt="role.displayName"
+                    @error="markIconFailed(role.id)"
+                  />
+                  <span v-else class="role-icon role-icon-empty">
+                    {{ role.displayName.slice(0, 1) }}
+                  </span>
+                  <span class="role-copy">
+                    <strong>{{ role.displayName }}</strong>
+                    <small>{{ role.displayAbility }}</small>
+                  </span>
+                </label>
+              </template>
             </section>
           </div>
         </div>
@@ -207,6 +224,14 @@
                 <strong>{{ role.displayName }}</strong>
                 <small>{{ role.displayAbility }}</small>
               </span>
+              <button
+                type="button"
+                class="remove-selected-role"
+                :aria-label="`Remove ${role.displayName}`"
+                @click="removeSelectedRole(team, role.id)"
+              >
+                <font-awesome-icon icon="times" />
+              </button>
             </div>
           </div>
           <p v-else-if="!isPreviewCollapsed(team)" class="empty-team">
@@ -260,6 +285,7 @@ export default {
       loadingRoles: false,
       roleLoadError: "",
       failedIconIds: [],
+      collapsedRoleTeams: {},
       collapsedPreviewTeams: {},
       publicCustomRoles: [],
       myCustomRoles: [],
@@ -320,6 +346,8 @@ export default {
             (role) =>
               role.team === team &&
               (this.sourceFilter === ROLE_SOURCE_ALL ||
+                (this.sourceFilter === ROLE_SOURCE_PUBLIC_CUSTOM &&
+                  role.sourceType === ROLE_SOURCE_MINE) ||
                 role.sourceType === this.sourceFilter),
           )
           .sort((a, b) => a.displayName.localeCompare(b.displayName));
@@ -462,6 +490,15 @@ export default {
     expectedCount(team) {
       return this.normalizedRoleCounts[team] || 0;
     },
+    isRoleSectionCollapsed(team) {
+      return !!this.collapsedRoleTeams[team];
+    },
+    toggleRoleSection(team) {
+      this.collapsedRoleTeams = {
+        ...this.collapsedRoleTeams,
+        [team]: !this.collapsedRoleTeams[team],
+      };
+    },
     isPreviewCollapsed(team) {
       return !!this.collapsedPreviewTeams[team];
     },
@@ -547,6 +584,12 @@ export default {
           roleIds.has(id),
         );
       });
+    },
+    removeSelectedRole(team, roleId) {
+      if (!TEAM_ORDER.includes(team) || !roleId) return;
+      this.selectedRoles[team] = this.selectedRoles[team].filter(
+        (id) => id !== roleId,
+      );
     },
     randomizeSelection() {
       this.sanitizeRoleCounts();
@@ -814,20 +857,37 @@ export default {
 .role-section {
   margin-bottom: 0.55em;
 
-  h4 {
+  .role-section-heading {
     position: sticky;
     top: 0;
     z-index: 1;
-    display: flex;
-    justify-content: space-between;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
     gap: 0.5em;
+    width: 100%;
     margin: 0;
     padding: 0.34em 0.45em;
     border: 1px solid #3d2e26;
     background: #120f0e;
     box-shadow: inset 0 1px 0 rgba(255, 236, 190, 0.04);
+    font-family: inherit;
     font-size: 0.82em;
+    font-weight: 700;
     letter-spacing: 0.04em;
+    text-align: left;
+    cursor: pointer;
+
+    svg {
+      font-size: 0.74em;
+      transition: transform 0.18s ease;
+    }
+  }
+}
+
+.role-section.collapsed .role-section-heading {
+  svg {
+    transform: rotate(-90deg);
   }
 }
 
@@ -989,7 +1049,7 @@ export default {
 
 .selected-role {
   display: grid;
-  grid-template-columns: 2.7em minmax(0, 1fr);
+  grid-template-columns: 2.7em minmax(0, 1fr) 1.8em;
   gap: 0.5em;
   align-items: start;
   min-height: 0;
@@ -1024,6 +1084,28 @@ export default {
       -webkit-line-clamp: 2;
       -webkit-box-orient: vertical;
     }
+  }
+}
+
+.remove-selected-role {
+  display: grid;
+  place-items: center;
+  width: 1.6em;
+  height: 1.6em;
+  margin: 0.1em 0 0;
+  padding: 0;
+  color: #b8a082;
+  border: 1px solid rgba(124, 94, 70, 0.58);
+  border-radius: 2px;
+  background: rgba(5, 4, 4, 0.5);
+  cursor: pointer;
+  font-size: 0.78em;
+
+  &:hover,
+  &:focus {
+    color: #fff8e7;
+    border-color: rgba(212, 175, 55, 0.72);
+    background: rgba(92, 66, 4, 0.38);
   }
 }
 

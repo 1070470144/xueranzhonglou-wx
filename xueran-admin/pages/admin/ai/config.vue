@@ -29,6 +29,10 @@
           <input class="input" v-model="form.model" placeholder="gpt-4o-mini" />
         </view>
         <view class="form-row">
+          <text class="label">生图模型</text>
+          <input class="input" v-model="form.imageModel" placeholder="gpt-image-2" />
+        </view>
+        <view class="form-row">
           <text class="label">API Key</text>
           <input class="input" v-model="form.apiKey" password placeholder="留空则不覆盖原密钥" />
         </view>
@@ -53,6 +57,7 @@ export default {
         provider: 'openai-compatible',
         baseUrl: 'https://api.openai.com/v1',
         model: 'gpt-4o-mini',
+        imageModel: 'gpt-image-2',
         apiKey: '',
         temperature: 0.2
       }
@@ -117,4 +122,3 @@ export default {
   box-sizing: border-box;
 }
 </style>
-

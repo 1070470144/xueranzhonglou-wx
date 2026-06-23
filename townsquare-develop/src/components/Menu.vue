@@ -44,12 +44,12 @@
       <i v-if="hasUnreadAnnouncement" class="announcement-dot"></i>
     </span>
     <span
-      v-if="authUser"
       class="auth-summary"
-      :title="authUser.nickname || $t('login.loggedIn')"
+      :title="$t('settings.entry')"
+      @click="toggleModal('settings')"
     >
-      <font-awesome-icon icon="user" />
-      {{ authUser.nickname || $t("login.loggedIn") }}
+      <font-awesome-icon icon="cog" />
+      {{ $t("settings.entry") }}
     </span>
     <div class="menu" :class="{ open: grimoire.isMenuOpen }">
       <font-awesome-icon icon="cog" @click="toggleMenu" />
@@ -301,6 +301,10 @@
           <li @click="toggleModal('roleLibrary')">
             {{ $t("menu.roleLibrary") }}
             <em><font-awesome-icon icon="theater-masks" /></em>
+          </li>
+          <li @click="toggleModal('roleTokenGenerator')">
+            {{ $t("menu.tokenGenerator") }}
+            <em><font-awesome-icon icon="magic" /></em>
           </li>
           <li @click="openMyUploads">
             {{ $t("menu.myUploads") }}

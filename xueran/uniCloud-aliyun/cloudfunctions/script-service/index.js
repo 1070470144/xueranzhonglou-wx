@@ -1081,6 +1081,50 @@ function cleanUserRoleImageList() {
   return Array.from(new Set(images))
 }
 
+function cleanUserRoleTokenList() {
+  const values = Array.prototype.slice.call(arguments)
+  const tokens = []
+  const seen = new Set()
+  const add = (value) => {
+    if (!value) return
+    if (Array.isArray(value)) {
+      value.forEach(add)
+      return
+    }
+    if (typeof value === 'string') {
+      const image = cleanUserRoleText(value, 1000)
+      if (image && !seen.has(image)) {
+        seen.add(image)
+        tokens.push({ name: '', image })
+      }
+      return
+    }
+    if (typeof value !== 'object') return
+    const image = cleanUserRoleText(
+      value.image ||
+        value.url ||
+        value.fileId ||
+        value.fileID ||
+        value.path ||
+        value.src ||
+        value.thumbnail ||
+        value.tempFilePath,
+      1000
+    )
+    if (!image || seen.has(image)) return
+    seen.add(image)
+    tokens.push({
+      name: cleanUserRoleText(
+        value.name || value.label || value.text || value.title,
+        120
+      ),
+      image: cleanUserRoleText(image, 1000)
+    })
+  }
+  values.forEach(add)
+  return tokens
+}
+
 function parseUserRoleJson(value) {
   if (typeof value !== 'string') return value
   const text = value.trim().replace(/^\uFEFF/, '')
@@ -1117,7 +1161,7 @@ function normalizeUserRoleData(roleJson) {
     parsed.image || parsed.iconUrl || parsed.icon || parsed.avatar,
     1000
   )
-  const tokenImages = cleanUserRoleImageList(
+  const tokenImages = cleanUserRoleTokenList(
     parsed.smallTokens,
     parsed.tokenImages,
     parsed.tokens,
@@ -1126,7 +1170,7 @@ function normalizeUserRoleData(roleJson) {
     parsed.tokenUrl,
     parsed.smallTokenUrl
   )
-  const tokenImage = tokenImages[0] || ''
+  const tokenImage = (tokenImages[0] && tokenImages[0].image) || ''
   const firstNight = Math.max(0, parseInt(parsed.firstNight, 10) || 0)
   const otherNight = Math.max(0, parseInt(parsed.otherNight, 10) || 0)
   const firstNightReminder = cleanUserRoleText(
@@ -1191,7 +1235,7 @@ function buildUserRoleSearchText(role) {
 
 function buildUserRoleListItem(role) {
   const id = role._id || role.id
-  const tokenImages = cleanUserRoleImageList(
+  const tokenImages = cleanUserRoleTokenList(
     role.smallTokens,
     role.tokenImages,
     role.tokens,
@@ -1199,7 +1243,7 @@ function buildUserRoleListItem(role) {
     role.tokenImage,
     role.tokenUrl
   )
-  const tokenImage = tokenImages[0] || ''
+  const tokenImage = (tokenImages[0] && tokenImages[0].image) || ''
   return {
     ...role,
     id,
@@ -1411,6 +1455,49 @@ async function getMyUploadedRoleDetail(data) {
   } catch (error) {
     console.error('Get user role detail error:', error)
     return { success: false, message: 'Failed to get role detail' }
+  }
+}
+
+async function updateMyUploadedRoleIcon(data) {
+  const { token, roleId, iconUrl } = data || {}
+  const cleanIconUrl = cleanUserRoleText(iconUrl || '', 1000)
+  if (!roleId) return { success: false, message: 'roleId is required' }
+  if (!cleanIconUrl) return { success: false, message: 'iconUrl is required' }
+
+  try {
+    const db = uniCloud.database()
+    const user = await verifyAppUser(db, token)
+    if (!user) {
+      return { success: false, message: 'Please log in first' }
+    }
+
+    const collection = db.collection('user-roles')
+    const result = await collection.doc(roleId).get()
+    const role = result.data && result.data[0]
+    if (
+      !role ||
+      role.ownerUserId !== user._id ||
+      role.source !== 'user_custom'
+    ) {
+      return { success: false, message: 'Role not found' }
+    }
+
+    const updateDoc = {
+      image: cleanIconUrl,
+      iconUrl: cleanIconUrl,
+      updateTime: Date.now()
+    }
+    await collection.doc(roleId).update(updateDoc)
+
+    return {
+      success: true,
+      data: {
+        role: buildUserRoleListItem({ ...role, ...updateDoc })
+      }
+    }
+  } catch (error) {
+    console.error('Update user role icon error:', error)
+    return { success: false, message: 'Failed to update role icon' }
   }
 }
 
@@ -1750,6 +1837,8 @@ const main = async (event, context) => {
         return await getPublicCustomRoles(...params)
       case 'getMyUploadedRoleDetail':
         return await getMyUploadedRoleDetail(...params)
+      case 'updateMyUploadedRoleIcon':
+        return await updateMyUploadedRoleIcon(...params)
       case 'deleteMyUploadedRole':
         return await deleteMyUploadedRole(...params)
       case 'initScripts':
@@ -1794,6 +1883,7 @@ module.exports = {
   getMyUploadedRoles,
   getPublicCustomRoles,
   getMyUploadedRoleDetail,
+  updateMyUploadedRoleIcon,
   deleteMyUploadedRole,
   initScripts,
   // 管理员专用方法

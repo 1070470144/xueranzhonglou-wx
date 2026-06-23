@@ -155,6 +155,76 @@ assert.deepStrictEqual(
 
 assert.deepStrictEqual(
   buildScriptJson({
+    name: "Object Token Script",
+    author: "Author",
+    selectedRoles: {
+      townsfolk: ["custom_object_tokens"],
+      outsider: [],
+      minion: [],
+      demon: [],
+      traveler: [],
+      fabled: [],
+    },
+    roleById: {
+      custom_object_tokens: {
+        id: "custom_object_tokens",
+        name: "小心眼",
+        ability: "",
+        team: "townsfolk",
+        iconUrl: "https://example.test/role.png",
+        smallTokens: [
+          {
+            name: "小心眼",
+            image: "https://example.test/token-eye.png",
+          },
+          {
+            name: "自定义标记",
+            image: "https://example.test/token-r.png",
+          },
+        ],
+      },
+    },
+  }),
+  [
+    { id: "_meta", name: "Object Token Script", author: "Author" },
+    {
+      id: "custom_object_tokens",
+      name: "小心眼",
+      image: "https://example.test/role.png",
+      ability: "",
+      team: "townsfolk",
+      smallTokens: [
+        {
+          name: "小心眼",
+          image: "https://example.test/token-eye.png",
+        },
+        {
+          name: "自定义标记",
+          image: "https://example.test/token-r.png",
+        },
+      ],
+      tokenImages: [
+        {
+          name: "小心眼",
+          image: "https://example.test/token-eye.png",
+        },
+        {
+          name: "自定义标记",
+          image: "https://example.test/token-r.png",
+        },
+      ],
+      smallToken: "https://example.test/token-eye.png",
+      tokenImage: "https://example.test/token-eye.png",
+      firstNight: 0,
+      firstNightReminder: "",
+      otherNight: 0,
+      otherNightReminder: "",
+    },
+  ],
+);
+
+assert.deepStrictEqual(
+  buildScriptJson({
     name: "Knowledge Script With Internal Id",
     author: "Author",
     selectedRoles: {

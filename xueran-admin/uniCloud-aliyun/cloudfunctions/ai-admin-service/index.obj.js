@@ -122,6 +122,7 @@ function publicConfig(config) {
       provider: 'openai-compatible',
       baseUrl: 'https://api.openai.com/v1',
       model: 'gpt-4o-mini',
+      imageModel: 'gpt-image-2',
       apiKey: '',
       temperature: 0.2
     };
@@ -131,6 +132,7 @@ function publicConfig(config) {
     provider: config.provider || 'openai-compatible',
     baseUrl: config.baseUrl || '',
     model: config.model || '',
+    imageModel: config.imageModel || 'gpt-image-2',
     apiKey: config.apiKey ? `${String(config.apiKey).slice(0, 6)}***${String(config.apiKey).slice(-4)}` : '',
     temperature: config.temperature === undefined ? 0.2 : config.temperature
   };
@@ -761,6 +763,7 @@ module.exports = {
       provider: cleanText(config.provider || 'openai-compatible', 60),
       baseUrl: cleanText(config.baseUrl || '', 300),
       model: cleanText(config.model || '', 120),
+      imageModel: cleanText(config.imageModel || 'gpt-image-2', 120),
       temperature: Number(config.temperature === undefined ? 0.2 : config.temperature),
       updateTime: now()
     };
