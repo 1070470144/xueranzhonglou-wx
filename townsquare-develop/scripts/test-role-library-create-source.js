@@ -82,10 +82,10 @@ assert(
   "create role modal should allow entering both small token text and image",
 );
 assert(
-  /\.create-section\s*\{[\s\S]*?display:\s*grid;[\s\S]*?gap:\s*0\.55em/.test(
+  /\.create-section\s*\{[\s\S]*?display:\s*grid;[\s\S]*?gap:\s*0\.48em/.test(
     styleSource,
   ),
-  "create role sections should use a consistent vertical rhythm",
+  "create role sections should use a compact vertical rhythm",
 );
 assert(
   /\.form-control-row\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)\s+max-content/.test(
@@ -94,16 +94,28 @@ assert(
   "image URL and upload controls should align with a stable button column",
 );
 assert(
-  /\.token-row,\s*\.token-grid-header\s*\{[\s\S]*?grid-template-columns:\s*minmax\(7em,\s*0\.45fr\)\s+minmax\(0,\s*1fr\)\s+2\.6em/.test(
+  /\.image-control-row\s+\.upload-button\s*\{[\s\S]*?width:\s*7\.6em/.test(
+    styleSource,
+  ),
+  "create role image upload button should stay compact",
+);
+assert(
+  /\.token-row,\s*\.token-grid-header\s*\{[\s\S]*?grid-template-columns:\s*minmax\(6em,\s*0\.42fr\)\s+minmax\(0,\s*1fr\)\s+2\.2em/.test(
     styleSource,
   ),
   "small token rows should align text, image URL, and remove action columns",
 );
 assert(
-  /\.form-field input,\s*\.form-field select,\s*\.form-field textarea,\s*\.upload-button,\s*\.remove-token-button\s*\{[\s\S]*?min-height:\s*2\.4em/.test(
+  /\.form-field input,\s*\.form-field select,\s*\.form-field textarea,\s*\.token-row input,\s*\.upload-button,\s*\.remove-token-button\s*\{[\s\S]*?min-height:\s*1\.575em/.test(
     styleSource,
   ),
-  "create role inputs and buttons should share a consistent control height",
+  "create role inputs and buttons should share a compact control height",
+);
+assert(
+  /\.form-field input,\s*\.form-field select,\s*\.token-row input,\s*\.upload-button,\s*\.remove-token-button\s*\{(?=[\s\S]*?box-sizing:\s*border-box)(?=[\s\S]*?height:\s*1\.575em)[\s\S]*?\}/.test(
+    styleSource,
+  ),
+  "create role token inputs and buttons should use the same fixed visual height",
 );
 assert(
   modalSource.includes("generateCreateRoleId") &&

@@ -1299,9 +1299,9 @@ textarea {
 
 .create-section {
   display: grid;
-  gap: 0.55em;
+  gap: 0.48em;
   min-width: 0;
-  padding: 0.58em;
+  padding: 0.48em;
   border: 1px solid #3d2e26;
   background: rgba(5, 4, 4, 0.24);
 }
@@ -1309,7 +1309,7 @@ textarea {
 .create-section-title {
   margin: 0;
   color: #fff8e7;
-  font-size: 0.86em;
+  font-size: 0.8em;
   font-weight: 700;
 }
 
@@ -1339,19 +1339,30 @@ textarea {
 .form-field input,
 .form-field select,
 .form-field textarea,
+.token-row input,
 .upload-button,
 .remove-token-button {
   width: 100%;
   min-width: 0;
-  min-height: 2.4em;
+  min-height: 1.575em;
   margin: 0;
-  padding: 0.42em 0.48em;
+  padding: 0.1em 0.34em;
   color: #f7f0df;
   border: 1px solid #3d2e26;
   border-radius: 2px;
   outline: 0;
   background: rgba(5, 4, 4, 0.62);
   font: inherit;
+}
+
+.form-field input,
+.form-field select,
+.token-row input,
+.upload-button,
+.remove-token-button {
+  box-sizing: border-box;
+  height: 1.575em;
+  line-height: 1.2;
 }
 
 .form-field input[readonly] {
@@ -1367,25 +1378,25 @@ textarea {
 .form-control-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) max-content;
-  gap: 0.4em;
+  gap: 0.32em;
   align-items: center;
 }
 
 .image-control-row .upload-button {
-  width: 9.4em;
+  width: 7.6em;
 }
 
 .token-row,
 .token-grid-header {
   display: grid;
-  grid-template-columns: minmax(7em, 0.45fr) minmax(0, 1fr) 2.6em;
-  gap: 0.4em;
+  grid-template-columns: minmax(6em, 0.42fr) minmax(0, 1fr) 2.2em;
+  gap: 0.32em;
   align-items: center;
 }
 
 .token-grid-header {
   color: #b8a082;
-  font-size: 0.74em;
+  font-size: 0.7em;
   font-weight: 700;
 }
 
@@ -1393,12 +1404,12 @@ textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 0.58em;
+  padding: 0 0.42em;
   color: #fff2c4;
   border: 1px solid rgba(170, 123, 36, 0.62);
   background: rgba(43, 30, 19, 0.72);
   cursor: pointer;
-  gap: 0.32em;
+  gap: 0.24em;
   white-space: nowrap;
 }
 
@@ -1406,7 +1417,7 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 0.4em;
+  gap: 0.32em;
 }
 
 .token-action-row .upload-button {
@@ -1414,7 +1425,7 @@ textarea {
 }
 
 .remove-token-button {
-  padding: 0 0.58em;
+  padding: 0;
   color: #dcc4a1;
   border: 1px solid #3d2e26;
   background: #1d1816;
