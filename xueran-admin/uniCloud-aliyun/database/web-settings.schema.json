@@ -1,0 +1,31 @@
+{
+  "bsonType": "object",
+  "required": ["scope"],
+  "permission": {
+    "read": true,
+    "create": "'CREATE_WEB_SETTINGS' in auth.permission",
+    "update": "'UPDATE_WEB_SETTINGS' in auth.permission",
+    "delete": false
+  },
+  "properties": {
+    "_id": {
+      "description": "ID，系统自动生成"
+    },
+    "scope": {
+      "bsonType": "string",
+      "description": "设置作用域，当前固定为 default"
+    },
+    "version": {
+      "bsonType": "string",
+      "description": "网页当前版本号"
+    },
+    "createTime": {
+      "bsonType": "timestamp",
+      "description": "创建时间"
+    },
+    "updateTime": {
+      "bsonType": "timestamp",
+      "description": "更新时间"
+    }
+  }
+}

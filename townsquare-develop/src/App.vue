@@ -54,13 +54,14 @@
     <RoomLobbyModal />
     <RoomControlDrawer />
     <Gradients />
-    <span id="version">v{{ version }}</span>
+    <span id="feedback-group">问题反馈Q群：961227547</span>
+    <span v-if="version" id="version">v{{ version }}</span>
   </div>
 </template>
 
 <script>
 import { mapState } from "vuex";
-import { version } from "../package.json";
+import { getPublicWebSettings } from "@/services/webSettings";
 import TownSquare from "./components/TownSquare";
 import TownInfo from "./components/TownInfo";
 import Menu from "./components/Menu";
@@ -157,11 +158,12 @@ export default {
   },
   data() {
     return {
-      version,
+      version: "",
     };
   },
   mounted() {
     this.updatePageTitle();
+    this.loadWebVersion();
     window.addEventListener("keydown", this.keydown);
     window.addEventListener("keyup", this.keyup);
     document.addEventListener("visibilitychange", this.handleVisibilityChange);
@@ -175,6 +177,20 @@ export default {
     );
   },
   methods: {
+    async loadWebVersion() {
+      try {
+        const res = await getPublicWebSettings();
+        const version =
+          res &&
+          res.success &&
+          res.data &&
+          res.data.settings &&
+          res.data.settings.version;
+        this.version = version || "";
+      } catch (error) {
+        this.version = "";
+      }
+    },
     updatePageTitle() {
       document.title = this.$t(
         this.grimoire.isPublic ? "app.titlePublic" : "app.titleGrimoire",
@@ -363,6 +379,22 @@ ul {
   bottom: 10px;
   font-size: 60%;
   opacity: 0.5;
+}
+
+#feedback-group {
+  position: absolute;
+  right: 10px;
+  bottom: 34px;
+  color: #ffffff;
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+  font-size: 60%;
+  font-weight: bold;
+  line-height: 1.2;
+  opacity: 0.8;
+  pointer-events: none;
+  text-align: right;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.85);
+  white-space: nowrap;
 }
 
 .blur-enter-active,

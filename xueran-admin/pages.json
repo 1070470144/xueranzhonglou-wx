@@ -82,7 +82,7 @@
 		{
 			"path": "pages/admin/web-announcements/list",
 			"style": {
-				"navigationBarTitleText": "网页公告管理"
+				"navigationBarTitleText": "网页管理"
 			}
 		},
 		{

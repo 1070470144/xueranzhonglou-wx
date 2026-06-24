@@ -122,7 +122,7 @@
             <span>剧本</span>
             <span>说书人</span>
             <span>{{ $t("room.note") }}</span>
-            <span>看客</span>
+            <span>{{ $t("room.players") }}</span>
             <span :title="$t('room.status')">阶段</span>
             <span>标签</span>
           </div>

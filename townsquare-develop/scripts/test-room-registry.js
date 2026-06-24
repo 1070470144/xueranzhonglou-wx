@@ -55,6 +55,18 @@ assert.throws(
 );
 rooms.addPlayer(room.id, makePlayer("p1"), "Alice");
 assert.strictEqual(rooms.listRooms()[0].playerCount, 1);
+rooms.updateRoom(room.id, { playerCount: 0 });
+assert.strictEqual(
+  rooms.listRooms()[0].playerCount,
+  0,
+  "host-synced seated player count should drive the lobby room count"
+);
+rooms.updateRoom(room.id, { playerCount: 99 });
+assert.strictEqual(
+  rooms.listRooms()[0].playerCount,
+  room.maxPlayers,
+  "host-synced seated player count should be clamped to the room size"
+);
 
 const kicked = rooms.kickPlayer(room.id, "p1");
 assert.strictEqual(kicked.name, "Alice");

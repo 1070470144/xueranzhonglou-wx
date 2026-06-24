@@ -1074,6 +1074,7 @@ class LiveSession {
     }
     // update player session list as if this was a ping
     this._handlePing([value, 0]);
+    this.syncRoomPlayerCount();
   }
 
   /**
@@ -1303,6 +1304,20 @@ class LiveSession {
     this._store.commit("room/setLoading", true);
     this._store.commit("room/setError", "");
     this._send("room:update", this._withCurrentScript(payload));
+  }
+
+  getRoomPlayerCount() {
+    return this._store.state.players.players.filter(
+      (player) => player && player.id,
+    ).length;
+  }
+
+  syncRoomPlayerCount() {
+    if (this._isSpectator || !this._store.state.room.current) return;
+    this._send("room:update", {
+      playerCount: this.getRoomPlayerCount(),
+      maxPlayers: this._store.state.players.players.length,
+    });
   }
 
   kickRoomPlayer(playerId) {
@@ -1661,6 +1676,7 @@ export default (store) => {
         break;
       case "players/remove":
         session.removePlayer(payload);
+        session.syncRoomPlayerCount();
         break;
       case "players/set":
       case "players/clear":
@@ -1668,6 +1684,7 @@ export default (store) => {
       case "players/addMany":
       case "players/setCount":
         session.sendGamestate("", true);
+        session.syncRoomPlayerCount();
         break;
       case "players/resetSeats":
         session.resetSeats(payload);

@@ -25,6 +25,8 @@ const serverSource = fs.readFileSync(
   "ensureRoomSeats(room)",
   "joinRoom(payload)",
   "updateRoom(payload)",
+  "syncRoomPlayerCount()",
+  "getRoomPlayerCount()",
   "kickRoomPlayer(playerId)",
   "_ensureLobbySocket()",
   "isLobbyConnected()",
@@ -152,6 +154,27 @@ assert(
 );
 
 assert(
+  /getRoomPlayerCount\(\)[\s\S]*?players\.filter\([\s\S]*?player && player\.id[\s\S]*?\.length/.test(
+    socketSource
+  ),
+  "room lobby count should be based on occupied seats on the storyteller client"
+);
+
+assert(
+  /syncRoomPlayerCount\(\)[\s\S]*?this\._send\("room:update", \{[\s\S]*?playerCount: this\.getRoomPlayerCount\(\)[\s\S]*?maxPlayers: this\._store\.state\.players\.players\.length/.test(
+    socketSource
+  ),
+  "storyteller should sync occupied seat count and seat capacity to the room registry"
+);
+
+assert(
+  /case "players\/setCount":[\s\S]*?session\.sendGamestate\("", true\);[\s\S]*?session\.syncRoomPlayerCount\(\)/.test(
+    socketSource
+  ),
+  "changing the seat count should refresh the lobby count"
+);
+
+assert(
   socketSource.includes("const seatIsAvailable =") &&
     socketSource.includes("!players[seat].id"),
   "room players should not be allowed to claim seats that already have a player id"
@@ -188,6 +211,13 @@ assert(
     socketSource
   ),
   "claim seat updates should apply any cached player name immediately after binding the player id"
+);
+
+assert(
+  /_updateSeat\(\[index, value\]\)[\s\S]*?this\.syncRoomPlayerCount\(\)/.test(
+    socketSource
+  ),
+  "claim seat updates should refresh the lobby count"
 );
 
 assert(

@@ -131,3 +131,11 @@ export async function deleteWebAnnouncement(id) {
 export async function updateWebAnnouncementStatus(params) {
   return normalize(await aiAdminService.updateWebAnnouncementStatus(params));
 }
+
+export async function getWebSettings() {
+  return normalize(await aiAdminService.getWebSettings());
+}
+
+export async function saveWebSettings(settings) {
+  return normalize(await aiAdminService.saveWebSettings(settings));
+}

@@ -100,7 +100,7 @@
 				if (!path) {
 					path = '/'
 				}
-				return path.split('?')[0]
+				return path
 			},
 		}
 	}

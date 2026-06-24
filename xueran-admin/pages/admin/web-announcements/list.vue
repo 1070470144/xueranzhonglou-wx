@@ -2,29 +2,30 @@
   <view class="fix-top-window">
     <view class="uni-header">
       <uni-stat-breadcrumb />
-      <view class="toolbar">
-        <view class="filters">
-          <input class="uni-search search" v-model="keyword" placeholder="搜索标题、摘要、正文或版本" @confirm="handleSearch" />
-          <select class="uni-select select" v-model="status" @change="handleSearch">
-            <option value="">全部状态</option>
-            <option value="draft">草稿</option>
-            <option value="published">已发布</option>
-            <option value="offline">已下架</option>
-          </select>
-          <select class="uni-select select" v-model="type" @change="handleSearch">
-            <option value="">全部类型</option>
-            <option value="notice">公告</option>
-            <option value="update">更新</option>
-            <option value="maintenance">维护</option>
-            <option value="important">重要</option>
-          </select>
-          <button class="uni-button" size="mini" @click="handleSearch">搜索</button>
-        </view>
-        <button class="uni-button" type="primary" size="mini" @click="openEditor()">新增网页公告</button>
-      </view>
     </view>
 
-    <view class="uni-container">
+    <view v-if="activeTab === 'announcements'" class="toolbar">
+      <view class="filters">
+        <input class="uni-search search" v-model="keyword" placeholder="搜索标题、摘要、正文或版本" @confirm="handleSearch" />
+        <select class="uni-select select" v-model="status" @change="handleSearch">
+          <option value="">全部状态</option>
+          <option value="draft">草稿</option>
+          <option value="published">已发布</option>
+          <option value="offline">已下架</option>
+        </select>
+        <select class="uni-select select" v-model="type" @change="handleSearch">
+          <option value="">全部类型</option>
+          <option value="notice">公告</option>
+          <option value="update">更新</option>
+          <option value="maintenance">维护</option>
+          <option value="important">重要</option>
+        </select>
+        <button class="uni-button" size="mini" @click="handleSearch">搜索</button>
+      </view>
+      <button class="uni-button" type="primary" size="mini" @click="openEditor()">新增网页公告</button>
+    </view>
+
+    <view v-if="activeTab === 'announcements'" class="uni-container">
       <view class="summary">共 {{ total }} 条网页公告</view>
       <view class="table-card">
         <scroll-view scroll-x class="table-scroll">
@@ -73,6 +74,22 @@
       </view>
       <view v-if="total > 0" class="uni-pagination-box">
         <uni-pagination show-icon :page-size="pageSize" v-model="page" :total="total" @change="onPageChange" />
+      </view>
+    </view>
+
+    <view v-if="activeTab === 'settings'" class="uni-container">
+      <view class="settings-card">
+        <view class="settings-title">网页设置</view>
+        <view class="settings-desc">当前版本号会显示在 Townsquare 网页右下角，留空时网页右下角不显示版本号。</view>
+        <view class="form-row">
+          <text class="label">当前版本号</text>
+          <input class="input" v-model="webSettings.version" placeholder="例如 2.16.2" />
+        </view>
+        <view v-if="webSettings.updateTime" class="settings-meta">上次更新：{{ formatDateTime(webSettings.updateTime) }}</view>
+        <view class="settings-actions">
+          <button class="uni-button" size="mini" :disabled="loadingSettings" @click="loadWebSettings">刷新</button>
+          <button class="uni-button" type="primary" size="mini" :disabled="savingSettings" @click="saveSettings">保存设置</button>
+        </view>
       </view>
     </view>
 
@@ -143,7 +160,14 @@
 </template>
 
 <script>
-import { listWebAnnouncements, saveWebAnnouncement, deleteWebAnnouncement, updateWebAnnouncementStatus } from '@/utils/aiAdminApi.js';
+import {
+  listWebAnnouncements,
+  saveWebAnnouncement,
+  deleteWebAnnouncement,
+  updateWebAnnouncementStatus,
+  getWebSettings,
+  saveWebSettings
+} from '@/utils/aiAdminApi.js';
 
 function emptyForm() {
   return {
@@ -167,18 +191,30 @@ export default {
       keyword: '',
       status: '',
       type: '',
+      activeTab: 'announcements',
       list: [],
       page: 1,
       pageSize: 20,
       total: 0,
       loading: false,
+      loadingSettings: false,
       saving: false,
+      savingSettings: false,
       editorVisible: false,
-      form: emptyForm()
+      form: emptyForm(),
+      webSettings: {
+        version: '',
+        updateTime: null
+      }
     };
   },
-  async onLoad() {
-    await this.load();
+  async onLoad(options = {}) {
+    this.activeTab = options.tab === 'settings' ? 'settings' : 'announcements';
+    if (this.activeTab === 'settings') {
+      await this.loadWebSettings();
+    } else {
+      await this.load();
+    }
   },
   methods: {
     async load() {
@@ -202,6 +238,35 @@ export default {
     async onPageChange(page) {
       this.page = typeof page === 'number' ? page : (page && (page.current || page.detail?.current)) || 1;
       await this.load();
+    },
+    async loadWebSettings() {
+      this.loadingSettings = true;
+      try {
+        const res = await getWebSettings();
+        if (res.success && res.data) {
+          const settings = res.data.settings || {};
+          this.webSettings = {
+            version: settings.version || '',
+            updateTime: settings.updateTime || null
+          };
+        } else {
+          uni.showToast({ title: res.message || '加载设置失败', icon: 'none' });
+        }
+      } finally {
+        this.loadingSettings = false;
+      }
+    },
+    async saveSettings() {
+      this.savingSettings = true;
+      try {
+        const res = await saveWebSettings({
+          version: String(this.webSettings.version || '').trim()
+        });
+        uni.showToast({ title: res.success ? '已保存' : (res.message || '保存失败'), icon: res.success ? 'success' : 'none' });
+        if (res.success) await this.loadWebSettings();
+      } finally {
+        this.savingSettings = false;
+      }
     },
     openEditor(item) {
       this.form = item ? {
@@ -331,6 +396,7 @@ export default {
 .toolbar {
   justify-content: space-between;
   width: 100%;
+  margin-bottom: 12px;
 }
 
 .filters {
@@ -353,6 +419,35 @@ export default {
   color: #303133;
   font-size: 14px;
   font-weight: 600;
+}
+
+.settings-card {
+  max-width: 680px;
+  padding: 24px;
+  background: #fff;
+  border: 1px solid #ebeef5;
+  border-radius: 6px;
+}
+
+.settings-title {
+  margin-bottom: 8px;
+  color: #303133;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.settings-desc,
+.settings-meta {
+  margin-bottom: 18px;
+  color: #909399;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .table-card {

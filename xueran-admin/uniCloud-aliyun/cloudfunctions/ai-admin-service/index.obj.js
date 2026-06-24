@@ -11,7 +11,8 @@ const TABLES = {
   corrections: 'ai-answer-corrections',
   crawlJobs: 'ai-crawl-jobs',
   announcements: 'announcements',
-  webAnnouncements: 'web-announcements'
+  webAnnouncements: 'web-announcements',
+  webSettings: 'web-settings'
 };
 
 const WIKI_HOME = 'https://clocktower-wiki.gstonegames.com/';
@@ -711,6 +712,45 @@ module.exports = {
         endTime: item.endTime || null
       }));
     return ok({ list });
+  },
+
+  async getWebSettings() {
+    const res = await db.collection(TABLES.webSettings).where({ scope: 'default' }).limit(1).get();
+    const item = res.data && res.data[0];
+    return ok({
+      settings: {
+        version: item ? item.version || '' : '',
+        updateTime: item ? item.updateTime || null : null
+      }
+    });
+  },
+
+  async saveWebSettings(settings = {}) {
+    const version = cleanText(settings.version || '', 40);
+    const doc = {
+      scope: 'default',
+      version,
+      updateTime: now()
+    };
+    const existed = await db.collection(TABLES.webSettings).where({ scope: 'default' }).limit(1).get();
+    const item = existed.data && existed.data[0];
+    if (item) {
+      await db.collection(TABLES.webSettings).doc(item._id).update(doc);
+    } else {
+      doc.createTime = doc.updateTime;
+      await db.collection(TABLES.webSettings).add(doc);
+    }
+    return ok({ settings: { version } }, 'saved');
+  },
+
+  async getPublicWebSettings() {
+    const res = await db.collection(TABLES.webSettings).where({ scope: 'default' }).limit(1).get();
+    const item = res.data && res.data[0];
+    return ok({
+      settings: {
+        version: item ? item.version || '' : ''
+      }
+    });
   },
 
   async listKnowledgeRoles(params = {}) {

@@ -56,6 +56,12 @@ function normalizeMaxPlayers(value, minimum = 1) {
   return Math.max(minimum, Math.min(MAX_PLAYERS, count));
 }
 
+function normalizePlayerCount(value, maxPlayers = MAX_PLAYERS) {
+  const parsed = Number.parseInt(value, 10);
+  const count = Number.isFinite(parsed) ? parsed : 0;
+  return Math.max(0, Math.min(normalizeMaxPlayers(maxPlayers), count));
+}
+
 function normalizeNote(value) {
   return String(value || "")
     .trim()
@@ -80,6 +86,9 @@ function summarize(room, options = {}) {
       player.ws &&
       player.ws.readyState === 1
   ).length;
+  const playerCount = Number.isFinite(room.playerCount)
+    ? room.playerCount
+    : onlinePlayerCount;
   const summary = {
     id: room.id,
     name: room.name,
@@ -87,7 +96,7 @@ function summarize(room, options = {}) {
     isPrivate: room.visibility === "private",
     hostName: room.hostName,
     note: room.note,
-    playerCount: onlinePlayerCount,
+    playerCount,
     maxPlayers: room.maxPlayers,
     scriptName: room.scriptName,
     status: room.status,
@@ -125,6 +134,7 @@ function createRoom({ host, name, hostName = "", note = "", visibility = "public
     hostName: sanitizeDisplayName(hostName, DEFAULT_HOST_NAME),
     note: normalizeNote(note),
     players: new Map(),
+    playerCount: null,
     bannedPlayerIds: new Set(),
     scriptName: scriptJson ? extractScriptName(scriptJson) : sanitizeDisplayName(scriptName, DEFAULT_SCRIPT_NAME),
     scriptJson: scriptJson || "",
@@ -226,6 +236,12 @@ function updateRoom(roomId, patch) {
   }
   if (Object.prototype.hasOwnProperty.call(patch, "maxPlayers")) {
     room.maxPlayers = normalizeMaxPlayers(patch.maxPlayers, room.players.size || 1);
+    if (Number.isFinite(room.playerCount)) {
+      room.playerCount = normalizePlayerCount(room.playerCount, room.maxPlayers);
+    }
+  }
+  if (Object.prototype.hasOwnProperty.call(patch, "playerCount")) {
+    room.playerCount = normalizePlayerCount(patch.playerCount, room.maxPlayers);
   }
   if (Object.prototype.hasOwnProperty.call(patch, "status")) {
     room.status = normalizeStatus(patch.status);
