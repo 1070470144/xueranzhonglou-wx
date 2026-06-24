@@ -75,7 +75,11 @@
             @click="openDetail(role)"
           >
             <span class="role-icon">
-              <img v-if="role.icon" :src="role.icon" :alt="role.displayName" />
+              <img
+                v-if="role.icon"
+                :src="displayImage(role.icon)"
+                :alt="role.displayName"
+              />
               <span v-else>{{ firstCharacter(role.displayName) }}</span>
             </span>
             <span class="role-content">
@@ -218,7 +222,7 @@
               <img
                 v-if="createForm.image"
                 class="create-preview-image"
-                :src="createForm.image"
+                :src="displayImage(createForm.image)"
                 :alt="createForm.name || createForm.id"
               />
             </div>
@@ -286,7 +290,7 @@
                 v-for="token in compactCreateTokens()"
                 :key="token.image"
                 class="create-preview-image token"
-                :src="token.image"
+                :src="displayImage(token.image)"
                 :alt="token.name || createForm.name || createForm.id"
               />
             </div>
@@ -353,7 +357,10 @@
                   :title="$t('myScripts.openImage')"
                   @click="openImagePreview(image, index)"
                 >
-                  <img :src="image" :alt="detailRole.displayName" />
+                  <img
+                    :src="displayImage(image)"
+                    :alt="detailRole.displayName"
+                  />
                 </button>
                 <button
                   type="button"
@@ -384,7 +391,7 @@
                   @click="openImagePreview(token.image, index)"
                 >
                   <img
-                    :src="token.image"
+                    :src="displayImage(token.image)"
                     :alt="token.name || detailRole.displayName"
                   />
                 </button>
@@ -415,7 +422,10 @@
       @close="closeImagePreview"
     >
       <section class="image-preview-panel">
-        <img :src="previewImage" :alt="detailRole && detailRole.displayName" />
+        <img
+          :src="displayImage(previewImage)"
+          :alt="detailRole && detailRole.displayName"
+        />
         <button
           type="button"
           class="button image-preview-download"
@@ -440,6 +450,7 @@ import {
 } from "@/services/scripts";
 import { getAuthSession } from "@/services/auth";
 import { recordRuntimeLog } from "@/utils/runtimeLogger";
+import { displayExternalImageUrl } from "@/utils/externalImage";
 import {
   ROLE_SOURCE_ALL,
   ROLE_SOURCE_CUSTOM,
@@ -934,6 +945,9 @@ export default {
     },
     roleImages(role) {
       return roleImageList(role);
+    },
+    displayImage(image) {
+      return displayExternalImageUrl(image);
     },
     roleMainImages(role) {
       return normalizeRoleImageArray(

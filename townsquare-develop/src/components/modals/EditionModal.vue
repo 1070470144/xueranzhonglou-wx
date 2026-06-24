@@ -174,6 +174,7 @@ import {
   getScriptList,
   searchScripts,
 } from "@/services/scripts";
+import { displayExternalImageUrl } from "@/utils/externalImage";
 
 export default {
   components: {
@@ -237,6 +238,9 @@ export default {
     if (this.searchTimer) clearTimeout(this.searchTimer);
   },
   methods: {
+    displayImage(image) {
+      return displayExternalImageUrl(image);
+    },
     close() {
       this.setEditionPickerTarget("global");
       this.closeModal("edition");
@@ -384,7 +388,9 @@ export default {
     },
     scriptCoverStyle(script) {
       const image = this.getScriptImage(script);
-      return image ? { backgroundImage: `url(${image})` } : {};
+      return image
+        ? { backgroundImage: `url(${this.displayImage(image)})` }
+        : {};
     },
     getScriptMeta(script) {
       const parts = [];

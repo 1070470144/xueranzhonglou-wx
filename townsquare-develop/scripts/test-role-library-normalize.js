@@ -77,4 +77,36 @@ assert.strictEqual(customImageRole.firstNight, undefined);
 assert.strictEqual(customImageRole.otherNight, undefined);
 assert.strictEqual(customImageRole.reminders, undefined);
 
+const bloodstarRole = normalizeRoleForLibrary(
+  {
+    0: "jinhulun",
+    1: "学者",
+    2: "https://www.bloodstar.xyz/p/smallbear/jinhulun/_jinhulun.png",
+    3: "在你的首个夜晚，你会得知哪些邪恶角色在场。",
+    5: 16,
+    6: "首夜提示",
+    7: 0,
+    8: "",
+    9: ["得知"],
+    12: "townsfolk",
+  },
+  ROLE_SOURCE_OFFICIAL,
+);
+
+assert.strictEqual(bloodstarRole.id, "jinhulun");
+assert.strictEqual(bloodstarRole.displayName, "学者");
+assert.strictEqual(
+  bloodstarRole.icon,
+  "https://www.bloodstar.xyz/p/smallbear/jinhulun/_jinhulun.png",
+);
+assert.strictEqual(
+  bloodstarRole.image,
+  "https://www.bloodstar.xyz/p/smallbear/jinhulun/_jinhulun.png",
+);
+assert.strictEqual(bloodstarRole.displayAbility, "在你的首个夜晚，你会得知哪些邪恶角色在场。");
+assert.strictEqual(bloodstarRole.firstNight, 16);
+assert.strictEqual(bloodstarRole.firstNightReminder, "首夜提示");
+assert.deepStrictEqual(bloodstarRole.reminders, ["得知"]);
+assert.strictEqual(bloodstarRole.team, "townsfolk");
+
 console.log("role library normalize tests passed");

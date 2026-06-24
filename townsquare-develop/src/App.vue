@@ -8,8 +8,8 @@
       'room-control-open': modals.roomControl,
     }"
     :style="{
-      backgroundImage: grimoire.background
-        ? `url('${grimoire.background}')`
+      backgroundImage: backgroundImageUrl
+        ? `url('${displayImage(grimoire.background)}')`
         : '',
     }"
   >
@@ -93,6 +93,7 @@ import VoiceInviteConfirm from "@/components/VoiceInviteConfirm";
 import RoleDrawInviteConfirm from "@/components/RoleDrawInviteConfirm";
 import RoomLobbyModal from "@/components/modals/RoomLobbyModal";
 import RoomControlDrawer from "@/components/RoomControlDrawer";
+import { displayExternalImageUrl } from "@/utils/externalImage";
 
 export default {
   components: {
@@ -151,6 +152,10 @@ export default {
         ? this.$t("voice.micShortcutOn")
         : this.$t("voice.micShortcutOff");
     },
+    backgroundImageUrl() {
+      const background = this.grimoire.background || "";
+      return background && !background.match(/\.(mp4|webm)$/i);
+    },
   },
   watch: {
     locale: "updatePageTitle",
@@ -177,6 +182,9 @@ export default {
     );
   },
   methods: {
+    displayImage(image) {
+      return displayExternalImageUrl(image);
+    },
     async loadWebVersion() {
       try {
         const res = await getPublicWebSettings();

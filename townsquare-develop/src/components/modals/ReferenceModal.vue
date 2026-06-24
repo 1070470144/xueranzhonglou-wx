@@ -29,15 +29,7 @@
             class="icon"
             v-if="role.id"
             :style="{
-              backgroundImage: `url(${
-                role.image && grimoire.isImageOptIn
-                  ? role.image
-                  : require(
-                      '../../assets/icons/' +
-                        (role.imageAlt || role.id) +
-                        '.png',
-                    )
-              })`,
+              backgroundImage: `url(${displayRoleImage(role)})`,
             }"
           ></span>
           <div class="role">
@@ -92,6 +84,7 @@
 <script>
 import Modal from "./Modal";
 import { mapMutations, mapState } from "vuex";
+import { roleIconImage } from "../../utils/roleIcon";
 
 export default {
   components: {
@@ -146,6 +139,9 @@ export default {
     ...mapState("players", ["players"]),
   },
   methods: {
+    displayRoleImage(role) {
+      return roleIconImage(role, this.grimoire.isImageOptIn);
+    },
     ...mapMutations(["toggleModal"]),
   },
 };

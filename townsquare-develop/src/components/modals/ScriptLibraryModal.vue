@@ -217,7 +217,7 @@
               @click="openImagePreview(image, index)"
             >
               <img
-                :src="image"
+                :src="displayImage(image)"
                 :alt="detailScript.title || detailScript.name"
               />
             </button>
@@ -307,7 +307,7 @@
                   <span class="character-icon">
                     <img
                       v-if="character.icon"
-                      :src="character.icon"
+                      :src="displayImage(character.icon)"
                       :alt="character.name"
                     />
                     <span v-else>{{ firstCharacter(character.name) }}</span>
@@ -336,7 +336,7 @@
     >
       <section class="image-preview-panel">
         <img
-          :src="previewImage"
+          :src="displayImage(previewImage)"
           :alt="detailScript && (detailScript.title || detailScript.name)"
         />
         <button
@@ -364,6 +364,7 @@ import {
   uploadUserScript,
 } from "@/services/scripts";
 import { getAuthSession } from "@/services/auth";
+import { displayExternalImageUrl } from "@/utils/externalImage";
 import { recordRuntimeLog } from "@/utils/runtimeLogger";
 import rolesJSON from "@/roles.json";
 
@@ -429,6 +430,9 @@ export default {
     window.addEventListener("townsquare-auth-change", this.handleAuthChange);
   },
   methods: {
+    displayImage(image) {
+      return displayExternalImageUrl(image);
+    },
     close() {
       this.showUpload = false;
       this.pendingOpenUpload = false;
@@ -816,7 +820,9 @@ export default {
     },
     scriptCoverStyle(script) {
       const image = this.getScriptImage(script);
-      return image ? { backgroundImage: `url(${image})` } : {};
+      return image
+        ? { backgroundImage: `url(${this.displayImage(image)})` }
+        : {};
     },
     getScriptMeta(script) {
       const parts = [];

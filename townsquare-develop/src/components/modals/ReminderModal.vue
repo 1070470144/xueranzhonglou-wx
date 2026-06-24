@@ -17,15 +17,7 @@
         <span
           class="icon"
           :style="{
-            backgroundImage: `url(${
-              reminder.image && grimoire.isImageOptIn
-                ? reminder.image
-                : require(
-                    '../../assets/icons/' +
-                      (reminder.imageAlt || reminder.role) +
-                      '.png',
-                  )
-            })`,
+            backgroundImage: `url(${displayReminderImage(reminder)})`,
           }"
         ></span>
         <span class="text">{{ reminder.name }}</span>
@@ -37,6 +29,7 @@
 <script>
 import Modal from "./Modal";
 import { mapMutations, mapState } from "vuex";
+import { reminderIconImage } from "../../utils/roleIcon";
 
 /**
  * Helper function that maps a reminder name with a role-based object that provides necessary visual data.
@@ -185,6 +178,9 @@ export default {
     ...mapState("players", ["players"]),
   },
   methods: {
+    displayReminderImage(reminder) {
+      return reminderIconImage(reminder, this.grimoire.isImageOptIn);
+    },
     addReminder(reminder) {
       const player = this.$store.state.players.players[this.playerIndex];
       let value;

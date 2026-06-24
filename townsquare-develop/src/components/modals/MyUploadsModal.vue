@@ -113,7 +113,7 @@
               <span class="script-cover role-cover">
                 <img
                   v-if="role.icon"
-                  :src="role.icon"
+                  :src="displayImage(role.icon)"
                   :alt="role.displayName"
                 />
                 <span v-else>{{ firstCharacter(role.displayName) }}</span>
@@ -198,7 +198,7 @@
               @click="openImagePreview(image, index)"
             >
               <img
-                :src="image"
+                :src="displayImage(image)"
                 :alt="detailScript.title || detailScript.name"
               />
             </button>
@@ -272,7 +272,7 @@
                   <span class="character-icon">
                     <img
                       v-if="character.icon"
-                      :src="character.icon"
+                      :src="displayImage(character.icon)"
                       :alt="character.name"
                     />
                     <span v-else>{{ firstCharacter(character.name) }}</span>
@@ -307,7 +307,7 @@
           <span class="script-cover role-cover large">
             <img
               v-if="roleImages(detailRole).length"
-              :src="roleImages(detailRole)[0]"
+              :src="displayImage(roleImages(detailRole)[0])"
               :alt="detailRole.displayName"
             />
             <span v-else>{{ firstCharacter(detailRole.displayName) }}</span>
@@ -335,7 +335,7 @@
               :title="$t('myScripts.openImage')"
               @click="openImagePreview(image, index)"
             >
-              <img :src="image" :alt="detailRole.displayName" />
+              <img :src="displayImage(image)" :alt="detailRole.displayName" />
             </button>
             <button
               type="button"
@@ -359,7 +359,7 @@
       @close="closeImagePreview"
     >
       <section class="image-preview-panel">
-        <img :src="previewImage" :alt="previewImageAlt" />
+        <img :src="displayImage(previewImage)" :alt="previewImageAlt" />
         <button
           type="button"
           class="button image-preview-download"
@@ -385,6 +385,7 @@ import {
   getMyUploadedScripts,
 } from "@/services/scripts";
 import { getAuthSession } from "@/services/auth";
+import { displayExternalImageUrl } from "@/utils/externalImage";
 import { normalizeRoleForLibrary, roleImageList } from "@/utils/roleLibrary";
 import rolesJSON from "@/roles.json";
 
@@ -464,6 +465,9 @@ export default {
     window.addEventListener("townsquare-auth-change", this.handleAuthChange);
   },
   methods: {
+    displayImage(image) {
+      return displayExternalImageUrl(image);
+    },
     close() {
       this.closeDetail();
       this.closeRoleDetail();
@@ -828,7 +832,9 @@ export default {
     },
     scriptCoverStyle(script) {
       const image = this.getScriptImage(script);
-      return image ? { backgroundImage: `url(${image})` } : {};
+      return image
+        ? { backgroundImage: `url(${this.displayImage(image)})` }
+        : {};
     },
     statusText(item) {
       const status = item.reviewStatus || item.status;

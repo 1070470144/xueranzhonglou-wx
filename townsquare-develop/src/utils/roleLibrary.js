@@ -118,6 +118,20 @@ function firstDefined(...values) {
   return values.find((value) => value !== undefined && value !== null);
 }
 
+function roleField(role, key) {
+  return role && (role[key] !== undefined ? role[key] : role[String(key)]);
+}
+
+function roleImageValue(role) {
+  return firstDefined(
+    roleField(role, "iconUrl"),
+    roleField(role, "image"),
+    roleField(role, "icon"),
+    roleField(role, "avatar"),
+    roleField(role, "2"),
+  );
+}
+
 function normalizeOfficialKey(value) {
   return String(value || "")
     .toLowerCase()
@@ -125,8 +139,7 @@ function normalizeOfficialKey(value) {
 }
 
 function roleImageOfficialKey(role) {
-  const image =
-    role && (role.iconUrl || role.image || role.icon || role.avatar || "");
+  const image = roleImageValue(role) || "";
   if (!/clocktower-wiki\.gstonegames\.com/i.test(String(image || ""))) {
     return "";
   }
@@ -155,17 +168,46 @@ export function normalizeRoleForLibrary(
 ) {
   const officialRole =
     sourceType === ROLE_SOURCE_OFFICIAL ? matchedOfficialRole(role) : null;
-  const rawId = role && (role.roleId || role.id || role._id || role.name);
+  const rawId =
+    role &&
+    firstDefined(
+      role.roleId,
+      role.id,
+      role._id,
+      roleField(role, "0"),
+      role.name,
+    );
   const id = String(rawId || "").trim();
   const displayName =
-    role && (role.displayName || role.name || role.title || id);
+    role &&
+    firstDefined(
+      role.displayName,
+      role.name,
+      roleField(role, "1"),
+      role.title,
+      id,
+    );
   const displayAbility =
-    (role && (role.displayAbility || role.ability || role.skill || "")) || "";
+    (role &&
+      firstDefined(
+        role.displayAbility,
+        role.ability,
+        roleField(role, "3"),
+        role.skill,
+        "",
+      )) ||
+    "";
   const team = normalizeRoleTeam(
-    role && (role.team || role.roleType || role.category || role.type),
+    role &&
+      firstDefined(
+        role.team,
+        roleField(role, "12"),
+        role.roleType,
+        role.category,
+        role.type,
+      ),
   );
-  const icon =
-    role && (role.iconUrl || role.image || role.icon || role.avatar || "");
+  const icon = roleImageValue(role) || "";
   const docId = role && (role.docId || role._id || role.id);
   const tokenImages = normalizeRoleTokenArray(
     role && role.smallTokens,
@@ -195,29 +237,39 @@ export function normalizeRoleForLibrary(
     tokenUrl: (role && role.tokenUrl) || firstToken,
     firstNight: firstDefined(
       role && role.firstNight,
+      roleField(role, "5"),
       officialRole && officialRole.firstNight,
     ),
     firstNightReminder: firstDefined(
       role && role.firstNightReminder,
+      roleField(role, "6"),
       officialRole && officialRole.firstNightReminder,
     ),
     otherNight: firstDefined(
       role && role.otherNight,
+      roleField(role, "7"),
       officialRole && officialRole.otherNight,
     ),
     otherNightReminder: firstDefined(
       role && role.otherNightReminder,
+      roleField(role, "8"),
       officialRole && officialRole.otherNightReminder,
     ),
     reminders: firstDefined(
       role && role.reminders,
+      roleField(role, "9"),
       officialRole && translateOfficialReminders(officialRole.reminders),
     ),
     remindersGlobal: firstDefined(
       role && role.remindersGlobal,
+      roleField(role, "10"),
       officialRole && translateOfficialReminders(officialRole.remindersGlobal),
     ),
-    setup: firstDefined(role && role.setup, officialRole && officialRole.setup),
+    setup: firstDefined(
+      role && role.setup,
+      roleField(role, "11"),
+      officialRole && officialRole.setup,
+    ),
     sourceType,
     officialId:
       sourceType === ROLE_SOURCE_OFFICIAL
@@ -267,10 +319,8 @@ export function roleImageList(role) {
     if (url) images.push(url);
   };
   [
-    role && role.iconUrl,
-    role && role.image,
-    role && role.icon,
-    role && role.avatar,
+    roleImageValue(role),
+    role && role["2"],
     role && role.smallTokens,
     role && role.tokenImages,
     role && role.tokens,

@@ -43,6 +43,8 @@
 </template>
 
 <script>
+import { roleIconImage } from "@/utils/roleIcon";
+
 export default {
   name: "Token",
   props: {
@@ -70,12 +72,7 @@ export default {
   },
   methods: {
     roleIconImage(role) {
-      const jsonImage =
-        role.image || role.icon || role.imageUrl || role.image_url;
-      return (
-        jsonImage ||
-        require("../assets/icons/" + (role.imageAlt || role.id) + ".png")
-      );
+      return roleIconImage(role);
     },
     setRole() {
       this.$emit("set-role");

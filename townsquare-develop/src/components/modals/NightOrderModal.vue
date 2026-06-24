@@ -41,15 +41,7 @@
             class="icon"
             v-if="role.id"
             :style="{
-              backgroundImage: `url(${
-                role.image && grimoire.isImageOptIn
-                  ? role.image
-                  : require(
-                      '../../assets/icons/' +
-                        (role.imageAlt || role.id) +
-                        '.png',
-                    )
-              })`,
+              backgroundImage: `url(${displayRoleImage(role)})`,
             }"
           ></span>
           <span class="reminder" v-if="role.firstNightReminder">
@@ -68,15 +60,7 @@
             class="icon"
             v-if="role.id"
             :style="{
-              backgroundImage: `url(${
-                role.image && grimoire.isImageOptIn
-                  ? role.image
-                  : require(
-                      '../../assets/icons/' +
-                        (role.imageAlt || role.id) +
-                        '.png',
-                    )
-              })`,
+              backgroundImage: `url(${displayRoleImage(role)})`,
             }"
           ></span>
           <span class="name">
@@ -105,6 +89,7 @@
 <script>
 import Modal from "./Modal";
 import { mapMutations, mapState } from "vuex";
+import { roleIconImage } from "../../utils/roleIcon";
 
 export default {
   components: {
@@ -168,6 +153,9 @@ export default {
     ...mapState("players", ["players", "fabled"]),
   },
   methods: {
+    displayRoleImage(role) {
+      return roleIconImage(role, this.grimoire.isImageOptIn);
+    },
     ...mapMutations(["toggleModal"]),
   },
 };

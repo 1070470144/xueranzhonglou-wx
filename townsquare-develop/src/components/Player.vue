@@ -218,15 +218,7 @@
         <span
           class="icon"
           :style="{
-            backgroundImage: `url(${
-              reminder.image && grimoire.isImageOptIn
-                ? reminder.image
-                : require(
-                    '../assets/icons/' +
-                      (reminder.imageAlt || reminder.role) +
-                      '.png',
-                  )
-            })`,
+            backgroundImage: `url(${displayReminderImage(reminder)})`,
           }"
         ></span>
         <span class="text">{{ displayReminderName(reminder) }}</span>
@@ -242,6 +234,7 @@
 <script>
 import Token from "./Token";
 import { mapGetters, mapState } from "vuex";
+import { reminderIconImage } from "../utils/roleIcon";
 
 const { translateOfficialReminder } = require("../utils/reminderTranslations");
 
@@ -405,6 +398,9 @@ export default {
     },
   },
   methods: {
+    displayReminderImage(reminder) {
+      return reminderIconImage(reminder, this.grimoire.isImageOptIn);
+    },
     toggleMenu() {
       this.isMenuOpen = !this.isMenuOpen;
       this.resetMenuPosition();

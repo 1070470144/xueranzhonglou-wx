@@ -159,7 +159,7 @@
                   <img
                     v-if="role.icon"
                     class="role-icon"
-                    :src="role.icon"
+                    :src="displayImage(role.icon)"
                     :alt="role.displayName"
                     @error="markIconFailed(role.id)"
                   />
@@ -213,7 +213,7 @@
               <img
                 v-if="role.icon"
                 class="role-icon"
-                :src="role.icon"
+                :src="displayImage(role.icon)"
                 :alt="role.displayName"
                 @error="markIconFailed(role.id)"
               />
@@ -248,6 +248,7 @@ import Modal from "./Modal";
 import { getAuthSession } from "@/services/auth";
 import { listKnowledgeRoles } from "@/services/knowledgeRoles";
 import { getMyUploadedRoles, getPublicCustomRoles } from "@/services/scripts";
+import { displayExternalImageUrl } from "@/utils/externalImage";
 import {
   normalizeRoleForLibrary,
   ROLE_SOURCE_ALL,
@@ -576,6 +577,9 @@ export default {
       if (!this.failedIconIds.includes(roleId)) {
         this.failedIconIds = this.failedIconIds.concat(roleId);
       }
+    },
+    displayImage(image) {
+      return displayExternalImageUrl(image);
     },
     pruneMissingRoles() {
       const roleIds = new Set(this.allRoles.map((role) => role.id));

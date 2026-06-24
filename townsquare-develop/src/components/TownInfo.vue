@@ -6,7 +6,7 @@
       :style="{
         backgroundImage: `url(${
           edition.logo && grimoire.isImageOptIn
-            ? edition.logo
+            ? displayImage(edition.logo)
             : require('../assets/editions/' + edition.id + '.png')
         })`,
       }"
@@ -78,6 +78,7 @@
 <script>
 import gameJSON from "./../game";
 import { mapState } from "vuex";
+import { displayExternalImageUrl } from "../utils/externalImage";
 
 export default {
   computed: {
@@ -98,6 +99,11 @@ export default {
     },
     ...mapState(["edition", "grimoire"]),
     ...mapState("players", ["players"]),
+  },
+  methods: {
+    displayImage(image) {
+      return displayExternalImageUrl(image);
+    },
   },
 };
 </script>

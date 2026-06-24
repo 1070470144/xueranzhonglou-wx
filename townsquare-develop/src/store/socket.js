@@ -32,6 +32,8 @@ class LiveSession {
     this._isJoiningRoom = false;
     this._isRoomSession = false;
     this._isApplyingRoomSnapshot = false;
+    this._roomPlayerCountSyncTimer = null;
+    this._lastRoomPlayerCountPayload = null;
     this._players = {}; // map of players connected to a session
     this._playerAuthSnapshots = {}; // map of player IDs to web login snapshots
     this._pendingPlayerNames = {}; // map of early playerName messages waiting for seat claims
@@ -426,6 +428,9 @@ class LiveSession {
     this._pings = {};
     this._playerAuthSnapshots = {};
     this._pendingPlayerNames = {};
+    clearTimeout(this._roomPlayerCountSyncTimer);
+    this._roomPlayerCountSyncTimer = null;
+    this._lastRoomPlayerCountPayload = null;
     this._store.commit("session/setPlayerCount", 0);
     this._store.commit("session/setPing", 0);
     this._store.commit("session/setReconnecting", false);
@@ -1314,10 +1319,26 @@ class LiveSession {
 
   syncRoomPlayerCount() {
     if (this._isSpectator || !this._store.state.room.current) return;
-    this._send("room:update", {
+    const buildPayload = () => ({
       playerCount: this.getRoomPlayerCount(),
       maxPlayers: this._store.state.players.players.length,
     });
+    const isSamePayload = (left, right) =>
+      left &&
+      right &&
+      left.playerCount === right.playerCount &&
+      left.maxPlayers === right.maxPlayers;
+    const nextPayload = buildPayload();
+    if (isSamePayload(this._lastRoomPlayerCountPayload, nextPayload)) return;
+    clearTimeout(this._roomPlayerCountSyncTimer);
+    this._roomPlayerCountSyncTimer = setTimeout(() => {
+      this._roomPlayerCountSyncTimer = null;
+      if (this._isSpectator || !this._store.state.room.current) return;
+      const payload = buildPayload();
+      if (isSamePayload(this._lastRoomPlayerCountPayload, payload)) return;
+      this._lastRoomPlayerCountPayload = payload;
+      this._send("room:update", payload);
+    }, 250);
   }
 
   kickRoomPlayer(playerId) {
