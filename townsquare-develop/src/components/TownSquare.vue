@@ -24,66 +24,81 @@
       ></Player>
     </ul>
 
-    <div
-      class="bluffs"
-      v-if="players.length"
-      ref="bluffs"
-      :class="{
-        closed: !isBluffsOpen,
-        'vertical-bluff-tabs': isBluffAreaVertical,
-      }"
-    >
-      <div class="bluff-tabs" v-if="!session.isSpectator">
-        <button
-          type="button"
-          :class="{ active: activeBluffTab === 'demon' }"
-          @click.stop="activeBluffTab = 'demon'"
-        >
-          {{ $t("townSquare.demonBluffs") }}
-        </button>
-        <button
-          type="button"
-          :class="{ active: activeBluffTab === 'lunatic' }"
-          @click.stop="activeBluffTab = 'lunatic'"
-        >
-          {{ $t("townSquare.lunaticBluffs") }}
-        </button>
-      </div>
-      <h3>
-        <span v-if="session.isSpectator">{{
-          $t("townSquare.demonBluffs")
-        }}</span>
-      </h3>
-      <font-awesome-icon icon="times-circle" @click.stop="toggleBluffs" />
-      <font-awesome-icon icon="plus-circle" @click.stop="toggleBluffs" />
-      <ul>
-        <li
-          v-for="index in bluffSize"
-          :key="index"
-          @click="openRoleModal(index * -1)"
-        >
-          <Token :role="activeBluffs[index - 1]"></Token>
-        </li>
-      </ul>
+    <div class="town-square-bottom-drawer-stack" v-if="players.length">
       <div
-        class="lunatic-bluff-target"
-        v-if="
-          !session.isSpectator && activeBluffTab === 'lunatic' && isBluffsOpen
-        "
+        class="town-square-drawer bluffs-drawer"
+        :class="{ open: isBluffsOpen }"
       >
-        <select
-          :value="lunaticBluffPlayerIndex"
-          @change="setLunaticBluffPlayerIndex(Number($event.target.value))"
+        <button
+          type="button"
+          class="town-square-drawer-tab"
+          @click.stop="toggleBluffs"
         >
-          <option :value="-1">{{ $t("townSquare.choosePlayer") }}</option>
-          <option
-            v-for="(player, index) in players"
-            :key="player.id || index"
-            :value="index"
+          <font-awesome-icon icon="theater-masks" />
+          <span>{{ $t("townSquare.demonBluffs") }}</span>
+        </button>
+        <aside
+          class="town-square-drawer-panel bluffs"
+          ref="bluffs"
+          :class="{ 'vertical-bluff-tabs': isBluffAreaVertical }"
+        >
+          <header class="town-square-drawer-header">
+            <h3>
+              {{
+                activeBluffTab === "lunatic" && !session.isSpectator
+                  ? $t("townSquare.lunaticBluffs")
+                  : $t("townSquare.demonBluffs")
+              }}
+            </h3>
+            <button type="button" @click.stop="toggleBluffs">
+              <font-awesome-icon icon="times-circle" />
+            </button>
+          </header>
+          <div class="bluff-tabs" v-if="!session.isSpectator">
+            <button
+              type="button"
+              :class="{ active: activeBluffTab === 'demon' }"
+              @click.stop="activeBluffTab = 'demon'"
+            >
+              {{ $t("townSquare.demonBluffs") }}
+            </button>
+            <button
+              type="button"
+              :class="{ active: activeBluffTab === 'lunatic' }"
+              @click.stop="activeBluffTab = 'lunatic'"
+            >
+              {{ $t("townSquare.lunaticBluffs") }}
+            </button>
+          </div>
+          <ul>
+            <li
+              v-for="index in bluffSize"
+              :key="index"
+              @click="openRoleModal(index * -1)"
+            >
+              <Token :role="activeBluffs[index - 1]"></Token>
+            </li>
+          </ul>
+          <div
+            class="lunatic-bluff-target"
+            v-if="!session.isSpectator && activeBluffTab === 'lunatic'"
           >
-            {{ index + 1 }}. {{ player.name || $t("townSquare.unnamedPlayer") }}
-          </option>
-        </select>
+            <select
+              :value="lunaticBluffPlayerIndex"
+              @change="setLunaticBluffPlayerIndex(Number($event.target.value))"
+            >
+              <option :value="-1">{{ $t("townSquare.choosePlayer") }}</option>
+              <option
+                v-for="(player, index) in players"
+                :key="player.id || index"
+                :value="index"
+              >
+                {{ index + 1 }}.
+                {{ player.name || $t("townSquare.unnamedPlayer") }}
+              </option>
+            </select>
+          </div>
+        </aside>
       </div>
     </div>
 
@@ -112,6 +127,10 @@
             <li
               v-for="(role, index) in fabled"
               :key="role.id || index"
+              @mouseenter="activeFabledIndex = index"
+              @mouseleave="activeFabledIndex = -1"
+              @focusin="activeFabledIndex = index"
+              @focusout="activeFabledIndex = -1"
               @click="removeFabled(index)"
             >
               <div
@@ -135,6 +154,16 @@
               <Token :role="role"></Token>
             </li>
           </ul>
+          <div
+            class="fabled-hover-ability"
+            v-if="
+              activeFabledIndex >= 0 &&
+              fabled[activeFabledIndex] &&
+              fabled[activeFabledIndex].ability
+            "
+          >
+            {{ fabled[activeFabledIndex].ability }}
+          </div>
         </aside>
       </div>
 
@@ -233,7 +262,7 @@ export default {
   },
   computed: {
     ...mapGetters({ nightOrder: "players/nightOrder" }),
-    ...mapState(["grimoire", "roles", "room", "session"]),
+    ...mapState(["grimoire", "roles", "room", "session", "modals"]),
     ...mapState("players", [
       "players",
       "bluffs",
@@ -283,10 +312,16 @@ export default {
       isBluffAreaVertical: false,
       bluffResizeObserver: null,
       bluffLayoutFrame: null,
-      isBluffsOpen: true,
+      isBluffsOpen: false,
       isFabledOpen: false,
       isNightNavigationOpen: false,
+      activeFabledIndex: -1,
     };
+  },
+  watch: {
+    "modals.privateChat"(visible) {
+      if (visible) this.closeLeftDrawers();
+    },
   },
   mounted() {
     this.$nextTick(this.observeBluffArea);
@@ -300,19 +335,39 @@ export default {
     window.removeEventListener("resize", this.updateBluffTabLayout);
   },
   methods: {
+    closeLeftDrawers(except = "") {
+      if (except !== "bluffs") this.isBluffsOpen = false;
+      if (except !== "fabled") {
+        this.isFabledOpen = false;
+        this.activeFabledIndex = -1;
+      }
+      if (except !== "nightNavigation") this.isNightNavigationOpen = false;
+    },
+    closePrivateChat() {
+      if (this.modals.privateChat) {
+        this.$store.commit("toggleModal", "privateChat");
+      }
+    },
     toggleBluffs() {
-      this.isBluffsOpen = !this.isBluffsOpen;
+      const shouldOpen = !this.isBluffsOpen;
+      this.closeLeftDrawers("bluffs");
+      this.isBluffsOpen = shouldOpen;
+      if (shouldOpen) this.closePrivateChat();
     },
     toggleFabled() {
-      this.isFabledOpen = !this.isFabledOpen;
-      if (this.isFabledOpen) this.isNightNavigationOpen = false;
+      const shouldOpen = !this.isFabledOpen;
+      this.closeLeftDrawers("fabled");
+      this.isFabledOpen = shouldOpen;
+      if (shouldOpen) this.closePrivateChat();
     },
     toggleNightNavigation() {
       if (this.isNightNavigationOpen) {
         this.$store.commit("players/clearNightNavigation");
       }
-      this.isNightNavigationOpen = !this.isNightNavigationOpen;
-      if (this.isNightNavigationOpen) this.isFabledOpen = false;
+      const shouldOpen = !this.isNightNavigationOpen;
+      this.closeLeftDrawers("nightNavigation");
+      this.isNightNavigationOpen = shouldOpen;
+      if (shouldOpen) this.closePrivateChat();
     },
     removeFabled(index) {
       if (this.session.isSpectator) return;
@@ -707,6 +762,22 @@ export default {
   pointer-events: none;
 }
 
+.town-square-bottom-drawer-stack {
+  position: absolute;
+  bottom: max(86px, calc(env(safe-area-inset-bottom) + 86px));
+  left: 0;
+  display: grid;
+  gap: 6px;
+  z-index: 72;
+  pointer-events: none;
+}
+
+#townsquare.public .town-square-bottom-drawer-stack {
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.1);
+}
+
 .town-square-drawer {
   position: relative;
   min-height: 44px;
@@ -717,13 +788,15 @@ export default {
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-columns: 1.1em minmax(0, 1fr);
+  grid-template-rows: 1.05em minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   align-items: center;
-  gap: 0.32em;
-  width: 36px;
-  min-height: 74px;
+  justify-items: center;
+  gap: 0.28em;
+  width: 42px;
+  min-height: 82px;
   margin: 0;
-  padding: 0.45em 0.18em;
+  padding: 0.48em 0.22em;
   color: #dcc4a1;
   border: 2px solid #3d2e26;
   border-left: 0;
@@ -745,10 +818,15 @@ export default {
 
   svg {
     justify-self: center;
+    width: 1.05em;
+    min-width: 1.05em;
   }
 
   span {
     justify-self: center;
+    max-height: 4.8em;
+    overflow: hidden;
+    text-align: center;
     writing-mode: vertical-rl;
     text-orientation: mixed;
     white-space: nowrap;
@@ -769,101 +847,160 @@ export default {
 .town-square-drawer-panel {
   position: absolute;
   top: 0;
-  left: 36px;
-  width: min(360px, calc(100vw - 62px));
-  max-height: min(58vh, 420px);
+  left: 42px;
+  width: min(320px, calc(100vw - 62px));
+  max-height: min(46vh, 330px);
   color: #dcc4a1;
-  border: 2px solid #3d2e26;
+  border: 1px solid rgba(139, 101, 8, 0.52);
   border-left: 0;
-  border-radius: 0 8px 8px 0;
-  background: rgba(12, 9, 8, 0.9);
+  border-radius: 0 6px 6px 0;
+  background: radial-gradient(
+      circle at 50% 0,
+      rgba(92, 26, 22, 0.2),
+      transparent 34%
+    ),
+    linear-gradient(180deg, rgba(20, 14, 11, 0.76), rgba(8, 6, 5, 0.72));
   box-shadow:
-    0 18px 42px rgba(0, 0, 0, 0.66),
-    inset 0 1px 0 rgba(255, 236, 190, 0.05);
-  backdrop-filter: blur(3px);
+    0 18px 54px rgba(0, 0, 0, 0.58),
+    inset 0 1px 0 rgba(255, 236, 190, 0.08);
+  backdrop-filter: blur(5px);
   opacity: 0;
   overflow: hidden;
   pointer-events: none;
-  transform: translateX(-14px) scaleX(0.96);
+  transform: translateX(-8px);
   transform-origin: left center;
   transition:
-    opacity 180ms ease,
-    transform 180ms ease;
+    opacity 200ms ease,
+    transform 200ms ease;
 }
 
 .town-square-drawer.open .town-square-drawer-panel {
   opacity: 1;
   pointer-events: auto;
-  transform: translateX(0) scaleX(1);
+  transform: translateX(0);
+}
+
+.town-square-bottom-drawer-stack .town-square-drawer-panel {
+  top: auto;
+  bottom: 0;
+  transform-origin: left bottom;
 }
 
 .town-square-drawer-header {
   display: flex;
   align-items: center;
-  min-height: 2.3em;
-  border-bottom: 1px solid #3d2e26;
-  background: radial-gradient(
-      circle at 50% 0%,
-      rgba(92, 26, 22, 0.22),
-      transparent 36%
-    ),
-    rgba(18, 14, 12, 0.92);
+  min-height: 2.28em;
+  border-bottom: 1px solid rgba(61, 46, 38, 0.82);
+  background: linear-gradient(90deg, rgba(92, 26, 22, 0.28), transparent 66%),
+    rgba(18, 14, 12, 0.74);
 }
 
 .town-square-drawer-header h3 {
   min-width: 0;
   flex: 1;
   margin: 0;
-  padding: 0.46em 0.72em;
+  padding: 0.28em 0.58em 0.26em;
   color: #fff8e7;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 1em;
-  letter-spacing: 0.06em;
+  font-size: 0.82em;
+  letter-spacing: 0.04em;
 }
 
 .town-square-drawer-header button {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2.2em;
-  height: 2.2em;
-  margin: 0;
+  width: 1.44em;
+  height: 1.44em;
+  margin: 0 0.42em 0 0;
   padding: 0;
-  color: #dcc4a1;
-  border: 0;
-  background: transparent;
+  color: #d9bf8c;
+  border: 1px solid rgba(124, 94, 70, 0.58);
+  border-radius: 50%;
+  background: rgba(5, 4, 4, 0.32);
   cursor: pointer;
+  font-size: 0.82em;
 }
 
 .town-square-drawer-header button:hover {
   color: #fff8e7;
+  border-color: rgba(212, 175, 55, 0.72);
+  background: rgba(92, 26, 22, 0.38);
 }
 
 .fabled-drawer .town-square-drawer-panel ul {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 0.28em;
+  gap: 0.34em;
   margin: 0;
   padding: 0.48em;
   overflow-x: auto;
+  overflow-y: hidden;
   list-style: none;
+  background: radial-gradient(
+      circle at 50% 14%,
+      rgba(212, 175, 55, 0.05),
+      transparent 28%
+    ),
+    rgba(8, 7, 6, 0.34);
 }
 
 .fabled-drawer .town-square-drawer-panel li {
   position: relative;
-  width: clamp(56px, 10vh, 86px);
-  height: clamp(56px, 10vh, 86px);
+  width: clamp(77px, 13.4vh, 115px);
+  height: clamp(77px, 13.4vh, 115px);
   flex: 0 0 auto;
   cursor: pointer;
+  border: 1px solid rgba(124, 94, 70, 0.36);
+  border-radius: 4px;
+  background: rgba(5, 4, 4, 0.24);
+  box-shadow: inset 0 1px 0 rgba(255, 236, 190, 0.05);
+}
+
+.fabled-drawer .town-square-drawer-panel {
+  width: min(520px, calc(100vw - 62px));
+}
+
+.fabled-hover-ability {
+  margin: 0.38em 0.48em 0.48em;
+  max-height: min(22vh, 150px);
+  padding: 0.52em 0.62em;
+  color: rgba(247, 240, 223, 0.88);
+  border: 1px solid rgba(124, 94, 70, 0.68);
+  border-radius: 4px;
+  background: rgba(10, 8, 7, 0.92);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.36);
+  overflow-y: auto;
+  font-size: 0.72em;
+  line-height: 1.36;
+  text-align: left;
+  word-break: break-word;
+  pointer-events: none;
+}
+
+.fabled-drawer .token .ability {
+  display: none;
 }
 
 .night-navigation {
   display: grid;
   gap: 0.34em;
-  padding: 0.46em;
+  padding: 0.42em 0.48em 0.48em;
+  background: radial-gradient(
+      circle at 50% 14%,
+      rgba(212, 175, 55, 0.05),
+      transparent 28%
+    ),
+    rgba(8, 7, 6, 0.34);
+}
+
+.town-square-drawer:not(.fabled-drawer):not(.bluffs-drawer)
+  .town-square-drawer-header
+  h3 {
+  font-size: 0.76em;
 }
 
 .night-navigation-mode,
@@ -879,27 +1016,35 @@ export default {
 
 .night-navigation .button {
   min-width: 0;
-  min-height: 2.1em;
+  min-height: 2.05em;
   margin: 0;
-  padding: 0 0.42em;
-  color: #dcc4a1;
-  border: 1px solid #3d2e26;
-  border-radius: 2px;
-  background: #1d1816;
-  box-shadow: inset 0 1px 0 rgba(255, 236, 190, 0.04);
-  font-size: 0.82em;
+  padding: 0 0.46em;
+  color: #b8a082;
+  border: 1px solid rgba(124, 94, 70, 0.58);
+  border-radius: 999px;
+  background: rgba(5, 4, 4, 0.3);
+  box-shadow: inset 0 1px 0 rgba(255, 236, 190, 0.06);
+  font-size: 0.68em;
 }
 
 .night-navigation .button.townsfolk {
   color: #fff8e7;
-  border-color: #d4af37;
-  background: linear-gradient(#b8860b, #946b07 48%, #5c4204);
+  border-color: rgba(212, 175, 55, 0.72);
+  background: linear-gradient(
+    180deg,
+    rgba(184, 134, 11, 0.82),
+    rgba(92, 66, 4, 0.82)
+  );
 }
 
 .night-navigation .button.demon {
   color: #fff8e7;
-  border-color: #8d2822;
-  background: linear-gradient(#8a2721, #581612 54%, #2d0c09);
+  border-color: rgba(141, 40, 34, 0.72);
+  background: linear-gradient(
+    180deg,
+    rgba(139, 38, 32, 0.82),
+    rgba(58, 18, 14, 0.82)
+  );
 }
 
 .night-navigation .button:disabled {
@@ -911,15 +1056,139 @@ export default {
   align-items: center;
   justify-content: center;
   min-width: 0;
-  min-height: 2.1em;
-  padding: 0 0.42em;
+  min-height: 2.05em;
+  padding: 0 0.46em;
   color: #fff8e7;
-  border: 1px solid #3d2e26;
-  background: rgba(5, 4, 4, 0.52);
+  border: 1px solid rgba(124, 94, 70, 0.62);
+  border-radius: 4px;
+  background: rgba(5, 4, 4, 0.48);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.78em;
+  font-size: 0.66em;
+}
+
+.bluffs-drawer .town-square-drawer-panel {
+  width: min(460px, calc(100vw - 62px));
+  max-height: min(48vh, 380px);
+}
+
+.bluffs-drawer .bluffs {
+  color: #dcc4a1;
+}
+
+.bluffs-drawer .bluff-tabs {
+  display: flex;
+  gap: 0.26em;
+  padding: 0.28em 0.38em;
+  border-bottom: 1px solid rgba(61, 46, 38, 0.72);
+  background: rgba(10, 8, 7, 0.42);
+}
+
+.bluffs-drawer .bluff-tabs button {
+  cursor: pointer;
+  color: #b8a082;
+  background: rgba(5, 4, 4, 0.3);
+  border: 1px solid rgba(124, 94, 70, 0.5);
+  border-radius: 999px;
+  padding: 0.26em 0.58em;
+  font: inherit;
+  font-size: 0.72em;
+  white-space: nowrap;
+}
+
+.bluffs-drawer .bluff-tabs button.active {
+  color: #fff8e7;
+  border-color: rgba(212, 175, 55, 0.72);
+  background: linear-gradient(
+    180deg,
+    rgba(139, 38, 32, 0.82),
+    rgba(58, 18, 14, 0.82)
+  );
+}
+
+.bluffs-drawer ul {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.34em;
+  margin: 0;
+  padding: 0.48em;
+  overflow-x: auto;
+  list-style: none;
+  background: radial-gradient(
+      circle at 50% 14%,
+      rgba(212, 175, 55, 0.05),
+      transparent 28%
+    ),
+    rgba(8, 7, 6, 0.34);
+}
+
+.bluffs-drawer li {
+  position: relative;
+  width: clamp(77px, 13.4vh, 115px);
+  height: clamp(77px, 13.4vh, 115px);
+  flex: 0 0 auto;
+  cursor: pointer;
+  border: 1px solid rgba(124, 94, 70, 0.36);
+  border-radius: 4px;
+  background: rgba(5, 4, 4, 0.24);
+  box-shadow: inset 0 1px 0 rgba(255, 236, 190, 0.05);
+}
+
+.bluffs-drawer .lunatic-bluff-target {
+  display: flex;
+  padding: 0.38em 0.48em 0.48em;
+  border-top: 1px solid rgba(61, 46, 38, 0.78);
+  background: linear-gradient(
+      180deg,
+      rgba(18, 15, 13, 0.86),
+      rgba(10, 8, 7, 0.92)
+    ),
+    rgba(18, 15, 13, 0.86);
+}
+
+.bluffs-drawer .lunatic-bluff-target select {
+  width: 100%;
+  height: 1.82em;
+  min-height: 0;
+  color: #f7f0df;
+  background: rgba(5, 4, 4, 0.62);
+  border: 1px solid rgba(124, 94, 70, 0.88);
+  border-radius: 2px;
+}
+
+.bluffs-drawer .vertical-bluff-tabs {
+  .bluff-tabs {
+    position: absolute;
+    left: 6px;
+    top: 44px;
+    bottom: 10px;
+    width: 30px;
+    flex-direction: column;
+    gap: 6px;
+    border-bottom: 0;
+    background: transparent;
+    z-index: 3;
+  }
+
+  .bluff-tabs button {
+    flex: 1;
+    min-height: 0;
+    padding: 4px 2px;
+    font-size: 12px;
+    line-height: 1;
+    text-align: center;
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    white-space: normal;
+    overflow: hidden;
+  }
+
+  ul,
+  .lunatic-bluff-target {
+    margin-left: 34px;
+  }
 }
 
 @media (max-width: 768px) {
@@ -928,32 +1197,55 @@ export default {
     gap: 5px;
   }
 
+  .town-square-bottom-drawer-stack {
+    bottom: max(78px, calc(env(safe-area-inset-bottom) + 78px));
+    gap: 5px;
+  }
+
   .town-square-drawer-tab {
-    width: 34px;
-    min-height: 68px;
-    padding: 0.38em 0.14em;
+    width: 40px;
+    min-height: 76px;
+    padding: 0.42em 0.18em;
     font-size: 11px;
   }
 
   .town-square-drawer-panel {
-    left: 34px;
-    width: min(300px, calc(100vw - 46px));
-    max-height: min(46vh, 320px);
+    left: 40px;
+    width: min(284px, calc(100vw - 52px));
+    max-height: min(40vh, 280px);
+  }
+
+  .bluffs-drawer .town-square-drawer-panel {
+    width: min(360px, calc(100vw - 46px));
+    max-height: min(44vh, 320px);
   }
 
   .town-square-drawer-header h3 {
-    padding: 0.42em 0.58em;
-    font-size: clamp(12px, 3.4vw, 15px);
+    padding: 0.28em 0.46em;
+    font-size: clamp(10px, 2.8vw, 12px);
   }
 
   .fabled-drawer .town-square-drawer-panel li {
-    width: clamp(44px, 14vw, 62px);
-    height: clamp(44px, 14vw, 62px);
+    width: clamp(64px, 20vw, 91px);
+    height: clamp(64px, 20vw, 91px);
+  }
+
+  .fabled-hover-ability {
+    font-size: 0.66em;
+  }
+
+  .bluffs-drawer li {
+    width: clamp(64px, 20vw, 91px);
+    height: clamp(64px, 20vw, 91px);
   }
 
   .night-navigation {
     gap: 0.24em;
     padding: 0.34em;
+  }
+
+  .night-navigation .button {
+    font-size: 0.64em;
   }
 
   .night-navigation-stepper {
@@ -962,7 +1254,7 @@ export default {
 
   .night-navigation-current {
     min-height: 2.2em;
-    font-size: 0.82em;
+    font-size: 0.64em;
   }
 }
 

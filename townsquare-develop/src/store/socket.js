@@ -2,6 +2,7 @@ import { t } from "../i18n";
 import { recordRuntimeLog } from "../utils/runtimeLogger";
 import { getAuthUserSnapshot } from "../services/auth";
 import { buildBluffMessages, hydrateBluffs } from "../services/bluffs";
+import { PUBLIC_CHAT_ID } from "./modules/privateChat";
 
 function parseRoomShareHash(hash) {
   const raw = String(hash || "").replace(/^#/, "");
@@ -333,6 +334,12 @@ class LiveSession {
         break;
       case "privateChat":
         this._store.commit("privateChat/receiveMessage", {
+          ...params,
+          isOpen: this._store.state.modals.privateChat,
+        });
+        break;
+      case "publicChat":
+        this._store.commit("privateChat/receivePublicMessage", {
           ...params,
           isOpen: this._store.state.modals.privateChat,
         });
@@ -1531,6 +1538,10 @@ class LiveSession {
   sendPrivateChat(payload) {
     const toId = payload && payload.toId;
     if (!toId || !this._socket || this._socket.readyState !== 1) return;
+    if (toId === PUBLIC_CHAT_ID) {
+      this._send("publicChat", payload);
+      return;
+    }
     this._sendDirect(toId, "privateChat", payload);
   }
 }

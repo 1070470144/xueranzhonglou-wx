@@ -29,6 +29,7 @@ const faIcons = [
   "ExclamationTriangle",
   "FileCode",
   "FileUpload",
+  "FeatherAlt",
   "HandPaper",
   "HandPointRight",
   "Heartbeat",

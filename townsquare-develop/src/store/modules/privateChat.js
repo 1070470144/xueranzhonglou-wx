@@ -1,6 +1,7 @@
 import Vue from "vue";
 
 const MAX_MESSAGES_PER_CONVERSATION = 200;
+export const PUBLIC_CHAT_ID = "__public__";
 
 const getConversation = (state, targetId, targetName = "") => {
   if (!state.conversations[targetId]) {
@@ -96,6 +97,34 @@ const mutations = {
       );
     }
     if (!payload.isOpen || state.activeTargetId !== payload.fromId) {
+      conversation.unread += 1;
+    }
+  },
+  receivePublicMessage(state, payload) {
+    const content = normalizeContent(payload.content);
+    if (!payload.fromId || !content) return;
+    const conversation = getConversation(
+      state,
+      PUBLIC_CHAT_ID,
+      payload.channelName || payload.toName,
+    );
+    conversation.messages.push({
+      id: payload.id,
+      fromId: payload.fromId,
+      fromName: payload.fromName,
+      toId: PUBLIC_CHAT_ID,
+      toName: payload.channelName,
+      content,
+      createdAt: payload.createdAt,
+      direction: "in",
+    });
+    if (conversation.messages.length > MAX_MESSAGES_PER_CONVERSATION) {
+      conversation.messages.splice(
+        0,
+        conversation.messages.length - MAX_MESSAGES_PER_CONVERSATION,
+      );
+    }
+    if (!payload.isOpen || state.activeTargetId !== PUBLIC_CHAT_ID) {
       conversation.unread += 1;
     }
   },

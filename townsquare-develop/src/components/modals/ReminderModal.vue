@@ -205,7 +205,7 @@ export default {
 
 <style scoped lang="scss">
 ul.reminders .reminder {
-  background: url("../../assets/reminder.png") center center;
+  background: url("../../assets/token1.png") center center;
   background-size: 100%;
   width: 14vh;
   height: 14vh;
@@ -225,11 +225,11 @@ ul.reminders .reminder {
 
   .icon {
     position: absolute;
-    top: 0;
-    width: 90%;
-    height: 90%;
+    top: 3%;
+    width: 100%;
+    height: 100%;
     background-size: 100%;
-    background-position: center center;
+    background-position: center 30%;
     background-repeat: no-repeat;
   }
 
@@ -241,6 +241,11 @@ ul.reminders .reminder {
     top: 28%;
     width: 80%;
     line-height: 1;
+    text-shadow:
+      0 1px 1px #f6dfbd,
+      0 -1px 1px #f6dfbd,
+      1px 0 1px #f6dfbd,
+      -1px 0 1px #f6dfbd;
   }
 
   &:hover {
