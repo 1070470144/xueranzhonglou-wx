@@ -364,6 +364,7 @@ import {
   uploadUserScript,
 } from "@/services/scripts";
 import { getAuthSession } from "@/services/auth";
+import { recordRuntimeLog } from "@/utils/runtimeLogger";
 import rolesJSON from "@/roles.json";
 
 const ROLE_BY_ID = new Map(rolesJSON.map((role) => [role.id, role]));
@@ -409,8 +410,14 @@ export default {
   computed: mapState(["modals"]),
   watch: {
     "modals.scriptLibrary"(visible) {
-      if (visible) this.refresh();
-      else this.cleanupPreviews();
+      if (visible) {
+        recordRuntimeLog("script_library:open", {
+          loggedIn: this.isLoggedIn(),
+        });
+        this.refresh();
+      } else {
+        this.cleanupPreviews();
+      }
     },
   },
   beforeDestroy() {
@@ -449,6 +456,9 @@ export default {
       }
     },
     queueSearch() {
+      recordRuntimeLog("script_library:search", {
+        queryLength: this.searchText.trim().length,
+      });
       if (this.searchTimer) clearTimeout(this.searchTimer);
       this.searchTimer = setTimeout(this.refresh, 300);
     },
@@ -484,6 +494,11 @@ export default {
         this.hasMore = this.scripts.length < this.total && list.length > 0;
       } catch (error) {
         this.error = this.resolveError(error, this.$t("myScripts.loadFailed"));
+        recordRuntimeLog("script_library:error", {
+          stage: "load",
+          message: this.error,
+          page: this.page,
+        });
       } finally {
         this.loading = false;
       }
@@ -600,6 +615,11 @@ export default {
           error,
           this.$t("myScripts.invalidJson"),
         );
+        recordRuntimeLog("script_library:error", {
+          stage: "parse_upload",
+          message: this.uploadError,
+          hasFile: !!this.jsonFileName,
+        });
         return;
       }
       this.submitting = true;
@@ -620,6 +640,11 @@ export default {
           );
         }
         this.uploadSuccess = this.$t("myScripts.uploaded");
+        recordRuntimeLog("script_library:upload", {
+          scriptType: this.scriptType,
+          imageCount: images.length,
+          hasTitle: !!(jsonData && (jsonData.title || jsonData.name)),
+        });
         this.jsonFileText = "";
         this.jsonFileName = "";
         this.cleanupPreviews();
@@ -629,6 +654,11 @@ export default {
           error,
           this.$t("myScripts.uploadFailed"),
         );
+        recordRuntimeLog("script_library:error", {
+          stage: "upload",
+          message: this.uploadError,
+          imageCount: this.selectedImages.length,
+        });
       } finally {
         this.submitting = false;
       }
@@ -657,6 +687,11 @@ export default {
           error,
           this.$t("myScripts.loadDetailFailed"),
         );
+        recordRuntimeLog("script_library:error", {
+          stage: "detail",
+          message: this.error,
+          scriptId: id,
+        });
       }
     },
     async toggleLike(script) {

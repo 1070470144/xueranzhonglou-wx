@@ -439,6 +439,7 @@ import {
   uploadScriptCoverImage,
 } from "@/services/scripts";
 import { getAuthSession } from "@/services/auth";
+import { recordRuntimeLog } from "@/utils/runtimeLogger";
 import {
   ROLE_SOURCE_ALL,
   ROLE_SOURCE_CUSTOM,
@@ -529,7 +530,12 @@ export default {
   },
   watch: {
     "modals.roleLibrary"(visible) {
-      if (visible) this.refresh();
+      if (visible) {
+        recordRuntimeLog("role_library:open", {
+          loggedIn: this.isLoggedIn(),
+        });
+        this.refresh();
+      }
     },
   },
   mounted() {
@@ -579,6 +585,11 @@ export default {
       this.refresh();
     },
     queueSearch() {
+      recordRuntimeLog("role_library:search", {
+        queryLength: this.searchText.trim().length,
+        source: this.sourceFilter,
+        team: this.teamFilter,
+      });
       if (this.searchTimer) clearTimeout(this.searchTimer);
       this.searchTimer = setTimeout(this.refresh, 300);
     },
@@ -612,6 +623,11 @@ export default {
           error,
           this.$t("roleLibrary.loadFailed"),
         );
+        recordRuntimeLog("role_library:error", {
+          stage: "load",
+          message: this.error,
+          source: this.sourceFilter,
+        });
       } finally {
         this.loading = false;
       }
@@ -686,6 +702,11 @@ export default {
           error,
           this.$t("roleLibrary.loadFailed"),
         );
+        recordRuntimeLog("role_library:error", {
+          stage: "load_more",
+          message: this.error,
+          source: this.sourceFilter,
+        });
       } finally {
         this.loading = false;
       }
@@ -809,6 +830,10 @@ export default {
           error,
           this.$t("roleLibrary.uploadImageFailed"),
         );
+        recordRuntimeLog("role_library:error", {
+          stage: field === "smallTokens" ? "upload_token" : "upload_image",
+          message: this.createError,
+        });
       } finally {
         this[flag] = false;
         if (input) input.value = "";
@@ -858,6 +883,10 @@ export default {
           error,
           this.$t("roleLibrary.createFailed"),
         );
+        recordRuntimeLog("role_library:error", {
+          stage: "validate_create",
+          message: this.createError,
+        });
         return;
       }
       this.creating = true;
@@ -874,12 +903,23 @@ export default {
         this.sourceFilter = ROLE_SOURCE_CUSTOM;
         this.closeCreatePanel();
         this.openDetail(role);
+        recordRuntimeLog("role_library:create", {
+          roleId: role && (role.docId || role.id || role.roleId),
+          team: role && role.team,
+          hasImage: !!(role && (role.iconUrl || role.image || role.icon)),
+          tokenCount: roleJson.smallTokens.length,
+        });
         window.dispatchEvent(new Event("townsquare-user-roles-change"));
       } catch (error) {
         this.createError = this.resolveError(
           error,
           this.$t("roleLibrary.createFailed"),
         );
+        recordRuntimeLog("role_library:error", {
+          stage: "create",
+          message: this.createError,
+          team: roleJson && roleJson.team,
+        });
       } finally {
         this.creating = false;
       }

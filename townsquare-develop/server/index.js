@@ -368,12 +368,14 @@ function sendRoomClosed(room) {
 
 function closeStaleRooms() {
   const now = Date.now();
-  const closedRooms = rooms.closeRoomsWhere(
-    (room) =>
-      (!room.host || room.host.readyState !== WebSocket.OPEN) &&
-      room.hostDisconnectedAt &&
-      now - room.hostDisconnectedAt >= HOST_RECONNECT_GRACE_MS,
-  );
+  const closedRooms = rooms.closeRoomsWhere((room) => {
+    if (rooms.isHostConnected(room)) return false;
+    if (!room.hostDisconnectedAt) {
+      room.hostDisconnectedAt = now;
+      room.updatedAt = now;
+    }
+    return now - room.hostDisconnectedAt >= HOST_RECONNECT_GRACE_MS;
+  });
   closedRooms.forEach((room) => {
     clearTimeout(room.voiceRecallTimer);
     sendRoomClosed(room);

@@ -31,6 +31,7 @@ import {
   pollWebLoginTicket,
   setAuthSession,
 } from "@/services/auth";
+import { recordRuntimeLog } from "@/utils/runtimeLogger";
 
 export default {
   components: {
@@ -61,8 +62,12 @@ export default {
   },
   watch: {
     "modals.login"(visible) {
-      if (visible) this.restart();
-      else this.stopTimers();
+      if (visible) {
+        recordRuntimeLog("login:open");
+        this.restart();
+      } else {
+        this.stopTimers();
+      }
     },
   },
   beforeDestroy() {
@@ -70,6 +75,7 @@ export default {
   },
   methods: {
     async restart() {
+      recordRuntimeLog("login:refresh");
       this.stopTimers();
       this.ticket = "";
       this.qrCode = "";
@@ -98,6 +104,10 @@ export default {
         this.startTimers();
       } catch (error) {
         this.error = this.resolveError(error);
+        recordRuntimeLog("login:error", {
+          stage: "create",
+          message: this.error,
+        });
       }
     },
     startTimers() {
@@ -128,6 +138,9 @@ export default {
         this.status = res.data.status || "pending";
         if (this.status === "approved" && res.data.token) {
           setAuthSession(res.data.token, res.data.user);
+          recordRuntimeLog("login:approved", {
+            hasUser: !!res.data.user,
+          });
           window.dispatchEvent(new Event("townsquare-auth-change"));
           this.stopTimers();
           setTimeout(() => this.close(), 500);
@@ -140,6 +153,11 @@ export default {
           return;
         }
         this.error = this.resolveError(error);
+        recordRuntimeLog("login:error", {
+          stage: "poll",
+          message: this.error,
+          failures: this.pollFailures,
+        });
         this.stopTimers();
       }
     },

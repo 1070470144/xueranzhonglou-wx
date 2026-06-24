@@ -62,6 +62,12 @@ function normalizeNote(value) {
     .substr(0, MAX_NOTE_LENGTH);
 }
 
+function isHostConnected(room) {
+  if (!room || !room.host) return false;
+  if (typeof room.host.readyState !== "number") return true;
+  return room.host.readyState === 1;
+}
+
 function createInviteToken() {
   return crypto.randomBytes(18).toString("base64url");
 }
@@ -134,7 +140,7 @@ function createRoom({ host, name, hostName = "", note = "", visibility = "public
 
 function listRooms() {
   return Array.from(rooms.values())
-    .filter(room => !room.hostDisconnectedAt)
+    .filter(room => !room.hostDisconnectedAt && isHostConnected(room))
     .map(summarize)
     .sort((a, b) => b.updatedAt - a.updatedAt);
 }
@@ -157,7 +163,7 @@ function getRoom(id) {
 function verifyJoin({ roomId, playerId, password, inviteToken }) {
   const room = getRoom(roomId);
   if (!room) throw new Error("room_not_found");
-  if (room.hostDisconnectedAt) throw new Error("host_disconnected");
+  if (room.hostDisconnectedAt || !isHostConnected(room)) throw new Error("host_disconnected");
   if (room.bannedPlayerIds.has(playerId)) throw new Error("banned");
   const existingPlayer = room.players.get(playerId);
   if (!existingPlayer && room.players.size >= room.maxPlayers) throw new Error("room_full");
@@ -299,6 +305,7 @@ module.exports = {
   MAX_NOTE_LENGTH,
   normalizeMaxPlayers,
   normalizeNote,
+  isHostConnected,
   createRoom,
   listRooms,
   getRoom,

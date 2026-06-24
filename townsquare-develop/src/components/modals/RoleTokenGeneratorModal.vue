@@ -315,6 +315,7 @@ import {
 } from "@/services/scripts";
 import { clearAuthSession, getAuthSession } from "@/services/auth";
 import { ROLE_TEAM_ORDER, normalizeRoleForLibrary } from "@/utils/roleLibrary";
+import { recordRuntimeLog } from "@/utils/runtimeLogger";
 import newWhiteTexture from "@/assets/role-token-textures/new-white.png";
 import newGoodTexture from "@/assets/role-token-textures/new-good.png";
 import newEvilTexture from "@/assets/role-token-textures/new-evil.png";
@@ -487,6 +488,10 @@ export default {
           error,
           this.$t("roleTokenGenerator.loadRolesFailed"),
         );
+        recordRuntimeLog("role_token:error", {
+          stage: "load_roles",
+          message: this.rolesError,
+        });
       } finally {
         this.loadingRoles = false;
       }
@@ -544,6 +549,12 @@ export default {
       this.saveMessage = "";
       this.saveError = "";
       this.processing = true;
+      recordRuntimeLog("role_token:generate", {
+        color: this.options.selectedColor,
+        mode: this.options.inputImageMode,
+        hasRole: !!this.selectedRoleId,
+        fileType: this.sourceFile.type,
+      });
       try {
         this.processedIcon = await this.renderProcessedIconDataUrl(
           this.sourceFile,
@@ -553,6 +564,11 @@ export default {
           error,
           this.$t("roleTokenGenerator.processFailed"),
         );
+        recordRuntimeLog("role_token:error", {
+          stage: "generate",
+          message: this.generationError,
+          color: this.options.selectedColor,
+        });
       } finally {
         this.processing = false;
       }
@@ -1022,12 +1038,21 @@ export default {
           role.docId === this.selectedRoleId ? updated : role,
         );
         this.saveMessage = this.$t("roleTokenGenerator.saved");
+        recordRuntimeLog("role_token:save", {
+          roleId: this.selectedRoleId,
+          hasIcon: !!iconUrl,
+        });
         window.dispatchEvent(new Event("townsquare-user-roles-change"));
       } catch (error) {
         this.saveError = this.resolveError(
           error,
           this.$t("roleTokenGenerator.saveFailed"),
         );
+        recordRuntimeLog("role_token:error", {
+          stage: "save",
+          message: this.saveError,
+          roleId: this.selectedRoleId,
+        });
       } finally {
         this.saving = false;
       }

@@ -1,4 +1,5 @@
 import { t } from "../i18n";
+import { recordRuntimeLog } from "../utils/runtimeLogger";
 import { getAuthUserSnapshot } from "../services/auth";
 import { buildBluffMessages, hydrateBluffs } from "../services/bluffs";
 
@@ -169,6 +170,15 @@ class LiveSession {
       [command, params] = JSON.parse(data);
     } catch (err) {
       console.log("unsupported socket message", data);
+    }
+    if (command && command.indexOf("room:") === 0) {
+      recordRuntimeLog("room:socket_message", {
+        command,
+        params,
+        sessionId: this._store.state.session.sessionId,
+        currentRoomId:
+          this._store.state.room.current && this._store.state.room.current.id,
+      });
     }
     switch (command) {
       case "room:list:update":

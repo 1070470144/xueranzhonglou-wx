@@ -115,6 +115,7 @@
 
 <script>
 import { mapGetters, mapMutations, mapState } from "vuex";
+import { recordRuntimeLog } from "@/utils/runtimeLogger";
 
 export default {
   data() {
@@ -216,7 +217,13 @@ export default {
   },
   watch: {
     "modals.storyLog"(isOpen) {
-      if (isOpen) this.activePhaseKey = this.currentPhaseKey;
+      if (isOpen) {
+        this.activePhaseKey = this.currentPhaseKey;
+        recordRuntimeLog("story_log:open", {
+          logCount: this.currentLogs.length,
+          phase: this.activePhaseKey,
+        });
+      }
     },
     currentPhaseKey(key) {
       this.activePhaseKey = key;
@@ -275,6 +282,11 @@ export default {
         title: this.$t(`storyLog.${this.manualType}`),
         content,
       });
+      recordRuntimeLog("story_log:add", {
+        type: this.manualType,
+        contentLength: content.length,
+        phase: this.currentPhaseKey,
+      });
       this.manualContent = "";
     },
     supplement(log) {
@@ -284,6 +296,11 @@ export default {
           id: log.id,
           content,
         });
+        recordRuntimeLog("story_log:update", {
+          action: "supplement",
+          logId: log.id,
+          contentLength: content.length,
+        });
       }
     },
     edit(log) {
@@ -292,6 +309,11 @@ export default {
         this.$store.commit("storyLog/updateEntry", {
           id: log.id,
           content,
+        });
+        recordRuntimeLog("story_log:update", {
+          action: "edit",
+          logId: log.id,
+          contentLength: content.length,
         });
       }
     },
@@ -303,11 +325,20 @@ export default {
         phaseType: choice.phaseType,
         phaseNumber: choice.phaseNumber,
       });
+      recordRuntimeLog("story_log:update", {
+        action: "move_phase",
+        logId: log.id,
+        phase: choice.key,
+      });
       this.activePhaseKey = choice.key;
     },
     remove(log) {
       if (confirm(this.$t("storyLog.confirmDelete"))) {
         this.$store.commit("storyLog/deleteEntry", log.id);
+        recordRuntimeLog("story_log:delete", {
+          logId: log.id,
+          type: log.type,
+        });
       }
     },
     adjustCurrentPhase(event) {
@@ -343,6 +374,11 @@ export default {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
+      recordRuntimeLog("story_log:export", {
+        format: "markdown",
+        logCount: this.currentLogs.length,
+        playerCount: this.players.length,
+      });
     },
     async copyReviewText() {
       const text = this.buildReviewText();

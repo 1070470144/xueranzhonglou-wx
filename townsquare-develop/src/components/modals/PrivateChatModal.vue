@@ -78,6 +78,7 @@
 
 <script>
 import { mapMutations, mapState } from "vuex";
+import { recordRuntimeLog } from "@/utils/runtimeLogger";
 
 const nowId = () => `${Date.now()}-${Math.random().toString(36).substr(2)}`;
 
@@ -144,7 +145,14 @@ export default {
   },
   watch: {
     "modals.privateChat"(visible) {
-      if (visible) this.ensureTarget();
+      if (visible) {
+        recordRuntimeLog("private_chat:open", {
+          sessionId: this.session.sessionId,
+          targetCount: this.targets.length,
+          unread: this.totalUnread,
+        });
+        this.ensureTarget();
+      }
     },
     targets() {
       this.ensureTarget();
@@ -175,6 +183,10 @@ export default {
         toName: this.activeTarget.name,
         content: this.content.trim(),
         createdAt: Date.now(),
+      });
+      recordRuntimeLog("private_chat:send", {
+        toId: this.activeTarget.id,
+        contentLength: this.content.trim().length,
       });
       this.content = "";
     },

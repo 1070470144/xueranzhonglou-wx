@@ -174,6 +174,16 @@ room = rooms.createRoom({
   visibility: "public"
 });
 const staleRoomId = room.id;
+assert.strictEqual(
+  rooms.listRooms().some(candidate => candidate.id === staleRoomId),
+  false,
+  "rooms with a closed host socket should not remain visible in the lobby"
+);
+assert.throws(
+  () => rooms.verifyJoin({ roomId: staleRoomId, playerId: "late-player", password: "" }),
+  /host_disconnected/,
+  "rooms with a closed host socket should reject new joins"
+);
 const closedStaleRooms = rooms.closeRoomsWhere(
   candidate => candidate.host && candidate.host.readyState !== 1
 );

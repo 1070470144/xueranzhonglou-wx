@@ -244,6 +244,7 @@ import {
   normalizeCurrentScriptPosterData,
 } from "@/services/scriptPoster";
 import { getAuthSession } from "@/services/auth";
+import { recordRuntimeLog } from "@/utils/runtimeLogger";
 
 const POSTER_WIDTH = 1080;
 const POSTER_HEIGHT = 1456;
@@ -731,7 +732,12 @@ export default {
   },
   watch: {
     "modals.imageGenerator"(visible) {
-      if (visible) this.$nextTick(() => this.generatePoster());
+      if (visible) {
+        recordRuntimeLog("image_generator:open", {
+          roleCount: this.posterRoleCount,
+        });
+        this.$nextTick(() => this.generatePoster());
+      }
     },
     edition: {
       deep: true,
@@ -784,6 +790,10 @@ export default {
       this.clearScheduledPosterRender();
       this.error = "";
       this.status = "";
+      recordRuntimeLog("image_generator:generate", {
+        scriptName: this.posterScriptName,
+        roleCount: this.posterRoleCount,
+      });
       try {
         const poster = normalizeCurrentScriptPosterData({
           edition: this.selectedPosterEdition,
@@ -795,6 +805,11 @@ export default {
         this.error =
           error.message ||
           this.$t("modals.imageGenerator.errors.generateFailed");
+        recordRuntimeLog("image_generator:error", {
+          stage: "generate",
+          message: this.error,
+          roleCount: this.posterRoleCount,
+        });
       }
     },
     async redrawPoster() {
@@ -810,6 +825,10 @@ export default {
           this.error =
             error.message ||
             this.$t("modals.imageGenerator.errors.redrawFailed");
+          recordRuntimeLog("image_generator:error", {
+            stage: "redraw",
+            message: this.error,
+          });
         });
       }, 80);
     },
@@ -2194,6 +2213,10 @@ export default {
       if (!this.posterDataUrl || this.isServerGenerating) return;
       if (!this.requirePosterGenerationLogin()) return;
       this.error = "";
+      recordRuntimeLog("image_generator:download", {
+        roleCount: this.posterRoleCount,
+        hasPreview: !!this.posterDataUrl,
+      });
       try {
         await this.downloadPosterFromServer();
         return;
@@ -2201,6 +2224,10 @@ export default {
         this.error =
           error.message ||
           this.$t("modals.imageGenerator.errors.backendFailedFallback");
+        recordRuntimeLog("image_generator:error", {
+          stage: "download_server",
+          message: this.error,
+        });
         // eslint-disable-next-line no-console
         console.warn("[script-poster] backend PNG render failed", error);
       }

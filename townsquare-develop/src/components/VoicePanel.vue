@@ -5,6 +5,7 @@
 <script>
 import { mapState } from "vuex";
 import VoicePeerManager, { normalizeVoiceError } from "@/services/voicePeer";
+import { recordRuntimeLog } from "@/utils/runtimeLogger";
 
 export default {
   data() {
@@ -48,6 +49,11 @@ export default {
   },
   watch: {
     voiceEnabled() {
+      recordRuntimeLog("voice:panel_open", {
+        enabled: this.voiceEnabled,
+        sessionId: this.session.sessionId,
+        channelId: this.currentChannelId,
+      });
       this.syncVoice();
       this.syncSpeakingIntent();
     },
@@ -97,6 +103,11 @@ export default {
       this.$store.commit("voice/requestState");
     },
     sendSignal(payload) {
+      recordRuntimeLog("voice:signal", {
+        type: payload && payload.type,
+        targetId: payload && payload.to,
+        channelId: this.currentChannelId,
+      });
       this.$store.commit("voice/sendSignal", payload);
     },
     publishSpeakingState(speaking) {
@@ -123,7 +134,13 @@ export default {
           canSpeak: this.canSpeak,
         });
       } catch (error) {
-        this.$store.commit("voice/setError", normalizeVoiceError(error));
+        const message = normalizeVoiceError(error);
+        recordRuntimeLog("voice:error", {
+          stage: "sync",
+          message,
+          channelId: this.currentChannelId,
+        });
+        this.$store.commit("voice/setError", message);
         this.$store.commit("voice/setEnabled", false);
       }
     },
@@ -136,7 +153,13 @@ export default {
           try {
             await this.manager.handleSignal(signal);
           } catch (error) {
-            this.$store.commit("voice/setError", normalizeVoiceError(error));
+            const message = normalizeVoiceError(error);
+            recordRuntimeLog("voice:error", {
+              stage: "signal",
+              message,
+              signalType: signal && signal.type,
+            });
+            this.$store.commit("voice/setError", message);
           }
           this.$store.commit("voice/shiftSignal");
         }
