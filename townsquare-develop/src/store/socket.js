@@ -1256,6 +1256,9 @@ class LiveSession {
   }
 
   requestRoomList() {
+    if (this._store.state.session.sessionId || this._store.state.room.current) {
+      return;
+    }
     this._ensureLobbySocket();
     this._sendWhenOpen("room:list", {});
   }

@@ -121,6 +121,23 @@ assert(
   "room seat sync should shrink stale seats when a new room has fewer max players"
 );
 
+const requestRoomListStart = socketSource.indexOf("requestRoomList() {");
+const requestRoomListEnd = socketSource.indexOf(
+  "\n\n  createRoom(payload)",
+  requestRoomListStart
+);
+const requestRoomListSource = socketSource.slice(
+  requestRoomListStart,
+  requestRoomListEnd
+);
+assert(
+  requestRoomListSource.includes("this._store.state.session.sessionId") &&
+    requestRoomListSource.includes("this._store.state.room.current") &&
+    requestRoomListSource.indexOf("return") <
+      requestRoomListSource.indexOf("this._ensureLobbySocket()"),
+  "requesting the lobby list from an active room should not disconnect the room socket"
+);
+
 assert(
   socketSource.includes('case "room:update"') &&
     socketSource.includes('case "room:update:ok"') &&

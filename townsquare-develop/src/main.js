@@ -6,6 +6,7 @@ import { fas } from "@fortawesome/free-solid-svg-icons";
 import { fab } from "@fortawesome/free-brands-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { installI18n } from "./i18n";
+import { installRuntimeLogger } from "./utils/runtimeLogger";
 
 const faIcons = [
   "AddressCard",
@@ -76,6 +77,7 @@ library.add(
 Vue.component("font-awesome-icon", FontAwesomeIcon);
 installI18n();
 Vue.config.productionTip = false;
+installRuntimeLogger();
 
 const app = new Vue({
   render: (h) => h(App),

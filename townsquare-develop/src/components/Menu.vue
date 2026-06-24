@@ -310,6 +310,10 @@
             {{ $t("menu.myUploads") }}
             <em><font-awesome-icon icon="file-upload" /></em>
           </li>
+          <li @click="downloadRuntimeLog">
+            {{ $t("menu.downloadRuntimeLog") }}
+            <em><font-awesome-icon icon="download" /></em>
+          </li>
         </template>
       </ul>
     </div>
@@ -320,6 +324,7 @@
 import { mapMutations, mapState } from "vuex";
 import { clearAuthSession, getAuthSession } from "@/services/auth";
 import { getPublicWebAnnouncements } from "@/services/announcements";
+import { downloadRuntimeLogs, recordRuntimeLog } from "@/utils/runtimeLogger";
 
 const ANNOUNCEMENT_READ_KEY = "townsquare.webAnnouncement.readKey";
 
@@ -393,6 +398,33 @@ export default {
         return;
       }
       this.toggleModal("myUploads");
+    },
+    downloadRuntimeLog() {
+      const context = {
+        room: this.room.current
+          ? {
+              id: this.room.current.id,
+              name: this.room.current.name,
+              status: this.room.current.status,
+              playerCount: this.room.current.playerCount,
+              maxPlayers: this.room.current.maxPlayers,
+              isHost: this.room.isHost,
+            }
+          : null,
+        session: {
+          sessionId: this.session.sessionId,
+          isSpectator: this.session.isSpectator,
+          isReconnecting: this.session.isReconnecting,
+          ping: this.session.ping,
+        },
+        playersCount: this.players.length,
+        edition: this.edition && {
+          id: this.edition.id,
+          name: this.edition.name,
+        },
+      };
+      recordRuntimeLog("runtime_log:download", context);
+      downloadRuntimeLogs(context);
     },
     clearSeats() {
       const seatCount =

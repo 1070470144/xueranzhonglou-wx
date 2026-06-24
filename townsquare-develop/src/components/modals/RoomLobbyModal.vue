@@ -484,6 +484,7 @@
 <script>
 import { mapState } from "vuex";
 import { getAuthSession } from "@/services/auth";
+import { recordRuntimeLog } from "@/utils/runtimeLogger";
 import Modal from "./Modal";
 
 export default {
@@ -584,6 +585,11 @@ export default {
       if (!visible) return;
       this.refreshAuthUser();
       this.mode = this.session.sessionId ? "manage" : "list";
+      recordRuntimeLog("room:lobby_open", {
+        mode: this.mode,
+        sessionId: this.session.sessionId,
+        room: this.safeRoomSummary(this.room.current),
+      });
       this.refresh();
     },
     "room.current"(current) {
@@ -606,6 +612,10 @@ export default {
       this.closeVisibilityMenu();
       this.goToPage(1);
     },
+    "room.error"(error) {
+      if (!error) return;
+      this.logRoomError(error);
+    },
     totalPages(total) {
       if (this.currentPage > total) this.goToPage(total);
     },
@@ -622,6 +632,7 @@ export default {
     },
     setVisibilityFilter(value) {
       this.visibilityFilter = value;
+      recordRuntimeLog("room:filter", { visibility: value });
     },
     filterRoom(item) {
       if (this.visibilityFilter === "public" && item.isPrivate) return false;
@@ -642,6 +653,11 @@ export default {
       this.$store.commit("toggleModal", "roomLobby");
     },
     refresh() {
+      recordRuntimeLog("room:refresh", {
+        mode: this.mode,
+        query: this.roomSearch,
+        visibility: this.visibilityFilter,
+      });
       this.$store.commit("room/requestList");
     },
     goToPage(page) {
@@ -653,11 +669,16 @@ export default {
     },
     showCreate() {
       this.mode = "create";
+      recordRuntimeLog("room:show_create", {
+        script: this.currentScriptName,
+        authUser: !!this.authUser,
+      });
     },
     selectRoom(room) {
       this.selectedRoom = room;
       this.selectPreviewRoom(room);
       this.mode = "join";
+      recordRuntimeLog("room:select", { room: this.safeRoomSummary(room) });
       const patch = { roomId: room.id };
       // Pre-fill player name from session if the form doesn't already have one
       if (!this.joinForm.playerName && this.session.playerName) {
@@ -684,10 +705,12 @@ export default {
     },
     createRoom() {
       if (!this.room.createForm.name.trim()) {
+        recordRuntimeLog("room:error", { error: "invalid_room_name" }, "warn");
         this.$store.commit("room/setError", "invalid_room_name");
         return;
       }
       if (!this.createHostName.trim()) {
+        recordRuntimeLog("room:error", { error: "invalid_host_name" }, "warn");
         this.$store.commit("room/setError", "invalid_host_name");
         return;
       }
@@ -695,9 +718,14 @@ export default {
         this.room.createForm.visibility === "private" &&
         !this.room.createForm.password.trim()
       ) {
+        recordRuntimeLog("room:error", { error: "password_required" }, "warn");
         this.$store.commit("room/setError", "password_required");
         return;
       }
+      recordRuntimeLog("room:create", {
+        form: this.safeCreateForm(this.room.createForm),
+        script: this.currentScriptName,
+      });
       this.$store.commit("room/create", {
         ...this.room.createForm,
         hostName: this.createHostName,
@@ -706,10 +734,54 @@ export default {
       });
     },
     joinRoom() {
+      recordRuntimeLog("room:join", {
+        room: this.safeRoomSummary(this.selectedRoom),
+        hasPassword: !!this.room.joinForm.password,
+        playerName: this.room.joinForm.playerName,
+      });
       this.$store.commit("room/join", this.room.joinForm);
     },
     updateRoom() {
+      recordRuntimeLog("room:update", {
+        room: this.safeRoomSummary(this.room.current),
+        form: this.safeCreateForm(this.room.createForm),
+      });
       this.$store.commit("room/update", this.room.createForm);
+    },
+    logRoomError(error) {
+      recordRuntimeLog(
+        "room:error",
+        {
+          error,
+          mode: this.mode,
+          room: this.safeRoomSummary(this.room.current || this.selectedRoom),
+        },
+        "warn",
+      );
+    },
+    safeCreateForm(form) {
+      if (!form) return null;
+      return {
+        name: form.name,
+        hostName: form.hostName,
+        note: form.note,
+        maxPlayers: form.maxPlayers,
+        visibility: form.visibility,
+        hasPassword: !!form.password,
+      };
+    },
+    safeRoomSummary(room) {
+      if (!room) return null;
+      return {
+        id: room.id,
+        name: room.name,
+        hostName: room.hostName,
+        scriptName: room.scriptName,
+        status: room.status,
+        playerCount: room.playerCount,
+        maxPlayers: room.maxPlayers,
+        isPrivate: !!room.isPrivate,
+      };
     },
     kick(playerId) {
       if (confirm(this.$t("room.confirmKick"))) {
