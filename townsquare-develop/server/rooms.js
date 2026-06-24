@@ -35,7 +35,7 @@ function extractScriptName(scriptJson) {
   if (!scriptJson) return DEFAULT_SCRIPT_NAME;
   const script = typeof scriptJson === "string" ? JSON.parse(scriptJson) : scriptJson;
   const meta = Array.isArray(script)
-    ? script.find(item => item && item.id === "_meta")
+    ? script.find(item => item && (item.id === "_meta" || item.id === "custom"))
     : null;
   return (meta && meta.name) || "Custom Script";
 }

@@ -142,6 +142,20 @@ assert.throws(
 resetRoom(room);
 
 room = rooms.createRoom({
+  host: makeHost("legacy-custom-meta"),
+  name: "Legacy Custom Metadata Room",
+  visibility: "public",
+  scriptName: "Legacy Custom Script",
+  scriptJson: '[{"id":"custom","name":"Legacy Custom Script"},{"id":"washerwoman"}]'
+});
+assert.strictEqual(
+  room.scriptName,
+  "Legacy Custom Script",
+  "legacy custom script metadata should still populate the room list script name"
+);
+resetRoom(room);
+
+room = rooms.createRoom({
   host: makeHost("host4"),
   name: "No Script Room",
   visibility: "public"

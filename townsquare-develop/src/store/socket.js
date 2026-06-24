@@ -1475,15 +1475,15 @@ class LiveSession {
   _withCurrentScript(payload = {}) {
     const { edition } = this._store.state;
     const roles = this._store.getters.customRolesStripped || [];
-    const scriptJson = JSON.stringify([
-      edition && edition.isOfficial
-        ? { id: "_meta", name: edition.name, author: edition.author }
-        : edition,
-      ...roles,
-    ]);
+    const scriptMeta = {
+      id: "_meta",
+      name: (edition && (edition.name || edition.id)) || "No Script",
+      author: edition && edition.author,
+    };
+    const scriptJson = JSON.stringify([scriptMeta, ...roles]);
     return {
       ...payload,
-      scriptName: (edition && (edition.name || edition.id)) || "No Script",
+      scriptName: scriptMeta.name,
       scriptJson,
     };
   }

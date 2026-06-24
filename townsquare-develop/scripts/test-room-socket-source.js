@@ -157,6 +157,18 @@ assert(
   "room players should not be allowed to claim seats that already have a player id"
 );
 
+const withCurrentScriptStart = socketSource.indexOf("_withCurrentScript(payload = {}) {");
+const withCurrentScriptEnd = socketSource.indexOf("\n  /**\n   * Send a private chat", withCurrentScriptStart);
+const withCurrentScriptSource = socketSource.slice(
+  withCurrentScriptStart,
+  withCurrentScriptEnd
+);
+assert(
+  withCurrentScriptSource.includes('id: "_meta"') &&
+    !/:\s*edition,\s*\n\s*\.\.\.roles/.test(withCurrentScriptSource),
+  "custom room scripts should serialize edition metadata as _meta so the room list can display the script name"
+);
+
 assert(
   /claimSeat\(seat\)[\s\S]*?this\._send\("claim", \[seat, this\._store\.state\.session\.playerId\]\);[\s\S]*?this\.sendClaimedPlayerName\(seat\);/.test(
     socketSource
