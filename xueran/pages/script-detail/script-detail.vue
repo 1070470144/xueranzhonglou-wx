@@ -599,6 +599,67 @@ export default {
 		},
 
 		// 保存图片到相册，支持远程和本地路径
+		getImageUrl(image) {
+			if (typeof image === 'string') {
+				return image;
+			}
+			if (image && typeof image === 'object') {
+				return image.url || image.fileID || image.fileId || image.path || image.src || '';
+			}
+			return '';
+		},
+
+		isCloudFileUrl(url) {
+			return /^cloud:\/\//i.test(url);
+		},
+
+		isRemoteImageUrl(url) {
+			return /^https?:\/\//i.test(url);
+		},
+
+		async getCloudTempFileURL(fileID) {
+			if (typeof uniCloud === 'undefined' || typeof uniCloud.getTempFileURL !== 'function') {
+				throw new Error('getTempFileURL unavailable');
+			}
+
+			const res = await uniCloud.getTempFileURL({
+				fileList: [fileID]
+			});
+			const file = res && Array.isArray(res.fileList) ? res.fileList[0] : null;
+			const tempUrl = file && (file.tempFileURL || file.tempFileUrl || file.url || file.download_url || file.tempFilePath);
+			if (!tempUrl) {
+				throw new Error('getTempFileURL failed');
+			}
+			return tempUrl;
+		},
+
+		async downloadImageFile(url) {
+			return await new Promise((resolve, reject) => {
+				uni.downloadFile({
+					url,
+					success: res => {
+						if (res.statusCode === 200 && res.tempFilePath) {
+							resolve(res.tempFilePath);
+						} else {
+							reject(new Error('download failed'));
+						}
+					},
+					fail: reject
+				});
+			});
+		},
+
+		async resolveSavableImagePath(url) {
+			let imageUrl = url;
+			if (this.isCloudFileUrl(imageUrl)) {
+				imageUrl = await this.getCloudTempFileURL(imageUrl);
+			}
+			if (this.isRemoteImageUrl(imageUrl)) {
+				return await this.downloadImageFile(imageUrl);
+			}
+			return imageUrl;
+		},
+
 		async saveImageToAlbum(url) {
 			if (!url) {
 				uni.showToast({ title: '图片地址无效', icon: 'none' });
@@ -606,25 +667,7 @@ export default {
 			}
 
 			try {
-				let filePath = url;
-				// 下载远程图片
-				if (/^https?:\/\//i.test(url)) {
-					const dl = await new Promise((resolve, reject) => {
-						uni.downloadFile({
-							url,
-							success: res => {
-								if (res.statusCode === 200 && res.tempFilePath) {
-									resolve(res.tempFilePath);
-								} else {
-									reject(new Error('下载失败'));
-								}
-							},
-							fail: reject
-						});
-					});
-					filePath = dl;
-				}
-
+				const filePath = await this.resolveSavableImagePath(url);
 				// 保存到相册
 				await new Promise((resolve, reject) => {
 					uni.saveImageToPhotosAlbum({
@@ -754,23 +797,14 @@ export default {
 
 			// 优先使用 thumbnails (管理端标准)
 			if (Array.isArray(item.thumbnails) && item.thumbnails.length) {
-				processedImages = item.thumbnails.slice(0, 3);
+				processedImages = item.thumbnails.slice(0, 3).map(img => this.getImageUrl(img)).filter(url => url && typeof url === 'string');
 			} else if (item.thumbnail) {
 				// 降级到 thumbnail (单个图片)
-				processedImages = [item.thumbnail];
+				const thumbnail = this.getImageUrl(item.thumbnail);
+				processedImages = thumbnail ? [thumbnail] : [];
 			} else if (Array.isArray(item.images) && item.images.length) {
 				// 处理 images 数组中的对象或字符串
-				processedImages = item.images.slice(0, 3).map(img => {
-					// 如果是字符串，直接使用
-					if (typeof img === 'string') {
-						return img;
-					}
-					// 如果是对象，尝试获取url属性
-					if (typeof img === 'object' && img !== null) {
-						return img.url || img.fileId || img.path || null;
-					}
-					return null;
-				}).filter(url => url && typeof url === 'string');
+				processedImages = item.images.slice(0, 3).map(img => this.getImageUrl(img)).filter(url => url && typeof url === 'string');
 			}
 
 			// 确保至少有一个有效的URL
@@ -789,17 +823,7 @@ export default {
 					const item = result.data[0];
 					// use original images if present, convert objects to URLs
 					if (Array.isArray(item.images) && item.images.length) {
-						this.viewerImages = item.images.map(img => {
-							// 如果是字符串，直接使用
-							if (typeof img === 'string') {
-								return img;
-							}
-							// 如果是对象，尝试获取url属性
-							if (typeof img === 'object' && img !== null) {
-								return img.url || img.fileId || img.path || null;
-							}
-							return null;
-						}).filter(url => url && typeof url === 'string');
+						this.viewerImages = item.images.map(img => this.getImageUrl(img)).filter(url => url && typeof url === 'string');
 						this.showingOriginals = true;
 						return;
 					}
