@@ -11,6 +11,7 @@ Add a Blood on the Clocktower carpool board in the `xueran` mini program so play
 - Support city/district region filtering, script filtering, time filtering, and online/offline filtering.
 - Require a join request first, then let the host confirm before contact details are revealed.
 - Do not add automated matching, chat, payments, or calendar sync in the first version.
+- Add lightweight entry points on the home page and tool page so users can reach the carpool board quickly.
 
 ## Product Shape
 
@@ -179,6 +180,36 @@ Shows:
 - my requests
 - confirmed requests
 - closed posts
+
+## Entry Points
+
+### Home Page
+
+The home page should add two quick-join modules:
+
+- `Recent` sessions: a small feed of the newest open posts
+- `Hot` sessions: a small feed of the most active or most requested posts
+
+Each module should show a compact list item with:
+
+- script name
+- region
+- time
+- online or offline
+- player count
+
+Tap behavior:
+
+- tap a list item to open the session detail page
+- tap the module header to open the full board filtered to that category
+
+These modules should feel like shortcuts, not a replacement for the full board.
+
+### Tool Page
+
+Add a `Carpool` entry to the existing tool list so users can reach the board from the utility hub.
+
+The entry should open the same carpool board landing page as the home shortcuts.
 
 ## Error Handling
 
