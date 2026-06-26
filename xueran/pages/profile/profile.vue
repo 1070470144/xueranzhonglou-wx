@@ -67,6 +67,17 @@
         <view class="arrow"></view>
       </view>
 
+      <view class="feature-item" @click="goToMyCarpools">
+        <view class="feature-icon">
+          <text class="feature-icon-text">拼</text>
+        </view>
+        <view class="feature-content">
+          <view class="feature-title">我的拼车</view>
+          <view class="feature-desc">查看发布和报名的拼车</view>
+        </view>
+        <view class="arrow"></view>
+      </view>
+
       <view class="feature-item" @click="goToAiConfig">
         <view class="feature-icon">
           <text class="feature-icon-text">AI</text>
@@ -172,6 +183,15 @@ export default {
       }
       uni.navigateTo({
         url: '/pages/my-games/my-games'
+      });
+    },
+    goToMyCarpools() {
+      if (!this.user) {
+        this.goToLogin();
+        return;
+      }
+      uni.navigateTo({
+        url: '/pages/my-carpools/my-carpools'
       });
     },
     goToAiConfig() {

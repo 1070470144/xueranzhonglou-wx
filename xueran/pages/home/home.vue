@@ -101,12 +101,37 @@
       </view>
     </view>
 
+    <view class="carpool-panel slide-up">
+      <view class="carpool-head" @click="goCarpoolBoard('recent')">
+        <text class="carpool-title">最近拼车</text>
+        <text class="carpool-link">查看全部</text>
+      </view>
+      <view v-if="carpoolLoading && !carpoolRecent.length" class="carpool-empty">加载中...</view>
+      <view v-else-if="!carpoolRecent.length" class="carpool-empty">暂无最近拼车</view>
+      <view v-else class="carpool-list">
+        <view v-for="item in carpoolRecent" :key="item.id" class="carpool-item" @click="goCarpoolDetail(item.id)">
+          <view class="carpool-item-head">
+            <text class="carpool-item-title">{{ item.title || item.scriptName }}</text>
+            <text class="carpool-item-count">{{ item.joinedCount || 0 }}/{{ item.playerCount || 0 }}</text>
+          </view>
+          <text class="carpool-item-script">{{ item.scriptName }}</text>
+          <view class="carpool-item-meta">
+            <text>{{ item.regionCity }} · {{ item.regionDistrict }}</text>
+            <text>{{ formatCarpoolTime(item.startTime) }}</text>
+          </view>
+        </view>
+        <view v-if="carpoolLoadingMore" class="carpool-more">加载中...</view>
+        <view v-else-if="carpoolRecent.length >= carpoolTotal && carpoolTotal > carpoolPageSize" class="carpool-more">没有更多了</view>
+      </view>
+    </view>
+
   </view>
 </template>
 
 <script>
 import { isLoggedIn } from '@/utils/auth.js';
 import { askAi, generateAiAnswer, getAiAvailability, getAiScripts, getQuestionRecord, listAnnouncements } from '@/utils/aiApi.js';
+import { listCarpoolPosts } from '@/utils/carpoolApi.js';
 
 const HOME_CACHE_TTL = 60 * 1000;
 const homeCache = {
@@ -138,7 +163,13 @@ export default {
       answerPollTimer: null,
       generatingTimer: null,
       generatingSeconds: 0,
-      announcements: []
+      announcements: [],
+      carpoolRecent: [],
+      carpoolLoading: false,
+      carpoolLoadingMore: false,
+      carpoolPage: 1,
+      carpoolPageSize: 2,
+      carpoolTotal: 0
     };
   },
   computed: {
@@ -160,6 +191,9 @@ export default {
     this.enableShareMenu();
     this.hydrateHomeCache();
     this.refreshHomeData();
+  },
+  onReachBottom() {
+    this.loadMoreRecentCarpools();
   },
   onShareAppMessage() {
     return {
@@ -200,12 +234,16 @@ export default {
     refreshHomeData() {
       const hasRequiredCache = !this.loggedIn || !!homeCache.availability;
       const cacheFresh = hasRequiredCache && Date.now() - homeCache.loadedAt < HOME_CACHE_TTL;
-      if (cacheFresh) return;
+      if (cacheFresh) {
+        this.loadCarpoolQuickPosts();
+        return;
+      }
 
       const tasks = [this.loadAnnouncements()];
       if (this.loggedIn) {
         tasks.push(this.loadAvailability());
       }
+      tasks.push(this.loadCarpoolQuickPosts());
       Promise.all(tasks).finally(() => {
         homeCache.loadedAt = Date.now();
       });
@@ -238,6 +276,47 @@ export default {
         }
       } finally {
         this.availabilityLoaded = true;
+      }
+    },
+    async loadCarpoolQuickPosts() {
+      this.carpoolPage = 1;
+      this.carpoolLoading = true;
+      try {
+        const res = await listCarpoolPosts({
+          page: this.carpoolPage,
+          pageSize: this.carpoolPageSize,
+          sort: 'recent'
+        });
+        if (res && res.success && res.data) {
+          this.carpoolRecent = res.data.list || [];
+          this.carpoolTotal = res.data.total || 0;
+        }
+      } catch (error) {
+        this.carpoolRecent = [];
+        this.carpoolTotal = 0;
+      } finally {
+        this.carpoolLoading = false;
+      }
+    },
+    async loadMoreRecentCarpools() {
+      if (this.carpoolLoading || this.carpoolLoadingMore || !this.carpoolRecent.length || this.carpoolRecent.length >= this.carpoolTotal) {
+        return;
+      }
+      this.carpoolLoadingMore = true;
+      const nextPage = this.carpoolPage + 1;
+      try {
+        const res = await listCarpoolPosts({
+          page: nextPage,
+          pageSize: this.carpoolPageSize,
+          sort: 'recent'
+        });
+        if (res && res.success && res.data) {
+          this.carpoolPage = nextPage;
+          this.carpoolRecent = this.carpoolRecent.concat(res.data.list || []);
+          this.carpoolTotal = res.data.total || this.carpoolTotal;
+        }
+      } finally {
+        this.carpoolLoadingMore = false;
       }
     },
     onScriptKeywordInput() {
@@ -430,6 +509,22 @@ export default {
     goAnnouncements() {
       uni.navigateTo({ url: '/pages/announcements/announcements' });
     },
+    goCarpoolBoard(sort = 'recent') {
+      uni.navigateTo({ url: `/pages/carpool/carpool?sort=${sort}` });
+    },
+    goCarpoolDetail(id) {
+      if (!id) return;
+      uni.navigateTo({ url: `/pages/carpool-detail/carpool-detail?id=${id}` });
+    },
+    formatCarpoolTime(value) {
+      const date = new Date(Number(value) || 0);
+      if (!date.getTime()) return '未知时间';
+      const mm = `${date.getMonth() + 1}`.padStart(2, '0');
+      const dd = `${date.getDate()}`.padStart(2, '0');
+      const hh = `${date.getHours()}`.padStart(2, '0');
+      const mi = `${date.getMinutes()}`.padStart(2, '0');
+      return `${mm}-${dd} ${hh}:${mi}`;
+    },
     scanWebLogin() {
       uni.scanCode({
         onlyFromCamera: false,
@@ -598,6 +693,112 @@ export default {
 .notice.danger {
   background: #fff7f5;
   color: #a13a2e;
+}
+
+.carpool-panel {
+  margin-bottom: 20rpx;
+  padding: 16rpx;
+  border: 1rpx solid #edf0f2;
+  border-radius: 8rpx;
+  background: #ffffff;
+}
+
+.carpool-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 12rpx;
+}
+
+.carpool-title {
+  font-size: 26rpx;
+  font-weight: 700;
+  color: #1f2329;
+}
+
+.carpool-link {
+  color: #1f8f4d;
+  font-size: 22rpx;
+}
+
+.carpool-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+.carpool-item {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 4rpx 0 6rpx;
+  background: transparent;
+}
+
+.carpool-item:first-child {
+  border-top: 0;
+}
+
+.carpool-item-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.carpool-item-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 24rpx;
+  font-weight: 600;
+  color: #1f2329;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.carpool-item-script {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #646a73;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.carpool-item-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: #8f959e;
+}
+
+.carpool-item-count {
+  flex: 0 0 auto;
+  padding: 3rpx 12rpx;
+  border-radius: 999rpx;
+  background: #e8f7ef;
+  color: #1f8f4d;
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+.carpool-more {
+  padding: 8rpx 0 2rpx;
+  color: #8f959e;
+  font-size: 22rpx;
+  text-align: center;
+}
+
+.carpool-empty {
+  padding: 8rpx 0 2rpx;
+  color: #8f959e;
+  font-size: 24rpx;
 }
 
 .announcement-bar {

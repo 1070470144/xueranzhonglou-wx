@@ -1,0 +1,38 @@
+{
+  "bsonType": "object",
+  "required": ["title", "regionCity", "regionDistrict", "scriptName", "startTime", "mode", "playerCount", "status", "hostId", "createTime", "updateTime"],
+  "permission": {
+    "read": true,
+    "create": true,
+    "update": true,
+    "delete": true
+  },
+  "properties": {
+    "_id": { "description": "ID" },
+    "title": { "bsonType": "string", "title": "标题" },
+    "regionCity": { "bsonType": "string", "title": "城市" },
+    "regionDistrict": { "bsonType": "string", "title": "区县" },
+    "addressDetail": { "bsonType": "string", "title": "详细地址" },
+    "scriptId": { "bsonType": "string", "title": "剧本ID" },
+    "scriptName": { "bsonType": "string", "title": "剧本名" },
+    "startTime": { "bsonType": "long", "title": "开局时间" },
+    "mode": { "bsonType": "string", "enum": ["online", "offline"], "title": "线上线下" },
+    "playerCount": { "bsonType": "int", "title": "目标人数" },
+    "joinedCount": { "bsonType": "int", "title": "已确认人数" },
+    "requestCount": { "bsonType": "int", "title": "报名人数" },
+    "status": { "bsonType": "string", "enum": ["open", "full", "closed"], "title": "状态" },
+    "hostId": { "bsonType": "string", "title": "车主ID" },
+    "hostName": { "bsonType": "string", "title": "车主昵称" },
+    "storytellerName": { "bsonType": "string", "title": "说书人名字" },
+    "notes": { "bsonType": "string", "title": "备注" },
+    "scriptImages": { "bsonType": "array", "title": "剧本图片" },
+    "venueImages": { "bsonType": "array", "title": "场地图片" },
+    "beginnerFriendly": { "bsonType": "bool", "title": "新手友好" },
+    "needStoryteller": { "bsonType": "bool", "title": "缺主持" },
+    "feeNotes": { "bsonType": "string", "title": "费用说明" },
+    "waitingListEnabled": { "bsonType": "bool", "title": "允许候补" },
+    "contactMethod": { "bsonType": "string", "title": "联系方式" },
+    "createTime": { "bsonType": "long", "title": "创建时间" },
+    "updateTime": { "bsonType": "long", "title": "更新时间" }
+  }
+}

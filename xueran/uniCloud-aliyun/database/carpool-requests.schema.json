@@ -1,0 +1,23 @@
+{
+  "bsonType": "object",
+  "required": ["postId", "requesterId", "requesterName", "status", "requestTime", "updateTime"],
+  "permission": {
+    "read": true,
+    "create": true,
+    "update": true,
+    "delete": true
+  },
+  "properties": {
+    "_id": { "description": "ID" },
+    "postId": { "bsonType": "string", "title": "拼车ID" },
+    "requesterId": { "bsonType": "string", "title": "报名用户ID" },
+    "requesterName": { "bsonType": "string", "title": "报名用户昵称" },
+    "requesterAvatarUrl": { "bsonType": "string", "title": "报名用户头像" },
+    "requesterContact": { "bsonType": "string", "title": "报名用户联系方式" },
+    "requesterRemark": { "bsonType": "string", "title": "报名备注" },
+    "status": { "bsonType": "string", "enum": ["pending", "confirmed", "rejected", "cancelled"], "title": "状态" },
+    "requestTime": { "bsonType": "long", "title": "报名时间" },
+    "confirmedTime": { "bsonType": "long", "title": "确认时间" },
+    "updateTime": { "bsonType": "long", "title": "更新时间" }
+  }
+}

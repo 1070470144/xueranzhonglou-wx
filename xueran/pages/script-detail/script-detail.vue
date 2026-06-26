@@ -641,23 +641,92 @@ export default {
 						if (res.statusCode === 200 && res.tempFilePath) {
 							resolve(res.tempFilePath);
 						} else {
-							reject(new Error('download failed'));
+							const error = new Error('download failed: ' + (res.statusCode || 'unknown'));
+							error.url = url;
+							reject(error);
 						}
 					},
-					fail: reject
+					fail: err => {
+						const error = new Error((err && err.errMsg) ? err.errMsg : 'download failed');
+						error.raw = err;
+						error.url = url;
+						reject(error);
+					}
 				});
 			});
+		},
+
+		async downloadCloudImageFile(fileID) {
+			const tempUrl = await this.getCloudTempFileURL(fileID);
+			return await this.downloadImageFile(tempUrl);
 		},
 
 		async resolveSavableImagePath(url) {
 			let imageUrl = url;
 			if (this.isCloudFileUrl(imageUrl)) {
-				imageUrl = await this.getCloudTempFileURL(imageUrl);
+				return await this.downloadCloudImageFile(imageUrl);
 			}
 			if (this.isRemoteImageUrl(imageUrl)) {
 				return await this.downloadImageFile(imageUrl);
 			}
 			return imageUrl;
+		},
+
+		getSaveImageErrorMessage(err) {
+			if (!err) return '';
+			if (err.errMsg) return String(err.errMsg);
+			if (err.message) return String(err.message);
+			return String(err);
+		},
+
+		isAlbumPermissionError(message) {
+			const msg = message.toLowerCase();
+			return msg.includes('authorize') || msg.includes('auth') || msg.includes('permission') || msg.includes('deny');
+		},
+
+		isDownloadDomainError(message) {
+			const msg = message.toLowerCase();
+			return msg.includes('url not in domain list') || msg.includes('domain list') || msg.includes('downloadfile:fail') || msg.includes('download file fail');
+		},
+
+		getDownloadUrlHost(err) {
+			const url = err && err.url ? String(err.url) : '';
+			const matched = url.match(/^https?:\/\/([^/]+)/i);
+			return matched ? matched[1] : '';
+		},
+
+		showSaveImageError(err) {
+			const msg = this.getSaveImageErrorMessage(err);
+			if (this.isAlbumPermissionError(msg)) {
+				uni.showModal({
+					title: '保存失败',
+					content: '请授予相册权限以保存图片，是否前往设置？',
+					success: res => {
+						if (res.confirm) {
+							uni.openSetting();
+						}
+					}
+				});
+				return;
+			}
+
+			if (this.isDownloadDomainError(msg)) {
+				const host = this.getDownloadUrlHost(err);
+				uni.showModal({
+					title: '保存失败',
+					content: host
+						? ('当前下载域名未配置到小程序 downloadFile 合法域名：\nhttps://' + host + '\n请添加后重新上传体验版。')
+						: '图片下载域名未配置到小程序 downloadFile 合法域名，请在微信公众平台添加 uniCloud 临时文件域名后重新上传体验版。',
+					showCancel: false
+				});
+				return;
+			}
+
+			uni.showModal({
+				title: '保存失败',
+				content: msg ? ('原因：' + msg) : '图片保存失败，请稍后重试',
+				showCancel: false
+			});
 		},
 
 		async saveImageToAlbum(url) {
@@ -680,21 +749,7 @@ export default {
 				uni.showToast({ title: '保存成功', icon: 'success' });
 			} catch (err) {
 				console.error('保存图片失败', err);
-				const msg = (err && err.errMsg) ? String(err.errMsg) : String(err);
-				// 授权未通过或被拒绝
-				if (msg.toLowerCase().includes('authorize') || msg.toLowerCase().includes('auth') || msg.toLowerCase().includes('permission')) {
-					uni.showModal({
-						title: '保存失败',
-						content: '请授予相册权限以保存图片，是否前往设置？',
-						success: res => {
-							if (res.confirm) {
-								uni.openSetting();
-							}
-						}
-					});
-				} else {
-					uni.showToast({ title: '保存失败', icon: 'none' });
-				}
+				this.showSaveImageError(err);
 			}
 		},
 

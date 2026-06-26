@@ -19,6 +19,32 @@
       }
     },
     {
+      "path": "pages/carpool/carpool",
+      "style": {
+        "navigationBarTitleText": "拼车广场",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
+      "path": "pages/carpool-publish/carpool-publish",
+      "style": {
+        "navigationBarTitleText": "发布拼车"
+      }
+    },
+    {
+      "path": "pages/carpool-detail/carpool-detail",
+      "style": {
+        "navigationBarTitleText": "拼车详情"
+      }
+    },
+    {
+      "path": "pages/my-carpools/my-carpools",
+      "style": {
+        "navigationBarTitleText": "我的拼车",
+        "enablePullDownRefresh": true
+      }
+    },
+    {
       "path": "pages/rankings/rankings",
       "style": {
         "navigationBarTitleText": "工具"

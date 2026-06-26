@@ -10,6 +10,15 @@
         <text class="arrow">›</text>
       </view>
 
+      <view class="tool-item" @tap="openTool('/pages/carpool/carpool')">
+        <view class="tool-icon carpool">拼</view>
+        <view class="tool-main">
+          <text class="tool-title">拼车广场</text>
+          <text class="tool-desc">查找线上线下车局，按地域、时间和剧本快速加入</text>
+        </view>
+        <text class="arrow">›</text>
+      </view>
+
       <view class="tool-item" @tap="openTool('/pages/tool-upload/tool-upload')">
         <view class="tool-icon upload">上</view>
         <view class="tool-main">
@@ -98,7 +107,8 @@ export default {
 .tool-icon.rank,
 .tool-icon.exam,
 .tool-icon.practice,
-.tool-icon.notice {
+.tool-icon.notice,
+.tool-icon.carpool {
   color: #1f8f4d;
   background: #f0f9f4;
 }

@@ -1,0 +1,33 @@
+[
+  {
+    "IndexName": "status_startTime",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        { "Name": "status", "Direction": "1" },
+        { "Name": "startTime", "Direction": "1" }
+      ],
+      "MgoIsUnique": false
+    }
+  },
+  {
+    "IndexName": "region_time",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        { "Name": "regionCity", "Direction": "1" },
+        { "Name": "regionDistrict", "Direction": "1" },
+        { "Name": "startTime", "Direction": "1" }
+      ],
+      "MgoIsUnique": false
+    }
+  },
+  {
+    "IndexName": "host_time",
+    "MgoKeySchema": {
+      "MgoIndexKeys": [
+        { "Name": "hostId", "Direction": "1" },
+        { "Name": "createTime", "Direction": "-1" }
+      ],
+      "MgoIsUnique": false
+    }
+  }
+]
