@@ -46,11 +46,15 @@
           <text class="section-title">联系方式</text>
           <text class="section-text">{{ item.contactMethod }}</text>
         </view>
+        <view class="safe-note">
+          <text>联系方式仅用于报名通过后的活动沟通，不公开展示。</text>
+          <text class="safe-link" @tap="goGuide">查看说明</text>
+        </view>
       </view>
 
       <view v-if="!isHost" class="card member-card">
         <view class="member-summary">
-          <view class="section-title">已加入成员</view>
+          <view class="section-title">已确认报名</view>
           <view class="member-count">
             <text class="member-count-main">{{ joinedCount }}/{{ playerCount }}</text>
           </view>
@@ -58,8 +62,8 @@
         <view class="member-progress">
           <view class="member-progress-bar" :style="{ width: joinPercent + '%' }"></view>
         </view>
-        <view class="member-hint">还缺 {{ missingCount }} 人开车</view>
-        <view v-if="!confirmedMembers.length" class="empty">暂无已加入成员</view>
+        <view class="member-hint">还缺 {{ missingCount }} 人开局</view>
+        <view v-if="!confirmedMembers.length" class="empty">暂无确认报名</view>
         <view v-for="member in confirmedMembers" :key="member._id" class="member-item">
           <image class="member-avatar" :src="member.requesterAvatarUrl || '/static/default-avatar.png'" mode="aspectFill" />
           <view class="member-info">
@@ -72,23 +76,23 @@
         <view class="section-title">报名状态</view>
         <view v-if="myRequest" class="request-box">
           <text>当前状态：{{ requestLabel(myRequest.status) }}</text>
-          <button v-if="canLeave" class="danger small-danger" :disabled="actioning" @tap="leaveCurrentCarpool">{{ myRequest.status === 'confirmed' ? '退出拼车' : '取消申请' }}</button>
+          <button v-if="canLeave" class="danger small-danger" :disabled="actioning" @tap="leaveCurrentCarpool">{{ myRequest.status === 'confirmed' ? '退出报名' : '取消申请' }}</button>
         </view>
         <view v-else>
           <input v-model="joinContact" class="contact-input" placeholder="请输入联系方式" />
           <textarea v-model="joinRemark" class="remark-input" placeholder="备注，可填写称呼、到场时间、偏好等" />
-          <button class="primary" :disabled="actioning" @tap="requestJoin">{{ actioning ? '提交中...' : '申请加入' }}</button>
+          <button class="primary" :disabled="actioning" @tap="requestJoin">{{ actioning ? '提交中...' : '提交报名' }}</button>
         </view>
       </view>
 
       <view v-if="isHost" class="card manage-card">
-        <view class="section-title">拼车管理</view>
+        <view class="section-title">组局管理</view>
         <view class="manage-tabs">
           <view class="manage-tab" :class="{ active: activeManageTab === 'pending' }" @tap="activeManageTab = 'pending'">待审核 {{ pendingRequests.length }}</view>
-          <view class="manage-tab" :class="{ active: activeManageTab === 'members' }" @tap="activeManageTab = 'members'">已加入 {{ confirmedMembers.length }}</view>
+          <view class="manage-tab" :class="{ active: activeManageTab === 'members' }" @tap="activeManageTab = 'members'">已确认 {{ confirmedMembers.length }}</view>
         </view>
         <view v-if="activeManageTab === 'members'" class="manage-panel">
-          <view v-if="!confirmedMembers.length" class="empty">暂无已加入成员</view>
+          <view v-if="!confirmedMembers.length" class="empty">暂无确认报名</view>
           <view v-for="member in confirmedMembers" :key="member._id" class="member-item">
             <image class="member-avatar" :src="member.requesterAvatarUrl || '/static/default-avatar.png'" mode="aspectFill" />
             <view class="member-info">
@@ -99,7 +103,7 @@
           </view>
         </view>
         <view v-else class="manage-panel">
-          <view v-if="!pendingRequests.length" class="empty">暂无待审核申请</view>
+          <view v-if="!pendingRequests.length" class="empty">暂无待审核报名</view>
           <view v-for="req in pendingRequests" :key="req._id" class="request-item">
             <view>
               <view class="request-name">{{ req.requesterName || '玩家' }}</view>
@@ -176,7 +180,7 @@ export default {
       return this.myRequest && (this.myRequest.status === 'pending' || this.myRequest.status === 'confirmed');
     },
     postActionText() {
-      return this.isClosed ? '删除拼车' : '关闭拼车';
+      return this.isClosed ? '删除组局' : '关闭组局';
     },
     venueImages() {
       return Array.isArray(this.item && this.item.venueImages) ? this.item.venueImages.slice(0, 3) : [];
@@ -193,14 +197,14 @@ export default {
     this.loadDetail().finally(() => uni.stopPullDownRefresh());
   },
   onShareAppMessage() {
-    const title = this.item ? `${this.item.title || this.item.scriptName} 拼车` : '血染钟楼拼车';
+    const title = this.item ? `${this.item.title || this.item.scriptName} 组局` : '血染钟楼组局';
     return {
       title,
       path: `/pages/carpool-detail/carpool-detail?id=${this.id}`
     };
   },
   onShareTimeline() {
-    const title = this.item ? `${this.item.title || this.item.scriptName} 拼车` : '血染钟楼拼车';
+    const title = this.item ? `${this.item.title || this.item.scriptName} 组局` : '血染钟楼组局';
     return {
       title,
       query: `id=${this.id}`
@@ -209,7 +213,7 @@ export default {
   methods: {
     async loadDetail() {
       if (!this.id) {
-        this.error = '缺少拼车ID';
+        this.error = '缺少组局ID';
         return;
       }
       this.loading = true;
@@ -245,8 +249,8 @@ export default {
     async leaveCurrentCarpool() {
       if (this.actioning || !this.canLeave) return;
       uni.showModal({
-        title: this.myRequest.status === 'confirmed' ? '退出拼车' : '取消申请',
-        content: this.myRequest.status === 'confirmed' ? '确定退出这个拼车吗？' : '确定取消这次申请吗？',
+        title: this.myRequest.status === 'confirmed' ? '退出报名' : '取消申请',
+        content: this.myRequest.status === 'confirmed' ? '确定退出这次报名吗？' : '确定取消这次申请吗？',
         confirmText: this.myRequest.status === 'confirmed' ? '退出' : '取消申请',
         confirmColor: '#c33',
         success: async modalRes => {
@@ -285,8 +289,8 @@ export default {
     deletePost() {
       if (this.actioning) return;
       uni.showModal({
-        title: '删除拼车',
-        content: '删除后这条拼车记录和报名记录都会被移除，确定删除吗？',
+        title: '删除组局',
+        content: '删除后这条组局记录和报名记录都会被移除，确定删除吗？',
         confirmText: '删除',
         confirmColor: '#c33',
         success: async res => {
@@ -320,6 +324,9 @@ export default {
     },
     previewScriptImage(current) {
       uni.previewImage({ current, urls: this.scriptImages });
+    },
+    goGuide() {
+      uni.navigateTo({ url: '/pages/carpool-guide/carpool-guide' });
     },
     formatTime(value) {
       const date = new Date(Number(value) || 0);
@@ -394,6 +401,23 @@ export default {
 .section { margin-top: 18rpx; }
 .section-title { display: block; font-size: 24rpx; font-weight: 700; color: #1f2329; margin-bottom: 8rpx; }
 .section-text { display: block; color: #646a73; font-size: 24rpx; line-height: 1.6; white-space: pre-wrap; }
+.safe-note {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  margin-top: 18rpx;
+  padding: 16rpx;
+  border-radius: 8rpx;
+  background: #f5f8f6;
+  color: #646a73;
+  font-size: 22rpx;
+  line-height: 1.5;
+}
+.safe-link {
+  color: #1f8f4d;
+  font-weight: 700;
+}
 .venue-images { display: flex; flex-wrap: wrap; gap: 12rpx; }
 .venue-image { width: 150rpx; height: 150rpx; border-radius: 10rpx; background: #f5f6f7; }
 .member-summary {

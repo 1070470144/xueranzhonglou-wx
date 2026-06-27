@@ -1,7 +1,7 @@
 <template>
   <view class="page">
     <view class="topbar">
-      <view class="title">我的拼车</view>
+      <view class="title">我的组局</view>
       <view class="top-actions">
         <picker mode="selector" :range="statusFilterOptions" range-key="label" :value="statusFilterIndex" @change="onStatusFilterChange">
           <view class="filter-picker">
@@ -22,7 +22,7 @@
     <view v-else class="list">
       <view v-for="item in currentList" :key="item.id || item._id" class="card" @tap="openItem(item)">
         <view class="card-head">
-          <text class="card-title">{{ item.title || item.scriptName || item.postTitle || '拼车' }}</text>
+          <text class="card-title">{{ item.title || item.scriptName || item.postTitle || '组局' }}</text>
           <text class="status" :class="statusClass(item.status)">{{ statusText(item.status) }}</text>
         </view>
         <view class="meta">{{ item.regionCity || item.postRegionCity || '' }}{{ item.regionDistrict || item.postRegionDistrict ? ' · ' + (item.regionDistrict || item.postRegionDistrict) : '' }}</view>

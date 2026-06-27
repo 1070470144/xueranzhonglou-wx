@@ -1,6 +1,7 @@
 <template>
   <view class="page">
     <view class="topbar">
+      <button class="guide-btn" @tap="goGuide">说明</button>
       <view class="spacer"></view>
       <button class="primary-btn" @tap="goPublish">发布</button>
     </view>
@@ -36,7 +37,7 @@
 
     <view v-if="loading && !posts.length" class="state">加载中...</view>
     <view v-else-if="error" class="state error">{{ error }}</view>
-    <view v-else-if="!posts.length" class="state">暂时没有拼车</view>
+    <view v-else-if="!posts.length" class="state">暂时没有组局</view>
 
     <view v-else class="list">
       <view v-for="item in posts" :key="item.id" class="card" @tap="goDetail(item.id)">
@@ -219,6 +220,9 @@ export default {
     goPublish() {
       uni.navigateTo({ url: '/pages/carpool-publish/carpool-publish' });
     },
+    goGuide() {
+      uni.navigateTo({ url: '/pages/carpool-guide/carpool-guide' });
+    },
     goDetail(id) {
       uni.navigateTo({ url: `/pages/carpool-detail/carpool-detail?id=${id}` });
     },
@@ -257,6 +261,17 @@ export default {
   margin-bottom: 12rpx;
 }
 .spacer { flex: 1; }
+.guide-btn {
+  margin: 0;
+  padding: 0 18rpx;
+  height: 56rpx;
+  line-height: 56rpx;
+  border-radius: 8rpx;
+  background: #f0f9f4;
+  color: #1f8f4d;
+  font-size: 23rpx;
+}
+.guide-btn::after { border: 0; }
 .primary-btn {
   margin: 0;
   padding: 0 18rpx;

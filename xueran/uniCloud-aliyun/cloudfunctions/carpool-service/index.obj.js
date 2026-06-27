@@ -201,7 +201,7 @@ module.exports = {
       requestCount: 0,
       status: 'open',
       hostId: user._id,
-      hostName: cleanText(user.nickname || user.email || '车主', 80),
+      hostName: cleanText(user.nickname || user.email || '发起人', 80),
       storytellerName: cleanText(params.storytellerName, 80),
       notes: cleanText(params.notes, 1000),
       scriptImages: normalizeImages(params.scriptImages),
@@ -215,7 +215,7 @@ module.exports = {
       updateTime: now()
     };
     if (!doc.title || !doc.regionCity || !doc.regionDistrict || !doc.scriptName || !doc.startTime || !doc.contactMethod) {
-      return fail('请填写完整拼车信息');
+      return fail('请填写完整组局信息');
     }
     const res = await db.collection(POSTS).add(doc);
     return ok({ id: res.id }, '发布成功');
@@ -253,15 +253,15 @@ module.exports = {
     const user = await getAuthedUser(params);
     if (!user) return fail('请先登录');
     const id = cleanText(params.id || '', 120);
-    if (!id) return fail('缺少拼车ID');
+    if (!id) return fail('缺少组局ID');
     const res = await db.collection(POSTS).doc(id).get();
     const post = res.data && res.data[0];
     if (!post || post.hostId !== user._id) return fail('无权限操作');
-    if (post.status === 'closed') return fail('已关闭的拼车不能修改');
+    if (post.status === 'closed') return fail('已关闭的组局不能修改');
     const startTime = normalizeTime(params.startTime);
     const playerCount = positiveInt(params.playerCount, 5, 30);
     const joinedCount = Number(post.joinedCount) || 0;
-    if (playerCount < joinedCount) return fail('人数不能小于已加入人数');
+    if (playerCount < joinedCount) return fail('人数不能小于已确认报名人数');
     const doc = {
       title: cleanText(params.title, 80),
       regionCity: cleanText(params.regionCity, 80),
@@ -285,7 +285,7 @@ module.exports = {
       updateTime: now()
     };
     if (!doc.title || !doc.regionCity || !doc.regionDistrict || !doc.scriptName || !doc.startTime || !doc.contactMethod) {
-      return fail('请填写完整拼车信息');
+      return fail('请填写完整组局信息');
     }
     await db.collection(POSTS).doc(id).update(doc);
     return ok({ id }, '保存成功');
@@ -294,10 +294,10 @@ module.exports = {
   async getPostDetail(params = {}) {
     const user = await getAuthedUser(params);
     const id = cleanText(params.id || '', 120);
-    if (!id) return fail('缺少拼车ID');
+    if (!id) return fail('缺少组局ID');
     const res = await db.collection(POSTS).doc(id).get();
     const post = res.data && res.data[0];
-    if (!post) return fail('拼车不存在');
+    if (!post) return fail('组局不存在');
     const viewerId = user && user._id;
     const isHost = !!viewerId && post.hostId === viewerId;
     const requestRes = await db.collection(REQUESTS).where({ postId: id }).orderBy('requestTime', 'desc').limit(100).get();
@@ -332,10 +332,10 @@ module.exports = {
     const postId = cleanText(params.postId || '', 120);
     const postRes = await db.collection(POSTS).doc(postId).get();
     const post = postRes.data && postRes.data[0];
-    if (!post) return fail('拼车不存在');
-    if (post.hostId === user._id) return fail('不能报名自己的拼车');
-    if (post.status === 'closed') return fail('拼车已关闭');
-    if (post.status === 'full' && !post.waitingListEnabled) return fail('拼车已满');
+    if (!post) return fail('组局不存在');
+    if (post.hostId === user._id) return fail('不能报名自己的组局');
+    if (post.status === 'closed') return fail('组局已关闭');
+    if (post.status === 'full' && !post.waitingListEnabled) return fail('组局已满');
     const existingRes = await db.collection(REQUESTS).where({ postId, requesterId: user._id, status: dbCmd.in(['pending', 'confirmed']) }).limit(1).get();
     if (existingRes.data && existingRes.data.length) return fail('已报名，请勿重复提交');
     const requesterContact = cleanText(params.requesterContact, 300);
@@ -367,7 +367,7 @@ module.exports = {
     const postId = cleanText(params.postId || '', 120);
     const postRes = await db.collection(POSTS).doc(postId).get();
     const post = postRes.data && postRes.data[0];
-    if (!post) return fail('拼车不存在');
+    if (!post) return fail('组局不存在');
     const requestRes = await db.collection(REQUESTS).where({ postId, requesterId: user._id, status: dbCmd.in(['pending', 'confirmed']) }).limit(1).get();
     const request = requestRes.data && requestRes.data[0];
     if (!request) return fail('没有可退出的报名');
@@ -384,7 +384,7 @@ module.exports = {
       postUpdate.status = post.status === 'full' ? 'open' : post.status;
     }
     await db.collection(POSTS).doc(postId).update(postUpdate);
-    return ok({}, request.status === 'confirmed' ? '已退出拼车' : '已取消申请');
+    return ok({}, request.status === 'confirmed' ? '已退出报名' : '已取消申请');
   },
 
   async updateRequest(params = {}) {
@@ -399,10 +399,10 @@ module.exports = {
     const post = postRes.data && postRes.data[0];
     if (!post || post.hostId !== user._id) return fail('无权限操作');
     if ((action === 'confirm' || action === 'reject') && request.status !== 'pending') {
-      return fail('只能审核待处理申请');
+      return fail('只能审核待处理报名');
     }
     if (action === 'confirm' && (Number(post.joinedCount) || 0) >= (Number(post.playerCount) || 0)) {
-      return fail('拼车人数已满');
+      return fail('组局人数已满');
     }
     if (action === 'remove' && request.status !== 'confirmed') {
       return fail('只能移出已确认玩家');
@@ -450,7 +450,7 @@ module.exports = {
     const res = await db.collection(POSTS).doc(id).get();
     const post = res.data && res.data[0];
     if (!post || post.hostId !== user._id) return fail('无权限操作');
-    if (post.status !== 'closed') return fail('请先关闭拼车后再删除');
+    if (post.status !== 'closed') return fail('请先关闭组局后再删除');
     await db.collection(POSTS).doc(id).remove();
     await db.collection(REQUESTS).where({ postId: id }).remove();
     return ok({}, '已删除');

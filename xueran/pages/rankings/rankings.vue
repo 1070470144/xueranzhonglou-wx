@@ -11,10 +11,19 @@
       </view>
 
       <view class="tool-item" @tap="openTool('/pages/carpool/carpool')">
-        <view class="tool-icon carpool">拼</view>
+        <view class="tool-icon carpool">局</view>
         <view class="tool-main">
-          <text class="tool-title">拼车广场</text>
-          <text class="tool-desc">查找线上线下车局，按地域、时间和剧本快速加入</text>
+          <text class="tool-title">组局广场</text>
+          <text class="tool-desc">查找线上线下场次，按地域、时间和剧本快速报名</text>
+        </view>
+        <text class="arrow">›</text>
+      </view>
+
+      <view class="tool-item" @tap="openTool('/pages/carpool-guide/carpool-guide')">
+        <view class="tool-icon carpool">说</view>
+        <view class="tool-main">
+          <text class="tool-title">组局报名说明</text>
+          <text class="tool-desc">查看活动报名、信息展示和安全提示说明</text>
         </view>
         <text class="arrow">›</text>
       </view>

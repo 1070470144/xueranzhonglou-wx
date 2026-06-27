@@ -72,8 +72,8 @@
           <text class="feature-icon-text">拼</text>
         </view>
         <view class="feature-content">
-          <view class="feature-title">我的拼车</view>
-          <view class="feature-desc">查看发布和报名的拼车</view>
+          <view class="feature-title">我的组局</view>
+          <view class="feature-desc">查看发布和报名的组局</view>
         </view>
         <view class="arrow"></view>
       </view>

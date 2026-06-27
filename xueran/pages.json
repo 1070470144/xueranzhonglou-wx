@@ -21,26 +21,32 @@
     {
       "path": "pages/carpool/carpool",
       "style": {
-        "navigationBarTitleText": "拼车广场",
+        "navigationBarTitleText": "组局广场",
         "enablePullDownRefresh": true
       }
     },
     {
       "path": "pages/carpool-publish/carpool-publish",
       "style": {
-        "navigationBarTitleText": "发布拼车"
+        "navigationBarTitleText": "发布组局"
       }
     },
     {
       "path": "pages/carpool-detail/carpool-detail",
       "style": {
-        "navigationBarTitleText": "拼车详情"
+        "navigationBarTitleText": "组局详情"
+      }
+    },
+    {
+      "path": "pages/carpool-guide/carpool-guide",
+      "style": {
+        "navigationBarTitleText": "组局报名说明"
       }
     },
     {
       "path": "pages/my-carpools/my-carpools",
       "style": {
-        "navigationBarTitleText": "我的拼车",
+        "navigationBarTitleText": "我的组局",
         "enablePullDownRefresh": true
       }
     },

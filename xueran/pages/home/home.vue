@@ -103,11 +103,11 @@
 
     <view class="carpool-panel slide-up">
       <view class="carpool-head" @click="goCarpoolBoard('recent')">
-        <text class="carpool-title">最近拼车</text>
+        <text class="carpool-title">最近组局</text>
         <text class="carpool-link">查看全部</text>
       </view>
       <view v-if="carpoolLoading && !carpoolRecent.length" class="carpool-empty">加载中...</view>
-      <view v-else-if="!carpoolRecent.length" class="carpool-empty">暂无最近拼车</view>
+      <view v-else-if="!carpoolRecent.length" class="carpool-empty">暂无最近组局</view>
       <view v-else class="carpool-list">
         <view v-for="item in carpoolRecent" :key="item.id" class="carpool-item" @click="goCarpoolDetail(item.id)">
           <view class="carpool-item-head">

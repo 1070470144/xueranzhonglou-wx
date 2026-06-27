@@ -84,6 +84,10 @@
         <text class="label">联系方式</text>
         <input v-model="form.contactMethod" class="input" placeholder="微信 / 群号 / 电话等" />
       </view>
+      <view class="safe-note">
+        <text>发布即表示你了解本功能仅用于剧本活动报名管理，不提供出行或交易服务。</text>
+        <text class="safe-link" @tap="goGuide">查看说明</text>
+      </view>
       <button class="submit" :disabled="submitting || loading" @tap="submit">{{ submitText }}</button>
     </view>
   </view>
@@ -192,7 +196,7 @@ export default {
     submitText() {
       if (this.loading) return '加载中...';
       if (this.submitting) return this.editing ? '保存中...' : '发布中...';
-      return this.editing ? '保存修改' : '发布拼车';
+      return this.editing ? '保存修改' : '发布组局';
     },
     regionValue() {
       return ['', this.form.regionCity || '', this.form.regionDistrict || ''];
@@ -207,7 +211,7 @@ export default {
     if (query.id) {
       this.id = query.id;
       this.editing = true;
-      uni.setNavigationBarTitle({ title: '修改拼车' });
+      uni.setNavigationBarTitle({ title: '修改组局' });
       this.loadPost();
     }
   },
@@ -305,6 +309,9 @@ export default {
     previewImage(current, field) {
       uni.previewImage({ current, urls: this.form[field] || [] });
     },
+    goGuide() {
+      uni.navigateTo({ url: '/pages/carpool-guide/carpool-guide' });
+    },
     async submit() {
       if (this.submitting) return;
       const startTime = buildStartTime(this.form.date, this.form.time);
@@ -397,6 +404,23 @@ export default {
 .picked-image { width: 100%; height: 100%; }
 .remove-image { position: absolute; right: 8rpx; top: 8rpx; width: 34rpx; height: 34rpx; line-height: 32rpx; text-align: center; border-radius: 50%; color: #fff; background: rgba(0,0,0,.55); font-size: 24rpx; }
 .add-image { display: flex; align-items: center; justify-content: center; border: 2rpx dashed #d9f0e3; color: #1f8f4d; font-size: 44rpx; background: #f0f9f4; box-sizing: border-box; }
+.safe-note {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  margin: 8rpx 0 18rpx;
+  padding: 16rpx;
+  border-radius: 8rpx;
+  background: #f5f8f6;
+  color: #646a73;
+  font-size: 22rpx;
+  line-height: 1.5;
+}
+.safe-link {
+  color: #1f8f4d;
+  font-weight: 700;
+}
 .submit { margin-top: 8rpx; background: #1f8f4d; color: #fff; border-radius: 10rpx; }
 .submit::after { border: 0; }
 </style>
